@@ -1,5 +1,7 @@
 # Otium: Game Mechanics Plan
 
+> **Replaced by `Game-design.md`**, which covers the whole game including the scrolling estate, buildings, the market town and reasons to keep goods. This file is kept for reference.
+
 *Working title. Otium is Latin for leisure: peaceful time away from work.*
 
 ## Pitch
