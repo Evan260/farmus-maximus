@@ -39,3 +39,28 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-24T23:30:05,ui,game/assets/ui/button.png,0.0800,0,4.0499
 2026-10-24T23:34:02,character,game/assets/sprites/donkey,0.0587,0,3.9912
 2026-10-24T23:35:34,animate,game/assets/sprites/donkey/walk_east,0.0191,0,3.9721
+2026-10-25T13:02:28,extend,design/Art tests/estate/painting_wide_test.png,0.0862,0,3.8423
+2026-10-25T13:04:37,pixen,design/Art tests/estate/panorama_seed58.png,0.0125,0,3.8298
+2026-10-25T13:05:45,pixen,design/Art tests/estate/panorama_seed71.png,0.0119,0,3.8179
+2026-10-25T13:08:56,proflash,game/assets/sprites/buildings/drying_shed_working.png,0.0247,0,3.7932
+2026-10-25T13:09:59,edit,game/assets/sprites/buildings/drying_shed_ruin.png,0.0107,0,3.7824
+2026-10-25T13:10:45,edit,game/assets/sprites/buildings/drying_shed_scaffold.png,0.0081,0,3.7744
+2026-10-25T13:11:31,proflash,game/assets/sprites/buildings/mill_working.png,0.0247,0,3.7496
+2026-10-25T13:12:17,edit,game/assets/sprites/buildings/mill_ruin.png,0.0083,0,3.7413
+2026-10-25T13:13:29,edit,game/assets/sprites/buildings/mill_scaffold.png,0.0117,0,3.7296
+2026-10-25T13:13:57,proflash,game/assets/sprites/buildings/bakery_working.png,0.0241,0,3.7056
+2026-10-25T13:14:44,edit,game/assets/sprites/buildings/bakery_ruin.png,0.0080,0,3.6976
+2026-10-25T13:15:22,edit,game/assets/sprites/buildings/bakery_scaffold.png,0.0080,0,3.6896
+2026-10-25T13:15:50,proflash,game/assets/sprites/buildings/olive_press_working.png,0.0242,0,3.6654
+2026-10-25T13:16:45,edit,game/assets/sprites/buildings/olive_press_ruin.png,0.0090,0,3.6564
+2026-10-25T13:17:22,edit,game/assets/sprites/buildings/olive_press_scaffold.png,0.0080,0,3.6484
+2026-10-25T13:18:00,proflash,game/assets/sprites/buildings/unguent_working.png,0.0247,0,3.6237
+2026-10-25T13:18:46,edit,game/assets/sprites/buildings/unguent_ruin.png,0.0078,0,3.6158
+2026-10-25T13:20:24,edit,game/assets/sprites/buildings/unguent_scaffold.png,0.0141,0,3.6017
+2026-10-25T13:20:48,proflash,game/assets/sprites/olive/raw/stage0.png,0.0232,0,3.5785
+2026-10-25T13:21:08,proflash,game/assets/sprites/olive/raw/stage1.png,0.0233,0,3.5552
+2026-10-25T13:21:27,proflash,game/assets/sprites/olive/raw/stage2.png,0.0234,0,3.5318
+2026-10-25T13:21:56,proflash,game/assets/sprites/olive/raw/bloom.png,0.0233,0,3.5085
+2026-10-25T13:23:00,proflash,game/assets/sprites/buildings/beehives_working.png,0.0238,0,3.4848
+2026-10-25T13:24:03,edit,game/assets/sprites/buildings/beehives_ruin.png,0.0093,0,3.4755
+2026-10-25T13:24:49,edit,game/assets/sprites/buildings/beehives_scaffold.png,0.0081,0,3.4674

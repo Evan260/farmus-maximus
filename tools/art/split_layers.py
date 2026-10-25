@@ -16,15 +16,6 @@ def smooth(line, k):
     return np.array([np.median(pad[i:i + 2 * k + 1]) for i in range(len(line))]).astype(int)
 
 
-def fill_below(rgb, top):
-    # Hidden areas are filled by repeating the colour just above the cut, which matches the horizontal banding of pixel-art skies and hazy mountains.
-    out = rgb.copy()
-    for x in range(rgb.shape[1]):
-        y0 = max(0, top[x] - 1)
-        out[y0:, x] = rgb[y0, x]
-    return out
-
-
 def fill_rows(rgb, holes):
     # Pixel-art skies and mountains are painted in horizontal bands, so a hole is filled from the nearest visible pixel in the same row.
     out = rgb.copy()
@@ -57,15 +48,11 @@ def main():
     h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
     yy = np.mgrid[0:H, 0:W][0]
 
-    land_px = (((h >= 28) & (h <= 95) & (s > 45)) | (v < 75) | (((h <= 22) | (h >= 160)) & (v < 185) & (yy >= a.stone_from)))
+    # Hazy distant mountains can be faintly green, so foliage must be clearly green and saturated to count as land.
+    land_px = (((h >= 28) & (h <= 85) & (s > 60)) | (v < 75) | (((h <= 22) | (h >= 160)) & (v < 185) & (yy >= a.stone_from)))
     land_px &= yy >= a.mountain_from
-    cool = (((h >= 100) & (h <= 175) & (s < 140) & (v >= 70)) | ((h <= 25) & (s < 110) & (v >= 120) & (v <= 215)))
-    cool &= yy >= a.mountain_from
-    # A mountain is solid for several rows; thin purple cloud edges are not.
-    solid = cool.copy()
-    for k in range(1, 6):
-        solid[:-k] &= cool[k:] | land_px[k:]
-    cool = solid
+    # The sky near the horizon is warm and bright; hazy mountains are blue or a dusty pink that is paler or duller than the sky.
+    sky_px = (((h >= 11) & (h <= 24) & (s >= 100) & (v >= 180)) | ((h >= 19) & (h <= 24) & (v >= 245))) | (yy < a.mountain_from)
 
     def first(mask):
         line = np.full(W, H, int)
@@ -79,30 +66,48 @@ def main():
     # The ground line ignores tree tips by taking a high percentile over neighbouring columns.
     pad = np.pad(land_line_raw, 12, mode="edge")
     ground = np.array([np.percentile(pad[i:i + 25], 70) for i in range(W)]).astype(int)
-    mtn_line = smooth(np.minimum(first(cool), ground), 6)
 
     land = np.zeros((H, W), bool)
     for x in range(W):
         land[ground[x]:, x] = True
     # Tall trees reach above the mountains, so foliage of any height counts as land when it connects to the ground.
-    foliage = ((h >= 28) & (h <= 95) & (s > 45)) | (v < 75) | land_px
+    foliage = ((h >= 28) & (h <= 85) & (s > 60)) | (v < 75) | land_px
     n, lab = cv2.connectedComponents(foliage.astype(np.uint8), connectivity=8)
     touching = set(np.unique(lab[land & (lab > 0)]))
     land |= np.isin(lab, list(touching)) & foliage
 
-    mtn = np.zeros((H, W), bool)
-    for x in range(W):
-        mtn[mtn_line[x]:, x] = True
-    mtn &= ~land
+    # A mountain top is the first row that stays non-sky for a few rows, so a stray dark cloud pixel does not count.
+    solid = ~sky_px
+    for k in range(1, 4):
+        solid[:-k] &= ~sky_px[k:]
+    raw = first(solid)
+    # Where land is the first thing below the sky, the mountain behind it is hidden, so its outline is bridged from its visible neighbours.
+    known = np.array([raw[x] < H and not land[raw[x], x] for x in range(W)])
+    xs = np.arange(W)
+    mtn_line = np.interp(xs, xs[known], raw[known]).astype(int) if known.any() else ground.copy()
+    mtn_line = np.minimum(smooth(mtn_line, 2), ground)
 
     above = yy < mtn_line[None, :]
-    sky_rgb = fill_below(fill_rows(rgb, land & above), mtn_line)
+    sky_rgb = rgb.copy()
+    hidden = ~above | land
+    for y in range(H):
+        seen = ~hidden[y]
+        # The hidden part of each row takes that row's typical visible colour, because horizon skies are painted in flat horizontal bands.
+        sky_rgb[y, ~seen] = np.median(rgb[y, seen], axis=0).astype(np.uint8) if seen.sum() >= 8 else sky_rgb[y - 1, ~seen]
     band = ~above & ~land
     mtn_rgb = fill_rows(rgb, ~band & ~above)
+    # Below the mountains, the hidden area becomes an even haze in the valley's average colour, because panning
+    # reveals it and repeated column colours would show as stripes.
+    lows = []
     for x in range(W):
         col = np.nonzero(band[:, x])[0]
-        low = col.max() if len(col) else min(mtn_line[x], H - 1)
-        mtn_rgb[low:, x] = mtn_rgb[low, x]
+        lows.append(col.max() if len(col) else min(mtn_line[x], H - 1))
+    haze = np.median(np.array([mtn_rgb[lows[x], x] for x in range(W)]), axis=0).astype(np.uint8)
+    for x in range(W):
+        low = lows[x]
+        for y in range(low + 1, H):
+            t = min(1.0, (y - low) / 4.0)
+            mtn_rgb[y, x] = (mtn_rgb[low, x] * (1 - t) + haze * t).astype(np.uint8)
     mtn_alpha = np.zeros((H, W), np.uint8)
     for x in range(W):
         mtn_alpha[mtn_line[x]:, x] = 255

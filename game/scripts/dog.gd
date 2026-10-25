@@ -4,10 +4,11 @@ extends Node2D
 signal petted
 
 const DIR := "res://assets/sprites/dog/"
-const MIN_X := 10.0
-const MAX_X := 456.0
 const SPEED := 15.0
 
+## The stretch of ground the dog wanders, set by the scene.
+var min_x := 10.0
+var max_x := 456.0
 var sprite: AnimatedSprite2D
 var _shadow: Sprite2D
 var _state := ""
@@ -63,7 +64,7 @@ func _choose_next() -> void:
 		_sit()
 	else:
 		_state = "walk"
-		_target_x = clampf(position.x + randf_range(-140.0, 140.0), MIN_X, MAX_X)
+		_target_x = clampf(position.x + randf_range(-140.0, 140.0), min_x, max_x)
 		sprite.flip_h = _target_x < position.x
 		sprite.play("walk")
 

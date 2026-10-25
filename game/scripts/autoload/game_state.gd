@@ -10,6 +10,9 @@ signal cart_returned(coins: int)
 signal villa_build_started(stage: int)
 signal villa_upgraded(stage: int)
 signal message(text: String)
+signal zone_bought(zone_id: String)
+signal building_changed(building_id: String)
+signal building_made(building_id: String, item: String, amount: int)
 
 var coins := 0
 var storage := {}
@@ -23,6 +26,10 @@ var villa_build := {}
 ## In-game clock in hours, 0 to 24.
 var day_time := 16.0
 var cart := {}
+## Which parts of the estate are owned; the rest are bought with a land deed.
+var zones_owned := {}
+## Each building's state: "ruin" (not yet bought), "owned" (bought, still a ruin), "repairing" or "working".
+var buildings := {}
 var farmhand_timer := 0.0
 var stats := {}
 ## Debug-only multiplier for live time; offline catch-up always uses real elapsed time.
@@ -44,8 +51,17 @@ func new_game() -> void:
 	storage = {}
 	plots = []
 	var unlocked := int(Balance.get_value("start.unlocked_plots", 4))
-	for i in int(Balance.get_value("plots.count", 17)):
-		plots.append({"unlocked": i < unlocked, "crop": "", "growth": 0.0, "cycle": 0})
+	# Home plots come first, so saves from before the estate grew still line up with the same plots.
+	for group in Balance.get_value("plots.zones", [{"zone": "home", "count": 17}]):
+		for k in int(group["count"]):
+			var home: bool = group["zone"] == "home"
+			plots.append({"zone": group["zone"], "unlocked": home and k < unlocked, "crop": "", "growth": 0.0, "cycle": 0})
+	zones_owned = {}
+	for z in Balance.get_value("estate.zones", []):
+		zones_owned[z["id"]] = int(z.get("deed", 0)) == 0
+	buildings = {}
+	for id in Balance.get_value("buildings", {}):
+		buildings[id] = _new_building()
 	levels = {"storage": 0, "cart_capacity": 0, "cart_speed": 0, "farmhand": 0}
 	selected_seed = "lavender"
 	villa_stage = 1
@@ -140,7 +156,7 @@ func item_price(item: String) -> int:
 func unlock_cost() -> int:
 	var unlocked := 0
 	for p in plots:
-		if p["unlocked"]:
+		if p["unlocked"] and p["zone"] == "home":
 			unlocked += 1
 	var extra := unlocked - int(Balance.get_value("start.unlocked_plots", 4))
 	var base := float(Balance.get_value("plots.unlock_cost_base", 15))
@@ -162,9 +178,9 @@ func villa_next_cost() -> int:
 # Actions ----------------------------------------------------------------
 
 func try_plant(i: int, crop_id := "") -> bool:
-	if crop_id == "":
-		crop_id = selected_seed
 	var p: Dictionary = plots[i]
+	if crop_id == "":
+		crop_id = seed_for_plot(i)
 	if not p["unlocked"] or p["crop"] != "":
 		return false
 	var cost := int(crop_info(crop_id).get("plant_cost", 0))
@@ -191,7 +207,7 @@ func try_harvest(i: int) -> bool:
 
 func try_unlock(i: int) -> bool:
 	var p: Dictionary = plots[i]
-	if p["unlocked"]:
+	if p["unlocked"] or not zone_owned(String(p["zone"])):
 		return false
 	var cost := unlock_cost()
 	if coins < cost:
@@ -209,7 +225,10 @@ func send_cart() -> bool:
 	var capacity := cart_capacity()
 	var loaded := 0
 	var value := 0
+	var keep := reserved_items()
 	for item in storage.keys():
+		if item in keep:
+			continue
 		var take := mini(int(storage[item]), capacity - loaded)
 		if take <= 0:
 			continue
@@ -266,6 +285,7 @@ func _finish_villa() -> void:
 ## Moves the farm forward by dt seconds and reports what happened.
 func advance(dt: float) -> Dictionary:
 	var result := {"harvested": 0, "earned": 0}
+	_advance_buildings(dt)
 	day_time = fmod(day_time + dt * 24.0 / float(Balance.get_value("time.day_seconds", 1200)), 24.0)
 	if villa_build["active"]:
 		villa_build["time_left"] = float(villa_build["time_left"]) - dt
@@ -343,6 +363,172 @@ func _harvest(i: int) -> int:
 	return amount
 
 
+# Estate ------------------------------------------------------------------
+
+func zones() -> Array:
+	return Balance.get_value("estate.zones", [])
+
+
+func zone_info(zone_id: String) -> Dictionary:
+	for z in zones():
+		if z["id"] == zone_id:
+			return z
+	return {}
+
+
+func zone_owned(zone_id: String) -> bool:
+	return bool(zones_owned.get(zone_id, false))
+
+
+## The crop an empty plot gets: the chosen seed on the home farm, and the zone's own crop elsewhere (olives in the grove).
+func seed_for_plot(i: int) -> String:
+	var zone := String(plots[i]["zone"])
+	if String(crop_info(selected_seed).get("zone", "home")) == zone:
+		return selected_seed
+	for crop in Balance.get_value("crops", {}):
+		if String(crop_info(crop).get("zone", "home")) == zone:
+			return crop
+	return selected_seed
+
+
+func buy_zone(zone_id: String) -> bool:
+	if zone_owned(zone_id):
+		return false
+	var cost := int(zone_info(zone_id).get("deed", 0))
+	if coins < cost:
+		message.emit("Not enough sestertii")
+		return false
+	coins -= cost
+	zones_owned[zone_id] = true
+	for p in plots:
+		if p["zone"] == zone_id:
+			p["unlocked"] = true
+	zone_bought.emit(zone_id)
+	return true
+
+
+func building_info(id: String) -> Dictionary:
+	return Balance.get_value("buildings." + id, {})
+
+
+func building_upgrade_cost(id: String) -> int:
+	var costs: Array = building_info(id).get("upgrade_costs", [])
+	var level := int(buildings[id]["level"])
+	return int(costs[level]) if level < costs.size() else -1
+
+
+func building_speed(id: String) -> float:
+	var speeds: Array = building_info(id).get("speed", [1])
+	return float(speeds[mini(int(buildings[id]["level"]), speeds.size() - 1)])
+
+
+## The next thing to do with a building and its price: buy, repair, upgrade, or nothing.
+func building_action(id: String) -> Dictionary:
+	var b: Dictionary = buildings[id]
+	var info := building_info(id)
+	match b["state"]:
+		"ruin":
+			return {"action": "buy", "cost": int(info.get("buy", 0))}
+		"owned":
+			return {"action": "repair", "cost": int(info.get("repair", 0))}
+		"working":
+			var cost := building_upgrade_cost(id)
+			return {"action": "upgrade", "cost": cost} if cost >= 0 else {}
+	return {}
+
+
+func do_building_action(id: String) -> bool:
+	var act := building_action(id)
+	if act.is_empty():
+		return false
+	if not zone_owned(String(building_info(id).get("zone", "home"))):
+		message.emit("Buy this land first")
+		return false
+	if coins < int(act["cost"]):
+		message.emit("Not enough sestertii")
+		return false
+	coins -= int(act["cost"])
+	var b: Dictionary = buildings[id]
+	match act["action"]:
+		"buy":
+			b["state"] = "owned"
+		"repair":
+			b["state"] = "repairing"
+			b["time_left"] = float(building_info(id).get("repair_seconds", 30))
+		"upgrade":
+			b["level"] = int(b["level"]) + 1
+	building_changed.emit(id)
+	return true
+
+
+func set_building_paused(id: String, paused: bool) -> void:
+	buildings[id]["paused"] = paused
+	building_changed.emit(id)
+
+
+## Goods a working building is waiting to use, which the cart leaves at home instead of selling.
+func reserved_items() -> Array:
+	var keep := []
+	for id in buildings:
+		var b: Dictionary = buildings[id]
+		if b["state"] == "working" and not b["paused"]:
+			for item in building_info(id).get("in", {}):
+				if not item in keep:
+					keep.append(item)
+	return keep
+
+
+func _advance_buildings(dt: float) -> void:
+	for id in buildings:
+		var b: Dictionary = buildings[id]
+		var info := building_info(id)
+		if b["state"] == "repairing":
+			b["time_left"] = float(b["time_left"]) - dt
+			if b["time_left"] <= 0.0:
+				b["state"] = "working"
+				if not quiet:
+					building_changed.emit(id)
+			continue
+		if b["state"] != "working":
+			continue
+		if not b["busy"]:
+			if b["paused"] or not _has_items(info.get("in", {})):
+				continue
+			for item in info.get("in", {}):
+				storage[item] = int(storage[item]) - int(info["in"][item])
+				if storage[item] <= 0:
+					storage.erase(item)
+			b["busy"] = true
+			b["progress"] = 0.0
+		b["progress"] = float(b["progress"]) + dt * building_speed(id)
+		if b["progress"] >= float(info.get("seconds", 30)):
+			var out: Dictionary = info.get("out", {})
+			var amount := 0
+			for item in out:
+				amount += int(out[item])
+			# A finished batch waits in the building until the storehouse has room for it.
+			if stored_total() + amount > storage_capacity():
+				b["progress"] = float(info.get("seconds", 30))
+				continue
+			for item in out:
+				storage[item] = int(storage.get(item, 0)) + int(out[item])
+				if not quiet:
+					building_made.emit(id, item, int(out[item]))
+			b["busy"] = false
+			b["progress"] = 0.0
+
+
+func _has_items(needs: Dictionary) -> bool:
+	for item in needs:
+		if int(storage.get(item, 0)) < int(needs[item]):
+			return false
+	return true
+
+
+func _new_building() -> Dictionary:
+	return {"state": "ruin", "time_left": 0.0, "level": 0, "busy": false, "progress": 0.0, "paused": false}
+
+
 func _first_ready_plot() -> int:
 	for i in plots.size():
 		if is_ready(i):
@@ -359,7 +545,8 @@ func _empty_cart() -> Dictionary:
 func to_dict() -> Dictionary:
 	return {
 		"coins": coins, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
-		"villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time, "cart": cart, "farmhand_timer": farmhand_timer, "stats": stats,
+		"villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time, "cart": cart,
+		"zones_owned": zones_owned, "buildings": buildings, "farmhand_timer": farmhand_timer, "stats": stats,
 	}
 
 
@@ -374,7 +561,7 @@ func from_dict(d: Dictionary) -> void:
 	for i in mini(saved.size(), plots.size()):
 		var s: Dictionary = saved[i]
 		plots[i] = {
-			"unlocked": bool(s.get("unlocked", false)), "crop": String(s.get("crop", "")),
+			"zone": plots[i]["zone"], "unlocked": bool(s.get("unlocked", false)), "crop": String(s.get("crop", "")),
 			"growth": float(s.get("growth", 0.0)), "cycle": int(s.get("cycle", 0)),
 		}
 	for id in d.get("levels", {}):
@@ -389,5 +576,19 @@ func from_dict(d: Dictionary) -> void:
 		"items": int(c.get("items", 0)), "value": int(c.get("value", 0)),
 	}
 	farmhand_timer = float(d.get("farmhand_timer", 0.0))
+	for z in d.get("zones_owned", {}):
+		if zones_owned.has(z):
+			zones_owned[z] = bool(d["zones_owned"][z])
+	for id in d.get("buildings", {}):
+		if buildings.has(id):
+			var saved_b: Dictionary = d["buildings"][id]
+			var b := _new_building()
+			b["state"] = String(saved_b.get("state", "ruin"))
+			b["time_left"] = float(saved_b.get("time_left", 0.0))
+			b["level"] = int(saved_b.get("level", 0))
+			b["busy"] = bool(saved_b.get("busy", false))
+			b["progress"] = float(saved_b.get("progress", 0.0))
+			b["paused"] = bool(saved_b.get("paused", false))
+			buildings[id] = b
 	var st: Dictionary = d.get("stats", {})
 	stats = {"harvested": int(st.get("harvested", 0)), "earned": int(st.get("earned", 0))}

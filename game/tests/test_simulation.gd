@@ -53,6 +53,32 @@ func _run() -> void:
 	game.advance(6.0)
 	_check(game.plots[0]["crop"] == "wheat" and int(game.storage.get("wheat", 0)) == 4, "the farmhand harvests and replants wheat")
 
+	# The estate: land deeds open zones, and buildings go from ruin to working and refine goods.
+	game.new_game()
+	game.coins = 5000
+	var grove_plot := -1
+	for i in game.plots.size():
+		if game.plots[i]["zone"] == "grove":
+			grove_plot = i
+			break
+	_check(not game.plots[grove_plot]["unlocked"], "grove plots start locked")
+	_check(game.buy_zone("grove") and game.plots[grove_plot]["unlocked"], "buying the grove deed opens its plots")
+	_check(game.try_plant(grove_plot) and game.plots[grove_plot]["crop"] == "olives", "grove plots grow olive trees")
+	_check(not game.do_building_action("mill"), "a building in land you do not own cannot be bought")
+	game.buy_zone("yard")
+	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "owned", "buying a ruin")
+	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "repairing", "repairing a ruin takes time")
+	game.advance(31.0)
+	_check(game.buildings["drying_shed"]["state"] == "working", "repairs finish on their own")
+	game.storage = {"lavender": 4, "wheat": 3}
+	_check("lavender" in game.reserved_items(), "a working building's ingredients are reserved")
+	game.send_cart()
+	_check(int(game.storage.get("lavender", 0)) == 4 and not game.storage.has("wheat"), "the cart leaves reserved ingredients and sells the rest")
+	game.cart = game._empty_cart()
+	game.simulate_offline(60.0)
+	_check(int(game.storage.get("dried_lavender", 0)) == 2 and not game.storage.has("lavender"), "the drying shed turns lavender into dried lavender, even offline")
+	_check(game.do_building_action("drying_shed") and int(game.buildings["drying_shed"]["level"]) == 1, "upgrading a working building")
+
 	# The villa takes time to build and finishes on its own, even offline.
 	game.new_game()
 	game.coins = 1000
@@ -73,9 +99,13 @@ func _run() -> void:
 	var stored: int = game.stored_total()
 	var stage: int = game.villa_stage
 	var hour: float = game.day_time
+	game.zones_owned["yard"] = true
+	game.buildings["mill"]["state"] = "working"
+	data = JSON.parse_string(JSON.stringify(game.to_dict()))
 	game.new_game()
 	game.from_dict(data)
 	_check(game.coins == coins and game.stored_total() == stored and game.villa_stage == stage and is_equal_approx(game.day_time, hour), "save data round-trips")
+	_check(game.zone_owned("yard") and game.buildings["mill"]["state"] == "working", "zones and buildings round-trip")
 
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)

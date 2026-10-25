@@ -1,24 +1,43 @@
 extends Node2D
-## Builds the home farm scene from its layers and turns clicks into farm actions.
+## Builds the estate from its layers and buildings, pans across it, and turns clicks into farm actions.
 
 const PlotView := preload("res://scripts/plot_view.gd")
+const BuildingView := preload("res://scripts/building_view.gd")
+const ZoneSign := preload("res://scripts/zone_sign.gd")
 const Dog := preload("res://scripts/dog.gd")
 const Critters := preload("res://scripts/critters.gd")
 const Fireflies := preload("res://scripts/fireflies.gd")
 const Hud := preload("res://scripts/ui/hud.gd")
-const BG := "res://assets/backgrounds/home_farm/"
+const BG := "res://assets/backgrounds/estate/"
+const OLD_BG := "res://assets/backgrounds/home_farm/"
+const ESTATE_WIDTH := 1920.0
+## The home farm is the second zone, so everything on it sits one screen to the right.
+const HOME := 480.0
 ## Bottom centre of the villa, where the path in the field meets its steps.
-const VILLA_BASE := Vector2(371, 234)
+const VILLA_BASE := Vector2(HOME + 371, 234)
 const FRONT_ROW := 263
 const BACK_ROW := 246
 const SHADOW := Color(0.16, 0.11, 0.12, 0.28)
+## How far each background layer moves for every pixel the camera pans: the far ones barely move, which gives depth.
+const PARALLAX := {"sky": 0.05, "mountains": 0.1, "land": 0.18}
+## Where the cart parks, on the soil just right of the path, with the donkey at its handles.
+const CART_HOME_X := HOME + 380.0
+const RIG_BASE := 266
+const PAN_SPEED := 260.0
 
 var plot_views: Array = []
+var building_views: Array = []
+var signs: Array = []
 var hud: CanvasLayer
 var dog: Node2D
+## The left edge of the view in estate pixels.
+var cam_x := 0.0
 var _daylight: CanvasModulate
+var _sky_node: Node2D
 var _sky_day: Sprite2D
 var _sky_night: Sprite2D
+var _mountains: Sprite2D
+var _land: Sprite2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
 var _cart: Sprite2D
@@ -32,14 +51,17 @@ var _clouds: Array = []
 var _hammer_timer := 0.0
 var _camera: Camera2D
 var _sky_layer: CanvasLayer
+var _zone_shade: Node2D
 ## Painted scenery that is hidden in the transparent desktop strip, so only the farm floats over the desktop.
 var _scenery: Array = []
 var _click_area_timer := 0.0
 ## The plot chosen with the keyboard or a gamepad, or -1 when the mouse is in use.
 var _selected := -1
-## Where the cart parks, on the soil just right of the path, with the donkey at its handles.
-const CART_HOME_X := 380.0
-const RIG_BASE := 266
+var _drag_from := Vector2.ZERO
+var _drag_start_cam := 0.0
+var _dragging := false
+var _pressed := false
+var _pan_tween: Tween
 
 
 func _ready() -> void:
@@ -48,42 +70,50 @@ func _ready() -> void:
 	_daylight = CanvasModulate.new()
 	add_child(_daylight)
 	# The sky gets its own layer, outside the night tint, so the night sky's stars and moon keep their own colours.
-	var sky_layer := CanvasLayer.new()
-	sky_layer.layer = -1
-	# The sky follows the camera, so it lines up with the rest of the scene in the desktop strip.
-	sky_layer.follow_viewport_enabled = true
-	add_child(sky_layer)
-	_sky_layer = sky_layer
-	_sky_day = _add_texture(load(BG + "layer_sky.png"), Vector2(-16, 0), sky_layer)
-	_sky_night = _add_texture(load(BG + "layer_sky_night.png"), Vector2(-16, 0), sky_layer)
+	_sky_layer = CanvasLayer.new()
+	_sky_layer.layer = -1
+	_sky_layer.follow_viewport_enabled = true
+	add_child(_sky_layer)
+	_sky_node = Node2D.new()
+	_sky_layer.add_child(_sky_node)
+	_sky_day = _add_texture(load(BG + "layer_sky.png"), Vector2.ZERO, _sky_node)
+	_sky_night = _add_texture(load(BG + "layer_sky_night.png"), Vector2.ZERO, _sky_node)
 	for i in 3:
-		var c := _add_trimmed(load(BG + "cloud_%d.png" % (i + 1)), Vector2([40, 210, 360][i], [18, 52, 30][i]), false, 0, sky_layer)
+		var c := _add_trimmed(load(OLD_BG + "cloud_%d.png" % (i + 1)), Vector2([60, 330, 560][i], [18, 52, 30][i]), false, 0, _sky_node)
 		_clouds.append({"sprite": c, "speed": [2.2, 1.4, 3.0][i]})
 	_glow_layer = CanvasLayer.new()
 	_glow_layer.layer = 1
 	_glow_layer.follow_viewport_enabled = true
 	add_child(_glow_layer)
-	# The background layers are wider than the screen; the extra width is for camera panning later.
-	_scenery.append(_add_texture(load(BG + "layer_mountains.png"), Vector2(-16, 0)))
-	_scenery.append(_add_texture(load(BG + "layer_land.png"), Vector2(-16, 0)))
+	_mountains = _add_texture(load(BG + "layer_mountains.png"), Vector2.ZERO)
+	_land = _add_texture(load(BG + "layer_land.png"), Vector2.ZERO)
+	_scenery.append_array([_mountains, _land])
+
+	var pine := _add_trimmed(load("res://assets/sprites/trees/umbrella_pine_1.png"), Vector2(HOME - 60, 0), true, 240)
+	_scenery.append(pine)
+	_scenery.append(_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236)))
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_window_glow = _add_texture(null, Vector2.ZERO, _glow_layer)
 	_window_glow.region_enabled = true
 	_place_villa()
-	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(194, 230))
-	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(198, 0), true, 236)
-	var pine := _add_trimmed(load("res://assets/sprites/trees/umbrella_pine_1.png"), Vector2(-16, 0), true, 240)
-	_scenery.append(pine)
-	_scenery.append(_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236)))
-	_add_texture(load(BG + "field.png"), Vector2(-40, 0))
+	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
+	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(HOME + 198, 0), true, 236)
+	_build_buildings()
+	_add_texture(load(BG + "ground.png"), Vector2(-40, 0))
+	_zone_shade = Node2D.new()
+	_zone_shade.draw.connect(_draw_zone_shade)
+	add_child(_zone_shade)
 	_build_plots()
+	_build_signs()
 
 	var critters := Critters.new()
 	critters.bloom_points = _bloom_points
 	add_child(critters)
 	dog = Dog.new()
-	dog.position = Vector2(345, 268)
+	dog.position = Vector2(HOME + 345, 268)
+	dog.min_x = HOME + 10
+	dog.max_x = HOME + 456
 	add_child(dog)
 	_cart_shadow = _add_texture(Lighting.ellipse_texture(96, 6, SHADOW), Vector2.ZERO)
 	_cart = _add_trimmed(load("res://assets/sprites/farm/cart.png"), Vector2(CART_HOME_X, 0), true, RIG_BASE)
@@ -103,6 +133,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_update_view)
 	Windowing.view_changed.connect(_update_view)
 	hud = Hud.new()
+	hud.zone_chosen.connect(pan_to_zone)
 	add_child(hud)
 
 	Game.planted.connect(func(i): Sfx.play("plant"); _view(i).bounce())
@@ -112,13 +143,21 @@ func _ready() -> void:
 	Game.villa_upgraded.connect(func(_stage): _on_villa_finished())
 	Game.cart_left.connect(_on_cart_left)
 	Game.cart_returned.connect(_on_cart_returned)
+	Game.zone_bought.connect(_on_zone_bought)
+	Game.building_changed.connect(_on_building_changed)
+	Game.building_made.connect(_on_building_made)
 	dog.petted.connect(_on_dog_petted)
 	if Game.cart["away"]:
-		_cart.position.x = 560
-		_donkey.position.x = 620
+		_cart.position.x = ESTATE_WIDTH + 60
+		_donkey.position.x = ESTATE_WIDTH + 130
+	cam_x = HOME + 240.0 - get_viewport_rect().size.x / 2.0
 	_update_view()
 	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--shot="):
+		if arg.begins_with("--zone="):
+			var z := Game.zone_info(arg.trim_prefix("--zone="))
+			cam_x = float(z.get("x", 0)) + 240.0 - get_viewport_rect().size.x / 2.0
+			_update_view()
+		elif arg.begins_with("--shot="):
 			_take_screenshot(arg.trim_prefix("--shot="))
 
 
@@ -139,10 +178,13 @@ func _process(delta: float) -> void:
 	for c in _clouds:
 		var sprite: Sprite2D = c["sprite"]
 		sprite.position.x += c["speed"] * delta
-		if sprite.position.x > 500:
+		if sprite.position.x > 770:
 			sprite.position.x = -sprite.region_rect.size.x - 10
 		# The drifting day clouds fade out at night, when the night sky has clouds of its own.
 		sprite.modulate = Color(_daylight.color, 1.0 - night)
+	var keys := float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A))
+	if keys != 0.0:
+		_pan_by(keys * PAN_SPEED * delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	if Windowing.strip and Windowing.transparent:
 		_click_area_timer -= delta
@@ -155,6 +197,10 @@ func _process(delta: float) -> void:
 			_hammer_timer = randf_range(1.2, 2.6)
 			Sfx.play("hammer", -10.0, 0.15)
 			_dust(_villa.position + Vector2(randf_range(10, _villa.region_rect.size.x - 10), _villa.region_rect.size.y - 4), 6)
+	for v in building_views:
+		if Game.buildings[v.id]["state"] == "repairing" and randf() < delta * 0.5:
+			Sfx.play("hammer", -14.0, 0.2)
+			_dust(v.position + Vector2(randf_range(-20, 20), -2), 4)
 
 
 ## Fills the farm with plants at every stage, for screenshots and clips; saving is switched off so a real save is never touched.
@@ -162,15 +208,16 @@ func _load_demo_state() -> void:
 	Saves.enabled = false
 	Saves.pending_summary = {}
 	Game.new_game()
-	Game.coins = 180
+	Game.coins = 1800
 	Game.storage = {"lavender": 7}
 	var stages := [1.0, 1.0, 0.7, 1.0, 0.4, 1.0, 1.0, 0.1, 1.0, 1.0, 0.8, 1.0, 1.0, 0.3, 1.0, 1.0, 0.0]
 	for i in Game.plots.size():
 		var p: Dictionary = Game.plots[i]
-		p["unlocked"] = i < 15
-		if p["unlocked"]:
-			p["crop"] = "lavender"
-			p["growth"] = stages[i] * Game.time_to_ready(p)
+		if p["zone"] == "home":
+			p["unlocked"] = i < 15
+			if p["unlocked"]:
+				p["crop"] = "lavender"
+				p["growth"] = stages[i] * Game.time_to_ready(p)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--hour="):
 			Game.day_time = float(arg.trim_prefix("--hour="))
@@ -178,15 +225,35 @@ func _load_demo_state() -> void:
 			Game.villa_stage = int(arg.trim_prefix("--villa="))
 		elif arg == "--send-cart":
 			Game.send_cart.call_deferred()
+		elif arg == "--estate":
+			# Shows the whole estate in use: every zone owned, a mix of building states, and olive trees growing.
+			for z in Game.zones_owned:
+				Game.zones_owned[z] = true
+			var looks := {"drying_shed": "working", "mill": "working", "bakery": "repairing", "beehives": "working", "olive_press": "owned", "unguent": "ruin"}
+			for id in looks:
+				Game.buildings[id]["state"] = looks[id]
+				Game.buildings[id]["time_left"] = 20.0
+			Game.buildings["mill"]["busy"] = true
+			Game.buildings["mill"]["progress"] = 12.0
+			var g := 0
+			for i in Game.plots.size():
+				if Game.plots[i]["zone"] == "grove":
+					Game.plots[i]["unlocked"] = true
+					Game.plots[i]["crop"] = "olives"
+					Game.plots[i]["growth"] = [1.0, 0.5, 1.0, 0.2, 1.0, 0.8][g] * Game.time_to_ready(Game.plots[i])
+					g += 1
 
 
 func _build_plots() -> void:
-	# The back row sits half a plot to the right of the front row, so every plant shows between the ones in front.
 	var spots: Array = []
+	# The back row sits half a plot to the right of the front row, so every plant shows between the ones in front.
 	for i in 9:
-		spots.append(Vector2(8 + i * 36, FRONT_ROW))
+		spots.append(Vector2(HOME + 8 + i * 36, FRONT_ROW))
 	for i in 8:
-		spots.append(Vector2(26 + i * 36, BACK_ROW))
+		spots.append(Vector2(HOME + 26 + i * 36, BACK_ROW))
+	# Olive trees are wider, so the grove has one row, spaced out in front of the beehives and the press.
+	for i in 6:
+		spots.append(Vector2(18 + i * 62, FRONT_ROW))
 	var count := mini(spots.size(), Game.plots.size())
 	var order := range(count)
 	order.sort_custom(func(a, b): return spots[a].y < spots[b].y)
@@ -198,32 +265,100 @@ func _build_plots() -> void:
 		plot_views.append(v)
 
 
-## Frames the scene: centred left to right, and anchored to the bottom so the desktop strip shows the farm.
+func _build_buildings() -> void:
+	for id in Game.buildings:
+		var v := BuildingView.new()
+		v.id = id
+		v.position = Vector2(float(Game.building_info(id).get("x", 0)), 236)
+		add_child(v)
+		building_views.append(v)
+
+
+func _build_signs() -> void:
+	for z in Game.zones():
+		if int(z.get("deed", 0)) == 0:
+			continue
+		var s := ZoneSign.new()
+		s.zone_id = z["id"]
+		s.position = Vector2(float(z["x"]) + 240, 230)
+		add_child(s)
+		signs.append(s)
+
+
+func _draw_zone_shade() -> void:
+	# Land that is not owned yet is shaded, so it reads as somebody else's field.
+	for z in Game.zones():
+		if not Game.zone_owned(z["id"]):
+			_zone_shade.draw_rect(Rect2(float(z["x"]), 226, 480, 50), Color(0.12, 0.1, 0.08, 0.35))
+
+
+## Frames the scene: the camera follows cam_x across the estate, anchored to the bottom so the desktop strip shows the farm.
 func _update_view() -> void:
 	var view := get_viewport_rect().size
-	_camera.position = Vector2(round(-(view.x - 480.0) / 2.0), 270.0 - view.y)
+	cam_x = clampf(cam_x, 0.0, maxf(0.0, ESTATE_WIDTH - view.x))
+	_camera.position = Vector2(round(cam_x), 270.0 - view.y)
+	var left := roundf(cam_x)
+	_sky_node.position.x = round(left * (1.0 - PARALLAX["sky"]))
+	_mountains.position.x = round(left * (1.0 - PARALLAX["mountains"]))
+	_land.position.x = round(left * (1.0 - PARALLAX["land"]))
 	var see_scenery := not (Windowing.strip and Windowing.transparent)
 	_sky_layer.visible = see_scenery
 	for node in _scenery:
 		node.visible = see_scenery
 	_click_area_timer = 0.0
+	if hud:
+		hud.set_zone(_zone_at(left + view.x / 2.0))
+
+
+func _pan_by(dx: float) -> void:
+	if _pan_tween:
+		_pan_tween.kill()
+	cam_x += dx
+	_update_view()
+
+
+func pan_to_zone(zone_id: String) -> void:
+	var z := Game.zone_info(zone_id)
+	var target := clampf(float(z.get("x", 0)) + 240.0 - get_viewport_rect().size.x / 2.0, 0.0, ESTATE_WIDTH - get_viewport_rect().size.x)
+	if _pan_tween:
+		_pan_tween.kill()
+	_pan_tween = create_tween()
+	_pan_tween.tween_method(func(x): cam_x = x; _update_view(), cam_x, target, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _zone_at(x: float) -> String:
+	for z in Game.zones():
+		if x >= float(z["x"]) and x < float(z["x"]) + 480:
+			return z["id"]
+	return "home"
 
 
 ## The outline of everything visible in the transparent strip, so clicks anywhere else fall through to the desktop.
 func _click_area() -> PackedVector2Array:
 	var view := get_viewport_rect().size
 	var top := view.y - (270.0 - 214.0)
-	var tall := [
-		Rect2(_villa.position - _camera.position, _villa.region_rect.size),
-		Rect2(_storehouse.position - _camera.position, _storehouse.region_rect.size),
-	]
-	tall.sort_custom(func(a, b): return a.position.x < b.position.x)
-	var points := PackedVector2Array([Vector2(0, view.y), Vector2(0, top)])
+	var tall := [Rect2(_villa.position, _villa.region_rect.size), Rect2(_storehouse.position, _storehouse.region_rect.size)]
+	for v in building_views:
+		tall.append(v.world_rect())
+	for s in signs:
+		if s.visible:
+			tall.append(s.world_rect())
+	var in_view := []
 	for r in tall:
-		var x0 := clampf(r.position.x, 0, view.x)
+		var moved := Rect2(r.position - _camera.position, r.size)
+		if moved.end.x > 0 and moved.position.x < view.x:
+			in_view.append(moved)
+	in_view.sort_custom(func(a, b): return a.position.x < b.position.x)
+	var points := PackedVector2Array([Vector2(0, view.y), Vector2(0, top)])
+	var last_x := 0.0
+	for r in in_view:
+		var x0 := clampf(maxf(r.position.x, last_x), 0, view.x)
 		var x1 := clampf(r.end.x, 0, view.x)
+		if x1 <= x0:
+			continue
 		var y := minf(r.position.y, top)
 		points.append_array([Vector2(x0, top), Vector2(x0, y), Vector2(x1, y), Vector2(x1, top)])
+		last_x = x1
 	points.append_array([Vector2(view.x, top), Vector2(view.x, view.y)])
 	var bar: Rect2 = hud.compact_rect()
 	if bar.has_area():
@@ -236,22 +371,53 @@ func _click_area() -> PackedVector2Array:
 func _unhandled_input(event: InputEvent) -> void:
 	if _handle_pad(event):
 		return
-	if event is InputEventMouseMotion:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_LEFT:
+			_pan_by(-32.0)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN or event.button_index == MOUSE_BUTTON_WHEEL_RIGHT:
+			_pan_by(32.0)
+		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE]:
+			if event.pressed:
+				_pressed = true
+				_dragging = event.button_index == MOUSE_BUTTON_MIDDLE
+				_drag_from = event.position
+				_drag_start_cam = cam_x
+			else:
+				# A press that did not move far is a click; one that moved was a drag across the estate.
+				if _pressed and not _dragging and event.button_index == MOUSE_BUTTON_LEFT:
+					_click(get_global_mouse_position())
+				_pressed = false
+				_dragging = false
+	elif event is InputEventMouseMotion:
+		if _pressed:
+			if not _dragging and event.position.distance_to(_drag_from) > 4.0:
+				_dragging = true
+			if _dragging:
+				cam_x = _drag_start_cam - (event.position.x - _drag_from.x)
+				_update_view()
+				return
 		_selected = -1
 		_update_hover(get_global_mouse_position())
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var point := get_global_mouse_position()
-		if dog.contains(point):
-			dog.pet()
-			get_viewport().set_input_as_handled()
+
+
+func _click(point: Vector2) -> void:
+	if dog.contains(point):
+		dog.pet()
+		return
+	var view := _plot_at(point)
+	if view:
+		_click_plot(view.index)
+		return
+	for s in signs:
+		if s.contains(point):
+			Game.buy_zone(s.zone_id)
 			return
-		var view := _plot_at(point)
-		if view:
-			_click_plot(view.index)
-			get_viewport().set_input_as_handled()
-		elif _cart_rect().has_point(point):
-			Game.send_cart()
-			get_viewport().set_input_as_handled()
+	var b := _building_at(point)
+	if b:
+		hud.show_building(b.id)
+		return
+	if _cart_rect().has_point(point):
+		Game.send_cart()
 
 
 ## Arrow keys or a gamepad's d-pad move between plots, and Enter or the A button acts on the chosen one.
@@ -289,13 +455,22 @@ func _move_selection(dir: Vector2) -> void:
 			_selected = best
 	for v in plot_views:
 		v.hovered = v.index == _selected
+	var chosen := _view(_selected)
+	# Keep the chosen plot in view, panning when it is near an edge.
+	var view := get_viewport_rect().size
+	if chosen.position.x < cam_x + 40 or chosen.position.x > cam_x + view.x - 60:
+		cam_x = chosen.position.x - view.x / 2.0
+		_update_view()
 	_describe_plot(_selected)
 
 
 func _click_plot(i: int) -> void:
 	match Game.plot_visual(i):
 		"locked":
-			Game.try_unlock(i)
+			if not Game.zone_owned(String(Game.plots[i]["zone"])):
+				hud.toast("Buy this land first")
+			else:
+				Game.try_unlock(i)
 		"empty":
 			Game.try_plant(i)
 		"bloom":
@@ -312,25 +487,40 @@ func _update_hover(point: Vector2) -> void:
 	var view := _plot_at(point)
 	for v in plot_views:
 		v.hovered = v == view
-	if view == null:
-		if dog.contains(point):
-			hud.set_info("Pet the dog")
-		elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
-			hud.set_info("Storeroom: %d / %d" % [Game.stored_total(), Game.storage_capacity()])
-		elif _cart_rect().has_point(point):
-			hud.set_info("Click the cart to sell")
-		else:
-			hud.set_info("")
-		return
-	_describe_plot(view.index)
+	var sign_hit: Node2D = null
+	for s in signs:
+		s.hovered = s.contains(point)
+		if s.hovered:
+			sign_hit = s
+	var building: Node2D = null if view or sign_hit else _building_at(point)
+	for b in building_views:
+		b.hovered = b == building
+	if view:
+		_describe_plot(view.index)
+	elif sign_hit:
+		var z := Game.zone_info(sign_hit.zone_id)
+		hud.set_info("Buy the %s deed: %d sestertii" % [String(z.get("name", "")).to_lower(), int(z.get("deed", 0))])
+	elif building:
+		hud.set_info("%s: click for details" % Game.building_info(building.id).get("name", ""))
+	elif dog.contains(point):
+		hud.set_info("Pet the dog")
+	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
+		hud.set_info("Storehouse: %d / %d" % [Game.stored_total(), Game.storage_capacity()])
+	elif _cart_rect().has_point(point):
+		hud.set_info("Click the cart to sell")
+	else:
+		hud.set_info("")
 
 
 func _describe_plot(i: int) -> void:
 	match Game.plot_visual(i):
 		"locked":
-			hud.set_info("Unlock this plot: %d sestertii" % Game.unlock_cost())
+			if not Game.zone_owned(String(Game.plots[i]["zone"])):
+				hud.set_info("Buy this land to plant here")
+			else:
+				hud.set_info("Unlock this plot: %d sestertii" % Game.unlock_cost())
 		"empty":
-			var seed := Game.crop_info(Game.selected_seed)
+			var seed := Game.crop_info(Game.seed_for_plot(i))
 			hud.set_info("Plant %s: %d sestertii" % [String(seed.get("name", "")).to_lower(), int(seed.get("plant_cost", 0))])
 		"bloom":
 			hud.set_info("%s is ready: click to harvest" % Game.crop_info(Game.plots[i]["crop"]).get("name", ""))
@@ -343,6 +533,13 @@ func _plot_at(point: Vector2) -> Node2D:
 	for k in range(plot_views.size() - 1, -1, -1):
 		if plot_views[k].contains(point):
 			return plot_views[k]
+	return null
+
+
+func _building_at(point: Vector2) -> Node2D:
+	for v in building_views:
+		if v.world_rect().has_point(point):
+			return v
 	return null
 
 
@@ -369,8 +566,49 @@ func _on_harvested(plot_index: int, amount: int) -> void:
 	var v := _view(plot_index)
 	Sfx.play("harvest")
 	v.bounce()
-	hud.float_text(v.position + Vector2(10, -34), "+%d" % amount)
-	_burst(v.position + Vector2(14, -18), [Color(0.74, 0.57, 0.87), Color(0.57, 0.38, 0.69), Color(0.62, 0.66, 0.52)], 10)
+	hud.float_text(v.position + Vector2(10, -34) - _camera.position, "+%d" % amount)
+	var colours := [Color(0.74, 0.57, 0.87), Color(0.57, 0.38, 0.69), Color(0.62, 0.66, 0.52)]
+	match String(Game.plots[plot_index]["crop"]):
+		"wheat":
+			colours = [Color(0.94, 0.85, 0.54), Color(0.8, 0.6, 0.2)]
+		"olives":
+			colours = [Color(0.3, 0.22, 0.3), Color(0.55, 0.6, 0.45)]
+	_burst(v.position + Vector2(14, -18), colours, 10)
+
+
+func _on_building_made(id: String, item: String, amount: int) -> void:
+	for v in building_views:
+		if v.id == id:
+			hud.float_text(v.position + Vector2(-16, -v.local_rect().size.y - 14) - _camera.position, "+%d %s" % [amount, String(Balance.get_value("items.%s.name" % item, item)).to_lower()])
+			_burst(v.position + Vector2(0, -v.local_rect().size.y / 2), [Color(1, 0.9, 0.6), Color(0.95, 0.8, 0.5)], 6)
+
+
+func _on_building_changed(id: String) -> void:
+	var state := String(Game.buildings[id]["state"])
+	for v in building_views:
+		if v.id != id:
+			continue
+		match state:
+			"owned":
+				Sfx.play("coins")
+				hud.toast("You own the %s. Repair it to put it to work." % String(Game.building_info(id).get("name", "")).to_lower())
+			"repairing":
+				Sfx.play("hammer")
+				_dust(v.position, 14)
+				hud.toast("Repairs have begun")
+			"working":
+				if int(Game.buildings[id]["level"]) == 0 and not Game.buildings[id]["busy"]:
+					Sfx.play("villa_complete")
+					_dust(v.position, 24)
+					hud.toast("The %s is working again!" % String(Game.building_info(id).get("name", "")).to_lower())
+
+
+func _on_zone_bought(zone_id: String) -> void:
+	Sfx.play("villa_complete")
+	_zone_shade.queue_redraw()
+	var z := Game.zone_info(zone_id)
+	_dust(Vector2(float(z["x"]) + 240, 250), 30)
+	hud.toast("The %s is yours!" % String(z.get("name", "")).to_lower())
 
 
 func _on_cart_left(_items: int, value: int) -> void:
@@ -379,7 +617,8 @@ func _on_cart_left(_items: int, value: int) -> void:
 	_donkey.flip_h = false
 	_cart.flip_h = false
 	_donkey.play("walk")
-	_move_rig(CART_HOME_X + 190, 3.0)
+	# The road to town runs off the right edge of the estate, so the cart travels the whole way there.
+	_move_rig(ESTATE_WIDTH + 60, (ESTATE_WIDTH + 60 - _cart.position.x) / 90.0)
 
 
 func _on_cart_returned(coins: int) -> void:
@@ -387,15 +626,15 @@ func _on_cart_returned(coins: int) -> void:
 	# Coming home the donkey leads from the right, so the rig is mirrored with the donkey in front.
 	_cart.flip_h = true
 	_donkey.flip_h = true
-	_cart.position.x = 520
-	_donkey.position.x = 500
+	_cart.position.x = ESTATE_WIDTH + 60
+	_donkey.position.x = ESTATE_WIDTH + 40
 	_donkey.play("walk")
-	_move_rig(CART_HOME_X + 24, 2.6, true)
+	_move_rig(CART_HOME_X + 24, (ESTATE_WIDTH + 60 - CART_HOME_X) / 90.0, true)
 	await _rig_tween.finished
 	_dust(Vector2(CART_HOME_X + 40, RIG_BASE), 10)
 	_park_rig()
 	Sfx.play("coins")
-	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46), "+%d" % coins)
+	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46) - _camera.position, "+%d" % coins)
 	_burst(Vector2(CART_HOME_X + 30, RIG_BASE - 20), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
 	hud.toast("The cart is back: +%d sestertii" % coins)
 

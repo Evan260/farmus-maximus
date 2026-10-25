@@ -1,5 +1,7 @@
 extends CanvasLayer
-## The placeholder interface: farm stats, buttons, upgrade list, messages, the "while you were away" summary and the debug panel.
+## The interface: farm stats, zone bar, building and storehouse panels, upgrades, messages, the "while you were away" summary and the debug panel.
+
+signal zone_chosen(zone_id: String)
 
 const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
 const PANEL_TEX := preload("res://assets/ui/panel.png")
@@ -29,6 +31,17 @@ var _compact_label: Label
 var _style_button: Button
 var _size_button: Button
 var _strip_button: Button
+var _zone_bar: HBoxContainer
+var _zone_buttons := {}
+var _building_panel: PanelContainer
+var _building_id := ""
+var _b_title: Label
+var _b_status: Label
+var _b_recipe: Label
+var _b_action: Button
+var _b_pause: Button
+var _store_panel: PanelContainer
+var _store_list: Label
 
 
 func _ready() -> void:
@@ -65,6 +78,7 @@ func _ready() -> void:
 	_cart_button = _button(buttons, "Send cart", func(): Game.send_cart())
 	_button(buttons, "Upgrades", func(): _upgrades_panel.visible = not _upgrades_panel.visible)
 	_villa_button = _button(buttons, "", func(): Game.upgrade_villa())
+	_button(buttons, "Storehouse", func(): _store_panel.visible = not _store_panel.visible)
 	_button(buttons, "Settings", func(): _settings.visible = not _settings.visible)
 
 	_upgrades_panel = _panel(Vector2(0, 0))
@@ -88,6 +102,9 @@ func _ready() -> void:
 	_toast.size = Vector2(480, 10)
 	_toast.modulate.a = 0.0
 
+	_build_zone_bar()
+	_build_building_panel()
+	_build_store_panel()
 	_build_settings()
 	_build_compact()
 	_build_debug()
@@ -102,16 +119,23 @@ func _process(_delta: float) -> void:
 	var in_strip := Windowing.strip
 	_stats_panel.visible = not in_strip
 	_buttons.visible = not in_strip
+	_zone_bar.visible = not in_strip
 	_compact.visible = in_strip
 	if in_strip:
 		_upgrades_panel.visible = false
 		_settings.visible = false
+		_building_panel.visible = false
+		_store_panel.visible = false
+	if _building_panel.visible:
+		_refresh_building_panel()
+	if _store_panel.visible:
+		_refresh_store_panel()
 		_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.storage_capacity()]
 	_strip_button.text = "Full window  (F10)" if in_strip else "Desktop strip  (F10)"
 	_style_button.text = "Strip: transparent" if Windowing.transparent else "Strip: solid"
 	_size_button.text = "Strip size: %s" % Windowing.SIZES[Windowing.size_index]
 	_coins.text = "Sestertii  %d" % Game.coins
-	_storage.text = "Storeroom  %d / %d" % [Game.stored_total(), Game.storage_capacity()]
+	_storage.text = "Storehouse  %d / %d" % [Game.stored_total(), Game.storage_capacity()]
 	if Game.cart["away"]:
 		_cart.text = "Cart back in  %ds" % ceili(float(Game.cart["time_left"]))
 	else:
@@ -149,6 +173,117 @@ func _process(_delta: float) -> void:
 ## The compact bar's area in the strip, which must stay clickable when the rest of the sky lets clicks through.
 func compact_rect() -> Rect2:
 	return _compact.get_global_rect() if _compact.visible else Rect2()
+
+
+## Highlights the zone the camera is looking at in the zone bar.
+func set_zone(zone_id: String) -> void:
+	for id in _zone_buttons:
+		_zone_buttons[id].button_pressed = id == zone_id
+
+
+func show_building(id: String) -> void:
+	_building_id = id
+	_building_panel.visible = true
+	_store_panel.visible = false
+	_refresh_building_panel()
+
+
+func _build_zone_bar() -> void:
+	_zone_bar = HBoxContainer.new()
+	_root.add_child(_zone_bar)
+	var short := {"grove": "Grove", "home": "Farm", "yard": "Yard", "vineyard": "Road"}
+	for z in Game.zones():
+		var id: String = z["id"]
+		var b := _button(_zone_bar, short.get(id, id), func(): zone_chosen.emit(id))
+		b.toggle_mode = true
+		_zone_buttons[id] = b
+	_zone_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_zone_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_zone_bar.offset_top = 4
+
+
+func _build_building_panel() -> void:
+	_building_panel = PanelContainer.new()
+	_root.add_child(_building_panel)
+	var col := VBoxContainer.new()
+	_building_panel.add_child(col)
+	_b_title = _label(col)
+	_b_status = _label(col)
+	_b_recipe = _label(col)
+	var row := HBoxContainer.new()
+	col.add_child(row)
+	_b_action = _button(row, "", func(): Game.do_building_action(_building_id))
+	_b_pause = _button(row, "", func(): Game.set_building_paused(_building_id, not Game.buildings[_building_id]["paused"]))
+	_button(row, "Close", func(): _building_panel.visible = false)
+	_building_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_building_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_building_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_building_panel.visible = false
+
+
+func _refresh_building_panel() -> void:
+	var id := _building_id
+	var info := Game.building_info(id)
+	var b: Dictionary = Game.buildings[id]
+	var level := int(b["level"])
+	_b_title.text = "%s%s" % [info.get("name", id), ("  (level %d)" % (level + 1)) if b["state"] == "working" else ""]
+	var zone_owned := Game.zone_owned(String(info.get("zone", "home")))
+	match b["state"]:
+		"ruin":
+			_b_status.text = "A ruin. Buy the land first." if not zone_owned else "A ruin, for sale."
+		"owned":
+			_b_status.text = "Yours, but in ruins. Repair it to put it to work."
+		"repairing":
+			_b_status.text = "Being repaired: %ds left" % ceili(float(b["time_left"]))
+		"working":
+			if b["paused"]:
+				_b_status.text = "Paused"
+			elif b["busy"]:
+				_b_status.text = "Working: %d%%" % int(100.0 * float(b["progress"]) / float(info.get("seconds", 30)))
+			else:
+				_b_status.text = "Waiting for ingredients in the storehouse"
+	_b_recipe.text = "%s  ->  %s  (%ds)" % [_goods_text(info.get("in", {})), _goods_text(info.get("out", {})), int(round(float(info.get("seconds", 30)) / Game.building_speed(id)))]
+	var act := Game.building_action(id)
+	_b_action.visible = not act.is_empty()
+	if not act.is_empty():
+		_b_action.text = "%s  %d" % [String(act["action"]).capitalize(), int(act["cost"])]
+		_b_action.disabled = Game.coins < int(act["cost"]) or not zone_owned
+	_b_pause.visible = b["state"] == "working"
+	_b_pause.text = "Resume" if b["paused"] else "Pause"
+
+
+func _goods_text(goods: Dictionary) -> String:
+	if goods.is_empty():
+		return "Flowers nearby"
+	var parts := []
+	for item in goods:
+		parts.append("%d %s" % [int(goods[item]), String(Balance.get_value("items.%s.name" % item, item)).to_lower()])
+	return " + ".join(parts)
+
+
+func _build_store_panel() -> void:
+	_store_panel = PanelContainer.new()
+	_root.add_child(_store_panel)
+	var col := VBoxContainer.new()
+	_store_panel.add_child(col)
+	_label(col).text = "Storehouse"
+	_store_list = _label(col)
+	_button(col, "Close", func(): _store_panel.visible = false)
+	_store_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_store_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_store_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_store_panel.visible = false
+
+
+func _refresh_store_panel() -> void:
+	var keep := Game.reserved_items()
+	var lines := ["%d / %d" % [Game.stored_total(), Game.storage_capacity()]]
+	for item in Game.storage:
+		var name := String(Balance.get_value("items.%s.name" % item, item))
+		lines.append("%s  %d  (%d each)%s" % [name, int(Game.storage[item]), Game.item_price(item), "  kept for workshops" if item in keep else ""])
+	if Game.storage.is_empty():
+		lines.append("Empty")
+	_store_list.text = "\n".join(lines)
 
 
 func set_info(text: String) -> void:

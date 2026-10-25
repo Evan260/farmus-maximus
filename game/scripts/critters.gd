@@ -14,9 +14,9 @@ var _t := 0.0
 func _ready() -> void:
 	var colours := [Color(1, 0.98, 0.92), Color(0.98, 0.85, 0.42), Color(0.84, 0.72, 1.0), Color(1, 0.98, 0.92)]
 	for c in colours:
-		_butterflies.append({"pos": Vector2(randf_range(20, 300), randf_range(190, 240)), "target": Vector2.ZERO, "color": c, "phase": randf() * 10.0})
+		_butterflies.append({"pos": Vector2(randf_range(500, 800), randf_range(190, 240)), "target": Vector2.ZERO, "color": c, "phase": randf() * 10.0})
 	for i in 3:
-		_bees.append({"pos": Vector2(randf_range(20, 300), randf_range(215, 250)), "target": Vector2.ZERO, "phase": randf() * 10.0})
+		_bees.append({"pos": Vector2(randf_range(500, 800), randf_range(215, 250)), "target": Vector2.ZERO, "phase": randf() * 10.0})
 	for b in _butterflies + _bees:
 		b["target"] = _new_target(b["pos"])
 
@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 		_bird_timer = randf_range(25.0, 60.0)
 	for bird in _birds:
 		bird["pos"] += bird["vel"] * delta
-	_birds = _birds.filter(func(bird): return bird["pos"].x > -20 and bird["pos"].x < 500)
+	_birds = _birds.filter(func(bird): return bird["pos"].x > -100 and bird["pos"].x < 2020)
 	# Insects rest at night, so they fade out rather than flying in the dark.
 	modulate.a = 1.0 - night * 0.9
 	queue_redraw()
@@ -53,15 +53,17 @@ func _new_target(from: Vector2) -> Vector2:
 	var points: Array = bloom_points.call()
 	if not points.is_empty() and randf() < 0.75:
 		return points[randi() % points.size()] + Vector2(randf_range(-6, 6), randf_range(-4, 2))
-	return Vector2(clampf(from.x + randf_range(-80, 80), 10, 320), randf_range(190, 245))
+	return Vector2(clampf(from.x + randf_range(-80, 80), 10, 1910), randf_range(190, 245))
 
 
 func _spawn_flock() -> void:
 	var left := randf() < 0.5
+	# Flocks cross wherever the camera is looking, so they are seen whichever zone is on screen.
+	var view := get_viewport().get_canvas_transform().affine_inverse() * get_viewport_rect()
 	var y := randf_range(30, 100)
 	var speed := randf_range(26, 40) * (1.0 if left else -1.0)
 	for i in randi_range(3, 6):
-		_birds.append({"pos": Vector2(-10 - i * 9 if left else 490 + i * 9, y + randf_range(-6, 6)), "vel": Vector2(speed, randf_range(-1.5, 1.5)), "phase": randf() * 5.0})
+		_birds.append({"pos": Vector2(view.position.x - 10 - i * 9 if left else view.end.x + 10 + i * 9, y + randf_range(-6, 6)), "vel": Vector2(speed, randf_range(-1.5, 1.5)), "phase": randf() * 5.0})
 
 
 func _draw() -> void:

@@ -121,7 +121,7 @@ def cmd_character(a):
     if a.style:
         r = call("POST", "/create-character-pro-flash", {
             "description": a.description, "image_size": size(a.size), "template_id": a.template,
-            "view": a.view, "n_directions": 8, "style_image": style_ref(a.style, a.style_use)})
+            "view": a.view, "n_directions": 8, "style_image": style_ref(a.style, a.style_use, *size(a.size).values())})
     else:
         r = call("POST", "/create-character-v3", {
             "description": a.description, "image_size": size(a.size), "template_id": a.template,
@@ -237,9 +237,10 @@ def cmd_inpaint(a):
     record("inpaint", a.out, before, balance())
 
 
-def style_ref(path, what):
+def style_ref(path, what, max_w=256, max_h=256):
+    # PixelLab rejects a style image larger than the output canvas, so it is cropped to fit.
     im = Image.open(ROOT / path).convert("RGBA")
-    w, h = min(256, im.width // 4 * 4), min(256, im.height // 4 * 4)
+    w, h = min(max_w, im.width // 4 * 4), min(max_h, im.height // 4 * 4)
     im = im.crop((0, 0, w, h))
     return {"image": png_b64(im), "size": {"width": w, "height": h}, "usage_description": what}
 
@@ -248,7 +249,7 @@ def cmd_proflash(a):
     before = balance()
     body = {"description": a.description, "image_size": size(a.size), "no_background": a.transparent}
     if a.style:
-        body["style_image"] = style_ref(a.style, a.style_use)
+        body["style_image"] = style_ref(a.style, a.style_use, *size(a.size).values())
     if a.seed is not None:
         body["seed"] = a.seed
     r = call("POST", "/create-image-pro-flash", body)

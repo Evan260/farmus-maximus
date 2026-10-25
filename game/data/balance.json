@@ -11,7 +11,8 @@
 			"regrow_seconds": 40,
 			"yield": 1,
 			"item": "lavender",
-			"perennial": true
+			"perennial": true,
+			"zone": "home"
 		},
 		"wheat": {
 			"name": "Wheat",
@@ -19,7 +20,18 @@
 			"grow_seconds": 45,
 			"yield": 2,
 			"item": "wheat",
-			"perennial": false
+			"perennial": false,
+			"zone": "home"
+		},
+		"olives": {
+			"name": "Olive tree",
+			"plant_cost": 20,
+			"grow_seconds": 150,
+			"regrow_seconds": 90,
+			"yield": 3,
+			"item": "olives",
+			"perennial": true,
+			"zone": "grove"
 		}
 	},
 	"items": {
@@ -30,12 +42,50 @@
 		"wheat": {
 			"name": "Wheat sheaf",
 			"price": 3
+		},
+		"olives": {
+			"name": "Olives",
+			"price": 4
+		},
+		"dried_lavender": {
+			"name": "Dried lavender",
+			"price": 16
+		},
+		"flour": {
+			"name": "Flour",
+			"price": 10
+		},
+		"bread": {
+			"name": "Bread",
+			"price": 26
+		},
+		"olive_oil": {
+			"name": "Olive oil",
+			"price": 22
+		},
+		"honey": {
+			"name": "Honey",
+			"price": 18
+		},
+		"lavender_oil": {
+			"name": "Lavender oil",
+			"price": 70
 		}
 	},
 	"plots": {
-		"count": 17,
+		"count": 23,
 		"unlock_cost_base": 15,
-		"unlock_cost_growth": 1.3
+		"unlock_cost_growth": 1.3,
+		"zones": [
+			{
+				"zone": "home",
+				"count": 17
+			},
+			{
+				"zone": "grove",
+				"count": 6
+			}
+		]
 	},
 	"upgrades": {
 		"storage": {
@@ -130,5 +180,179 @@
 	"seeds": [
 		"lavender",
 		"wheat"
-	]
+	],
+	"estate": {
+		"width": 1920,
+		"zones": [
+			{
+				"id": "grove",
+				"name": "Olive grove",
+				"x": 0,
+				"deed": 300
+			},
+			{
+				"id": "home",
+				"name": "Home farm",
+				"x": 480,
+				"deed": 0
+			},
+			{
+				"id": "yard",
+				"name": "Workshop yard",
+				"x": 960,
+				"deed": 120
+			},
+			{
+				"id": "vineyard",
+				"name": "Vineyard road",
+				"x": 1440,
+				"deed": 450
+			}
+		]
+	},
+	"buildings": {
+		"drying_shed": {
+			"name": "Drying shed",
+			"zone": "yard",
+			"x": 1030,
+			"buy": 40,
+			"repair": 100,
+			"repair_seconds": 30,
+			"in": {
+				"lavender": 2
+			},
+			"out": {
+				"dried_lavender": 1
+			},
+			"seconds": 20,
+			"upgrade_costs": [
+				180,
+				450
+			],
+			"speed": [
+				1,
+				1.5,
+				2
+			]
+		},
+		"mill": {
+			"name": "Mill",
+			"zone": "yard",
+			"x": 1180,
+			"buy": 60,
+			"repair": 160,
+			"repair_seconds": 40,
+			"in": {
+				"wheat": 3
+			},
+			"out": {
+				"flour": 2
+			},
+			"seconds": 25,
+			"upgrade_costs": [
+				240,
+				600
+			],
+			"speed": [
+				1,
+				1.5,
+				2
+			]
+		},
+		"bakery": {
+			"name": "Bakery",
+			"zone": "yard",
+			"x": 1340,
+			"buy": 80,
+			"repair": 220,
+			"repair_seconds": 45,
+			"in": {
+				"flour": 2
+			},
+			"out": {
+				"bread": 1
+			},
+			"seconds": 30,
+			"upgrade_costs": [
+				300,
+				750
+			],
+			"speed": [
+				1,
+				1.5,
+				2
+			]
+		},
+		"beehives": {
+			"name": "Beehives",
+			"zone": "grove",
+			"x": 205,
+			"buy": 50,
+			"repair": 120,
+			"repair_seconds": 30,
+			"in": {},
+			"out": {
+				"honey": 1
+			},
+			"seconds": 90,
+			"upgrade_costs": [
+				220,
+				550
+			],
+			"speed": [
+				1,
+				1.5,
+				2
+			]
+		},
+		"olive_press": {
+			"name": "Olive press",
+			"zone": "grove",
+			"x": 410,
+			"buy": 90,
+			"repair": 260,
+			"repair_seconds": 50,
+			"in": {
+				"olives": 4
+			},
+			"out": {
+				"olive_oil": 1
+			},
+			"seconds": 40,
+			"upgrade_costs": [
+				320,
+				800
+			],
+			"speed": [
+				1,
+				1.5,
+				2
+			]
+		},
+		"unguent": {
+			"name": "Unguent workshop",
+			"zone": "vineyard",
+			"x": 1560,
+			"buy": 150,
+			"repair": 400,
+			"repair_seconds": 60,
+			"in": {
+				"lavender": 2,
+				"olive_oil": 1
+			},
+			"out": {
+				"lavender_oil": 1
+			},
+			"seconds": 60,
+			"upgrade_costs": [
+				500,
+				1200
+			],
+			"speed": [
+				1,
+				1.5,
+				2
+			]
+		}
+	}
 }

@@ -17,6 +17,13 @@ const SPRITES := {
 		"stage2": preload("res://assets/sprites/wheat/final/stage2.png"),
 		"bloom": preload("res://assets/sprites/wheat/final/bloom.png"),
 	},
+	"olives": {
+		"stage0": preload("res://assets/sprites/olive/final/stage0.png"),
+		"stage1": preload("res://assets/sprites/olive/final/stage1.png"),
+		"stage2": preload("res://assets/sprites/olive/final/stage2.png"),
+		"harvested": preload("res://assets/sprites/olive/final/stage2.png"),
+		"bloom": preload("res://assets/sprites/olive/final/bloom.png"),
+	},
 }
 
 var index := 0
@@ -51,6 +58,8 @@ func _process(delta: float) -> void:
 		if _crop.visible:
 			var tex: Variant = SPRITES[crop][visual]
 			_crop.texture = tex[index % tex.size()] if tex is Array else tex
+			# Plants of any size stand centred on the soil patch, so 48-pixel olive trees line up like 32-pixel lavender.
+			_crop.position = Vector2(15 - _crop.texture.get_width() / 2, 3 - _crop.texture.get_height())
 		_hit = _hit_rect()
 	queue_redraw()
 
@@ -78,9 +87,10 @@ func _draw() -> void:
 
 ## A small hop of the plant, so planting and harvesting feel like they did something.
 func bounce() -> void:
+	var base := _crop.position.y
 	var t := create_tween()
-	t.tween_property(_crop, "position:y", -31.0, 0.07)
-	t.tween_property(_crop, "position:y", -29.0, 0.12)
+	t.tween_property(_crop, "position:y", base - 2.0, 0.07)
+	t.tween_property(_crop, "position:y", base, 0.12)
 
 
 func contains(point: Vector2) -> bool:
@@ -95,7 +105,7 @@ func _hit_rect() -> Rect2:
 	var used := Rect2(_crop.texture.get_image().get_used_rect())
 	if _crop.flip_h:
 		used.position.x = _crop.texture.get_width() - used.position.x - used.size.x
-	used.position += Vector2(-1, -29)
+	used.position += _crop.position
 	return soil.merge(used)
 
 
