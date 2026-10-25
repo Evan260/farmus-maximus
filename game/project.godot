@@ -33,6 +33,7 @@ window/stretch/mode="viewport"
 window/stretch/aspect="expand"
 window/stretch/scale_mode="integer"
 window/per_pixel_transparency/allowed=true
+window/size/transparent=true
 
 [rendering]
 

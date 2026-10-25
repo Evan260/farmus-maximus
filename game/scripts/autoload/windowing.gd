@@ -104,7 +104,7 @@ func _apply() -> void:
 		win.content_scale_size = Vector2i(BASE.x, STRIP_ROWS)
 		win.borderless = true
 		win.always_on_top = true
-		win.transparent = transparent
+		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
 		get_viewport().transparent_bg = transparent
 		_place_strip()
 	else:
@@ -112,7 +112,6 @@ func _apply() -> void:
 		win.content_scale_size = BASE
 		win.always_on_top = false
 		win.borderless = false
-		win.transparent = false
 		get_viewport().transparent_bg = false
 		var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
 		scale = clampi(mini((usable.size.x - 80) / BASE.x, (usable.size.y - 80) / BASE.y), 1, 6)
