@@ -53,6 +53,8 @@ var buildings := {}
 ## Hired helpers and their level.
 var helpers := {}
 var helper_timers := {}
+## Helpers walking about on screen, who harvest the plant they actually reach instead of on a timer.
+var live_helpers := {}
 var decorations := {}
 ## The lararium's blessing in effect, if any.
 var blessing := {}
@@ -1179,6 +1181,8 @@ func _advance_helpers(dt: float) -> int:
 			continue
 		if not info.has("zones") and not info.has("crops"):
 			continue
+		if live_helpers.has(id) and not quiet:
+			continue
 		var intervals: Array = info.get("intervals", [5])
 		var interval := float(intervals[mini(int(helpers[id]) - 1, intervals.size() - 1)])
 		helper_timers[id] = float(helper_timers.get(id, 0.0)) - dt
@@ -1197,6 +1201,29 @@ func _advance_helpers(dt: float) -> int:
 				_apply_manure(plots[i])
 			helper_timers[id] = float(helper_timers[id]) + interval
 	return harvested_now
+
+
+## A helper on screen harvests the plant they walked to; annual crops are replanted straight away.
+func helper_harvest(id: String, i: int) -> bool:
+	var info := helper_info(id)
+	if i < 0 or not is_ready(i) or stored_total() >= storage_capacity():
+		return false
+	var p: Dictionary = plots[i]
+	if not ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
+		return false
+	var crop := String(p["crop"])
+	_harvest(i)
+	if p["crop"] == "" and coins >= int(crop_info(crop).get("plant_cost", 0)):
+		coins -= int(crop_info(crop).get("plant_cost", 0))
+		p["crop"] = crop
+		_apply_manure(p)
+	return true
+
+
+## How long a helper takes over each plant, from their level.
+func helper_interval(id: String) -> float:
+	var intervals: Array = helper_info(id).get("intervals", [5])
+	return float(intervals[mini(int(helpers.get(id, 1)) - 1, intervals.size() - 1)])
 
 
 func _ready_plot_for(info: Dictionary) -> int:

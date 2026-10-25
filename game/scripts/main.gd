@@ -76,6 +76,8 @@ var _wheel: Sprite2D
 ## The goods heaped in the cart, drawn behind its side boards so they sit inside it.
 var _cart_load: Node2D
 var _cart_x := 0.0
+## The near shaft and the harness straps, drawn over the donkey so the cart is visibly hitched to it.
+var _harness: Node2D
 var _cart_returning := false
 var _donkey: AnimatedSprite2D
 var _rig_tween: Tween
@@ -208,7 +210,7 @@ func _ready() -> void:
 	_wheel = Sprite2D.new()
 	_wheel.texture = load("res://assets/sprites/farm/cart_wheel.png")
 	_wheel.centered = false
-	_wheel.offset = Vector2(-13, -13)
+	_wheel.offset = Vector2(-12, -12)
 	_cart.add_child(_wheel)
 	_donkey = AnimatedSprite2D.new()
 	_donkey.sprite_frames = _donkey_frames()
@@ -216,6 +218,9 @@ func _ready() -> void:
 	_donkey.offset = Vector2(-32, -_feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
 	_donkey.play("stand")
 	world.add_child(_donkey)
+	_harness = Node2D.new()
+	_harness.draw.connect(_draw_harness)
+	world.add_child(_harness)
 	_park_rig()
 	for id in Game.helpers:
 		_spawn_helper(id)
@@ -270,6 +275,8 @@ func _ready() -> void:
 			_open_panel.call_deferred(arg.trim_prefix("--panel="))
 		elif arg.begins_with("--shot="):
 			_take_screenshot(arg.trim_prefix("--shot="))
+		elif arg.begins_with("--burst="):
+			_take_burst(arg.trim_prefix("--burst="))
 
 
 ## Saves exactly what the window shows after the scene settles, then quits; used for store screenshots and layout checks.
@@ -280,8 +287,21 @@ func _take_screenshot(path: String) -> void:
 	get_tree().quit()
 
 
+## Saves eight frames a quarter of a second apart, for checking anything that flickers or moves.
+func _take_burst(prefix: String) -> void:
+	for i in 45:
+		await get_tree().process_frame
+	for k in 8:
+		get_viewport().get_texture().get_image().save_png("%s_%d.png" % [prefix, k])
+		await get_tree().create_timer(0.25).timeout
+	get_tree().quit()
+
+
 func _open_panel(which: String) -> void:
-	if which in ["journal", "helpers", "store", "settings", "upgrades"]:
+	if which.begins_with("journal:"):
+		hud.open_window("journal")
+		hud.show_journal_entry(which.trim_prefix("journal:"))
+	elif which in ["journal", "helpers", "store", "settings", "upgrades"]:
 		hud.open_window(which)
 	else:
 		hud.show_building(which)
@@ -314,6 +334,7 @@ func _process(delta: float) -> void:
 		_pan_by(keys * PAN_SPEED * delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	_cart_load.position = _cart.position
+	_harness.queue_redraw()
 	# The wheel turns by the distance travelled over its radius, in steps fine enough to look smooth at this size.
 	var rolled := _cart.position.x - _cart_x
 	_cart_x = _cart.position.x
@@ -408,20 +429,22 @@ func _sync_builders() -> void:
 	var sites := {}
 	for v in building_views:
 		if Game.buildings[v.id]["state"] == "repairing":
-			sites[v.id] = v.world_rect()
+			var r: Rect2 = v.world_rect()
+			sites[v.id] = {"rect": r, "ladders": Game.building_info(v.id).get("ladders", []).map(func(x): return r.position.x + float(x))}
 	if Game.villa_build["active"]:
-		sites["villa_a"] = _villa_rect()
-		sites["villa_b"] = _villa_rect()
+		var r := _villa_rect()
+		var ladders: Array = Balance.get_value("villa.ladders", []).map(func(x): return r.position.x + float(x))
+		sites["villa_a"] = {"rect": r, "ladders": ladders}
+		sites["villa_b"] = {"rect": r, "ladders": ladders}
 	for id in _builders.keys():
 		if not sites.has(id):
 			_builders[id].queue_free()
 			_builders.erase(id)
-	if not ResourceLoader.exists("res://assets/sprites/people/builder/east.png"):
-		return
 	for id in sites:
 		if not _builders.has(id):
 			var b := Builder.new()
-			b.site = sites[id]
+			b.site = sites[id]["rect"]
+			b.ladders = sites[id]["ladders"]
 			world.add_child(b)
 			_builders[id] = b
 
@@ -438,8 +461,20 @@ func _spawn_helper(id: String) -> void:
 	var info := Game.helper_info(id)
 	if info.has("zones") or info.has("crops"):
 		w.find_work = func() -> float: return _ready_plot_x(info)
+		w.work_done = func(x: float) -> void: Game.helper_harvest(id, _plot_near(x))
+		w.work_seconds = clampf(Game.helper_interval(id) * 0.6, 0.8, 4.0)
+		Game.live_helpers[id] = true
 	world.add_child(w)
 	_helpers[id] = w
+
+
+## The plot whose plant stands at this spot, as a helper reaching it sees it.
+func _plot_near(x: float) -> int:
+	var best := -1
+	for v in plot_views:
+		if absf(v.position.x + 15.0 - x) < 2.0 and Game.is_ready(v.index):
+			best = v.index
+	return best
 
 
 ## Where a helper would find a ripe plant to pick, or NAN when there is none.
@@ -1085,8 +1120,28 @@ func _harness_x(cart_x: float, homeward: bool) -> float:
 func _face_rig(homeward: bool) -> void:
 	_cart.flip_h = homeward
 	_donkey.flip_h = homeward
-	_wheel.position = Vector2(46.0 if homeward else 14.0, 23.0)
+	_wheel.position = Vector2(45.0 if homeward else 15.0, 23.0)
 	_update_cart_load()
+
+
+## The near shaft runs from the front of the cart along the donkey's side to the collar at its shoulder,
+## with a strap over its back holding the shaft up; the painted shafts on the cart are the far side's.
+func _draw_harness() -> void:
+	var home := _cart.flip_h
+	var dir := -1.0 if home else 1.0
+	var a := Vector2(_cart.position.x + (26.0 if home else 34.0), _cart.position.y + 17.0).round()
+	var b := Vector2(_donkey.position.x + 12.0 * dir, float(RIG_BASE) - 20.0).round()
+	var leather := Color(0.3, 0.17, 0.11)
+	var steps := int(absf(b.x - a.x))
+	for i in steps + 1:
+		var p := a.lerp(b, float(i) / maxf(1.0, steps)).round()
+		_harness.draw_rect(Rect2(p, Vector2.ONE), Color(0.62, 0.4, 0.23))
+		_harness.draw_rect(Rect2(p + Vector2(0, 1), Vector2.ONE), Color(0.4, 0.24, 0.14))
+	# The back strap rises from the shaft over the saddle; the collar strap wraps the chest at the shaft's end.
+	var saddle_x := roundf(_donkey.position.x + 2.0 * dir)
+	var on_shaft := roundf(lerpf(a.y, b.y, (saddle_x - a.x) / (b.x - a.x))) if b.x != a.x else a.y
+	_harness.draw_rect(Rect2(saddle_x, float(RIG_BASE) - 27.0, 1, on_shaft - (float(RIG_BASE) - 27.0)), leather)
+	_harness.draw_rect(Rect2(b.x, b.y - 5, 1, 7), leather)
 
 
 ## What the cart carries: the goods waiting to go while it is home, its load on the road, and a purse of coins coming back.
@@ -1116,7 +1171,9 @@ func _update_cart_load() -> void:
 		if icon.visible:
 			icon.texture = load(paths[k])
 			var x := 4.0 + k * 8.0
-			icon.position = Vector2(x if not _cart.flip_h else 60.0 - x - 16.0, -7)
+			# Each good sits down in the bed: its visible bottom is placed below the cart's rim, which hides it.
+			var bottom := icon.texture.get_image().get_used_rect().end.y
+			icon.position = Vector2(x if not _cart.flip_h else 60.0 - x - 16.0, 9 - bottom)
 
 
 ## Moves cart and donkey together; when returning, the donkey walks in front on the left.

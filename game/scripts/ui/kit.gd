@@ -8,7 +8,8 @@ const ICONS := "res://assets/sprites/icons/"
 ## Dark ink for text on parchment, and cream for text on terracotta buttons or straight over the scene.
 const INK := Color(0.29, 0.18, 0.14)
 const CREAM := Color(0.99, 0.95, 0.86)
-const FADED := Color(0.29, 0.18, 0.14, 0.45)
+## Secondary text: lighter than the main ink but still dark and solid, so it reads on dim or poor screens.
+const FADED := Color(0.4, 0.27, 0.2)
 const SHORT := Color(0.66, 0.2, 0.14)
 const HEADING := Color(0.55, 0.27, 0.18)
 
@@ -49,7 +50,6 @@ static func close_button(parent: Node, action: Callable) -> Button:
 	var b := button(parent, "", action)
 	b.custom_minimum_size = Vector2(13, 13)
 	b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	b.tooltip_text = "Close"
 	var cross := Control.new()
 	cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cross.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -104,7 +104,7 @@ static func update_costs(lines: Array) -> void:
 		var need := int(l.get_meta("need"))
 		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
 		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key)).to_lower()))
-		l.text = "%s  %d / %d" % [TranslationServer.translate(name), mini(have, need), need] if key != "coins" else "%s %d" % [TranslationServer.translate(name), need]
+		l.text = "%s  %d / %d" % [TranslationServer.translate(name), mini(have, need), need]
 		l.add_theme_color_override("font_color", INK if have >= need else SHORT)
 
 
@@ -228,7 +228,7 @@ static func make_theme() -> Theme:
 	t.set_stylebox("hover", "Button", _textured(BUTTON_TEX, 4, Color(1.12, 1.08, 1.05), 3))
 	t.set_stylebox("pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.72, 0.6, 0.55), 3))
 	t.set_stylebox("hover_pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.78, 0.66, 0.6), 3))
-	t.set_stylebox("disabled", "Button", _textured(BUTTON_TEX, 4, Color(0.62, 0.58, 0.56, 0.8), 3))
+	t.set_stylebox("disabled", "Button", _textured(BUTTON_TEX, 4, Color(0.5, 0.44, 0.42), 3))
 	var focus := StyleBoxFlat.new()
 	focus.draw_center = false
 	focus.set_border_width_all(1)
@@ -238,7 +238,7 @@ static func make_theme() -> Theme:
 	t.set_color("font_hover_color", "Button", Color(1, 1, 0.94))
 	t.set_color("font_pressed_color", "Button", Color(1, 0.93, 0.78))
 	t.set_color("font_hover_pressed_color", "Button", Color(1, 0.93, 0.78))
-	t.set_color("font_disabled_color", "Button", Color(0.92, 0.86, 0.8, 0.75))
+	t.set_color("font_disabled_color", "Button", Color(0.93, 0.88, 0.82))
 	# A clear scrollbar: a dark track with a terracotta handle, wide enough to see and to grab.
 	var track := _flat(Color(0.29, 0.18, 0.14, 0.3), 2)
 	t.set_stylebox("scroll", "VScrollBar", track)

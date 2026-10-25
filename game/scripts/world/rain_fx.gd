@@ -33,7 +33,10 @@ func _draw() -> void:
 		var shown := int(_drops.size() * _rain)
 		for i in shown:
 			var d: Vector2 = _drops[i].round()
-			draw_line(d, d + Vector2(-1, 4), Color(0.85, 0.9, 1.0, 0.45), 1.0)
+			# Each drop is a short slanted streak of single pixels, which stays crisp at any scale.
+			var c := Color(0.85, 0.9, 1.0, 0.45)
+			draw_rect(Rect2(d, Vector2(1, 2)), c)
+			draw_rect(Rect2(d + Vector2(-1, 2), Vector2(1, 2)), c)
 	if _mist > 0.01:
 		for band in 5:
 			var y := size.y - 70 + band * 12 + sin(_t * 0.2 + band) * 3.0

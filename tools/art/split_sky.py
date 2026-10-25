@@ -48,16 +48,38 @@ def main():
         diff = np.abs(base[y].astype(int) - bg).sum(axis=1)
         mask[y] = diff > 10
     # The sky is painted in thin horizontal bands that touch every cloud; opening with a tall kernel keeps only
-    # shapes several rows high, so each cloud becomes its own piece, which then grows back out to its full edge.
+    # shapes several rows high, so each cloud has its own core.
     cores = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, np.ones((5, 3), np.uint8))
     n, lab, stats, _ = cv2.connectedComponentsWithStats(cores, connectivity=8)
+    seeds = np.zeros((H, W), np.int32)
+    for i in range(1, n):
+        if stats[i][4] >= a.min_area:
+            seeds[lab == i] = i
+    # Every cloud pixel then joins its nearest core, so edges and wisps travel with their cloud instead of staying behind.
+    dist, near = cv2.distanceTransformWithLabels((seeds == 0).astype(np.uint8), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_PIXEL)
+    owner_of = np.zeros(near.max() + 1, np.int32)
+    zy, zx = np.nonzero(seeds)
+    owner_of[near[zy, zx]] = seeds[zy, zx]
+    owner = owner_of[near]
     taken = np.zeros((H, W), bool)
     clouds = []
-    for i in range(1, n):
-        if stats[i][4] < a.min_area:
+    for i in np.unique(seeds[seeds > 0]):
+        grown = mask & (owner == i) & (dist <= 40)
+        # Some pixels inside a cloud match the sky band behind them; closing the gaps up and down takes them along too,
+        # which is invisible because clouds only ever move sideways, along their own band.
+        grown = cv2.morphologyEx(grown.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((9, 1), np.uint8)).astype(bool)
+        grown = cv2.morphologyEx(grown.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((1, 5), np.uint8)).astype(bool)
+        grown[a.above:] = False
+        grown &= ~taken
+        if not grown.any():
             continue
-        grown = cv2.dilate((lab == i).astype(np.uint8), np.ones((3, 3), np.uint8), iterations=3).astype(bool) & mask & ~taken
         taken |= grown
+        ys, xs = np.nonzero(grown)
+        # A cloud the painting cuts off at its edge would show that straight cut once it drifts, so it is painted out.
+        if ys.min() == 0 or xs.min() == 0 or xs.max() == W - 1:
+            for yy, xx in zip(ys, xs):
+                base[yy, xx] = np.array(Counter(map(tuple, base[yy][~mask[yy]] if (~mask[yy]).any() else base[yy])).most_common(1)[0][0])
+            continue
         ys, xs = np.nonzero(grown)
         x, y, w, h = xs.min(), ys.min(), xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
         piece = grown[y:y + h, x:x + w]

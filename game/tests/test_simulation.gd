@@ -73,6 +73,15 @@ func _run() -> void:
 	game.advance(40.0)
 	game.advance(10.0)
 	_check(game.plots[0]["crop"] == "wheat" and game.count_item("wheat") == 2, "the farmhand harvests and replants wheat")
+	game.live_helpers["farmhand"] = true
+	game.plots[1]["unlocked"] = true
+	game.plots[1]["crop"] = "lavender"
+	game.plots[1]["growth"] = 999.0
+	game.advance(20.0)
+	_check(game.is_ready(1), "a farmhand walking about on screen does not harvest by timer")
+	_check(game.helper_harvest("farmhand", 1) and not game.is_ready(1), "the farmhand harvests the plant they reach")
+	_check(not game.helper_harvest("beekeeper", 0), "a helper only picks their own crops")
+	game.live_helpers = {}
 	game.selected_seed = "lavender"
 	for i in 4:
 		game.plots[i]["crop"] = ""

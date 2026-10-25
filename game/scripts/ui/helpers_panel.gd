@@ -27,6 +27,8 @@ func build() -> void:
 		var path: String = PEOPLE + id + "/east.png"
 		face.texture = _portrait(path)
 		face.custom_minimum_size = Vector2(24, 24)
+		face.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		face.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		r.add_child(face)
 		var col := UiKit.column(r)

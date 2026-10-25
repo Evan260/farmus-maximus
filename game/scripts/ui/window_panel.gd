@@ -7,6 +7,8 @@ var body: VBoxContainer
 var _title: Label
 var _refresh_timer := 0.0
 var _signature := "-"
+## When set, the window keeps this size whatever it shows, so switching tabs never makes it jump.
+var fixed_size := Vector2.ZERO
 
 
 func _init(title := "") -> void:
@@ -58,6 +60,7 @@ func refresh() -> void:
 		return
 	_signature = sig
 	UiKit.clear(body)
+	body.custom_minimum_size = fixed_size
 	build()
 	tick()
 	UiKit.pad_focus.call_deferred(self)

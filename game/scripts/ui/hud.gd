@@ -182,6 +182,15 @@ func show_building(id: String) -> void:
 		_open(_building)
 
 
+## Opens the journal at one entry, such as "item:lavender", on its section's page.
+func show_journal_entry(id: String) -> void:
+	var sections := {"crop": "Crops", "item": "Goods", "building": "Buildings", "helper": "Helpers", "animal": "Animals", "find": "Finds",
+		"sighting": "Sightings", "festival": "Festivals", "milestone": "Milestones", "achievement": "Achievements"}
+	_journal.section = sections.get(id.get_slice(":", 0), "Crops")
+	_journal.selected = id
+	_journal.refresh()
+
+
 func open_window(name: String) -> void:
 	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades}.get(name)
 	if w and not w.visible:

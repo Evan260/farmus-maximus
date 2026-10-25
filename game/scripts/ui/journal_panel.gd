@@ -1,61 +1,303 @@
 extends "res://scripts/ui/window_panel.gd"
-## The farmer's journal: every crop, good, building, helper, animal, find, sighting and festival, plus the achievements.
-## Sections are listed down the left side; the chosen one's pages fill the right.
+## The farmer's journal, drawn as an open book. Bookmarks down the side choose a section; the right page shows
+## every entry in it, with undiscovered ones as dark silhouettes; the left page tells the story of the chosen one.
+
+const SECTIONS := ["Crops", "Goods", "Buildings", "Helpers", "Animals", "Finds", "Sightings", "Festivals", "Milestones", "Achievements"]
+const PAGE_W := 158
+const PAGE_H := 196
+const TILE := 36
+const SILHOUETTE := Color(0.22, 0.16, 0.13)
+const LEATHER := Color(0.33, 0.2, 0.13)
+const PAPER := Color(0.95, 0.89, 0.74)
 
 var section := "Crops"
+var selected := ""
+var _pictures := {}
 
 
 func _init() -> void:
 	super("Farmer's journal")
+	var cover := StyleBoxFlat.new()
+	cover.bg_color = LEATHER
+	cover.border_color = Color(0.22, 0.13, 0.09)
+	cover.set_border_width_all(2)
+	cover.set_content_margin_all(7)
+	add_theme_stylebox_override("panel", cover)
+	_title.add_theme_color_override("font_color", UiKit.CREAM)
 
 
 func signature() -> String:
-	return "%s%d%d" % [section, Game.journal.entries.size(), Game.journal.achievements.size()]
+	return "%s|%s|%d|%d" % [section, selected, Game.journal.entries.size(), Game.journal.achievements.size()]
 
 
 func build() -> void:
-	set_title(tr("Farmer's journal") + "   " + tr("%d%% filled") % int(round(Game.journal.share() * 100.0)))
-	var split := UiKit.row(body)
-	split.add_theme_constant_override("separation", 6)
-	var menu := UiKit.column(split)
-	var sections := []
-	for e in Game.journal.catalogue():
-		if not e["section"] in sections:
-			sections.append(e["section"])
-	sections.append("Achievements")
-	for s in sections:
-		var b := UiKit.button(menu, tr(s), func(): section = s; refresh())
+	set_title(tr("Farmer's journal"))
+	var spread := UiKit.row(body)
+	spread.add_theme_constant_override("separation", 0)
+	var marks := UiKit.column(spread)
+	marks.add_theme_constant_override("separation", 1)
+	for s in SECTIONS:
+		var b := UiKit.button(marks, tr(s), func(): section = s; selected = ""; refresh())
 		b.toggle_mode = true
 		b.button_pressed = s == section
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.size_flags_horizontal = Control.SIZE_FILL
-	var page := UiKit.column(split)
-	var count := UiKit.label(page)
-	count.add_theme_color_override("font_color", UiKit.HEADING)
-	var list := UiKit.scroll(page, Vector2(210, 170))
+		b.custom_minimum_size = Vector2(66, 0)
+	var left := _page(spread)
+	_spine(spread)
+	var right := _page(spread)
+	if selected == "":
+		_intro(left)
+	else:
+		_detail(left, selected)
+	_grid(right)
+
+
+func _page(parent: Node) -> VBoxContainer:
+	var page := PanelContainer.new()
+	var paper := StyleBoxFlat.new()
+	paper.bg_color = PAPER
+	paper.set_content_margin_all(6)
+	page.add_theme_stylebox_override("panel", paper)
+	page.custom_minimum_size = Vector2(PAGE_W, PAGE_H)
+	parent.add_child(page)
+	return UiKit.column(page)
+
+
+## The fold between the pages: a soft shadow on either side of the stitching.
+func _spine(parent: Node) -> void:
+	var spine := Control.new()
+	spine.custom_minimum_size = Vector2(8, PAGE_H)
+	spine.draw.connect(func():
+		for x in 8:
+			var shade := absf(x - 3.5) / 3.5
+			spine.draw_rect(Rect2(x, 0, 1, spine.size.y), PAPER.darkened(0.35 * (1.0 - shade))))
+	parent.add_child(spine)
+
+
+func _intro(page: VBoxContainer) -> void:
+	_heading(page, tr("The Farmer's Journal"))
+	UiKit.para(page, tr("Everything you discover on the estate is written down here: every crop you grow, every good you make, the buildings you restore, the people who help you, the animals that visit and the rare sights you witness."), PAGE_W - 12)
+	UiKit.para(page, tr("Choose a bookmark, then a page. Pages still to be found are dark shapes: keep farming and keep watching."), PAGE_W - 12).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.label(page, tr("Pages filled: %d%%") % int(round(Game.journal.share() * 100.0)))
+	UiKit.label(page, tr("Achievements: %d of %d") % [Game.journal.achievements.size(), Balance.get_value("achievements", []).size()])
+
+
+func _heading(page: Node, text: String) -> void:
+	UiKit.section(page, text)
+
+
+func _entries() -> Array:
 	if section == "Achievements":
-		var got := 0
-		for a in Balance.get_value("achievements", []):
-			var has: bool = Game.journal.achievements.has(a["id"])
-			got += int(has)
-			var l := UiKit.para(list, "%s: %s" % [tr(String(a["name"])), tr(String(a["desc"]))], 196)
-			if not has:
-				l.add_theme_color_override("font_color", UiKit.FADED)
-		count.text = tr("%d of %d achievements") % [got, Balance.get_value("achievements", []).size()]
+		return Balance.get_value("achievements", []).map(func(a): return {"id": "achievement:" + String(a["id"]), "name": a["name"]})
+	# Fine and excellent goods are shown as badges on each good's page rather than as pages of their own.
+	return Game.journal.catalogue().filter(func(e): return e["section"] == section and not String(e["id"]).begins_with("quality:"))
+
+
+func _found(id: String) -> bool:
+	if id.begins_with("achievement:"):
+		return Game.journal.achievements.has(id.get_slice(":", 1))
+	return Game.journal.has(id)
+
+
+func _grid(page: VBoxContainer) -> void:
+	var list := _entries()
+	var found := list.filter(func(e): return _found(e["id"])).size()
+	_heading(page, "%s   %d / %d" % [tr(section), found, list.size()])
+	var area := UiKit.scroll(page, Vector2(PAGE_W - 12, PAGE_H - 30))
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 2)
+	grid.add_theme_constant_override("v_separation", 2)
+	area.add_child(grid)
+	for e in list:
+		var id := String(e["id"])
+		var tile := Button.new()
+		tile.custom_minimum_size = Vector2(TILE, TILE)
+		tile.focus_mode = Control.FOCUS_NONE
+		tile.icon = _picture(id)
+		tile.expand_icon = true
+		tile.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(0.87, 0.79, 0.62) if id != selected else Color(0.98, 0.93, 0.8)
+		box.border_color = Color(0.62, 0.46, 0.32) if id != selected else Color(0.7, 0.38, 0.25)
+		box.set_border_width_all(1)
+		box.set_content_margin_all(3)
+		for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+			tile.add_theme_stylebox_override(state, box)
+		if not _found(id):
+			for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
+				tile.add_theme_color_override(state, SILHOUETTE)
+		# Big pictures are shrunk smoothly; icons already drawn at this size stay crisp.
+		if tile.icon and maxf(tile.icon.get_width(), tile.icon.get_height()) > TILE:
+			tile.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		tile.pressed.connect(func(): Sfx.play("click", -8.0); selected = id; refresh())
+		grid.add_child(tile)
+
+
+func _detail(page: VBoxContainer, id: String) -> void:
+	var got := _found(id)
+	var frame := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.87, 0.79, 0.62)
+	box.set_content_margin_all(4)
+	frame.add_theme_stylebox_override("panel", box)
+	page.add_child(frame)
+	var pic := TextureRect.new()
+	pic.texture = _picture(id)
+	pic.custom_minimum_size = Vector2(PAGE_W - 20, 72)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if pic.texture and maxf(pic.texture.get_width(), pic.texture.get_height()) > 72:
+		pic.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if not got:
+		pic.modulate = SILHOUETTE
+	frame.add_child(pic)
+	if not got:
+		_heading(page, "? ? ?")
+		UiKit.para(page, tr("Not discovered yet."), PAGE_W - 12).add_theme_color_override("font_color", UiKit.FADED)
 		return
-	var found := 0
-	var total := 0
-	for e in Game.journal.catalogue():
-		if e["section"] != section:
-			continue
-		total += 1
-		var has: bool = Game.journal.has(e["id"])
-		found += int(has)
-		var r := UiKit.row(list)
-		var item_id := String(e["id"]).get_slice(":", 1) if String(e["id"]).begins_with("item:") or String(e["id"]).begins_with("quality:") else ""
-		if item_id != "" and has:
-			UiKit.icon(r, item_id)
-		var l := UiKit.label(r, tr(String(e["name"])) if has else "? ? ?")
-		if not has:
-			l.add_theme_color_override("font_color", UiKit.FADED)
-	count.text = tr("%d of %d found") % [found, total]
+	_heading(page, tr(_name(id)))
+	UiKit.para(page, _describe(id), PAGE_W - 12)
+	if id.begins_with("item:") and not Balance.get_value("items.%s.no_quality" % id.get_slice(":", 1), false):
+		var badges := UiKit.row(page)
+		var names: Array = Balance.get_value("quality.names", ["Common", "Fine", "Excellent"])
+		for q in 3:
+			var has: bool = q == 0 or Game.journal.has("quality:%s:%d" % [id.get_slice(":", 1), q])
+			var l := UiKit.label(badges, tr(String(names[q])))
+			l.add_theme_color_override("font_color", UiKit.INK if has else Color(0.62, 0.55, 0.45))
+
+
+func _name(id: String) -> String:
+	for e in _entries():
+		if e["id"] == id:
+			return String(e["name"])
+	return id
+
+
+## A few plain sentences about an entry, built from the game's own data so they always match the numbers.
+func _describe(id: String) -> String:
+	var kind := id.get_slice(":", 0)
+	var key := id.get_slice(":", 1)
+	var notes: Dictionary = Balance.get_value("journal.notes", {})
+	match kind:
+		"crop":
+			var c := Game.crop_info(key)
+			var zone := String(Game.zone_info(String(c.get("zone", "home"))).get("name", ""))
+			var text := tr("Grows on the %s. Ready after %s") % [tr(zone).to_lower(), UiKit.duration(float(c.get("grow_seconds", 60)))]
+			text += (tr(", then again every %s.") % UiKit.duration(float(c["regrow_seconds"]))) if c.get("perennial", false) else tr(", then needs replanting.")
+			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), tr(String(Balance.get_value("items.%s.name" % c.get("item", key), key))).to_lower()]
+		"item":
+			var lines := [tr("Worth about %d sestertii at market.") % int(Game.base_price(key))]
+			for crop in Balance.get_value("crops", {}):
+				if Game.crop_info(crop).get("item", "") == key:
+					lines.append(tr("Harvested from %s.") % tr(String(Game.crop_info(crop).get("name", crop))).to_lower())
+					break
+			for b in Balance.get_value("buildings", {}):
+				for r in Game.building_info(b).get("recipes", []):
+					if r.get("out", {}).has(key):
+						lines.append(tr("Made in the %s.") % tr(String(Game.building_info(b).get("name", b))).to_lower())
+					if r.get("in", {}).has(key):
+						lines.append(tr("Used by the %s.") % tr(String(Game.building_info(b).get("name", b))).to_lower())
+			return " ".join(lines)
+		"building":
+			var info := Game.building_info(key)
+			var zone := String(Game.zone_info(String(info.get("zone", "home"))).get("name", ""))
+			var outs := []
+			for r in info.get("recipes", []):
+				for item in r.get("out", {}):
+					outs.append(tr(String(Balance.get_value("items.%s.name" % item, item))).to_lower())
+			var what := tr("Makes %s.") % ", ".join(outs) if not outs.is_empty() else ""
+			return (tr("Stands on the %s.") % tr(zone).to_lower()) + " " + what
+		"helper":
+			var h := Game.helper_info(key)
+			return "%s. \"%s\"" % [tr(String(h.get("does", ""))), tr(String(h.get("quote", "")))]
+		"festival":
+			for f in Balance.get_value("calendar.festivals", []):
+				if f["id"] == key:
+					return tr(String(f.get("about", "")))
+		"achievement":
+			for a in Balance.get_value("achievements", []):
+				if a["id"] == key:
+					return tr(String(a.get("desc", "")))
+	return tr(String(notes.get(id, "")))
+
+
+func _picture(id: String) -> Texture2D:
+	if _pictures.has(id):
+		return _pictures[id]
+	var tex := _find_picture(id)
+	_pictures[id] = tex
+	return tex
+
+
+func _find_picture(id: String) -> Texture2D:
+	var kind := id.get_slice(":", 0)
+	var key := id.get_slice(":", 1)
+	var paths := {
+		"crop": [], "item": ["res://assets/sprites/icons32/%s.png" % key],
+		"building": ["res://assets/sprites/buildings/%s_working.png" % key],
+		"helper": ["res://assets/sprites/people/%s/east.png" % key],
+		"achievement": ["res://assets/sprites/icons32/aureus.png"],
+	}
+	var named := {
+		"animal:dog": "dog/east", "animal:donkey": "donkey/east", "animal:cat": "animals/cat_small/east", "animal:chicken": "animals/chicken/stand",
+		"animal:goat": "animals/goat/east", "animal:fox": "animals/fox/east", "animal:rabbit": "animals/rabbit/sit", "animal:hoopoe": "animals/hoopoe/stand",
+		"animal:stork": "animals/stork/nest", "find:old_coin": "icons32/sestertius", "find:truffle": "icons32/truffle", "find:rare_seed": "icons32/white_lavender",
+		"sighting:fox": "animals/fox/east", "sighting:hoopoe": "animals/hoopoe/stand", "sighting:cat_and_dog": "animals/cat_small/sleep_east/frame_05",
+		"milestone:all_zones": "villa/stage4", "milestone:all_buildings": "buildings/mill_working", "milestone:grand_estate": "villa/stage7",
+		"milestone:all_helpers": "people/farmhand/east", "milestone:all_festivals": "decorations/garland_arch", "milestone:excellent_wine": "icons32/aged_wine",
+		"festival:cerealia": "icons32/bread", "festival:floralia": "decorations/garland_arch", "festival:vinalia": "decorations/pergola",
+		"festival:saturnalia": "decorations/saturnalia_lanterns",
+	}
+	if kind == "crop":
+		return PlotViewScript.texture_for(key, "bloom")
+	var list: Array = paths.get(kind, [])
+	if named.has(id):
+		list = ["res://assets/sprites/%s.png" % named[id]]
+	for path in list:
+		if ResourceLoader.exists(path):
+			return _trimmed(load(path))
+	return _drawn(id)
+
+
+const PlotViewScript := preload("res://scripts/plot_view.gd")
+
+
+## A picture cut down to its visible pixels, so it fills its frame.
+func _trimmed(tex: Texture2D) -> Texture2D:
+	var used := tex.get_image().get_used_rect()
+	if used.size == Vector2i(tex.get_width(), tex.get_height()):
+		return tex
+	var a := AtlasTexture.new()
+	a.atlas = tex
+	a.region = Rect2(used)
+	return a
+
+
+## Small pictures drawn in code, for creatures and sights that have no sprite of their own.
+func _drawn(id: String) -> Texture2D:
+	var art := {
+		"animal:bees": ["..WW..", ".W..W.", "YKYKY.", "YKYKYK", ".YKYK."],
+		"animal:butterflies": ["P.....P", "PP...PP", "PPPKPPP", ".PPKPP.", "..P.P.."],
+		"sighting:white_butterfly": ["W.....W", "WW...WW", "WWWKWWW", ".WWKWW.", "..W.W.."],
+		"animal:birds": ["K.....K", ".K...K.", "..KKK..", "...K...", "..K.K.."],
+		"animal:fireflies": ["..g..", ".gGg.", "gGYGg", ".gGg.", "..g.."],
+		"animal:dragonfly": ["WW.WW", ".WTW.", "..T..", "..T..", "..T.."],
+		"animal:snail": ["..BB.", ".BbbB", "GBbbB", "GGGGG"],
+		"animal:lizard": ["......G", "G.G.GG.", "GGGGG..", ".G.G..."],
+		"sighting:shooting_star": ["......W", "....wW.", "..ww...", "ww....."],
+		"sighting:rainbow": ["..RRRR..", ".RooooR.", "RoyyyyoR", "oy....yo", "y......y"],
+		"sighting:mist": ["WWW.WWWW", "........", ".WWWW.WW", "........", "WW.WWWWW"],
+	}
+	var colours := {"W": Color(0.97, 0.96, 0.93), "Y": Color(0.95, 0.76, 0.2), "K": Color(0.2, 0.15, 0.12), "P": Color(0.7, 0.55, 0.88),
+		"g": Color(0.8, 1.0, 0.5, 0.45), "G": Color(0.45, 0.6, 0.3), "T": Color(0.2, 0.55, 0.65), "B": Color(0.45, 0.3, 0.2), "b": Color(0.62, 0.45, 0.3),
+		"w": Color(1, 1, 0.85, 0.6), "R": Color(0.85, 0.3, 0.3), "o": Color(0.95, 0.6, 0.25), "y": Color(0.95, 0.88, 0.35)}
+	colours["G"] = Color(0.75, 1.0, 0.45) if id == "animal:fireflies" else colours["G"]
+	var rows: Array = art.get(id, ["KKK", "K.K", "KKK"])
+	var img := Image.create(rows[0].length(), rows.size(), false, Image.FORMAT_RGBA8)
+	for y in rows.size():
+		for x in String(rows[y]).length():
+			var ch := String(rows[y])[x]
+			if colours.has(ch):
+				img.set_pixel(x, y, colours[ch])
+	return ImageTexture.create_from_image(img)

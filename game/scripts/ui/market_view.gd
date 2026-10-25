@@ -71,6 +71,7 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.offset_top = 22
+	panel.custom_minimum_size = Vector2(320, 0)
 	var col := UiKit.column(panel)
 	var head := UiKit.row(col)
 	_header = UiKit.label(head)

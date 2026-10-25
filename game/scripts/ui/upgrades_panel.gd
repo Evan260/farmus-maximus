@@ -1,7 +1,7 @@
 extends "res://scripts/ui/window_panel.gd"
-## Farm upgrades: a bigger storehouse, a bigger cart, a faster donkey and the aqueduct channels.
+## Farm upgrades: a bigger cart, a faster donkey and the aqueduct channels. The storehouse grows from its own window.
 
-const IDS := ["storage", "cart_capacity", "cart_speed", "channels"]
+const IDS := ["cart_capacity", "cart_speed", "channels"]
 
 var _buttons := {}
 

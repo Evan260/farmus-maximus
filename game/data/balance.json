@@ -455,6 +455,11 @@
 				"build_seconds": 7200,
 				"unlocks": "Statues and mosaics"
 			}
+		],
+		"ladders": [
+			62,
+			110,
+			155
 		]
 	},
 	"offline": {
@@ -574,7 +579,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "perfumer"
+			"helper": "perfumer",
+			"ladders": [
+				43
+			]
 		},
 		"mill": {
 			"name": "Mill",
@@ -631,7 +639,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "miller"
+			"helper": "miller",
+			"ladders": [
+				55
+			]
 		},
 		"bakery": {
 			"name": "Bakery oven",
@@ -697,7 +708,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "miller"
+			"helper": "miller",
+			"ladders": [
+				15
+			]
 		},
 		"beehives": {
 			"name": "Beehives",
@@ -808,7 +822,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "presser"
+			"helper": "presser",
+			"ladders": [
+				48
+			]
 		},
 		"unguent": {
 			"name": "Unguent workshop",
@@ -877,7 +894,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "perfumer"
+			"helper": "perfumer",
+			"ladders": [
+				44
+			]
 		},
 		"wine_press": {
 			"name": "Wine press",
@@ -934,7 +954,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "presser"
+			"helper": "presser",
+			"ladders": [
+				48
+			]
 		},
 		"cellar": {
 			"name": "Cellar",
@@ -994,6 +1017,9 @@
 				600,
 				2400,
 				7200
+			],
+			"ladders": [
+				44
 			]
 		},
 		"barn": {
@@ -1072,7 +1098,10 @@
 			"makes": {
 				"chicken": "eggs",
 				"goat": "milk"
-			}
+			},
+			"ladders": [
+				49
+			]
 		},
 		"dairy": {
 			"name": "Dairy",
@@ -1129,7 +1158,10 @@
 					"quality": 1
 				}
 			],
-			"helper": "stablehand"
+			"helper": "stablehand",
+			"ladders": [
+				38
+			]
 		},
 		"lararium": {
 			"name": "Lararium",
@@ -1741,6 +1773,40 @@
 			"all_helpers": "Every helper hired",
 			"all_festivals": "Every festival celebrated",
 			"excellent_wine": "An excellent aged wine"
+		},
+		"notes": {
+			"animal:dog": "Your loyal companion. Pet often; now and then the dog digs something up.",
+			"animal:donkey": "Pulls the cart to market and back, rain or shine.",
+			"animal:bees": "They visit every flower in bloom, and fill the hives with honey.",
+			"animal:butterflies": "Drawn to lavender in bloom.",
+			"animal:birds": "Swallows sweep low over the fields in the evening.",
+			"animal:fireflies": "They light up the fields on warm nights.",
+			"animal:cat": "Keeps the storehouse free of mice, and ignores the dog. Mostly.",
+			"animal:chicken": "Hens lay an egg each, every day the troughs are full.",
+			"animal:goat": "Gives milk for the dairy, and eats everything else.",
+			"animal:dragonfly": "Darts low over the fields in summer and after rain.",
+			"animal:snail": "Comes out to cross the paths after rain.",
+			"animal:lizard": "Basks on the sunny storehouse wall at midday.",
+			"animal:rabbit": "Hops out of the grove and the pasture at dawn and dusk.",
+			"animal:stork": "Nests on the roof of a well-kept villa.",
+			"animal:fox": "A shy visitor that slips past on summer nights.",
+			"animal:hoopoe": "A rare bird with a crown of feathers. It never stays long.",
+			"find:old_coin": "The dog sometimes digs up old coins from long ago.",
+			"find:truffle": "A prize from the dog's nose, worth a great deal at market.",
+			"find:rare_seed": "White lavender, found by the dog or given by a grateful regular.",
+			"sighting:rainbow": "When rain clears on a sunny day, look to the sky.",
+			"sighting:shooting_star": "On a clear night, keep watching the stars.",
+			"sighting:fox": "The fox crosses the estate in the dark.",
+			"sighting:white_butterfly": "A white butterfly, rare and lucky, on a fine day.",
+			"sighting:cat_and_dog": "Sometimes, at night, the two of them nap side by side.",
+			"sighting:hoopoe": "The hoopoe lands in the fields for a moment, then is gone.",
+			"sighting:mist": "Early mornings sometimes bring mist over the fields.",
+			"milestone:all_zones": "Every field, grove and pasture is yours.",
+			"milestone:all_buildings": "Every ruin on the estate is working again.",
+			"milestone:grand_estate": "The villa is restored to its full glory.",
+			"milestone:all_helpers": "A full household of helpers.",
+			"milestone:all_festivals": "A whole year of Roman festivals celebrated.",
+			"milestone:excellent_wine": "Wine rested long enough to be excellent."
 		}
 	},
 	"achievements": [

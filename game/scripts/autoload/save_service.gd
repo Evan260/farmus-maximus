@@ -12,6 +12,9 @@ var _timer := 0.0
 
 
 func _ready() -> void:
+	# Read-only runs load the real farm for checking without ever writing to it.
+	if "--readonly" in OS.get_cmdline_user_args():
+		enabled = false
 	_migrate_from_old_name()
 	load_game()
 

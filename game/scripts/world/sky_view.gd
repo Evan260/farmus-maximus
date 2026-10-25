@@ -79,6 +79,8 @@ func _load_clouds(parent: Node2D, dir: String, pace: float) -> void:
 func _process(delta: float) -> void:
 	var night := Lighting.night_amount(Game.day_time)
 	var light := Lighting.color_at(Game.day_time)
+	if Game.calendar.weather in ["cloudy", "rain"]:
+		light = light.darkened(0.15)
 	_day.modulate = Color(light, 1.0 - night)
 	_night.modulate.a = night
 	var wind := (1.8 if Game.calendar.weather in ["rain", "cloudy"] else 1.0) * (0.3 if Settings.reduced_motion else 1.0)

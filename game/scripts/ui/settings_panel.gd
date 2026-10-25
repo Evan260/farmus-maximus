@@ -7,6 +7,7 @@ var _waiting_for := ""
 
 func _init() -> void:
 	super("Settings")
+	fixed_size = Vector2(250, 190)
 
 
 func signature() -> String:

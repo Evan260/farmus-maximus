@@ -198,3 +198,7 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T17:01:41,pixen,game/assets/sprites/icons32/cheese.png,0.0159,0,1.0103
 2026-10-25T17:01:53,pixen,game/assets/sprites/icons32/aureus.png,0.0149,0,1.0027
 2026-10-25T17:02:34,pixen,game/assets/sprites/icons32/manure.png,0.0071,0,0.9956
+2026-10-25T17:36:26,character,game/assets/sprites/people/builder_small,0.0595,0,0.9362
+2026-10-25T17:37:45,animate,game/assets/sprites/people/builder_small/walk_east,0.0141,0,0.9221
+2026-10-25T17:39:04,animate,game/assets/sprites/people/builder_small/work_east,0.0148,0,0.9073
+2026-10-25T17:40:13,animate,game/assets/sprites/people/builder_small/climb_north,0.0134,0,0.8939

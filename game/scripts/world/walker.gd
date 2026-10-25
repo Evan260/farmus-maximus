@@ -8,6 +8,8 @@ var max_x := 100.0
 var speed := 14.0
 ## Called for a spot worth walking to, such as a ripe plot; returns NAN when there is none.
 var find_work: Callable
+## Called with the spot when the work there is finished.
+var work_done: Callable
 ## Seconds of the work animation at each stop.
 var work_seconds := 3.0
 var idle_anim := ""
@@ -43,7 +45,7 @@ func _process(delta: float) -> void:
 			if is_equal_approx(position.x, _target):
 				if not is_nan(leave_at):
 					queue_free()
-				elif _working_next and sprite.sprite_frames.has_animation("work"):
+				elif _working_next:
 					_state = "work"
 					_timer = work_seconds
 					_play("work")
@@ -51,6 +53,8 @@ func _process(delta: float) -> void:
 					_rest()
 		_:
 			if _timer <= 0.0:
+				if _state == "work" and work_done.is_valid():
+					work_done.call(_target)
 				_choose()
 
 
@@ -69,7 +73,8 @@ func _choose() -> void:
 	var spot: float = find_work.call() if find_work.is_valid() else NAN
 	_working_next = not is_nan(spot)
 	if _working_next:
-		_target = clampf(spot, min_x, max_x)
+		# Work can take a helper anywhere their plants are, beyond where they usually stroll.
+		_target = spot
 	elif randf() < 0.35:
 		_rest()
 		return
