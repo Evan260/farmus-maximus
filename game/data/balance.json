@@ -328,9 +328,9 @@
 			],
 			"costs": [
 				40,
-				120,
-				320,
-				800
+				200,
+				900,
+				3500
 			]
 		},
 		"cart_capacity": {
@@ -344,8 +344,8 @@
 			],
 			"costs": [
 				50,
-				160,
-				420
+				300,
+				1500
 			]
 		},
 		"cart_speed": {
@@ -359,8 +359,8 @@
 			],
 			"costs": [
 				60,
-				180,
-				450
+				350,
+				1600
 			]
 		},
 		"channels": {
@@ -371,7 +371,7 @@
 				1
 			],
 			"costs": [
-				180
+				500
 			]
 		}
 	},
@@ -394,63 +394,63 @@
 				"name": "Villa rustica",
 				"sprite": "stage3",
 				"cost": {
-					"coins": 600,
+					"coins": 1500,
 					"stone": 6,
 					"timber": 4,
 					"tiles": 4
 				},
-				"build_seconds": 90,
+				"build_seconds": 300,
 				"unlocks": "The workshop yard and vineyard deeds, and cellar plans"
 			},
 			{
 				"name": "Villa with portico",
 				"sprite": "stage4",
 				"cost": {
-					"coins": 1200,
+					"coins": 6000,
 					"stone": 10,
 					"timber": 6,
 					"tiles": 6,
 					"provisions": 4
 				},
-				"build_seconds": 120,
+				"build_seconds": 900,
 				"unlocks": "The lararium, the pasture deed and decorations"
 			},
 			{
 				"name": "Villa with peristyle garden",
 				"sprite": "stage5",
 				"cost": {
-					"coins": 2000,
+					"coins": 20000,
 					"stone": 14,
 					"tiles": 8,
 					"provisions": 6
 				},
-				"build_seconds": 150,
+				"build_seconds": 1800,
 				"unlocks": "Rosemary for the grove, and the fountain"
 			},
 			{
 				"name": "Bathhouse wing",
 				"sprite": "stage6",
 				"cost": {
-					"coins": 3200,
+					"coins": 50000,
 					"stone": 18,
 					"timber": 8,
 					"tiles": 10,
 					"provisions": 8
 				},
-				"build_seconds": 180,
+				"build_seconds": 3600,
 				"unlocks": "Lavender oil becomes precious bath oil"
 			},
 			{
 				"name": "Grand estate",
 				"sprite": "stage7",
 				"cost": {
-					"coins": 5000,
+					"coins": 120000,
 					"stone": 24,
 					"timber": 10,
 					"tiles": 14,
 					"provisions": 12
 				},
-				"build_seconds": 240,
+				"build_seconds": 7200,
 				"unlocks": "Statues and mosaics"
 			}
 		]
@@ -497,7 +497,7 @@
 				"name": "Workshop yard",
 				"x": 960,
 				"sign_x": 300,
-				"deed": 120,
+				"deed": 1200,
 				"requires_villa": 3
 			},
 			{
@@ -505,7 +505,7 @@
 				"name": "Vineyard slope",
 				"x": 1440,
 				"sign_x": 330,
-				"deed": 450,
+				"deed": 4000,
 				"requires_villa": 3
 			},
 			{
@@ -513,7 +513,7 @@
 				"name": "Pasture",
 				"x": 1920,
 				"sign_x": 360,
-				"deed": 800,
+				"deed": 10000,
 				"requires_villa": 4
 			}
 		]
@@ -523,12 +523,12 @@
 			"name": "Drying shed",
 			"zone": "yard",
 			"x": 1030,
-			"buy": 40,
+			"buy": 80,
 			"repair": {
-				"coins": 100,
+				"coins": 200,
 				"timber": 2
 			},
-			"repair_seconds": 30,
+			"repair_seconds": 90,
 			"recipes": [
 				{
 					"in": {
@@ -537,14 +537,14 @@
 					"out": {
 						"dried_lavender": 1
 					},
-					"seconds": 20
+					"seconds": 40
 				}
 			],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 180
+						"coins": 720
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -552,7 +552,7 @@
 				},
 				{
 					"cost": {
-						"coins": 450,
+						"coins": 1800,
 						"stone": 2,
 						"timber": 2
 					},
@@ -562,7 +562,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1080,
+						"coins": 4320,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -578,13 +578,13 @@
 			"name": "Mill",
 			"zone": "yard",
 			"x": 1180,
-			"buy": 60,
+			"buy": 120,
 			"repair": {
-				"coins": 160,
+				"coins": 320,
 				"stone": 3,
 				"timber": 2
 			},
-			"repair_seconds": 40,
+			"repair_seconds": 120,
 			"recipes": [
 				{
 					"in": {
@@ -594,14 +594,14 @@
 						"flour": 2,
 						"straw": 1
 					},
-					"seconds": 25
+					"seconds": 50
 				}
 			],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 240
+						"coins": 960
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -609,7 +609,7 @@
 				},
 				{
 					"cost": {
-						"coins": 600,
+						"coins": 2400,
 						"stone": 2,
 						"timber": 2
 					},
@@ -619,7 +619,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1440,
+						"coins": 5760,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -635,13 +635,13 @@
 			"name": "Bakery oven",
 			"zone": "yard",
 			"x": 1340,
-			"buy": 80,
+			"buy": 160,
 			"repair": {
-				"coins": 220,
+				"coins": 440,
 				"stone": 4,
 				"tiles": 2
 			},
-			"repair_seconds": 45,
+			"repair_seconds": 135,
 			"recipes": [
 				{
 					"in": {
@@ -650,7 +650,7 @@
 					"out": {
 						"bread": 1
 					},
-					"seconds": 30
+					"seconds": 60
 				},
 				{
 					"in": {
@@ -660,14 +660,14 @@
 					"out": {
 						"herb_bread": 1
 					},
-					"seconds": 35
+					"seconds": 70
 				}
 			],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 300
+						"coins": 1200
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -675,7 +675,7 @@
 				},
 				{
 					"cost": {
-						"coins": 750,
+						"coins": 3000,
 						"stone": 2,
 						"timber": 2
 					},
@@ -685,7 +685,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1800,
+						"coins": 7200,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -706,7 +706,7 @@
 				"coins": 120,
 				"timber": 1
 			},
-			"repair_seconds": 30,
+			"repair_seconds": 60,
 			"recipes": [
 				{
 					"in": {},
@@ -714,7 +714,7 @@
 						"honey": 1,
 						"wax": 1
 					},
-					"seconds": 90,
+					"seconds": 180,
 					"lavender_honey": true
 				}
 			],
@@ -722,7 +722,7 @@
 			"levels": [
 				{
 					"cost": {
-						"coins": 220
+						"coins": 440
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -730,7 +730,7 @@
 				},
 				{
 					"cost": {
-						"coins": 550,
+						"coins": 1100,
 						"stone": 2,
 						"timber": 2
 					},
@@ -740,7 +740,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1320,
+						"coins": 2640,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -762,7 +762,7 @@
 				"stone": 3,
 				"timber": 3
 			},
-			"repair_seconds": 50,
+			"repair_seconds": 100,
 			"recipes": [
 				{
 					"in": {
@@ -771,14 +771,14 @@
 					"out": {
 						"olive_oil": 1
 					},
-					"seconds": 40
+					"seconds": 80
 				}
 			],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 320
+						"coins": 640
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -786,7 +786,7 @@
 				},
 				{
 					"cost": {
-						"coins": 800,
+						"coins": 1600,
 						"stone": 2,
 						"timber": 2
 					},
@@ -796,7 +796,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1920,
+						"coins": 3840,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -812,14 +812,14 @@
 			"name": "Unguent workshop",
 			"zone": "vineyard",
 			"x": 1560,
-			"buy": 150,
+			"buy": 900,
 			"repair": {
-				"coins": 400,
+				"coins": 2400,
 				"stone": 4,
 				"tiles": 3,
 				"provisions": 2
 			},
-			"repair_seconds": 60,
+			"repair_seconds": 420,
 			"recipes": [
 				{
 					"in": {
@@ -829,7 +829,7 @@
 					"out": {
 						"lavender_oil": 1
 					},
-					"seconds": 60
+					"seconds": 120
 				},
 				{
 					"in": {
@@ -839,7 +839,7 @@
 					"out": {
 						"bath_oil": 1
 					},
-					"seconds": 75,
+					"seconds": 150,
 					"requires_villa": 6
 				}
 			],
@@ -847,7 +847,7 @@
 			"levels": [
 				{
 					"cost": {
-						"coins": 500
+						"coins": 6000
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -855,7 +855,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1250,
+						"coins": 15000,
 						"stone": 2,
 						"timber": 2
 					},
@@ -865,7 +865,7 @@
 				},
 				{
 					"cost": {
-						"coins": 3000,
+						"coins": 36000,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -881,14 +881,14 @@
 			"name": "Wine press",
 			"zone": "vineyard",
 			"x": 1745,
-			"buy": 120,
+			"buy": 720,
 			"repair": {
-				"coins": 350,
+				"coins": 2100,
 				"timber": 4,
 				"tiles": 2,
 				"provisions": 2
 			},
-			"repair_seconds": 50,
+			"repair_seconds": 350,
 			"recipes": [
 				{
 					"in": {
@@ -897,14 +897,14 @@
 					"out": {
 						"young_wine": 1
 					},
-					"seconds": 40
+					"seconds": 80
 				}
 			],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 360
+						"coins": 4320
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -912,7 +912,7 @@
 				},
 				{
 					"cost": {
-						"coins": 900,
+						"coins": 10800,
 						"stone": 2,
 						"timber": 2
 					},
@@ -922,7 +922,7 @@
 				},
 				{
 					"cost": {
-						"coins": 2160,
+						"coins": 25920,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -938,20 +938,20 @@
 			"name": "Cellar",
 			"zone": "vineyard",
 			"x": 1868,
-			"buy": 160,
+			"buy": 960,
 			"repair": {
-				"coins": 500,
+				"coins": 3000,
 				"stone": 6,
 				"timber": 2,
 				"provisions": 3
 			},
-			"repair_seconds": 60,
+			"repair_seconds": 420,
 			"recipes": [],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 400
+						"coins": 4800
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -959,7 +959,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1000,
+						"coins": 12000,
 						"stone": 2,
 						"timber": 2
 					},
@@ -969,7 +969,7 @@
 				},
 				{
 					"cost": {
-						"coins": 2400,
+						"coins": 28800,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -989,30 +989,30 @@
 				10
 			],
 			"aging": [
-				300,
-				1200,
-				3600
+				600,
+				2400,
+				7200
 			]
 		},
 		"barn": {
 			"name": "Barn",
 			"zone": "pasture",
 			"x": 2062,
-			"buy": 200,
+			"buy": 2400,
 			"repair": {
-				"coins": 600,
+				"coins": 7200,
 				"stone": 6,
 				"timber": 6,
 				"tiles": 4,
 				"provisions": 3
 			},
-			"repair_seconds": 70,
+			"repair_seconds": 910,
 			"recipes": [],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 450
+						"coins": 10800
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -1020,7 +1020,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1125,
+						"coins": 27000,
 						"stone": 2,
 						"timber": 2
 					},
@@ -1030,7 +1030,7 @@
 				},
 				{
 					"cost": {
-						"coins": 2700,
+						"coins": 64800,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -1056,7 +1056,7 @@
 					5
 				]
 			},
-			"cycle_seconds": 60,
+			"cycle_seconds": 120,
 			"feed": [
 				"straw",
 				"wheat"
@@ -1076,14 +1076,14 @@
 			"name": "Dairy",
 			"zone": "pasture",
 			"x": 2215,
-			"buy": 120,
+			"buy": 1440,
 			"repair": {
-				"coins": 380,
+				"coins": 4560,
 				"stone": 3,
 				"tiles": 2,
 				"provisions": 2
 			},
-			"repair_seconds": 50,
+			"repair_seconds": 650,
 			"recipes": [
 				{
 					"in": {
@@ -1092,14 +1092,14 @@
 					"out": {
 						"cheese": 1
 					},
-					"seconds": 45
+					"seconds": 90
 				}
 			],
 			"queue": 2,
 			"levels": [
 				{
 					"cost": {
-						"coins": 300
+						"coins": 7200
 					},
 					"speed": 1.5,
 					"batch": 1,
@@ -1107,7 +1107,7 @@
 				},
 				{
 					"cost": {
-						"coins": 750,
+						"coins": 18000,
 						"stone": 2,
 						"timber": 2
 					},
@@ -1117,7 +1117,7 @@
 				},
 				{
 					"cost": {
-						"coins": 1800,
+						"coins": 43200,
 						"stone": 4,
 						"tiles": 4
 					},
@@ -1133,12 +1133,12 @@
 			"name": "Lararium",
 			"zone": "home",
 			"x": 618,
-			"buy": 60,
+			"buy": 240,
 			"repair": {
-				"coins": 200,
+				"coins": 800,
 				"stone": 2
 			},
-			"repair_seconds": 40,
+			"repair_seconds": 200,
 			"recipes": [],
 			"queue": 2,
 			"levels": [],
@@ -1176,8 +1176,8 @@
 			},
 			"costs": [
 				150,
-				400,
-				900
+				600,
+				2000
 			],
 			"intervals": [
 				6,
@@ -1197,7 +1197,7 @@
 				"building": "mill"
 			},
 			"costs": [
-				220
+				900
 			],
 			"quote": "Good bread starts with honest flour. And a strong arm."
 		},
@@ -1209,7 +1209,7 @@
 				"building": "beehives"
 			},
 			"costs": [
-				180
+				500
 			],
 			"crops": [
 				"herbs"
@@ -1227,7 +1227,7 @@
 				"building": "unguent"
 			},
 			"costs": [
-				380
+				4000
 			],
 			"quote": "A drop of lavender oil and even a senator smiles."
 		},
@@ -1239,7 +1239,7 @@
 				"building": "olive_press"
 			},
 			"costs": [
-				320
+				3000
 			],
 			"crops": [
 				"olives",
@@ -1258,7 +1258,7 @@
 				"building": "barn"
 			},
 			"costs": [
-				320
+				8000
 			],
 			"quote": "The goats eat everything. Everything! Even my hat, once."
 		},
@@ -1276,9 +1276,9 @@
 		}
 	},
 	"market": {
-		"cart_cut": 0.7,
-		"demand_step": 0.04,
-		"demand_floor": 0.5,
+		"cart_cut": 0.8,
+		"demand_step": 0.003,
+		"demand_floor": 0.6,
 		"favourites": 2,
 		"favourite_bonus": 1.5,
 		"mercury_bonus": 1.15,
@@ -1355,7 +1355,7 @@
 			{
 				"id": "seed_grapes",
 				"name": "Grapevine cuttings",
-				"price": 120,
+				"price": 400,
 				"unlock_crop": "grapes",
 				"requires_zone": "vineyard",
 				"group": "seeds"
@@ -1384,21 +1384,21 @@
 			{
 				"id": "chicken",
 				"name": "A hen",
-				"price": 30,
+				"price": 60,
 				"animal": "chicken",
 				"group": "animals"
 			},
 			{
 				"id": "goat",
 				"name": "A goat",
-				"price": 80,
+				"price": 200,
 				"animal": "goat",
 				"group": "animals"
 			},
 			{
 				"id": "second_cart",
 				"name": "A second cart and a trader",
-				"price": 600,
+				"price": 2500,
 				"once": true,
 				"requires_villa": 3,
 				"group": "estate"
@@ -1571,21 +1571,21 @@
 	"decorations": {
 		"column": {
 			"name": "Ivy column",
-			"price": 150,
+			"price": 600,
 			"x": 497,
 			"y": 236,
 			"requires_villa": 4
 		},
 		"statue": {
 			"name": "Statue of Ceres",
-			"price": 400,
+			"price": 1600,
 			"x": 560,
 			"y": 236,
 			"requires_villa": 4
 		},
 		"lanterns": {
 			"name": "Path lantern",
-			"price": 120,
+			"price": 480,
 			"x": 818,
 			"y": 245,
 			"requires_villa": 4,
@@ -1593,14 +1593,14 @@
 		},
 		"planters": {
 			"name": "Flower planters",
-			"price": 90,
+			"price": 360,
 			"x": 905,
 			"y": 243,
 			"requires_villa": 4
 		},
 		"fountain": {
 			"name": "Fountain",
-			"price": 600,
+			"price": 2400,
 			"x": 1105,
 			"y": 238,
 			"requires_villa": 5,
@@ -1608,35 +1608,35 @@
 		},
 		"bench": {
 			"name": "Marble bench",
-			"price": 160,
+			"price": 640,
 			"x": 1262,
 			"y": 240,
 			"requires_villa": 4
 		},
 		"sundial": {
 			"name": "Sundial",
-			"price": 140,
+			"price": 560,
 			"x": 1408,
 			"y": 238,
 			"requires_villa": 4
 		},
 		"birdbath": {
 			"name": "Birdbath",
-			"price": 110,
+			"price": 440,
 			"x": 60,
 			"y": 240,
 			"requires_villa": 4
 		},
 		"dovecote": {
 			"name": "Dovecote",
-			"price": 350,
+			"price": 1400,
 			"x": 118,
 			"y": 236,
 			"requires_villa": 4
 		},
 		"mosaic": {
 			"name": "Dolphin mosaic",
-			"price": 700,
+			"price": 2800,
 			"x": 851,
 			"y": 246,
 			"requires_villa": 7,
@@ -1652,21 +1652,21 @@
 		"pergola": {
 			"name": "Vine pergola",
 			"festival": "vinalia",
-			"price": 250,
+			"price": 1000,
 			"x": 1965,
 			"y": 238
 		},
 		"garland_arch": {
 			"name": "Garland arch",
 			"festival": "floralia",
-			"price": 180,
+			"price": 720,
 			"x": 960,
 			"y": 242
 		},
 		"saturnalia_lanterns": {
 			"name": "Saturnalia lamps",
 			"festival": "saturnalia",
-			"price": 200,
+			"price": 800,
 			"x": 2310,
 			"y": 240,
 			"glow": true

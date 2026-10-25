@@ -170,18 +170,24 @@ func count_item(base: String) -> int:
 	return total
 
 
+## Goods in the storehouse; building materials are stacked in the yard and take no room there.
 func stored_total() -> int:
 	var total := 0
 	for key in storage:
-		total += int(storage[key])
+		if not is_material(key):
+			total += int(storage[key])
 	return total
+
+
+func is_material(key: String) -> bool:
+	return Balance.get_value("items.%s.kind" % item_base(key), "good") == "material"
 
 
 ## Puts goods in the storehouse, as many as fit unless forced, and returns how many went in.
 func add_item(key: String, amount: int, force := false) -> int:
 	if Balance.get_value("items.%s.no_quality" % item_base(key), false):
 		key = item_base(key)
-	if not force:
+	if not force and not is_material(key):
 		amount = mini(amount, storage_capacity() - stored_total())
 	if amount <= 0:
 		return 0
@@ -556,12 +562,12 @@ func send_cart() -> bool:
 	var capacity := cart_capacity()
 	var loaded := 0
 	var value := 0
-	var keep := reserved_items()
-	var keys := storage.keys().filter(func(k): return not item_base(k) in keep and Balance.get_value("items.%s.kind" % item_base(k), "good") == "good")
+	var goods := sellable_goods()
+	var keys := goods.keys()
 	# The most valuable goods go first, so a small cart makes the best of its trip.
 	keys.sort_custom(func(a, b): return market.cart_price(a) > market.cart_price(b))
 	for key in keys:
-		var take := mini(int(storage[key]), capacity - loaded)
+		var take := mini(int(goods[key]), capacity - loaded)
 		if take <= 0:
 			continue
 		for n in take:
@@ -812,21 +818,44 @@ func set_building_paused(id: String, paused: bool) -> void:
 
 ## Goods a working building is waiting to use, which the cart leaves at home instead of selling.
 func reserved_items() -> Array:
-	var keep := []
+	return reserved_amounts().keys()
+
+
+## How much of each good the working buildings need for their next batch; the cart sells only what is beyond that.
+func reserved_amounts() -> Dictionary:
+	var keep := {}
 	for id in buildings:
 		var b: Dictionary = buildings[id]
 		if b["state"] != "working" or b["paused"]:
 			continue
 		var needs: Dictionary = current_recipe(id).get("in", {})
+		var loads := building_batch(id)
 		match building_kind(id):
 			"cellar":
 				needs = {"young_wine": 1}
 			"barn":
 				needs = {}
 		for item in needs:
-			if not item in keep:
-				keep.append(item)
+			keep[item] = int(keep.get(item, 0)) + int(needs[item]) * loads
 	return keep
+
+
+## Goods the cart may take, by storage key: everything except materials and what the workshops keep back.
+## The plainest units are the ones kept, since workshops use those first, so the better ones go to market.
+func sellable_goods() -> Dictionary:
+	# A nearly full storehouse sells everything, so goods kept for workshops can never jam the farm.
+	var keep := reserved_amounts() if stored_total() < storage_capacity() * 0.9 else {}
+	var out := {}
+	for q in 3:
+		for key in storage.keys():
+			if item_quality(key) != q or Balance.get_value("items.%s.kind" % item_base(key), "good") != "good":
+				continue
+			var base := item_base(key)
+			var kept := mini(int(keep.get(base, 0)), int(storage[key]))
+			keep[base] = int(keep.get(base, 0)) - kept
+			if int(storage[key]) - kept > 0:
+				out[key] = int(storage[key]) - kept
+	return out
 
 
 ## Loads as many batches as the building's queue holds and the storehouse can supply; returns how many.
@@ -1164,10 +1193,8 @@ func _trader_check() -> void:
 	if cart["away"]:
 		return
 	var sellable := 0
-	var keep := reserved_items()
-	for key in storage:
-		if not item_base(key) in keep and Balance.get_value("items.%s.kind" % item_base(key), "good") == "good":
-			sellable += int(storage[key])
+	for n in sellable_goods().values():
+		sellable += int(n)
 	if sellable >= mini(cart_capacity(), int(storage_capacity() * float(Balance.get_value("market.trader_fill", 0.6)))):
 		send_cart()
 
@@ -1329,6 +1356,13 @@ func from_dict(d: Dictionary) -> void:
 	use_manure = bool(d.get("use_manure", true))
 	for key in d.get("stats", {}):
 		stats[key] = int(d["stats"][key])
+	# Saves from before the tutorial counted fewer things, so a farm with harvests behind it skips the first lessons.
+	if int(stats.get("harvested", 0)) > 0:
+		for key in ["planted", "cart_trips"]:
+			stats[key] = maxi(int(stats.get(key, 0)), 1)
+		var dug := plots.filter(func(p): return p["unlocked"] and p["zone"] == "home").size()
+		if dug > int(Balance.get_value("start.unlocked_plots", 4)):
+			stats["plots_unlocked"] = maxi(int(stats.get("plots_unlocked", 0)), 1)
 	dog_timer = float(d.get("dog_timer", dog_timer))
 	calendar.from_dict(d.get("calendar", {}))
 	market.from_dict(d.get("market", {}))

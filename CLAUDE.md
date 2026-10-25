@@ -40,6 +40,7 @@ Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotE
 ## Running and checking the game
 
 - Tests: `Godot_..._console.exe --headless --path game --script res://tests/test_simulation.gd` (and `test_scene.gd`).
+- Pacing: `--headless --path game --script res://tests/pacing_bot.gd -- --hours=40` plays the estate as a keen player and prints when each milestone arrives; run it after any balance change. `tests/check_real_save.gd` loads the real save into the current rules without writing anything.
 - Exact screenshots: `Godot_..._console.exe --path game --quit-after 300 -- --demo --shot=OUT.png`, plus `--strip`, `--strip --solid`, `--hour=22.5`, `--villa=2`, `--send-cart`, `--estate` (every zone, building, helper and decoration in use), `--zone=pasture`, `--weather=rain`, `--day=12` (winter), `--town` (the market screen), `--panel=journal` (or `helpers`, `store`, `settings`, `upgrades`, or a building id such as `cellar`). `--demo` never touches the real save.
 - Always wrap capture runs in `timeout 60` and pass `--quit-after`: a script error stops the scene before it can quit, and the window then waits forever.
 - The movie writer (`--write-movie`) always records at 480x270, so it cannot show the desktop strip's real shape; use `--shot` for that.

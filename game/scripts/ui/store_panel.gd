@@ -24,7 +24,7 @@ func build() -> void:
 		var name := UiKit.label(r, "%s  x%d" % [tr(Game.item_name(key)), int(Game.storage[key])])
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var kind := String(Balance.get_value("items.%s.kind" % Game.item_base(key), "good"))
-		var note := tr("kept for workshops") if Game.item_base(key) in keep else (tr("cart %d each") % Game.market.cart_price(key) if kind == "good" else tr("for building") if kind == "material" else tr("for the fields"))
+		var note := tr("kept for workshops") if Game.item_base(key) in keep else (tr("cart %d each") % Game.market.cart_price(key) if kind == "good" else tr("in the yard") if kind == "material" else tr("for the fields"))
 		UiKit.label(r, note).add_theme_color_override("font_color", UiKit.FADED)
 	if keys.is_empty():
 		UiKit.label(list, tr("Empty"))

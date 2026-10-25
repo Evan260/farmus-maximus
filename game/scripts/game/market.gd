@@ -166,9 +166,6 @@ func buy(id: String, qty := 1) -> bool:
 	if entry.is_empty() or catalog_block(entry) != "":
 		return false
 	var cost := {"coins": int(entry.get("price", 0)) * qty, "aureus": int(entry.get("aureus", 0)) * qty}
-	if entry.has("item") and _game.stored_total() + qty > _game.storage_capacity():
-		_game.message.emit("The storehouse has no room")
-		return false
 	if not _game.pay(cost):
 		return false
 	if entry.has("unlock_crop"):

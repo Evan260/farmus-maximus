@@ -10,6 +10,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var game: Node = root.get_node("Game")
+	var data_file: Node = root.get_node("Balance")
+	var secs := func(path: String) -> float: return float(data_file.get_value(path, 0)) + 1.0
 	game.new_game()
 	game.rng.seed = 7
 	_check(game.coins == 20, "starts with 20 sestertii")
@@ -98,12 +100,12 @@ func _run() -> void:
 	_check(not game.do_building_action("drying_shed"), "repairs need materials")
 	game.add_item("timber", 2, true)
 	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "repairing", "repairing a ruin takes time")
-	game.advance(31.0)
+	game.advance(secs.call("buildings.drying_shed.repair_seconds"))
 	_check(game.buildings["drying_shed"]["state"] == "working", "repairs finish on their own")
 	game.storage = {"lavender": 6, "wheat": 3}
 	_check("lavender" in game.reserved_items(), "a working building's ingredients are reserved")
 	_check(game.load_building("drying_shed") == 2 and game.count_item("lavender") == 2, "loading fills the queue from the storehouse")
-	game.simulate_offline(45.0)
+	game.simulate_offline(2.0 * secs.call("buildings.drying_shed.recipes.0.seconds"))
 	_check(game.count_item("dried_lavender") == 2, "the drying shed works through its queue, even offline")
 	game.send_cart()
 	_check(game.count_item("lavender") == 2 and game.count_item("wheat") == 0, "the cart leaves reserved ingredients and sells the rest")
@@ -115,18 +117,18 @@ func _run() -> void:
 	game.buildings["mill"]["state"] = "working"
 	game.storage = {"wheat": 3}
 	game.load_building("mill")
-	game.advance(26.0)
+	game.advance(secs.call("buildings.mill.recipes.0.seconds"))
 	_check(game.count_item("flour") == 2 and game.count_item("straw") == 1, "the mill makes flour and straw")
 	game.buildings["beehives"]["state"] = "working"
 	game.zones_owned["grove"] = true
-	game.advance(91.0)
+	game.advance(secs.call("buildings.beehives.recipes.0.seconds"))
 	_check(game.count_item("honey") + game.count_item("lavender_honey") >= 1 and game.count_item("wax") >= 1, "the hives make honey and wax on their own")
 
 	# A helper keeps their buildings loaded.
 	game.villa_stage = 3
 	game.storage = {"wheat": 12}
 	game.hire_helper("miller")
-	game.simulate_offline(200.0)
+	game.simulate_offline(8.0 * secs.call("buildings.mill.recipes.0.seconds"))
 	_check(game.count_item("wheat") == 0 and game.count_item("flour") >= 6, "the miller keeps the mill going")
 
 	# The cellar ages wine, and the barn turns feed into eggs, milk and manure.
@@ -142,21 +144,21 @@ func _run() -> void:
 	_check(game.load_building("cellar") == 2, "young wine goes into casks")
 	game.advance(100.0)
 	_check(game.draw_wine() == 0, "wine must rest before it can be drawn")
-	game.simulate_offline(3700.0)
+	game.simulate_offline(secs.call("buildings.cellar.aging.2"))
 	_check(game.draw_wine() == 2 and game.count_item("aged_wine") == 2 and game.storage.has("aged_wine@2"), "long-rested wine comes out excellent")
 	_check(game.journal.has("milestone:excellent_wine"), "an excellent wine is a milestone")
 	_check(game.market.buy("chicken") and game.market.buy("goat"), "buys animals for a working barn")
 	game.add_item("straw", 4)
 	_check(game.load_building("barn") == 4, "feed goes into the barn")
-	game.advance(61.0)
+	game.advance(secs.call("buildings.barn.cycle_seconds"))
 	_check(game.count_item("eggs") == 1 and game.count_item("milk") == 1 and game.count_item("manure") == 1, "animals make eggs, milk and manure")
 
 	# The market: demand, favourites, orders and the shop.
 	game.new_game()
-	game.add_item("lavender", 10)
+	game.add_item("lavender", 60, true)
 	game.market.favourites = []
 	var fresh: int = game.market.price("lavender")
-	game.market.sell("lavender", 5)
+	game.market.sell("lavender", 50)
 	_check(game.market.price("lavender") < fresh, "selling a lot lowers today's price")
 	game.market.new_day()
 	game.market.favourites = ["lavender"]
@@ -201,7 +203,7 @@ func _run() -> void:
 	game.add_item("tiles", 4, true)
 	_check(game.upgrade_villa(), "pays coins and materials for the next villa stage")
 	_check(game.villa_build["active"] and game.villa_stage == 2, "the villa is under construction, not finished instantly")
-	game.simulate_offline(95.0)
+	game.simulate_offline(secs.call("villa.stages.2.build_seconds"))
 	_check(not game.villa_build["active"] and game.villa_stage == 3, "construction finishes while the game is closed")
 	game.villa_stage = 4
 	_check(game.missing({"provisions": 2}) != "", "provisions are bread or wine")

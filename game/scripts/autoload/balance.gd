@@ -20,7 +20,10 @@ func load_data() -> void:
 func get_value(path: String, fallback: Variant = null) -> Variant:
 	var node: Variant = data
 	for key in path.split("."):
-		if typeof(node) != TYPE_DICTIONARY or not node.has(key):
+		if typeof(node) == TYPE_ARRAY and key.is_valid_int() and int(key) < node.size():
+			node = node[int(key)]
+		elif typeof(node) == TYPE_DICTIONARY and node.has(key):
+			node = node[key]
+		else:
 			return fallback
-		node = node[key]
 	return node

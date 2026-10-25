@@ -109,6 +109,9 @@ func _ready() -> void:
 	Game.blessing_started.connect(func(god): Sfx.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % Game.helper_info(id).get("name", "")))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
+	# A farmer who already has harvests behind them has read the letter long ago.
+	if not Settings.intro_seen and int(Game.stats.get("harvested", 0)) > 0:
+		Settings.set_value("intro_seen", true)
 	if not Settings.intro_seen:
 		_show_intro()
 	elif not Saves.pending_summary.is_empty():

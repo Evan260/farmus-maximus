@@ -99,3 +99,9 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T15:25:18,animate,game/assets/sprites/people/miller/work_east,0.0181,0,2.8411
 2026-10-25T15:28:19,character,game/assets/sprites/people/beekeeper,0.0559,0,2.7851
 2026-10-25T15:29:52,animate,game/assets/sprites/people/beekeeper/walk_east,0.0190,0,2.7661
+2026-10-25T15:32:19,character,game/assets/sprites/people/perfumer,0.0504,0,2.7158
+2026-10-25T15:33:49,animate,game/assets/sprites/people/perfumer/walk_east,0.0172,0,2.6986
+2026-10-25T15:37:40,character,game/assets/sprites/people/presser,0.0642,0,2.6344
+2026-10-25T15:39:00,animate,game/assets/sprites/people/presser/walk_east,0.0166,0,2.6178
+2026-10-25T15:40:29,animate,game/assets/sprites/people/presser/work_east,0.0184,0,2.5993
+2026-10-25T15:43:41,character,game/assets/sprites/people/stablehand,0.0585,0,2.5408
