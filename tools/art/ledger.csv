@@ -10,3 +10,6 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-24T20:31:38,proflash,game/assets/sprites/lavender/bloom_2.png,0.0235,0,4.6896
 2026-10-24T20:32:06,proflash,game/assets/sprites/lavender/bloom_3.png,0.0236,0,4.6660
 2026-10-24T20:32:35,proflash,game/assets/sprites/trees/umbrella_pine_1.png,0.0315,0,4.6345
+2026-10-24T22:01:40,pixen,design/Art tests/phase1b/far512_seed31.png,0.0104,0,4.6241
+2026-10-24T22:02:35,pixen,design/Art tests/phase1b/far512_seed47.png,0.0098,0,4.6143
+2026-10-24T22:03:24,pixen,design/Art tests/phase1b/far512_seed58.png,0.0095,0,4.6049
