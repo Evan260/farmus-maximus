@@ -39,7 +39,7 @@ BED = bed()
 def field():
     # The tilled field is drawn wider than the screen so it can slide with the camera.
     rng = np.random.default_rng(7)
-    fw, top, right = W + 80, 232, 352  # field x = screen x + 40
+    fw, top, right = W + 80, 232, W + 80  # field x = screen x + 40
     f = np.zeros((H, fw, 4), np.uint8)
     edge = top + np.cumsum(rng.integers(-1, 2, fw)).clip(-3, 3)
     redge = right + np.cumsum(rng.integers(-1, 2, H)).clip(-3, 3)
