@@ -93,6 +93,13 @@ Each phase lists what gets built, what "done" means, and a rough time estimate. 
 
 **Done when:** one screen made from these pieces looks as good as the single painting test, and the approach is chosen: layered parallax, or one painting per land with subtle motion.
 
+**Result (done, about \$0.37 of credits):** the layered approach is chosen. A background painting with nothing in it, plus separately generated sprites that use crops of a painting as their style reference (villa, umbrella pine, lavender, dog), reads as one cohesive scene and supports parallax. Lessons:
+
+- Reroll a background for about 1 cent rather than erase things from it. Inpainting works, but rectangular masks leave straight seams in skies; when it is needed, masks should follow natural edges.
+- The Edit tool turns a finished building into its earlier stages with the same footprint, so villa stages line up.
+- A Pro Flash style reference must fit inside the output canvas (crop it to size).
+- Full inpaint-v3 needs a paid subscription tier; the Pro Flash inpaint works on credits in tiles up to 256 pixels.
+
 ### Phase 2: Gray-box core loop (2 to 4 days)
 
 **Build** (with colored boxes, no final art):

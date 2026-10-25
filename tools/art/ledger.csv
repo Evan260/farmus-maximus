@@ -1,0 +1,12 @@
+time,kind,name,cost_usd,cost_generations,usd_left
+2026-10-24T20:18:03,pixen,game/assets/backgrounds/home_farm/far_seed11.png,0.0097,0,4.9903
+2026-10-24T20:18:46,pixen,game/assets/backgrounds/home_farm/far_seed22.png,0.0090,0,4.9813
+2026-10-24T20:22:31,inpaint,game/assets/backgrounds/home_farm/far.png,0.0871,0,4.8942
+2026-10-24T20:24:14,inpaint,game/assets/backgrounds/home_farm/far.png,0.0777,0,4.8165
+2026-10-24T20:26:05,proflash,game/assets/sprites/villa/stage7.png,0.0313,0,4.7852
+2026-10-24T20:27:11,edit,game/assets/sprites/villa/stage1.png,0.0000,0,4.7852
+2026-10-24T20:30:07,character,game/assets/sprites/dog,0.0487,0,4.7365
+2026-10-24T20:31:18,proflash,game/assets/sprites/lavender/bloom_1.png,0.0235,0,4.7130
+2026-10-24T20:31:38,proflash,game/assets/sprites/lavender/bloom_2.png,0.0235,0,4.6896
+2026-10-24T20:32:06,proflash,game/assets/sprites/lavender/bloom_3.png,0.0236,0,4.6660
+2026-10-24T20:32:35,proflash,game/assets/sprites/trees/umbrella_pine_1.png,0.0315,0,4.6345
