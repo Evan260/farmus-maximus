@@ -27,3 +27,15 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-24T23:07:39,edit,game/assets/sprites/villa/scaffold.png,0.0092,0,4.4194
 2026-10-24T23:14:01,pixen,design/Art tests/phase3/night_sky_seed3.png,0.0108,0,4.4086
 2026-10-24T23:14:46,pixen,design/Art tests/phase3/night_sky_seed9.png,0.0095,0,4.3991
+2026-10-24T23:21:56,proflash,game/assets/sprites/wheat/raw/stage0.png,0.0232,0,4.3758
+2026-10-24T23:22:25,proflash,game/assets/sprites/wheat/raw/stage1.png,0.0233,0,4.3525
+2026-10-24T23:22:55,proflash,game/assets/sprites/wheat/raw/stage2.png,0.0236,0,4.3289
+2026-10-24T23:23:36,proflash,game/assets/sprites/wheat/raw/bloom.png,0.0234,0,4.3055
+2026-10-24T23:24:16,proflash,game/assets/sprites/farm/storehouse.png,0.0239,0,4.2816
+2026-10-24T23:24:45,proflash,game/assets/backgrounds/home_farm/cloud_1.png,0.0240,0,4.2576
+2026-10-24T23:25:14,proflash,game/assets/backgrounds/home_farm/cloud_2.png,0.0239,0,4.2338
+2026-10-24T23:25:45,proflash,game/assets/backgrounds/home_farm/cloud_3.png,0.0238,0,4.2099
+2026-10-24T23:28:00,ui,game/assets/ui/panel.png,0.0800,0,4.1299
+2026-10-24T23:30:05,ui,game/assets/ui/button.png,0.0800,0,4.0499
+2026-10-24T23:34:02,character,game/assets/sprites/donkey,0.0587,0,3.9912
+2026-10-24T23:35:34,animate,game/assets/sprites/donkey/walk_east,0.0191,0,3.9721

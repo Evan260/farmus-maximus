@@ -5,11 +5,19 @@ const SIZE := Vector2(30, 34)
 const BED := preload("res://assets/sprites/farm/plot_bed.png")
 const SHADOW := preload("res://assets/sprites/farm/shadow_small.png")
 const SPRITES := {
-	"stage0": preload("res://assets/sprites/lavender/final/stage0.png"),
-	"stage1": preload("res://assets/sprites/lavender/final/stage1.png"),
-	"stage2": preload("res://assets/sprites/lavender/final/stage2.png"),
-	"harvested": preload("res://assets/sprites/lavender/final/harvested.png"),
-	"bloom": [preload("res://assets/sprites/lavender/final/bloom_1.png"), preload("res://assets/sprites/lavender/final/bloom_2.png")],
+	"lavender": {
+		"stage0": preload("res://assets/sprites/lavender/final/stage0.png"),
+		"stage1": preload("res://assets/sprites/lavender/final/stage1.png"),
+		"stage2": preload("res://assets/sprites/lavender/final/stage2.png"),
+		"harvested": preload("res://assets/sprites/lavender/final/harvested.png"),
+		"bloom": [preload("res://assets/sprites/lavender/final/bloom_1.png"), preload("res://assets/sprites/lavender/final/bloom_2.png")],
+	},
+	"wheat": {
+		"stage0": preload("res://assets/sprites/wheat/final/stage0.png"),
+		"stage1": preload("res://assets/sprites/wheat/final/stage1.png"),
+		"stage2": preload("res://assets/sprites/wheat/final/stage2.png"),
+		"bloom": preload("res://assets/sprites/wheat/final/bloom.png"),
+	},
 }
 
 var index := 0
@@ -18,6 +26,7 @@ var _bed: Sprite2D
 var _shadow: Sprite2D
 var _crop: Sprite2D
 var _visual := ""
+var _crop_id := ""
 var _time := 0.0
 
 
@@ -32,13 +41,15 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	var visual := Game.plot_visual(index)
-	if visual != _visual:
+	var crop := String(Game.plots[index]["crop"])
+	if visual + crop != _visual + _crop_id:
 		_visual = visual
+		_crop_id = crop
 		_bed.modulate = Color(0.55, 0.5, 0.48) if visual == "locked" else Color.WHITE
 		_crop.visible = visual not in ["locked", "empty"]
 		_shadow.visible = _crop.visible
 		if _crop.visible:
-			var tex: Variant = SPRITES[visual]
+			var tex: Variant = SPRITES[crop][visual]
 			_crop.texture = tex[index % tex.size()] if tex is Array else tex
 	queue_redraw()
 

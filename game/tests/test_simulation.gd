@@ -39,6 +39,20 @@ func _run() -> void:
 	_check(int(summary["harvested"]) == game.storage_capacity(), "summary counts offline harvests")
 	_check(bool(summary["storage_full"]), "summary reports the full storeroom")
 
+	# Wheat is an annual: harvesting empties the plot, and a farmhand replants it.
+	game.new_game()
+	game.coins = 1000
+	game.selected_seed = "wheat"
+	_check(game.try_plant(0) and game.plots[0]["crop"] == "wheat", "plants the selected seed")
+	game.advance(45.0)
+	_check(game.try_harvest(0), "harvests ripe wheat")
+	_check(game.plots[0]["crop"] == "" and int(game.storage.get("wheat", 0)) == 2, "wheat leaves the plot empty and yields two sheaves")
+	game.try_plant(0)
+	game.buy_upgrade("farmhand")
+	game.advance(45.0)
+	game.advance(6.0)
+	_check(game.plots[0]["crop"] == "wheat" and int(game.storage.get("wheat", 0)) == 4, "the farmhand harvests and replants wheat")
+
 	# The villa takes time to build and finishes on its own, even offline.
 	game.new_game()
 	game.coins = 1000

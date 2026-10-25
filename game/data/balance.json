@@ -10,13 +10,26 @@
 			"grow_seconds": 60,
 			"regrow_seconds": 40,
 			"yield": 1,
-			"item": "lavender"
+			"item": "lavender",
+			"perennial": true
+		},
+		"wheat": {
+			"name": "Wheat",
+			"plant_cost": 2,
+			"grow_seconds": 45,
+			"yield": 2,
+			"item": "wheat",
+			"perennial": false
 		}
 	},
 	"items": {
 		"lavender": {
 			"name": "Lavender bundle",
 			"price": 6
+		},
+		"wheat": {
+			"name": "Wheat sheaf",
+			"price": 3
 		}
 	},
 	"plots": {
@@ -113,5 +126,9 @@
 	"time": {
 		"day_seconds": 1200,
 		"start_hour": 16
-	}
+	},
+	"seeds": [
+		"lavender",
+		"wheat"
+	]
 }

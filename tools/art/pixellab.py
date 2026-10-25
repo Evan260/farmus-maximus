@@ -260,6 +260,18 @@ def cmd_proflash(a):
     record("proflash", a.out, before, balance())
 
 
+def cmd_ui(a):
+    before = balance()
+    r = call("POST", "/generate-ui-v2", {"description": a.description, "image_size": size(a.size),
+                                         "no_background": True, "color_palette": a.palette})
+    job = wait(r["background_job_id"]) if "background_job_id" in r else r
+    data = first_image(job.get("last_response", job))
+    if not data:
+        sys.exit(json.dumps(job)[:1500])
+    save_b64(data, ROOT / a.out)
+    record("ui", a.out, before, balance())
+
+
 def cmd_edit(a):
     before = balance()
     im = Image.open(ROOT / a.image).convert("RGBA")
@@ -358,6 +370,13 @@ def main():
     s.add_argument("--transparent", action="store_true")
     s.add_argument("--seed", type=int)
     s.set_defaults(fn=cmd_proflash)
+
+    s = sub.add_parser("ui", help="interface element such as a panel or button")
+    s.add_argument("description")
+    s.add_argument("size")
+    s.add_argument("--out", required=True)
+    s.add_argument("--palette", default="warm cream, terracotta and dark brown")
+    s.set_defaults(fn=cmd_ui)
 
     s = sub.add_parser("edit", help="change an existing sprite with a text instruction")
     s.add_argument("image")

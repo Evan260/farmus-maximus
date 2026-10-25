@@ -2,8 +2,11 @@ extends CanvasLayer
 ## The placeholder interface: farm stats, buttons, upgrade list, messages, the "while you were away" summary and the debug panel.
 
 const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
-const INK := Color(0.98, 0.94, 0.86)
-const PANEL := Color(0.17, 0.12, 0.14, 0.82)
+const PANEL_TEX := preload("res://assets/ui/panel.png")
+const BUTTON_TEX := preload("res://assets/ui/button.png")
+## Dark ink for text on parchment, and cream for text on terracotta buttons or straight over the scene.
+const INK := Color(0.29, 0.18, 0.14)
+const CREAM := Color(0.99, 0.95, 0.86)
 
 var _root: Control
 var _coins: Label
@@ -17,6 +20,8 @@ var _upgrade_buttons := {}
 var _villa_button: Button
 var _cart_button: Button
 var _debug: PanelContainer
+var _settings: PanelContainer
+var _seed_buttons := {}
 
 
 func _ready() -> void:
@@ -35,6 +40,11 @@ func _ready() -> void:
 	_coins = _label(col)
 	_storage = _label(col)
 	_cart = _label(col)
+	var seeds := HBoxContainer.new()
+	col.add_child(seeds)
+	for crop in Balance.get_value("seeds", ["lavender"]):
+		_seed_buttons[crop] = _button(seeds, String(Game.crop_info(crop).get("name", crop)), func(): Game.selected_seed = crop)
+		_seed_buttons[crop].toggle_mode = true
 
 	var buttons := VBoxContainer.new()
 	_root.add_child(buttons)
@@ -46,6 +56,7 @@ func _ready() -> void:
 	_cart_button = _button(buttons, "Send cart", func(): Game.send_cart())
 	_button(buttons, "Upgrades", func(): _upgrades_panel.visible = not _upgrades_panel.visible)
 	_villa_button = _button(buttons, "", func(): Game.upgrade_villa())
+	_button(buttons, "Settings", func(): _settings.visible = not _settings.visible)
 
 	_upgrades_panel = _panel(Vector2(0, 0))
 	_upgrades_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -58,16 +69,17 @@ func _ready() -> void:
 	for id in ["storage", "cart_capacity", "cart_speed", "farmhand"]:
 		_upgrade_buttons[id] = _button(list, "", func(): Game.buy_upgrade(id))
 
-	_info = _label(_root)
+	_info = _label(_root, true)
 	_info.position = Vector2(4, 4)
 	_info.visible = false
 
-	_toast = _label(_root)
+	_toast = _label(_root, true)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.position = Vector2(0, 54)
 	_toast.size = Vector2(480, 10)
 	_toast.modulate.a = 0.0
 
+	_build_settings()
 	_build_debug()
 	Game.message.connect(func(text): toast(text); Sfx.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast("The storeroom is full: send the cart to market"))
@@ -93,6 +105,12 @@ func _process(_delta: float) -> void:
 		var next: Dictionary = Game.villa_stages()[Game.villa_stage]
 		_villa_button.text = "%s  %d" % [next.get("name", "Upgrade villa"), villa_cost]
 		_villa_button.disabled = Game.coins < villa_cost
+	for crop in _seed_buttons:
+		var b: Button = _seed_buttons[crop]
+		var info := Game.crop_info(crop)
+		b.text = "%s %d" % [info.get("name", crop), int(info.get("plant_cost", 0))]
+		# The chosen seed is shown pressed, so it is clear what a click on an empty plot will plant.
+		b.button_pressed = Game.selected_seed == crop
 	for id in _upgrade_buttons:
 		var info := Game.upgrade_info(id)
 		var cost := Game.upgrade_cost(id)
@@ -124,7 +142,7 @@ func toast(text: String) -> void:
 
 
 func float_text(pos: Vector2, text: String) -> void:
-	var l := _label(_root)
+	var l := _label(_root, true)
 	l.text = text
 	l.position = pos
 	var t := create_tween().set_parallel()
@@ -150,6 +168,30 @@ func _show_away(summary: Dictionary) -> void:
 	for line in lines:
 		_label(col).text = line
 	_button(col, "Lovely", p.queue_free)
+
+
+func _build_settings() -> void:
+	_settings = _panel(Vector2(150, 80))
+	_settings.visible = false
+	var col := VBoxContainer.new()
+	_settings.add_child(col)
+	_label(col).text = "Settings"
+	for bus in ["Music", "Ambience", "Effects"]:
+		var row := HBoxContainer.new()
+		col.add_child(row)
+		var name := _label(row)
+		name.text = bus
+		name.custom_minimum_size = Vector2(56, 0)
+		var slider := HSlider.new()
+		slider.min_value = 0.0
+		slider.max_value = 1.0
+		slider.step = 0.05
+		slider.value = Sfx.volumes[bus]
+		slider.custom_minimum_size = Vector2(90, 8)
+		slider.focus_mode = Control.FOCUS_NONE
+		slider.value_changed.connect(func(v): Sfx.set_volume(bus, v))
+		row.add_child(slider)
+	_button(col, "Close", func(): _settings.visible = false)
 
 
 func _build_debug() -> void:
@@ -178,9 +220,14 @@ func _panel(pos: Vector2) -> PanelContainer:
 	return p
 
 
-func _label(parent: Node) -> Label:
+func _label(parent: Node, over_scene := false) -> Label:
 	var l := Label.new()
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if over_scene:
+		# Text drawn straight over the farm needs light ink and an outline to stay readable on any background.
+		l.add_theme_color_override("font_color", CREAM)
+		l.add_theme_color_override("font_outline_color", Color(0.2, 0.12, 0.12))
+		l.add_theme_constant_override("outline_size", 2)
 	parent.add_child(l)
 	return l
 
@@ -209,29 +256,31 @@ func _make_theme() -> Theme:
 	t.default_font = font
 	t.default_font_size = 8
 	t.set_color("font_color", "Label", INK)
-	t.set_color("font_outline_color", "Label", Color(0.12, 0.08, 0.1))
-	t.set_constant("outline_size", "Label", 0)
 	t.set_constant("separation", "VBoxContainer", 2)
-	t.set_stylebox("panel", "PanelContainer", _box(PANEL, 3))
-	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var c := Color(0.36, 0.25, 0.3)
-		match state:
-			"hover": c = Color(0.48, 0.34, 0.42)
-			"pressed": c = Color(0.28, 0.19, 0.24)
-			"disabled": c = Color(0.25, 0.2, 0.22, 0.85)
-			"focus": c = Color(0, 0, 0, 0)
-		t.set_stylebox(state, "Button", _box(c, 2))
-	t.set_color("font_color", "Button", INK)
-	t.set_color("font_hover_color", "Button", Color(1, 1, 0.92))
-	t.set_color("font_disabled_color", "Button", Color(0.65, 0.58, 0.58))
+	t.set_constant("separation", "HBoxContainer", 2)
+	t.set_stylebox("panel", "PanelContainer", _textured(PANEL_TEX, 6, Color.WHITE, 5))
+	t.set_stylebox("normal", "Button", _textured(BUTTON_TEX, 4, Color.WHITE, 3))
+	t.set_stylebox("hover", "Button", _textured(BUTTON_TEX, 4, Color(1.12, 1.08, 1.05), 3))
+	t.set_stylebox("pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.72, 0.6, 0.55), 3))
+	t.set_stylebox("hover_pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.78, 0.66, 0.6), 3))
+	t.set_stylebox("disabled", "Button", _textured(BUTTON_TEX, 4, Color(0.62, 0.58, 0.56, 0.8), 3))
+	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	t.set_color("font_color", "Button", CREAM)
+	t.set_color("font_hover_color", "Button", Color(1, 1, 0.94))
+	t.set_color("font_pressed_color", "Button", Color(1, 0.93, 0.78))
+	t.set_color("font_hover_pressed_color", "Button", Color(1, 0.93, 0.78))
+	t.set_color("font_disabled_color", "Button", Color(0.92, 0.86, 0.8, 0.75))
 	return t
 
 
-func _box(color: Color, margin: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = color
-	s.content_margin_left = margin + 1
-	s.content_margin_right = margin + 1
-	s.content_margin_top = margin
-	s.content_margin_bottom = margin
+## A stretchable panel or button skin cut from one small image: the corners stay sharp, the middle stretches.
+func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = tex
+	# The generated images have transparent margins, so the skin is cut from the visible part only.
+	s.region_rect = tex.get_image().get_used_rect()
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		s.set_texture_margin(side, border)
+		s.set_content_margin(side, pad + 1)
+	s.modulate_color = tint
 	return s

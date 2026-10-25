@@ -15,6 +15,8 @@ var coins := 0
 var storage := {}
 var plots: Array = []
 var levels := {}
+## The crop a click on an empty plot plants.
+var selected_seed := "lavender"
 var villa_stage := 1
 ## A villa stage under construction; it finishes on its own, even while the game is closed.
 var villa_build := {}
@@ -45,6 +47,7 @@ func new_game() -> void:
 	for i in int(Balance.get_value("plots.count", 17)):
 		plots.append({"unlocked": i < unlocked, "crop": "", "growth": 0.0, "cycle": 0})
 	levels = {"storage": 0, "cart_capacity": 0, "cart_speed": 0, "farmhand": 0}
+	selected_seed = "lavender"
 	villa_stage = 1
 	villa_build = {"active": false, "time_left": 0.0}
 	day_time = float(Balance.get_value("time.start_hour", 16))
@@ -158,7 +161,9 @@ func villa_next_cost() -> int:
 
 # Actions ----------------------------------------------------------------
 
-func try_plant(i: int, crop_id := "lavender") -> bool:
+func try_plant(i: int, crop_id := "") -> bool:
+	if crop_id == "":
+		crop_id = selected_seed
 	var p: Dictionary = plots[i]
 	if not p["unlocked"] or p["crop"] != "":
 		return false
@@ -288,7 +293,12 @@ func advance(dt: float) -> Dictionary:
 				# Nothing to do, so the farmhand waits instead of saving up a burst of harvests.
 				farmhand_timer = 0.0
 				break
+			var crop := String(plots[i]["crop"])
 			result["harvested"] += _harvest(i)
+			# The farmhand replants annual crops straight away, as long as the seed is affordable.
+			if plots[i]["crop"] == "" and coins >= int(crop_info(crop).get("plant_cost", 0)):
+				coins -= int(crop_info(crop).get("plant_cost", 0))
+				plots[i]["crop"] = crop
 			farmhand_timer += interval
 	return result
 
@@ -323,6 +333,10 @@ func _harvest(i: int) -> int:
 	storage[item] = int(storage.get(item, 0)) + amount
 	p["growth"] = 0.0
 	p["cycle"] = int(p["cycle"]) + 1
+	# Perennials like lavender regrow from the same plant; annuals like wheat leave the plot empty.
+	if not info.get("perennial", false):
+		p["crop"] = ""
+		p["cycle"] = 0
 	stats["harvested"] = int(stats["harvested"]) + amount
 	if not quiet:
 		harvested.emit(i, amount)
@@ -344,7 +358,7 @@ func _empty_cart() -> Dictionary:
 
 func to_dict() -> Dictionary:
 	return {
-		"coins": coins, "storage": storage, "plots": plots, "levels": levels,
+		"coins": coins, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
 		"villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time, "cart": cart, "farmhand_timer": farmhand_timer, "stats": stats,
 	}
 
@@ -352,6 +366,7 @@ func to_dict() -> Dictionary:
 func from_dict(d: Dictionary) -> void:
 	new_game()
 	coins = int(d.get("coins", coins))
+	selected_seed = String(d.get("selected_seed", selected_seed))
 	storage = {}
 	for item in d.get("storage", {}):
 		storage[item] = int(d["storage"][item])

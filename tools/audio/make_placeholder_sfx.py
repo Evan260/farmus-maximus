@@ -1,6 +1,7 @@
 """Synthesize simple placeholder sound effects until real ones are licensed.
 
 Usage: python tools/audio/make_placeholder_sfx.py game/assets/audio/sfx
+       python tools/audio/make_placeholder_sfx.py game/assets/audio/ambience --ambience
 """
 import sys
 import wave
@@ -127,5 +128,53 @@ def main():
         print("wrote", name)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) == 2:
     main()
+
+
+def ambience_day(seconds=24.0):
+    # Breeze as slowly swelling filtered noise, with occasional bird chirps on top.
+    x = t(seconds)
+    wind = lowpass(rng.standard_normal(len(x)), 300) * (0.55 + 0.45 * np.sin(2 * np.pi * x / seconds * 3) ** 2) * 6
+    out = wind
+    for _ in range(14):
+        at = rng.uniform(0.5, seconds - 1)
+        f0 = rng.uniform(2600, 3800)
+        for k in range(rng.integers(2, 5)):
+            c = t(0.07)
+            sweep = np.sin(2 * np.pi * np.cumsum(f0 + 900 * np.sin(np.pi * c / 0.07)) / RATE) * env(len(c), 0.005, 30) * 0.12
+            place(out, sweep, at + k * 0.11)
+    return seam(out)
+
+
+def ambience_night(seconds=24.0):
+    # Crickets chirp in short pulses of a high tone over a very soft breeze.
+    x = t(seconds)
+    out = lowpass(rng.standard_normal(len(x)), 400) * 2.0
+    for cricket in range(3):
+        f = rng.uniform(4200, 5200)
+        period = rng.uniform(0.7, 1.1)
+        at = rng.uniform(0, 0.5)
+        while at < seconds - 0.3:
+            for p in range(3):
+                c = t(0.025)
+                place(out, np.sin(2 * np.pi * f * c) * env(len(c), 0.002, 80) * 0.05, at + p * 0.04)
+            at += period * rng.uniform(0.9, 1.1)
+    return seam(out)
+
+
+def seam(x):
+    # Crossfading the end into the start makes the loop point inaudible.
+    n = int(RATE * 1.0)
+    head, tail = x[:n].copy(), x[-n:]
+    fade = np.linspace(0, 1, n)
+    x[:n] = head * fade + tail * (1 - fade)
+    return x[:-n]
+
+
+if __name__ == "__main__" and len(sys.argv) > 2 and sys.argv[2] == "--ambience":
+    out = Path(sys.argv[1])
+    out.mkdir(parents=True, exist_ok=True)
+    write(out / "day.wav", ambience_day())
+    write(out / "night.wav", ambience_night())
+    print("wrote ambience")

@@ -22,9 +22,17 @@ var _sky_night: Sprite2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
 var _cart: Sprite2D
-var _cart_home := Vector2.ZERO
-var _cart_tween: Tween
+var _cart_shadow: Sprite2D
+var _donkey: AnimatedSprite2D
+var _rig_tween: Tween
+var _storehouse: Sprite2D
+var _glow_layer: CanvasLayer
+var _window_glow: Sprite2D
+var _clouds: Array = []
 var _hammer_timer := 0.0
+## Where the cart parks, on the soil just right of the path, with the donkey at its handles.
+const CART_HOME_X := 380.0
+const RIG_BASE := 266
 
 
 func _ready() -> void:
@@ -38,12 +46,22 @@ func _ready() -> void:
 	add_child(sky_layer)
 	_sky_day = _add_texture(load(BG + "layer_sky.png"), Vector2(-16, 0), sky_layer)
 	_sky_night = _add_texture(load(BG + "layer_sky_night.png"), Vector2(-16, 0), sky_layer)
+	for i in 3:
+		var c := _add_trimmed(load(BG + "cloud_%d.png" % (i + 1)), Vector2([40, 210, 360][i], [18, 52, 30][i]), false, 0, sky_layer)
+		_clouds.append({"sprite": c, "speed": [2.2, 1.4, 3.0][i]})
+	_glow_layer = CanvasLayer.new()
+	_glow_layer.layer = 1
+	add_child(_glow_layer)
 	# The background layers are wider than the screen; the extra width is for camera panning later.
 	_add_texture(load(BG + "layer_mountains.png"), Vector2(-16, 0))
 	_add_texture(load(BG + "layer_land.png"), Vector2(-16, 0))
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
+	_window_glow = _add_texture(null, Vector2.ZERO, _glow_layer)
+	_window_glow.region_enabled = true
 	_place_villa()
+	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(194, 230))
+	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(198, 0), true, 236)
 	var pine := _add_trimmed(load("res://assets/sprites/trees/umbrella_pine_1.png"), Vector2(-16, 0), true, 240)
 	_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236))
 	_add_texture(load(BG + "field.png"), Vector2(-40, 0))
@@ -55,14 +73,17 @@ func _ready() -> void:
 	dog = Dog.new()
 	dog.position = Vector2(345, 268)
 	add_child(dog)
-	_add_texture(Lighting.ellipse_texture(58, 6, SHADOW), Vector2(416, 261))
-	_cart = _add_trimmed(load("res://assets/sprites/farm/cart.png"), Vector2(414, 0), true, 266)
-	_cart_home = _cart.position
+	_cart_shadow = _add_texture(Lighting.ellipse_texture(96, 6, SHADOW), Vector2.ZERO)
+	_cart = _add_trimmed(load("res://assets/sprites/farm/cart.png"), Vector2(CART_HOME_X, 0), true, RIG_BASE)
+	_donkey = AnimatedSprite2D.new()
+	_donkey.sprite_frames = _donkey_frames()
+	_donkey.centered = false
+	_donkey.offset = Vector2(-32, -_feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
+	_donkey.play("stand")
+	add_child(_donkey)
+	_park_rig()
 
-	var glow_layer := CanvasLayer.new()
-	glow_layer.layer = 1
-	glow_layer.add_child(Fireflies.new())
-	add_child(glow_layer)
+	_glow_layer.add_child(Fireflies.new())
 	hud = Hud.new()
 	add_child(hud)
 
@@ -75,13 +96,24 @@ func _ready() -> void:
 	Game.cart_returned.connect(_on_cart_returned)
 	dog.petted.connect(_on_dog_petted)
 	if Game.cart["away"]:
-		_cart.position.x = 500
+		_cart.position.x = 560
+		_donkey.position.x = 620
 
 
 func _process(delta: float) -> void:
+	var night := Lighting.night_amount(Game.day_time)
 	_daylight.color = Lighting.color_at(Game.day_time)
 	_sky_day.modulate = _daylight.color
-	_sky_night.modulate.a = Lighting.night_amount(Game.day_time)
+	_sky_night.modulate.a = night
+	_window_glow.modulate.a = night
+	for c in _clouds:
+		var sprite: Sprite2D = c["sprite"]
+		sprite.position.x += c["speed"] * delta
+		if sprite.position.x > 500:
+			sprite.position.x = -sprite.region_rect.size.x - 10
+		# The drifting day clouds fade out at night, when the night sky has clouds of its own.
+		sprite.modulate = Color(_daylight.color, 1.0 - night)
+	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	if Game.villa_build["active"]:
 		_hammer_timer -= delta
 		if _hammer_timer <= 0.0:
@@ -107,6 +139,10 @@ func _load_demo_state() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--hour="):
 			Game.day_time = float(arg.trim_prefix("--hour="))
+		elif arg.begins_with("--villa="):
+			Game.villa_stage = int(arg.trim_prefix("--villa="))
+		elif arg == "--send-cart":
+			Game.send_cart.call_deferred()
 
 
 func _build_plots() -> void:
@@ -165,6 +201,8 @@ func _update_hover(point: Vector2) -> void:
 	if view == null:
 		if dog.contains(point):
 			hud.set_info("Pet the dog")
+		elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
+			hud.set_info("Storeroom: %d / %d" % [Game.stored_total(), Game.storage_capacity()])
 		elif _cart_rect().has_point(point):
 			hud.set_info("Click the cart to sell")
 		else:
@@ -206,7 +244,7 @@ func _bloom_points() -> Array:
 
 
 func _cart_rect() -> Rect2:
-	return Rect2(_cart.position, _cart.region_rect.size)
+	return Rect2(_cart.position, Vector2(_donkey.position.x + 24 - _cart.position.x, _cart.region_rect.size.y))
 
 
 func _on_harvested(plot_index: int, amount: int) -> void:
@@ -220,17 +258,27 @@ func _on_harvested(plot_index: int, amount: int) -> void:
 func _on_cart_left(_items: int, value: int) -> void:
 	Sfx.play("cart")
 	hud.toast("The cart heads to market with %d sestertii of goods" % value)
-	_move_cart(500, 1.2)
+	_donkey.flip_h = false
+	_cart.flip_h = false
+	_donkey.play("walk")
+	_move_rig(CART_HOME_X + 190, 3.0)
 
 
 func _on_cart_returned(coins: int) -> void:
 	Sfx.play("cart")
-	_cart.position.x = 500
-	_move_cart(_cart_home.x, 1.2)
-	await get_tree().create_timer(1.2).timeout
+	# Coming home the donkey leads from the right, so the rig is mirrored with the donkey in front.
+	_cart.flip_h = true
+	_donkey.flip_h = true
+	_cart.position.x = 520
+	_donkey.position.x = 500
+	_donkey.play("walk")
+	_move_rig(CART_HOME_X + 24, 2.6, true)
+	await _rig_tween.finished
+	_dust(Vector2(CART_HOME_X + 40, RIG_BASE), 10)
+	_park_rig()
 	Sfx.play("coins")
-	hud.float_text(_cart_home + Vector2(24, -8), "+%d" % coins)
-	_burst(_cart_home + Vector2(30, 6), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
+	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46), "+%d" % coins)
+	_burst(Vector2(CART_HOME_X + 30, RIG_BASE - 20), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
 	hud.toast("The cart is back: +%d sestertii" % coins)
 
 
@@ -262,11 +310,40 @@ func _on_villa_finished() -> void:
 	create_tween().tween_property(_villa, "modulate", Color.WHITE, 0.9)
 
 
-func _move_cart(x: float, seconds: float) -> void:
-	if _cart_tween:
-		_cart_tween.kill()
-	_cart_tween = create_tween()
-	_cart_tween.tween_property(_cart, "position:x", x, seconds).set_trans(Tween.TRANS_SINE)
+## Parks the cart with the donkey standing at its handles, both facing right towards the road to market.
+func _park_rig() -> void:
+	_cart.flip_h = false
+	_donkey.flip_h = false
+	_cart.position.x = CART_HOME_X
+	_donkey.position = Vector2(CART_HOME_X + _cart.region_rect.size.x + 8, RIG_BASE)
+	_donkey.play("stand")
+
+
+## Moves cart and donkey together; when returning, the donkey walks in front on the left.
+func _move_rig(cart_x: float, seconds: float, returning := false) -> void:
+	if _rig_tween:
+		_rig_tween.kill()
+	var donkey_x := cart_x - 22.0 if returning else cart_x + _cart.region_rect.size.x + 8
+	_rig_tween = create_tween().set_parallel()
+	_rig_tween.tween_property(_cart, "position:x", cart_x, seconds)
+	_rig_tween.tween_property(_donkey, "position:x", donkey_x, seconds)
+
+
+func _donkey_frames() -> SpriteFrames:
+	var f := SpriteFrames.new()
+	f.remove_animation("default")
+	f.add_animation("walk")
+	f.set_animation_speed("walk", 9.0)
+	for i in range(1, 9):
+		f.add_frame("walk", load("res://assets/sprites/donkey/walk_east/frame_%02d.png" % i))
+	f.add_animation("stand")
+	f.add_frame("stand", load("res://assets/sprites/donkey/walk_east/frame_00.png"))
+	return f
+
+
+func _feet_line(tex: Texture2D) -> int:
+	var used := tex.get_image().get_used_rect()
+	return used.position.y + used.size.y
 
 
 func _villa_texture() -> Texture2D:
@@ -285,6 +362,24 @@ func _place_villa() -> void:
 	_villa.position = Vector2(round(VILLA_BASE.x - used.size.x / 2.0), VILLA_BASE.y - used.size.y + 1)
 	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 9, SHADOW)
 	_villa_shadow.position = Vector2(_villa.position.x - 6, VILLA_BASE.y - 5)
+	_window_glow.texture = _window_glow_texture(tex)
+	_window_glow.region_rect = used
+	_window_glow.position = _villa.position
+
+
+## Lamp light for the villa's windows: every glass-blue pixel becomes warm light, shown only at night.
+func _window_glow_texture(tex: Texture2D) -> ImageTexture:
+	var img := tex.get_image()
+	img.convert(Image.FORMAT_RGBA8)
+	var glow := Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8)
+	# The ruin and the scaffolding have no glass, only dark holes, so they stay dark.
+	if not Game.villa_build["active"] and Game.villa_stage > 1:
+		for x in img.get_width():
+			for y in img.get_height():
+				var c := img.get_pixel(x, y)
+				if c.a > 0.5 and c.b > c.r + 0.08 and c.b > c.g + 0.02:
+					glow.set_pixel(x, y, Color(1.0, 0.82, 0.45, 0.95))
+	return ImageTexture.create_from_image(glow)
 
 
 ## A one-shot puff of pixel particles.
@@ -322,8 +417,8 @@ func _add_texture(tex: Texture2D, pos: Vector2, parent: Node = self) -> Sprite2D
 
 
 ## Adds a sprite cropped to its visible pixels; with from_bottom, pos.y is ignored and the sprite stands on base_y.
-func _add_trimmed(tex: Texture2D, pos: Vector2, from_bottom := false, base_y := 0) -> Sprite2D:
-	var s := _add_texture(tex, pos)
+func _add_trimmed(tex: Texture2D, pos: Vector2, from_bottom := false, base_y := 0, parent: Node = self) -> Sprite2D:
+	var s := _add_texture(tex, pos, parent)
 	var used := tex.get_image().get_used_rect()
 	s.region_enabled = true
 	s.region_rect = used
