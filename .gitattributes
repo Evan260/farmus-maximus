@@ -10,3 +10,6 @@
 *.mp3 filter=lfs diff=lfs merge=lfs -text
 *.ttf filter=lfs diff=lfs merge=lfs -text
 *.otf filter=lfs diff=lfs merge=lfs -text
+
+# Windows batch files need Windows line endings
+*.bat text eol=crlf
