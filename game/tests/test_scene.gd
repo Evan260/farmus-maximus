@@ -31,6 +31,15 @@ func _run() -> void:
 	_check(main._plot_at(empty.position + Vector2(14, -20)) == empty, "a grown plant responds where its leaves are")
 	main._click_plot(i)
 	_check(game.stored_total() == 1, "clicking a blooming plot harvests it")
+	var top: Vector2 = main._villa_rect().position + Vector2(main._villa_rect().size.x / 2, 10)
+	main._click(top)
+	_check(main.hud._building_panel.visible and main.hud._building_id == "villa", "clicking the farmhouse opens its panel")
+	main.hud._b_action.pressed.emit()
+	_check(game.villa_build["active"], "the farmhouse panel starts the restoration")
+	for s in main.signs:
+		var r: Rect2 = s.world_rect()
+		# The ground strip's top edge wanders between rows 229 and 235.
+		_check(r.end.y > 236, "the %s sign stands in the ground" % s.zone_id)
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
 

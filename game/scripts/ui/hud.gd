@@ -3,6 +3,9 @@ extends CanvasLayer
 
 signal zone_chosen(zone_id: String)
 
+## The id the building panel uses for the farmhouse, which is not one of the estate's workshops.
+const VILLA := "villa"
+
 const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
 const PANEL_TEX := preload("res://assets/ui/panel.png")
 const BUTTON_TEX := preload("res://assets/ui/button.png")
@@ -19,7 +22,6 @@ var _toast: Label
 var _toast_tween: Tween
 var _upgrades_panel: PanelContainer
 var _upgrade_buttons := {}
-var _villa_button: Button
 var _cart_button: Button
 var _debug: PanelContainer
 var _settings: PanelContainer
@@ -77,7 +79,6 @@ func _ready() -> void:
 	buttons.offset_right = -4
 	_cart_button = _button(buttons, "Send cart", func(): Game.send_cart())
 	_button(buttons, "Upgrades", func(): _upgrades_panel.visible = not _upgrades_panel.visible)
-	_villa_button = _button(buttons, "", func(): Game.upgrade_villa())
 	_button(buttons, "Storehouse", func(): _store_panel.visible = not _store_panel.visible)
 	_button(buttons, "Settings", func(): _settings.visible = not _settings.visible)
 
@@ -130,7 +131,7 @@ func _process(_delta: float) -> void:
 		_refresh_building_panel()
 	if _store_panel.visible:
 		_refresh_store_panel()
-		_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.storage_capacity()]
+	_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.storage_capacity()]
 	_strip_button.text = "Full window  (F10)" if in_strip else "Desktop strip  (F10)"
 	_style_button.text = "Strip: transparent" if Windowing.transparent else "Strip: solid"
 	_size_button.text = "Strip size: %s" % Windowing.SIZES[Windowing.size_index]
@@ -141,15 +142,6 @@ func _process(_delta: float) -> void:
 	else:
 		_cart.text = "Cart ready  (carries %d)" % Game.cart_capacity()
 	_cart_button.disabled = Game.cart["away"] or Game.stored_total() == 0
-	var villa_cost := Game.villa_next_cost()
-	_villa_button.visible = villa_cost >= 0 or Game.villa_build["active"]
-	if Game.villa_build["active"]:
-		_villa_button.text = "Building...  %ds" % ceili(float(Game.villa_build["time_left"]))
-		_villa_button.disabled = true
-	elif villa_cost >= 0:
-		var next: Dictionary = Game.villa_stages()[Game.villa_stage]
-		_villa_button.text = "%s  %d" % [next.get("name", "Upgrade villa"), villa_cost]
-		_villa_button.disabled = Game.coins < villa_cost
 	for crop in _seed_buttons:
 		var b: Button = _seed_buttons[crop]
 		var info := Game.crop_info(crop)
@@ -212,7 +204,7 @@ func _build_building_panel() -> void:
 	_b_recipe = _label(col)
 	var row := HBoxContainer.new()
 	col.add_child(row)
-	_b_action = _button(row, "", func(): Game.do_building_action(_building_id))
+	_b_action = _button(row, "", func(): Game.upgrade_villa() if _building_id == VILLA else Game.do_building_action(_building_id))
 	_b_pause = _button(row, "", func(): Game.set_building_paused(_building_id, not Game.buildings[_building_id]["paused"]))
 	_button(row, "Close", func(): _building_panel.visible = false)
 	_building_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -222,6 +214,10 @@ func _build_building_panel() -> void:
 
 
 func _refresh_building_panel() -> void:
+	if _building_id == VILLA:
+		_refresh_villa_panel()
+		return
+	_b_recipe.visible = true
 	var id := _building_id
 	var info := Game.building_info(id)
 	var b: Dictionary = Game.buildings[id]
@@ -250,6 +246,26 @@ func _refresh_building_panel() -> void:
 		_b_action.disabled = Game.coins < int(act["cost"]) or not zone_owned
 	_b_pause.visible = b["state"] == "working"
 	_b_pause.text = "Resume" if b["paused"] else "Pause"
+
+
+## The farmhouse shares the building panel, with its restoration in place of a recipe.
+func _refresh_villa_panel() -> void:
+	var stages := Game.villa_stages()
+	var current: Dictionary = stages[clampi(Game.villa_stage - 1, 0, stages.size() - 1)]
+	_b_title.text = String(current.get("name", "Farmhouse"))
+	var cost := Game.villa_next_cost()
+	if Game.villa_build["active"]:
+		_b_status.text = "Being restored: %ds left" % ceili(float(Game.villa_build["time_left"]))
+	elif cost < 0:
+		_b_status.text = "Fully restored. Home sweet home."
+	else:
+		_b_status.text = "Next: %s" % String(stages[Game.villa_stage].get("name", ""))
+	_b_recipe.visible = false
+	_b_action.visible = cost >= 0
+	if cost >= 0:
+		_b_action.text = "Restore  %d" % cost
+		_b_action.disabled = Game.coins < cost
+	_b_pause.visible = false
 
 
 func _goods_text(goods: Dictionary) -> String:

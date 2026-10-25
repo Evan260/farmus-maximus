@@ -87,6 +87,19 @@ def main():
     mtn_line = np.interp(xs, xs[known], raw[known]).astype(int) if known.any() else ground.copy()
     mtn_line = np.minimum(smooth(mtn_line, 2), ground)
 
+    # Everything below the distant haze is land, including pale sunlit hills, so near hills never slide apart from each other.
+    # Sky-coloured pixels below the mountain line are only sky when they join the open sky; enclosed ones are pale walls, like the town's.
+    n_sky, sky_lab = cv2.connectedComponents(sky_px.astype(np.uint8), connectivity=4)
+    open_sky = np.isin(sky_lab, list(set(np.unique(sky_lab[yy < mtn_line[None, :]])) - {0}))
+    far = (open_sky & sky_px) | ((h >= 85) & (h <= 115)) | (((h <= 12) | (h >= 160)) & (s < 100) & (v >= 140))
+    near = ~far & (yy > mtn_line[None, :])
+    for k in range(1, 4):
+        near[:-k] &= ~far[k:]
+    land_top = np.maximum(first(near), mtn_line + 1)
+    land = yy >= land_top[None, :]
+    touching = set(np.unique(lab[land & (lab > 0)]))
+    land |= np.isin(lab, list(touching)) & foliage
+
     above = yy < mtn_line[None, :]
     sky_rgb = rgb.copy()
     hidden = ~above | land
@@ -95,19 +108,22 @@ def main():
         # The hidden part of each row takes that row's typical visible colour, because horizon skies are painted in flat horizontal bands.
         sky_rgb[y, ~seen] = np.median(rgb[y, seen], axis=0).astype(np.uint8) if seen.sum() >= 8 else sky_rgb[y - 1, ~seen]
     band = ~above & ~land
-    mtn_rgb = fill_rows(rgb, ~band & ~above)
-    # Below the mountains, the hidden area becomes an even haze in the valley's average colour, because panning
-    # reveals it and repeated column colours would show as stripes.
-    lows = []
+    mtn_rgb = rgb.copy()
+    lows = np.array([np.nonzero(band[:, x])[0].max() if band[:, x].any() else -1 for x in range(W)])
+    # Panning reveals the mountains' hidden feet, so they get one flat palette colour per mountain hue (blue or dusty pink), never a blur or a patchwork.
+    feet = [(tuple(rgb[lows[x], x]), bool(h[lows[x], x] <= 12 or h[lows[x], x] >= 160)) for x in range(W) if lows[x] >= 0]
+    bases = {}
+    for pink in (False, True):
+        colours = [c for c, p in feet if p == pink] or [c for c, p in feet]
+        bases[pink] = max(set(colours), key=colours.count)
+    pink_col = np.zeros(W, bool)
     for x in range(W):
-        col = np.nonzero(band[:, x])[0]
-        lows.append(col.max() if len(col) else min(mtn_line[x], H - 1))
-    haze = np.median(np.array([mtn_rgb[lows[x], x] for x in range(W)]), axis=0).astype(np.uint8)
+        if lows[x] >= 0:
+            pink_col[x] = h[lows[x], x] <= 12 or h[lows[x], x] >= 160
     for x in range(W):
-        low = lows[x]
-        for y in range(low + 1, H):
-            t = min(1.0, (y - low) / 4.0)
-            mtn_rgb[y, x] = (mtn_rgb[low, x] * (1 - t) + haze * t).astype(np.uint8)
+        window = [pink_col[i] for i in range(max(0, x - 40), min(W, x + 41)) if lows[i] >= 0]
+        pink = bool(window) and sum(window) * 2 > len(window)
+        mtn_rgb[~band[:, x] & ~above[:, x], x] = bases[pink]
     mtn_alpha = np.zeros((H, W), np.uint8)
     for x in range(W):
         mtn_alpha[mtn_line[x]:, x] = 255

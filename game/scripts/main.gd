@@ -14,7 +14,7 @@ const ESTATE_WIDTH := 1920.0
 ## The home farm is the second zone, so everything on it sits one screen to the right.
 const HOME := 480.0
 ## Bottom centre of the villa, where the path in the field meets its steps.
-const VILLA_BASE := Vector2(HOME + 371, 234)
+const VILLA_BASE := Vector2(HOME + 371, 237)
 const FRONT_ROW := 263
 const BACK_ROW := 246
 const SHADOW := Color(0.16, 0.11, 0.12, 0.28)
@@ -40,6 +40,8 @@ var _mountains: Sprite2D
 var _land: Sprite2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
+var _villa_outline: Node2D
+var _villa_hovered := false
 var _cart: Sprite2D
 var _cart_shadow: Sprite2D
 var _donkey: AnimatedSprite2D
@@ -96,6 +98,9 @@ func _ready() -> void:
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_window_glow = _add_texture(null, Vector2.ZERO, _glow_layer)
 	_window_glow.region_enabled = true
+	_villa_outline = Node2D.new()
+	_villa_outline.draw.connect(func(): if _villa_hovered: _villa_outline.draw_rect(_villa_rect().grow(1), Color(1, 0.96, 0.85, 0.7), false, 1.0))
+	add_child(_villa_outline)
 	_place_villa()
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
 	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(HOME + 198, 0), true, 236)
@@ -280,7 +285,7 @@ func _build_signs() -> void:
 			continue
 		var s := ZoneSign.new()
 		s.zone_id = z["id"]
-		s.position = Vector2(float(z["x"]) + 240, 230)
+		s.position = Vector2(float(z["x"]) + float(z.get("sign_x", 240)), 240)
 		add_child(s)
 		signs.append(s)
 
@@ -418,6 +423,9 @@ func _click(point: Vector2) -> void:
 		return
 	if _cart_rect().has_point(point):
 		Game.send_cart()
+		return
+	if _villa_rect().has_point(point):
+		hud.show_building(hud.VILLA)
 
 
 ## Arrow keys or a gamepad's d-pad move between plots, and Enter or the A button acts on the chosen one.
@@ -495,6 +503,10 @@ func _update_hover(point: Vector2) -> void:
 	var building: Node2D = null if view or sign_hit else _building_at(point)
 	for b in building_views:
 		b.hovered = b == building
+	var on_villa := not view and not sign_hit and not building and not _cart_rect().has_point(point) and _villa_rect().has_point(point)
+	if on_villa != _villa_hovered:
+		_villa_hovered = on_villa
+		_villa_outline.queue_redraw()
 	if view:
 		_describe_plot(view.index)
 	elif sign_hit:
@@ -502,6 +514,8 @@ func _update_hover(point: Vector2) -> void:
 		hud.set_info("Buy the %s deed: %d sestertii" % [String(z.get("name", "")).to_lower(), int(z.get("deed", 0))])
 	elif building:
 		hud.set_info("%s: click for details" % Game.building_info(building.id).get("name", ""))
+	elif _villa_hovered:
+		hud.set_info("%s: click for details" % Game.villa_stages()[clampi(Game.villa_stage - 1, 0, Game.villa_stages().size() - 1)].get("name", "Farmhouse"))
 	elif dog.contains(point):
 		hud.set_info("Pet the dog")
 	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
@@ -711,13 +725,17 @@ func _villa_texture() -> Texture2D:
 	return load("res://assets/sprites/villa/%s.png" % stage.get("sprite", "stage1"))
 
 
+func _villa_rect() -> Rect2:
+	return Rect2(_villa.position, _villa.region_rect.size)
+
+
 func _place_villa() -> void:
 	var tex := _villa_texture()
 	_villa.texture = tex
 	var used := tex.get_image().get_used_rect()
 	_villa.region_rect = used
 	_villa.position = Vector2(round(VILLA_BASE.x - used.size.x / 2.0), VILLA_BASE.y - used.size.y + 1)
-	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 9, SHADOW)
+	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 7, SHADOW)
 	_villa_shadow.position = Vector2(_villa.position.x - 6, VILLA_BASE.y - 5)
 	_window_glow.texture = _window_glow_texture(tex)
 	_window_glow.region_rect = used

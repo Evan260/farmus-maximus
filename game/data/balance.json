@@ -200,6 +200,7 @@
 				"id": "yard",
 				"name": "Workshop yard",
 				"x": 960,
+				"sign_x": 300,
 				"deed": 120
 			},
 			{
