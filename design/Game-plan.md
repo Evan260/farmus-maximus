@@ -1,6 +1,6 @@
 # Otium: Game Plan
 
-How the game gets built, in what order, and how we know each step is done. The design itself lives in `Game-mechanics.md`, the art in `Asset-list.md`, the money in `Business-plan.md`, and the competitor research in `reports/Cozy idle game feature comparison.md`.
+How the game gets built, in what order, and how we know each step is done. The design itself lives in `Game-design.md`, the art in `Asset-list.md`, the money in `Business-plan.md`, and the competitor research in `reports/Cozy idle game feature comparison.md`.
 
 ---
 

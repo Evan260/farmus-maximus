@@ -7,7 +7,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | Path | What |
 |---|---|
 | `game/` | Godot 4.7 project (GDScript, Compatibility renderer) |
-| `design/` | Design docs: `Game-plan.md` (build phases), `Game-mechanics.md`, `Asset-list.md`, `Business-plan.md`, competitor research in `reports/` |
+| `design/` | Design docs: `Game-design.md` (the whole game), `Game-plan.md` (build phases), `Asset-list.md`, `Business-plan.md`, competitor research in `reports/` |
 | `design/Art tests/` | Early art experiments and the reference scene |
 | `tools/art/pixellab.py` | Art pipeline: generate with PixelLab, slice sheets, clean stray pixels; every paid call is logged in `tools/art/ledger.csv` |
 | `.env` | `PIXELLAB_TOKEN` (git-ignored) |

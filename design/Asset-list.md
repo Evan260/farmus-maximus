@@ -1,6 +1,6 @@
 # Otium: Asset List
 
-Every art, audio and store asset the game needs, based on `Game-mechanics.md`. Counts are estimates to help plan the work.
+Every art, audio and store asset the game needs, based on `Game-design.md`. Counts are estimates to help plan the work.
 
 ## Conventions
 
