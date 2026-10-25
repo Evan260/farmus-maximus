@@ -30,6 +30,13 @@ var _glow_layer: CanvasLayer
 var _window_glow: Sprite2D
 var _clouds: Array = []
 var _hammer_timer := 0.0
+var _camera: Camera2D
+var _sky_layer: CanvasLayer
+## Painted scenery that is hidden in the transparent desktop strip, so only the farm floats over the desktop.
+var _scenery: Array = []
+var _click_area_timer := 0.0
+## The plot chosen with the keyboard or a gamepad, or -1 when the mouse is in use.
+var _selected := -1
 ## Where the cart parks, on the soil just right of the path, with the donkey at its handles.
 const CART_HOME_X := 380.0
 const RIG_BASE := 266
@@ -43,7 +50,10 @@ func _ready() -> void:
 	# The sky gets its own layer, outside the night tint, so the night sky's stars and moon keep their own colours.
 	var sky_layer := CanvasLayer.new()
 	sky_layer.layer = -1
+	# The sky follows the camera, so it lines up with the rest of the scene in the desktop strip.
+	sky_layer.follow_viewport_enabled = true
 	add_child(sky_layer)
+	_sky_layer = sky_layer
 	_sky_day = _add_texture(load(BG + "layer_sky.png"), Vector2(-16, 0), sky_layer)
 	_sky_night = _add_texture(load(BG + "layer_sky_night.png"), Vector2(-16, 0), sky_layer)
 	for i in 3:
@@ -51,10 +61,11 @@ func _ready() -> void:
 		_clouds.append({"sprite": c, "speed": [2.2, 1.4, 3.0][i]})
 	_glow_layer = CanvasLayer.new()
 	_glow_layer.layer = 1
+	_glow_layer.follow_viewport_enabled = true
 	add_child(_glow_layer)
 	# The background layers are wider than the screen; the extra width is for camera panning later.
-	_add_texture(load(BG + "layer_mountains.png"), Vector2(-16, 0))
-	_add_texture(load(BG + "layer_land.png"), Vector2(-16, 0))
+	_scenery.append(_add_texture(load(BG + "layer_mountains.png"), Vector2(-16, 0)))
+	_scenery.append(_add_texture(load(BG + "layer_land.png"), Vector2(-16, 0)))
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_window_glow = _add_texture(null, Vector2.ZERO, _glow_layer)
@@ -63,7 +74,8 @@ func _ready() -> void:
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(194, 230))
 	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(198, 0), true, 236)
 	var pine := _add_trimmed(load("res://assets/sprites/trees/umbrella_pine_1.png"), Vector2(-16, 0), true, 240)
-	_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236))
+	_scenery.append(pine)
+	_scenery.append(_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236)))
 	_add_texture(load(BG + "field.png"), Vector2(-40, 0))
 	_build_plots()
 
@@ -84,6 +96,12 @@ func _ready() -> void:
 	_park_rig()
 
 	_glow_layer.add_child(Fireflies.new())
+	_camera = Camera2D.new()
+	_camera.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
+	add_child(_camera)
+	_camera.make_current()
+	get_viewport().size_changed.connect(_update_view)
+	Windowing.view_changed.connect(_update_view)
 	hud = Hud.new()
 	add_child(hud)
 
@@ -98,6 +116,18 @@ func _ready() -> void:
 	if Game.cart["away"]:
 		_cart.position.x = 560
 		_donkey.position.x = 620
+	_update_view()
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--shot="):
+			_take_screenshot(arg.trim_prefix("--shot="))
+
+
+## Saves exactly what the window shows after the scene settles, then quits; used for store screenshots and layout checks.
+func _take_screenshot(path: String) -> void:
+	for i in 45:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(path)
+	get_tree().quit()
 
 
 func _process(delta: float) -> void:
@@ -114,6 +144,11 @@ func _process(delta: float) -> void:
 		# The drifting day clouds fade out at night, when the night sky has clouds of its own.
 		sprite.modulate = Color(_daylight.color, 1.0 - night)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
+	if Windowing.strip and Windowing.transparent:
+		_click_area_timer -= delta
+		if _click_area_timer <= 0.0:
+			_click_area_timer = 0.5
+			Windowing.set_click_area(_click_area())
 	if Game.villa_build["active"]:
 		_hammer_timer -= delta
 		if _hammer_timer <= 0.0:
@@ -163,8 +198,46 @@ func _build_plots() -> void:
 		plot_views.append(v)
 
 
+## Frames the scene: centred left to right, and anchored to the bottom so the desktop strip shows the farm.
+func _update_view() -> void:
+	var view := get_viewport_rect().size
+	_camera.position = Vector2(round(-(view.x - 480.0) / 2.0), 270.0 - view.y)
+	var see_scenery := not (Windowing.strip and Windowing.transparent)
+	_sky_layer.visible = see_scenery
+	for node in _scenery:
+		node.visible = see_scenery
+	_click_area_timer = 0.0
+
+
+## The outline of everything visible in the transparent strip, so clicks anywhere else fall through to the desktop.
+func _click_area() -> PackedVector2Array:
+	var view := get_viewport_rect().size
+	var top := view.y - (270.0 - 214.0)
+	var tall := [
+		Rect2(_villa.position - _camera.position, _villa.region_rect.size),
+		Rect2(_storehouse.position - _camera.position, _storehouse.region_rect.size),
+	]
+	tall.sort_custom(func(a, b): return a.position.x < b.position.x)
+	var points := PackedVector2Array([Vector2(0, view.y), Vector2(0, top)])
+	for r in tall:
+		var x0 := clampf(r.position.x, 0, view.x)
+		var x1 := clampf(r.end.x, 0, view.x)
+		var y := minf(r.position.y, top)
+		points.append_array([Vector2(x0, top), Vector2(x0, y), Vector2(x1, y), Vector2(x1, top)])
+	points.append_array([Vector2(view.x, top), Vector2(view.x, view.y)])
+	var bar: Rect2 = hud.compact_rect()
+	if bar.has_area():
+		# The bar floats in the top-left corner, so the outline detours up around it before following the skyline.
+		var detour := PackedVector2Array([Vector2(0, view.y), Vector2(0, bar.position.y), Vector2(bar.end.x, bar.position.y), Vector2(bar.end.x, top)])
+		points = detour + points.slice(2)
+	return points
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _handle_pad(event):
+		return
 	if event is InputEventMouseMotion:
+		_selected = -1
 		_update_hover(get_global_mouse_position())
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var point := get_global_mouse_position()
@@ -181,6 +254,44 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+## Arrow keys or a gamepad's d-pad move between plots, and Enter or the A button acts on the chosen one.
+func _handle_pad(event: InputEvent) -> bool:
+	var moves := {"ui_left": Vector2.LEFT, "ui_right": Vector2.RIGHT, "ui_up": Vector2.UP, "ui_down": Vector2.DOWN}
+	for action in moves:
+		if event.is_action_pressed(action):
+			_move_selection(moves[action])
+			get_viewport().set_input_as_handled()
+			return true
+	if event.is_action_pressed("ui_accept") and _selected >= 0:
+		_click_plot(_selected)
+		get_viewport().set_input_as_handled()
+		return true
+	return false
+
+
+func _move_selection(dir: Vector2) -> void:
+	if _selected < 0:
+		_selected = 0
+	else:
+		var from: Vector2 = _view(_selected).position
+		var best := -1
+		var best_score := INF
+		for v in plot_views:
+			var d: Vector2 = v.position - from
+			if v.index == _selected or d.dot(dir) <= 0.0:
+				continue
+			# Prefer plots straight ahead in the pressed direction over ones off to the side.
+			var score := d.length() + absf(d.cross(dir)) * 2.0
+			if score < best_score:
+				best_score = score
+				best = v.index
+		if best >= 0:
+			_selected = best
+	for v in plot_views:
+		v.hovered = v.index == _selected
+	_describe_plot(_selected)
+
+
 func _click_plot(i: int) -> void:
 	match Game.plot_visual(i):
 		"locked":
@@ -191,7 +302,10 @@ func _click_plot(i: int) -> void:
 			Game.try_harvest(i)
 		_:
 			hud.toast("Still growing")
-	_update_hover(get_global_mouse_position())
+	if _selected >= 0:
+		_describe_plot(_selected)
+	else:
+		_update_hover(get_global_mouse_position())
 
 
 func _update_hover(point: Vector2) -> void:
@@ -208,16 +322,20 @@ func _update_hover(point: Vector2) -> void:
 		else:
 			hud.set_info("")
 		return
-	var i: int = view.index
+	_describe_plot(view.index)
+
+
+func _describe_plot(i: int) -> void:
 	match Game.plot_visual(i):
 		"locked":
 			hud.set_info("Unlock this plot: %d sestertii" % Game.unlock_cost())
 		"empty":
-			hud.set_info("Plant lavender: %d sestertii" % int(Game.crop_info("lavender").get("plant_cost", 0)))
+			var seed := Game.crop_info(Game.selected_seed)
+			hud.set_info("Plant %s: %d sestertii" % [String(seed.get("name", "")).to_lower(), int(seed.get("plant_cost", 0))])
 		"bloom":
-			hud.set_info("Lavender in bloom: click to harvest")
+			hud.set_info("%s is ready: click to harvest" % Game.crop_info(Game.plots[i]["crop"]).get("name", ""))
 		_:
-			hud.set_info("Lavender growing: %d%%" % int(Game.growth_fraction(i) * 100))
+			hud.set_info("%s growing: %d%%" % [Game.crop_info(Game.plots[i]["crop"]).get("name", ""), int(Game.growth_fraction(i) * 100)])
 
 
 func _plot_at(point: Vector2) -> Node2D:

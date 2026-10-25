@@ -27,3 +27,10 @@ Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotE
 - Markdown docs: no em dashes, and write dollar signs as `\$`.
 - Comments: only for a non-obvious reason, one line.
 - Commit to `main`.
+
+## Running and checking the game
+
+- Tests: `Godot_..._console.exe --headless --path game --script res://tests/test_simulation.gd` (and `test_scene.gd`).
+- Exact screenshots: `Godot_..._console.exe --path game --quit-after 300 -- --demo --shot=OUT.png`, plus `--strip`, `--strip --solid`, `--hour=22.5`, `--villa=2`, `--send-cart`. `--demo` never touches the real save.
+- Always wrap capture runs in `timeout 60` and pass `--quit-after`: a script error stops the scene before it can quit, and the window then waits forever.
+- The movie writer (`--write-movie`) always records at 480x270, so it cannot show the desktop strip's real shape; use `--shot` for that.

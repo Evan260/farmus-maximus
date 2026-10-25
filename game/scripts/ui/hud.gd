@@ -22,6 +22,13 @@ var _cart_button: Button
 var _debug: PanelContainer
 var _settings: PanelContainer
 var _seed_buttons := {}
+var _stats_panel: PanelContainer
+var _buttons: VBoxContainer
+var _compact: PanelContainer
+var _compact_label: Label
+var _style_button: Button
+var _size_button: Button
+var _strip_button: Button
 
 
 func _ready() -> void:
@@ -35,6 +42,7 @@ func _ready() -> void:
 	add_child(_root)
 
 	var stats := _panel(Vector2(4, 4))
+	_stats_panel = stats
 	var col := VBoxContainer.new()
 	stats.add_child(col)
 	_coins = _label(col)
@@ -47,6 +55,7 @@ func _ready() -> void:
 		_seed_buttons[crop].toggle_mode = true
 
 	var buttons := VBoxContainer.new()
+	_buttons = buttons
 	_root.add_child(buttons)
 	# Anchored to the top-right corner and growing leftwards, so longer button text never gets cut off.
 	buttons.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -80,6 +89,7 @@ func _ready() -> void:
 	_toast.modulate.a = 0.0
 
 	_build_settings()
+	_build_compact()
 	_build_debug()
 	Game.message.connect(func(text): toast(text); Sfx.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast("The storeroom is full: send the cart to market"))
@@ -89,6 +99,17 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	var in_strip := Windowing.strip
+	_stats_panel.visible = not in_strip
+	_buttons.visible = not in_strip
+	_compact.visible = in_strip
+	if in_strip:
+		_upgrades_panel.visible = false
+		_settings.visible = false
+		_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.storage_capacity()]
+	_strip_button.text = "Full window  (F10)" if in_strip else "Desktop strip  (F10)"
+	_style_button.text = "Strip: transparent" if Windowing.transparent else "Strip: solid"
+	_size_button.text = "Strip size: %s" % Windowing.SIZES[Windowing.size_index]
 	_coins.text = "Sestertii  %d" % Game.coins
 	_storage.text = "Storeroom  %d / %d" % [Game.stored_total(), Game.storage_capacity()]
 	if Game.cart["away"]:
@@ -125,10 +146,15 @@ func _process(_delta: float) -> void:
 			b.disabled = Game.coins < cost
 
 
+## The compact bar's area in the strip, which must stay clickable when the rest of the sky lets clicks through.
+func compact_rect() -> Rect2:
+	return _compact.get_global_rect() if _compact.visible else Rect2()
+
+
 func set_info(text: String) -> void:
 	_info.visible = text != ""
 	_info.text = text
-	_info.position = Vector2(4, 256)
+	_info.position = Vector2(4, get_viewport().get_visible_rect().size.y - 14)
 
 
 func toast(text: String) -> void:
@@ -136,6 +162,8 @@ func toast(text: String) -> void:
 	if _toast_tween:
 		_toast_tween.kill()
 	_toast.modulate.a = 1.0
+	_toast.position = Vector2(0, roundf(get_viewport().get_visible_rect().size.y * 0.2))
+	_toast.size.x = get_viewport().get_visible_rect().size.x
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.6)
@@ -168,6 +196,10 @@ func _show_away(summary: Dictionary) -> void:
 	for line in lines:
 		_label(col).text = line
 	_button(col, "Lovely", p.queue_free)
+	# Centred on whatever the view is, so it fits the desktop strip as well as the full window.
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	p.grow_vertical = Control.GROW_DIRECTION_BOTH
 
 
 func _build_settings() -> void:
@@ -191,7 +223,24 @@ func _build_settings() -> void:
 		slider.focus_mode = Control.FOCUS_NONE
 		slider.value_changed.connect(func(v): Sfx.set_volume(bus, v))
 		row.add_child(slider)
+	_strip_button = _button(col, "", func(): Windowing.toggle_strip())
+	_style_button = _button(col, "", func(): Windowing.set_transparent(not Windowing.transparent))
+	_size_button = _button(col, "", func(): Windowing.cycle_size())
 	_button(col, "Close", func(): _settings.visible = false)
+
+
+## The small bar shown in the desktop strip instead of the full panels.
+func _build_compact() -> void:
+	_compact = PanelContainer.new()
+	_root.add_child(_compact)
+	var row := HBoxContainer.new()
+	_compact.add_child(row)
+	_compact_label = _label(row)
+	_button(row, "Sell", func(): Game.send_cart())
+	_button(row, "Expand", func(): Windowing.toggle_strip())
+	# Top-left, where the strip shows only sky or desktop, so it never covers the cart or the plots.
+	_compact.position = Vector2(4, 4)
+	_compact.visible = false
 
 
 func _build_debug() -> void:
