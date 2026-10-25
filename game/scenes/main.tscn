@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tests/game_screen.png" id="1_screen"]
+
+[node name="Main" type="Node2D"]
+
+[node name="ScalingCheck" type="Sprite2D" parent="."]
+position = Vector2(240, 136)
+texture = ExtResource("1_screen")

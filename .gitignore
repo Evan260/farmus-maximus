@@ -1,0 +1,15 @@
+# Godot
+game/.godot/
+game/export_presets.cfg
+exports/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+Thumbs.db
+.DS_Store
