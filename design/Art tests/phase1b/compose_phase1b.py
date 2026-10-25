@@ -28,12 +28,53 @@ def bed():
     for x in range(30):
         for y in range(7):
             if ((x - 14.5) / 15) ** 2 + ((y - 3) / 3.6) ** 2 <= 1:
-                p[x, y] = (112, 80, 54, 255)
-                if y == 0 or (y == 1 and (x < 3 or x > 26)): p[x, y] = (98, 70, 48, 255)
-                if (x + 2 * y) % 5 == 0: p[x, y] = (96, 68, 46, 255)
+                p[x, y] = (94, 64, 42, 255)
+                if y == 0 or (y == 1 and (x < 3 or x > 26)): p[x, y] = (128, 92, 62, 255)
+                if (x + 2 * y) % 5 == 0: p[x, y] = (84, 57, 38, 255)
     return b
 
 BED = bed()
+
+
+def field():
+    # The tilled field is drawn wider than the screen so it can slide with the camera.
+    rng = np.random.default_rng(7)
+    fw, top, right = W + 80, 232, 352  # field x = screen x + 40
+    f = np.zeros((H, fw, 4), np.uint8)
+    edge = top + np.cumsum(rng.integers(-1, 2, fw)).clip(-3, 3)
+    redge = right + np.cumsum(rng.integers(-1, 2, H)).clip(-3, 3)
+    for y in range(top - 4, H):
+        for x in range(fw):
+            if y < edge[x] or x > redge[y]:
+                continue
+            furrow = (y - top) % 6 in (0, 1)
+            c = (100, 70, 47) if furrow else (118, 84, 56)
+            n = rng.random()
+            if n < .06: c = (c[0] + 12, c[1] + 9, c[2] + 6)
+            elif n < .11: c = (c[0] - 12, c[1] - 9, c[2] - 6)
+            f[y, x] = (*c, 255)
+    # Grass tufts overhang the top and right edges of the field.
+    for x in range(fw):
+        for k in range(rng.integers(0, 3)):
+            y = edge[x] + k
+            if y < H: f[y, x] = (104, 128, 60, 255) if rng.random() < .6 else (86, 110, 50, 255)
+    for y in range(top, H):
+        x = redge[y]
+        if 0 <= x < fw: f[y, x - rng.integers(0, 2)] = (104, 128, 60, 255)
+    # A dirt path runs from the field to the villa steps.
+    villa_door = villa_x + villa.width // 2 + 40
+    for y in range(233, H):
+        cx = villa_door - (y - 233) * 0.3
+        half = 13 + (y - 233) * 0.3
+        for x in range(int(cx - half - 1), int(cx + half + 2)):
+            edge_px = x < cx - half or x > cx + half
+            if 0 <= x < fw and (not edge_px or rng.random() < .5):
+                r = rng.random()
+                f[y, x] = (176, 142, 98, 255) if r > .2 else ((154, 122, 82, 255) if r > .06 else (192, 160, 114, 255))
+    return Image.fromarray(f)
+
+villa_x = 268
+FIELD = field()
 SHADOW = ellipse(26, 5, (40, 30, 30, 70))
 COLS = [8 + i * 36 for i in range(9)]
 ROWS = [(250, 18), (268, 0)]
@@ -48,19 +89,20 @@ def frame(cam):
     f = layer(sky, cam, .06).copy()
     f.alpha_composite(layer(mtn, cam, .18))
     f.alpha_composite(layer(land, cam, .42))
-    vx = 268 + round(cam * .5)
+    vx = villa_x + round(cam * .5)
     f.alpha_composite(ellipse(villa.width + 12, 9, (40, 30, 30, 60)), (vx - 6, 234 - 5))
     f.alpha_composite(villa, (vx, 234 - villa.height + 1))
     px_ = -16 + round(cam * .7)
     f.alpha_composite(ellipse(64, 7, (40, 30, 30, 70)), (px_ + pine.width // 2 - 32, 238 - 4))
     f.alpha_composite(pine, (px_, 240 - pine.height))
     fo = round(cam)
+    f.alpha_composite(FIELD.crop((40 - fo, 0, 40 - fo + W, H)))
     for x, y, v in PLOTS:
         f.alpha_composite(BED, (x + fo, y - 4))
     for x, y, v in PLOTS:
         f.alpha_composite(SHADOW, (x + 2 + fo, y - 2))
         f.alpha_composite(bushes[v], (x - 1 + fo, y - 29))
-    dx = 318 + fo
+    dx = villa_x + villa.width // 2 + 22 + fo
     f.alpha_composite(ellipse(dog.width, 5, (40, 30, 30, 80)), (dx, 266))
     f.alpha_composite(dog, (dx, 269 - dog.height))
     return f.convert("RGB")
