@@ -13,6 +13,7 @@ var _plan: Array = []
 var _timer := 0.0
 var _offsets := {}
 var _dir := ""
+var _leaving := false
 
 
 func _ready() -> void:
@@ -28,8 +29,25 @@ func _ready() -> void:
 	_next()
 
 
+## The work is done: the builder climbs down if need be, packs up and walks off, fading away down the road.
+func leave() -> void:
+	if _leaving:
+		return
+	_leaving = true
+	var ground := site.end.y + 2
+	_plan = []
+	if position.y < ground - 0.5:
+		_plan.append({"kind": "climb", "to": Vector2(position.x, ground)})
+	_plan.append({"kind": "walk", "to": Vector2(position.x + (160.0 if randf() < 0.5 else -160.0), ground)})
+	_begin()
+	create_tween().tween_property(self, "modulate:a", 0.0, 2.0).set_delay(7.0)
+
+
 func _process(delta: float) -> void:
 	if _plan.is_empty():
+		if _leaving:
+			queue_free()
+			return
 		_next()
 		return
 	var step: Dictionary = _plan[0]

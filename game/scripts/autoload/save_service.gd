@@ -16,6 +16,11 @@ func _ready() -> void:
 	if "--readonly" in OS.get_cmdline_user_args():
 		enabled = false
 	_migrate_from_old_name()
+	# A "new farm" run starts from nothing and never touches the real save.
+	if "--new-farm" in OS.get_cmdline_user_args():
+		enabled = false
+		Game.new_game()
+		return
 	load_game()
 
 

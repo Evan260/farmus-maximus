@@ -12,6 +12,7 @@ const JournalPanel := preload("res://scripts/ui/journal_panel.gd")
 const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 const UpgradesPanel := preload("res://scripts/ui/upgrades_panel.gd")
 const SeedsPanel := preload("res://scripts/ui/seeds_panel.gd")
+const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
 const WEATHER_NAMES := {"sun": "Sunny", "cloudy": "Cloudy", "rain": "Rain", "mist": "Mist"}
@@ -43,6 +44,7 @@ var _journal: WindowPanel
 var _settings: WindowPanel
 var _upgrades: WindowPanel
 var _seeds: WindowPanel
+var _companions: WindowPanel
 
 
 func _ready() -> void:
@@ -94,6 +96,8 @@ func _ready() -> void:
 	_settings = _add_window(SettingsPanel.new())
 	_upgrades = _add_window(UpgradesPanel.new())
 	_seeds = _add_window(SeedsPanel.new())
+	_companions = _add_window(CompanionsPanel.new())
+	add_to_group("hud")
 	_build_compact()
 	_build_debug()
 	Settings.changed.connect(_apply_text_size)
@@ -192,7 +196,7 @@ func show_journal_entry(id: String) -> void:
 
 
 func open_window(name: String) -> void:
-	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades}.get(name)
+	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades, "companions": _companions}.get(name)
 	if w and not w.visible:
 		_open(w)
 
@@ -311,7 +315,7 @@ func _show_intro() -> void:
 	var col := UiKit.column(p)
 	UiKit.label(col, tr("A letter from your uncle Marcus"))
 	UiKit.para(col, tr("My dear heir,\n\nThe old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.\n\nPlant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.\n\nWith love, Marcus"), 230)
-	UiKit.button(col, tr("Begin"), func(): Settings.set_value("intro_seen", true); p.queue_free())
+	UiKit.button(col, tr("Begin"), func(): Settings.set_value("intro_seen", true); p.queue_free(); _open(_companions))
 	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	p.grow_vertical = Control.GROW_DIRECTION_BOTH

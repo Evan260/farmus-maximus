@@ -17,6 +17,7 @@ const Pasture := preload("res://scripts/world/pasture.gd")
 const DecorView := preload("res://scripts/world/decor_view.gd")
 const Channels := preload("res://scripts/world/channels.gd")
 const Builder := preload("res://scripts/world/builder.gd")
+const Cat := preload("res://scripts/world/cat.gd")
 const Hud := preload("res://scripts/ui/hud.gd")
 const MarketView := preload("res://scripts/ui/market_view.gd")
 const SWAY := preload("res://assets/shaders/sway.gdshader")
@@ -34,7 +35,9 @@ const SHADOW := Color(0.16, 0.11, 0.12, 0.28)
 const PARALLAX := {"sky": 0.04, "mountains": 0.08, "land": 0.15}
 ## Where the cart parks, on the soil just right of the path, with the donkey at its handles.
 const CART_HOME_X := HOME + 380.0
-const RIG_BASE := 266
+## The lowest row the view shows: the road to town runs along the bottom, below the fields.
+const BOTTOM := 286.0
+const RIG_BASE := 282
 const PAN_SPEED := 260.0
 ## Where each helper spends their day, in estate pixels.
 const HELPER_GROUNDS := {
@@ -83,7 +86,9 @@ var _donkey: AnimatedSprite2D
 var _rig_tween: Tween
 var _storehouse: Sprite2D
 var _glow_layer: CanvasLayer
-var _window_glow: Sprite2D
+## One light per villa window, each with its own evening: when it is lit, when it goes out, and its flicker.
+var _windows: Array = []
+var _windows_night := -1
 var _hammer_timer := 0.0
 var _camera: Camera2D
 var _sky_layer: CanvasLayer
@@ -155,8 +160,6 @@ func _ready() -> void:
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
-	_window_glow = _add_texture(null, Vector2.ZERO, _glow_layer)
-	_window_glow.region_enabled = true
 	_villa_outline = Node2D.new()
 	_villa_outline.draw.connect(func(): if _villa_hovered: _villa_outline.draw_rect(_villa_rect().grow(1), Color(1, 0.96, 0.85, 0.7), false, 1.0))
 	world.add_child(_villa_outline)
@@ -186,20 +189,8 @@ func _ready() -> void:
 	var wildlife := Wildlife.new()
 	wildlife.lizard_wall = Rect2(_storehouse.position + Vector2(6, 20), Vector2(_storehouse.region_rect.size.x - 12, 18))
 	world.add_child(wildlife)
-	if ResourceLoader.exists("res://assets/sprites/animals/cat_small/east.png"):
-		cat = Walker.new()
-		cat.dir = "res://assets/sprites/animals/cat_small/"
-		cat.min_x = HOME + 190
-		cat.max_x = HOME + 270
-		cat.speed = 10.0
-		cat.idle_anim = "sleep"
-		cat.position = Vector2(HOME + 250, 240)
-		world.add_child(cat)
-	dog = Dog.new()
-	dog.position = Vector2(HOME + 345, 268)
-	dog.min_x = HOME + 10
-	dog.max_x = HOME + 456
-	world.add_child(dog)
+	_spawn_pets()
+
 	_cart_shadow = _add_texture(Lighting.ellipse_texture(96, 6, SHADOW), Vector2.ZERO)
 	# The load is drawn just before the cart, so the cart's side boards hide its bottom and it sits inside.
 	_cart_load = Node2D.new()
@@ -258,7 +249,7 @@ func _ready() -> void:
 	Game.helper_hired.connect(_spawn_helper)
 	Game.weather_changed.connect(_on_weather_changed)
 	Game.animal_added.connect(func(_k): Sfx.play("unlock"))
-	dog.petted.connect(_on_dog_petted)
+	Game.pets_changed.connect(_spawn_pets)
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
 		_donkey.position.x = _harness_x(_cart.position.x, false)
@@ -271,6 +262,9 @@ func _ready() -> void:
 			_update_view()
 		elif arg == "--town":
 			go_to_town.call_deferred()
+		elif arg.begins_with("--town="):
+			go_to_town.call_deferred()
+			market.call_deferred("_open", arg.trim_prefix("--town="))
 		elif arg.begins_with("--panel="):
 			_open_panel.call_deferred(arg.trim_prefix("--panel="))
 		elif arg.begins_with("--shot="):
@@ -287,13 +281,17 @@ func _take_screenshot(path: String) -> void:
 	get_tree().quit()
 
 
-## Saves eight frames a quarter of a second apart, for checking anything that flickers or moves.
+## Saves eight frames a quarter of a second apart (or --burst-gap seconds), for checking anything that flickers or moves.
 func _take_burst(prefix: String) -> void:
 	for i in 45:
 		await get_tree().process_frame
 	for k in 8:
 		get_viewport().get_texture().get_image().save_png("%s_%d.png" % [prefix, k])
-		await get_tree().create_timer(0.25).timeout
+		var gap := 0.25
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--burst-gap="):
+				gap = float(arg.trim_prefix("--burst-gap="))
+		await get_tree().create_timer(gap).timeout
 	get_tree().quit()
 
 
@@ -301,7 +299,7 @@ func _open_panel(which: String) -> void:
 	if which.begins_with("journal:"):
 		hud.open_window("journal")
 		hud.show_journal_entry(which.trim_prefix("journal:"))
-	elif which in ["journal", "helpers", "store", "settings", "upgrades"]:
+	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions"]:
 		hud.open_window(which)
 	else:
 		hud.show_building(which)
@@ -325,11 +323,12 @@ func _process(delta: float) -> void:
 	var far := Color.WHITE.lerp(Color(0.62, 0.6, 0.7), night)
 	_mountains.modulate = far
 	_mountains_far.modulate = far
-	_window_glow.modulate.a = night
+	_light_windows(night)
 	var windy := 1.6 if Game.calendar.weather in ["rain", "cloudy"] else 1.0
 	if PlotView.wind:
 		PlotView.wind.set_shader_parameter("strength", 0.0 if Settings.reduced_motion else windy)
-	var keys := Input.get_axis("pan_left", "pan_right") + Input.get_joy_axis(0, JOY_AXIS_RIGHT_X) * float(absf(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)) > 0.2)
+	var typing := get_viewport().gui_get_focus_owner() is LineEdit
+	var keys := 0.0 if typing else Input.get_axis("pan_left", "pan_right") + Input.get_joy_axis(0, JOY_AXIS_RIGHT_X) * float(absf(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)) > 0.2)
 	if keys != 0.0 and not market.visible:
 		_pan_by(keys * PAN_SPEED * delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
@@ -404,11 +403,11 @@ func _update_life(delta: float) -> void:
 			var w := Walker.new()
 			w.dir = PEOPLE + who + "/"
 			var from_right := randf() < 0.5
-			w.position = Vector2(estate_width + 20 if from_right else 1430.0, 270)
+			w.position = Vector2(estate_width + 20 if from_right else 1430.0, 283)
 			w.leave_at = 1430.0 if from_right else estate_width + 20
 			w.speed = 16.0
 			world.add_child(w)
-	if cat and dog and dog.get("_state") == "sleep" and cat.sprite.animation == "sleep" and absf(cat.position.x - dog.position.x) < 60.0:
+	if cat and dog and dog.is_asleep() and cat.is_asleep() and absf(cat.position.x - dog.position.x) < 60.0:
 		var view := Rect2(_camera.position, _view_size())
 		if view.has_point(cat.position):
 			Game.discover("sighting:cat_and_dog")
@@ -438,7 +437,7 @@ func _sync_builders() -> void:
 		sites["villa_b"] = {"rect": r, "ladders": ladders}
 	for id in _builders.keys():
 		if not sites.has(id):
-			_builders[id].queue_free()
+			_builders[id].leave()
 			_builders.erase(id)
 	for id in sites:
 		if not _builders.has(id):
@@ -457,15 +456,27 @@ func _spawn_helper(id: String) -> void:
 	var ground: Array = HELPER_GROUNDS.get(id, [HOME, HOME + 400])
 	w.min_x = float(ground[0])
 	w.max_x = float(ground[1])
-	w.position = Vector2(randf_range(w.min_x, w.max_x), 270)
+	w.position = Vector2(randf_range(w.min_x, w.max_x), 269)
 	var info := Game.helper_info(id)
 	if info.has("zones") or info.has("crops"):
 		w.find_work = func() -> float: return _ready_plot_x(info)
-		w.work_done = func(x: float) -> void: Game.helper_harvest(id, _plot_near(x))
+		w.work_done = func(x: float) -> String: return Game.helper_harvest(id, _plot_near(x))
+		w.carry_to = _drop_spot
 		w.work_seconds = clampf(Game.helper_interval(id) * 0.6, 0.8, 4.0)
 		Game.live_helpers[id] = true
 	world.add_child(w)
 	_helpers[id] = w
+
+
+## Where a helper takes what they picked: into the cart when it is home and near, to a nearby workshop that uses it,
+## or else to the storehouse.
+func _drop_spot(item: String, from_x: float) -> float:
+	if not Game.cart["away"] and absf(from_x - CART_HOME_X) < 520.0:
+		return _cart.position.x + 20.0
+	for v in building_views:
+		if Game.buildings[v.id]["state"] == "working" and Game.current_recipe(v.id).get("in", {}).has(item) and absf(v.position.x - from_x) < 320.0:
+			return v.position.x
+	return _storehouse.position.x + _storehouse.region_rect.size.x / 2.0
 
 
 ## The plot whose plant stands at this spot, as a helper reaching it sees it.
@@ -615,12 +626,12 @@ func _update_view() -> void:
 		cam_x += (_last_view_width - view.x) / 2.0
 		_last_view_width = view.x
 	cam_x = clampf(cam_x, 0.0, maxf(0.0, estate_width - view.x))
-	_camera.position = Vector2(round(cam_x), 270.0 - view.y)
+	_camera.position = Vector2(round(cam_x), BOTTOM - view.y)
 	var left := roundf(cam_x)
 	var s := float(Windowing.scale)
 	# The sky is drawn at screen resolution, so it follows the unrounded pan and slides smoothly.
 	_sky_view.scale = Vector2(s, s)
-	_sky_view.position = Vector2(-cam_x * PARALLAX["sky"] * s, -(270.0 - view.y) * s)
+	_sky_view.position = Vector2(-cam_x * PARALLAX["sky"] * s, -(BOTTOM - view.y) * s)
 	_mountains.position.x = round(left * (1.0 - PARALLAX["mountains"]))
 	_land.position.x = round(left * (1.0 - PARALLAX["land"]))
 	_mountains_far.position.x = _mountains.position.x + 768.0
@@ -680,7 +691,7 @@ func _step_zone(step: int) -> void:
 ## The outline of everything visible in the transparent strip, so clicks anywhere else fall through to the desktop.
 func _click_area() -> PackedVector2Array:
 	var view := _view_size()
-	var top := view.y - (270.0 - 214.0)
+	var top := view.y - (BOTTOM - 214.0)
 	var tall := [Rect2(_villa.position, _villa.region_rect.size), Rect2(_storehouse.position, _storehouse.region_rect.size)]
 	for v in building_views:
 		tall.append(v.world_rect())
@@ -714,7 +725,8 @@ func _click_area() -> PackedVector2Array:
 
 
 func _world_input(event: InputEvent) -> void:
-	if market.visible:
+	# Letters typed into a name field are not commands for the estate.
+	if market.visible or (event is InputEventKey and get_viewport().gui_get_focus_owner() is LineEdit):
 		return
 	if event.is_action_pressed("prev_zone"):
 		_step_zone(-1)
@@ -764,6 +776,9 @@ func _world_input(event: InputEvent) -> void:
 func _click(point: Vector2) -> void:
 	if dog.contains(point):
 		dog.pet()
+		return
+	if cat.contains(point):
+		cat.pet()
 		return
 	var view := _plot_at(point)
 	if view:
@@ -905,7 +920,9 @@ func _update_hover(point: Vector2) -> void:
 	elif _villa_hovered:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.villa_stages()[clampi(Game.villa_stage - 1, 0, Game.villa_stages().size() - 1)].get("name", "Farmhouse"))))
 	elif dog.contains(point):
-		hud.set_info(tr("Pet the dog"))
+		hud.set_info(tr("Pet %s") % Game.pet_name("dog"))
+	elif cat.contains(point):
+		hud.set_info(tr("Pet %s") % Game.pet_name("cat"))
 	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
 		hud.set_info(tr("Storehouse: %d / %d") % [Game.stored_total(), Game.storage_capacity()])
 	elif _cart_rect().has_point(point):
@@ -1078,9 +1095,13 @@ func _on_cart_returned(coins: int) -> void:
 func _on_dog_petted() -> void:
 	Sfx.play("pet", -2.0, 0.12)
 	Game.add_stat("pets", 1)
+	_hearts(dog.position + Vector2(0, -32))
+
+
+func _hearts(at: Vector2) -> void:
 	var heart := Sprite2D.new()
 	heart.texture = Lighting.heart_texture()
-	heart.position = dog.position + Vector2(0, -32)
+	heart.position = at
 	world.add_child(heart)
 	var t := create_tween().set_parallel()
 	t.tween_property(heart, "position:y", heart.position.y - 12, 1.0)
@@ -1224,28 +1245,77 @@ func _place_villa() -> void:
 	_villa.position = Vector2(round(VILLA_BASE.x - used.size.x / 2.0), VILLA_BASE.y - used.size.y + 1)
 	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 7, SHADOW)
 	_villa_shadow.position = Vector2(_villa.position.x - 6, VILLA_BASE.y - 5)
-	_window_glow.texture = _window_glow_texture(tex)
-	_window_glow.region_rect = used
-	_window_glow.position = _villa.position
+	_make_windows(tex, used)
 	# Storks only nest on a well-kept roof, so they arrive with the peristyle garden.
 	_stork.visible = _stork.texture != null and Game.villa_stage >= 5 and not Game.villa_build["active"]
 	if _stork.texture:
 		_stork.position = Vector2(_villa.position.x + used.size.x * 0.68, _villa.position.y - _stork.texture.get_height() + 12)
 
 
-## Lamp light for the villa's windows: every glass-blue pixel becomes warm light, shown only at night.
-func _window_glow_texture(tex: Texture2D) -> ImageTexture:
+## Finds the villa's windows (its glass-blue pixels, grouped into panes) and gives each its own lamp light.
+func _make_windows(tex: Texture2D, used: Rect2i) -> void:
+	for w in _windows:
+		w["sprite"].queue_free()
+	_windows = []
+	_windows_night = -1
+	# The ruin and the scaffolding have no glass, only dark holes, so they stay dark.
+	if Game.villa_build["active"] or Game.villa_stage <= 1:
+		return
 	var img := tex.get_image()
 	img.convert(Image.FORMAT_RGBA8)
-	var glow := Image.create(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8)
-	# The ruin and the scaffolding have no glass, only dark holes, so they stay dark.
-	if not Game.villa_build["active"] and Game.villa_stage > 1:
-		for x in img.get_width():
-			for y in img.get_height():
-				var c := img.get_pixel(x, y)
-				if c.a > 0.5 and c.b > c.r + 0.08 and c.b > c.g + 0.02:
-					glow.set_pixel(x, y, Color(1.0, 0.82, 0.45, 0.95))
-	return ImageTexture.create_from_image(glow)
+	var glass := {}
+	for x in range(used.position.x, used.end.x):
+		for y in range(used.position.y, used.end.y):
+			var c := img.get_pixel(x, y)
+			if c.a > 0.5 and c.b > c.r + 0.08 and c.b > c.g + 0.02:
+				glass[Vector2i(x, y)] = true
+	while not glass.is_empty():
+		var pane: Array = [glass.keys()[0]]
+		glass.erase(pane[0])
+		var k := 0
+		while k < pane.size():
+			var p: Vector2i = pane[k]
+			k += 1
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1)]:
+				if glass.has(p + d):
+					glass.erase(p + d)
+					pane.append(p + d)
+		if pane.size() < 4:
+			continue
+		var box := Rect2i(pane[0], Vector2i.ONE)
+		for p in pane:
+			box = box.expand(p).expand(p + Vector2i.ONE)
+		var light := Image.create(box.size.x, box.size.y, false, Image.FORMAT_RGBA8)
+		for p in pane:
+			light.set_pixelv(p - box.position, Color(1.0, 0.8, 0.42, 0.95))
+		var sprite := _add_texture(ImageTexture.create_from_image(light), _villa.position + Vector2(box.position - used.position), _glow_layer)
+		sprite.modulate.a = 0.0
+		_windows.append({"sprite": sprite, "phase": randf() * TAU, "speed": randf_range(0.8, 1.3)})
+
+
+## Each evening some windows are lit, one after another as dusk falls, and go out at different hours; a few light again before dawn.
+## A lit window flickers gently, like a candle or an oil lamp.
+func _light_windows(night: float) -> void:
+	if _windows.is_empty():
+		return
+	if _windows_night != Game.calendar.day:
+		_windows_night = Game.calendar.day
+		var rng := RandomNumberGenerator.new()
+		rng.seed = Game.calendar.day * 7919 + _windows.size()
+		for w in _windows:
+			w["lit"] = rng.randf() < 0.75
+			w["on"] = rng.randf_range(18.6, 20.2)
+			w["off"] = rng.randf_range(21.5, 25.5)
+			w["dawn"] = rng.randf() < 0.3
+	var hour := Game.day_time
+	var t := Time.get_ticks_msec() / 1000.0
+	for w in _windows:
+		var since := fposmod(hour - 12.0, 24.0)
+		var evening := smoothstep(float(w["on"]) - 12.0, float(w["on"]) - 11.7, since) * (1.0 - smoothstep(float(w["off"]) - 12.0, float(w["off"]) - 11.8, since))
+		var morning := (smoothstep(5.0, 5.3, hour) * (1.0 - smoothstep(6.8, 7.2, hour))) if w["dawn"] else 0.0
+		var on := maxf(evening if w["lit"] else 0.0, morning)
+		var flicker := 1.0 if Settings.reduced_motion else 0.84 + 0.09 * sin(t * 5.1 * float(w["speed"]) + float(w["phase"])) + 0.07 * sin(t * 11.7 * float(w["speed"]) + float(w["phase"]) * 1.7)
+		w["sprite"].modulate.a = clampf(on * flicker * maxf(night, 0.35), 0.0, 1.0)
 
 
 func _sway(s: Sprite2D) -> void:
@@ -1301,3 +1371,30 @@ func _add_trimmed(tex: Texture2D, pos: Vector2, from_bottom := false, base_y := 
 	if from_bottom:
 		s.position.y = base_y - used.size.y
 	return s
+
+
+## The cat keeps to the open ground in front of the villa, where no crops stand in front of it; the dog roams the farm.
+func _spawn_pets() -> void:
+	if cat:
+		cat.queue_free()
+	if dog:
+		dog.queue_free()
+	cat = Cat.new()
+	cat.coat = String(Game.pets.get("cat", {}).get("coat", ""))
+	cat.min_x = HOME + 385
+	cat.max_x = HOME + 452
+	cat.position = Vector2(HOME + 420, 246)
+	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Sfx.play("purr", -4.0); Game.add_stat("pets", 1))
+	world.add_child(cat)
+	dog = Dog.new()
+	dog.coat = String(Game.pets.get("dog", {}).get("coat", ""))
+	dog.position = Vector2(HOME + 345, 268)
+	dog.min_x = HOME + 10
+	dog.max_x = HOME + 456
+	dog.petted.connect(_on_dog_petted)
+	world.add_child(dog)
+	# Both stand behind the cart, which parks on the road in front of them.
+	if _cart_load:
+		world.move_child(cat, _cart_load.get_index())
+		world.move_child(dog, _cart_load.get_index())
+

@@ -1,4 +1,5 @@
-"""Paint the estate's ground strip: grass in the olive grove, tilled soil on the farm, packed earth in the workshop yard, grass in the vineyard, a flowery meadow in the pasture, and the road to town along the bottom of the last two.
+"""Paint the estate's ground strip: grass in the olive grove, tilled soil on the farm, packed earth in the workshop yard, grass in the vineyard,
+a flowery meadow in the pasture, and the road to town running the whole width along the bottom, where the cart travels below the crops.
 
 Usage: python tools/art/make_estate_ground.py game/assets/backgrounds/estate/ground.png --villa-door 851
 The image is 40 pixels wider than the estate on each side, so the camera never reaches its edge.
@@ -8,10 +9,10 @@ import argparse
 import numpy as np
 from PIL import Image
 
-W, H = 2400 + 80, 272
+W, H = 2400 + 80, 290
 TOP = 232
+ROAD_TOP = 270
 ZONES = [(0, 480, "grass"), (480, 960, "soil"), (960, 1440, "yard"), (1440, 1920, "grass"), (1920, 2400, "meadow")]
-ROAD_FROM = 1420
 
 
 def main():
@@ -55,28 +56,9 @@ def main():
             if y < H:
                 img[y, x] = (104, 128, 60, 255) if rng.random() < 0.6 else (86, 110, 50, 255)
 
-    # The road to town leaves the yard along the bottom of the vineyard, where the cart's wheels roll.
-    road_top = 248 + np.cumsum(rng.integers(-1, 2, W)).clip(-2, 2)
-    for x in range(ROAD_FROM + 40, W):
-        fade = min(1.0, (x - ROAD_FROM - 40) / 30)
-        for y in range(road_top[x], H):
-            if y == road_top[x] and rng.random() < 0.4:
-                continue
-            if rng.random() > 0.35 + 0.65 * fade:
-                continue
-            r = rng.random()
-            c = (146, 118, 84) if r > 0.1 else ((128, 102, 72) if r > 0.03 else (170, 146, 110))
-            # Two wheel ruts, worn darker and a little wavy.
-            if abs(y - (258 + (x // 37) % 2)) == 0 or abs(y - (265 + (x // 41) % 2)) == 0:
-                c = (118, 92, 64) if rng.random() > 0.15 else c
-            img[y, x] = (*c, 255)
-        # A grass tuft now and then sprouts along the road's crown, between the ruts.
-        if rng.random() < 0.12:
-            img[261, x] = (98, 120, 58, 255)
-
     # The path from the villa steps runs down across the farm.
     door = a.villa_door + 40
-    for y in range(233, H):
+    for y in range(233, ROAD_TOP):
         cx = door - (y - 233) * 0.3
         half = 13 + (y - 233) * 0.3
         for x in range(int(cx - half - 1), int(cx + half + 2)):
@@ -84,6 +66,19 @@ def main():
             if 0 <= x < W and (not edge_px or rng.random() < 0.5):
                 r = rng.random()
                 img[y, x] = (176, 142, 98, 255) if r > 0.2 else ((154, 122, 82, 255) if r > 0.06 else (192, 160, 114, 255))
+    # The road: packed earth with two worn ruts, edged by a line of grass and stones on the field side.
+    for x in range(W):
+        for y in range(ROAD_TOP, H):
+            r = rng.random()
+            c = (146, 118, 84) if r > 0.1 else ((128, 102, 72) if r > 0.03 else (170, 146, 110))
+            if y in (278 + (x // 37) % 2, 285 + (x // 41) % 2) and rng.random() > 0.15:
+                c = (118, 92, 64)
+            img[y, x] = (*c, 255)
+        img[ROAD_TOP, x] = (98, 120, 58, 255) if rng.random() < 0.7 else (150, 140, 120, 255)
+        if rng.random() < 0.5:
+            img[ROAD_TOP + 1, x] = (86, 110, 50, 255) if rng.random() < 0.6 else (124, 116, 100, 255)
+        if rng.random() < 0.1:
+            img[281, x] = (98, 120, 58, 255)
     Image.fromarray(img).save(a.out)
     print("ground", W, "x", H)
 

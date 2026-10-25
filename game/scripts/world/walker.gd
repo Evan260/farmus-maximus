@@ -8,8 +8,10 @@ var max_x := 100.0
 var speed := 14.0
 ## Called for a spot worth walking to, such as a ripe plot; returns NAN when there is none.
 var find_work: Callable
-## Called with the spot when the work there is finished.
+## Called with the spot when the work there is finished; returns what was picked, if anything, to carry away.
 var work_done: Callable
+## Called with what was picked; returns where to take it, or NAN to keep working.
+var carry_to: Callable
 ## Seconds of the work animation at each stop.
 var work_seconds := 3.0
 var idle_anim := ""
@@ -21,6 +23,8 @@ var _timer := 0.0
 var _target := 0.0
 var _working_next := false
 var _offsets := {}
+var _carry: Sprite2D
+var _delivering := false
 
 
 func _ready() -> void:
@@ -33,6 +37,10 @@ func _ready() -> void:
 	sprite.centered = false
 	sprite.sprite_frames = _frames()
 	add_child(sprite)
+	_carry = Sprite2D.new()
+	_carry.position = Vector2(0, -24)
+	_carry.visible = false
+	add_child(_carry)
 	_timer = randf_range(1.0, 4.0)
 	_play("stand")
 
@@ -45,6 +53,12 @@ func _process(delta: float) -> void:
 			if is_equal_approx(position.x, _target):
 				if not is_nan(leave_at):
 					queue_free()
+				elif _delivering:
+					# Setting the load down: a short pause bent over the cart or the doorway.
+					_delivering = false
+					_state = "drop"
+					_timer = 0.6
+					_play("work")
 				elif _working_next:
 					_state = "work"
 					_timer = work_seconds
@@ -53,9 +67,30 @@ func _process(delta: float) -> void:
 					_rest()
 		_:
 			if _timer <= 0.0:
-				if _state == "work" and work_done.is_valid():
-					work_done.call(_target)
+				if _state == "drop":
+					_carry.visible = false
+				elif _state == "work" and work_done.is_valid():
+					var picked: Variant = work_done.call(_target)
+					if picked is String and picked != "" and carry_to.is_valid():
+						var to: float = carry_to.call(picked, position.x)
+						if not is_nan(to):
+							_carry_away(picked, to)
+							return
 				_choose()
+
+
+## Walks off with what was just picked, held up in front, to wherever it belongs.
+func _carry_away(item: String, to: float) -> void:
+	var path := "res://assets/sprites/icons/%s.png" % item
+	_carry.texture = load(path) if ResourceLoader.exists(path) else null
+	_carry.visible = _carry.texture != null
+	_delivering = true
+	_working_next = false
+	_target = to
+	_state = "walk"
+	sprite.flip_h = _target < position.x
+	_carry.position.x = -6.0 if sprite.flip_h else 6.0
+	_play("walk")
 
 
 func has_animation(anim: String) -> bool:

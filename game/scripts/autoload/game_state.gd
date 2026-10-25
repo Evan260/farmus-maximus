@@ -29,6 +29,7 @@ signal blessing_started(god: String)
 signal helper_hired(helper_id: String)
 signal decoration_bought(decoration_id: String)
 signal animal_added(kind: String)
+signal pets_changed
 
 var coins := 0
 ## Gold coins from special orders and festivals, spent on rare decorations.
@@ -56,6 +57,8 @@ var helper_timers := {}
 ## Helpers walking about on screen, who harvest the plant they actually reach instead of on a timer.
 var live_helpers := {}
 var decorations := {}
+## The farm's dog and cat: the names and coats the player chose for them.
+var pets := {}
 ## The lararium's blessing in effect, if any.
 var blessing := {}
 ## When on, every planting and regrowth uses one manure from the storehouse.
@@ -117,6 +120,7 @@ func new_game() -> void:
 	helpers = {}
 	helper_timers = {}
 	decorations = {}
+	pets = default_pets()
 	blessing = {}
 	use_manure = true
 	stats = {}
@@ -1203,21 +1207,22 @@ func _advance_helpers(dt: float) -> int:
 	return harvested_now
 
 
-## A helper on screen harvests the plant they walked to; annual crops are replanted straight away.
-func helper_harvest(id: String, i: int) -> bool:
+## A helper on screen harvests the plant they walked to, and returns what they picked; annual crops are replanted straight away.
+func helper_harvest(id: String, i: int) -> String:
 	var info := helper_info(id)
 	if i < 0 or not is_ready(i) or stored_total() >= storage_capacity():
-		return false
+		return ""
 	var p: Dictionary = plots[i]
 	if not ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
-		return false
+		return ""
 	var crop := String(p["crop"])
+	var item := String(crop_info(crop).get("item", crop))
 	_harvest(i)
 	if p["crop"] == "" and coins >= int(crop_info(crop).get("plant_cost", 0)):
 		coins -= int(crop_info(crop).get("plant_cost", 0))
 		p["crop"] = crop
 		_apply_manure(p)
-	return true
+	return item
 
 
 ## How long a helper takes over each plant, from their level.
@@ -1297,18 +1302,26 @@ func dog_dig() -> String:
 		if f.has("coins"):
 			var n := rng.randi_range(int(f["coins"][0]), int(f["coins"][1]))
 			coins += n
-			text = "The dog dug up an old coin: +%d sestertii" % n
+			text = "%s dug up an old coin: +%d sestertii" % [pet_name("dog"), n]
 		elif f.has("item"):
 			add_item(String(f["item"]), 1, true)
-			text = "The dog found a %s!" % String(Balance.get_value("items.%s.name" % f["item"], f["item"])).to_lower()
+			text = "%s found a %s!" % [pet_name("dog"), String(Balance.get_value("items.%s.name" % f["item"], f["item"])).to_lower()]
 		elif f.has("unlock_crop"):
 			unlock_crop(String(f["unlock_crop"]))
-			text = "The dog dug up a rare seed: white lavender!"
+			text = "%s dug up a rare seed: white lavender!" % pet_name("dog")
 		add_stat("finds", 1)
 		discover("find:" + String(f["id"]))
 		dog_found.emit(String(f["id"]), text)
 		return String(f["id"])
 	return ""
+
+
+static func default_pets() -> Dictionary:
+	return {"dog": {"name": "Fidus", "coat": "golden"}, "cat": {"name": "Mica", "coat": "ginger"}}
+
+
+func pet_name(kind: String) -> String:
+	return String(pets.get(kind, {}).get("name", kind.capitalize()))
 
 
 func _next_dog_find() -> float:
@@ -1338,7 +1351,7 @@ func to_dict() -> Dictionary:
 		"coins": coins, "aureus": aureus, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
 		"crops_unlocked": crops_unlocked, "villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time,
 		"cart": cart, "zones_owned": zones_owned, "buildings": buildings, "helpers": helpers, "helper_timers": helper_timers,
-		"decorations": decorations, "blessing": blessing, "use_manure": use_manure, "stats": stats, "dog_timer": dog_timer,
+		"decorations": decorations, "pets": pets, "blessing": blessing, "use_manure": use_manure, "stats": stats, "dog_timer": dog_timer,
 		"calendar": calendar.to_dict(), "market": market.to_dict(), "journal": journal.to_dict(),
 	}
 
@@ -1400,6 +1413,8 @@ func from_dict(d: Dictionary) -> void:
 	for id in d.get("helper_timers", {}):
 		helper_timers[id] = float(d["helper_timers"][id])
 	decorations = Dictionary(d.get("decorations", {}))
+	for kind in d.get("pets", {}):
+		pets[kind] = {"name": String(d["pets"][kind].get("name", "")), "coat": String(d["pets"][kind].get("coat", ""))}
 	var bl: Dictionary = d.get("blessing", {})
 	blessing = {"god": String(bl["god"]), "time_left": float(bl.get("time_left", 0.0))} if bl.has("god") else {}
 	use_manure = bool(d.get("use_manure", true))

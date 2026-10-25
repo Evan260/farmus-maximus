@@ -33,10 +33,16 @@ var ui_scale_step := 0
 var day_minutes := 20
 var show_tutorial := true
 var keys := {}
+## Off for a trial "new farm" run, which shows the first-day welcome without changing the player's real settings.
+var persist := true
 
 
 func _ready() -> void:
 	_load()
+	if "--new-farm" in OS.get_cmdline_user_args():
+		persist = false
+		intro_seen = false
+		show_tutorial = true
 	for action in ACTIONS:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -93,6 +99,8 @@ func _load() -> void:
 
 
 func save() -> void:
+	if not persist:
+		return
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({

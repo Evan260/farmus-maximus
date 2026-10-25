@@ -9,6 +9,8 @@ const SPEED := 15.0
 ## The stretch of ground the dog wanders, set by the scene.
 var min_x := 10.0
 var max_x := 456.0
+## Coat colour chosen by the player, applied to every frame.
+var coat := ""
 var sprite: AnimatedSprite2D
 var _shadow: Sprite2D
 var _state := ""
@@ -43,10 +45,18 @@ func _process(delta: float) -> void:
 
 
 func pet() -> void:
-	_state = "happy"
-	_timer = 2.6
-	sprite.play("happy")
+	# A sitting or sleeping dog stays put and enjoys it; only a dog already on its feet jumps up wagging.
+	if _state in ["sit_down", "sit", "lie_down", "sleep"]:
+		_timer = maxf(_timer, 5.0)
+	else:
+		_state = "happy"
+		_timer = 2.6
+		sprite.play("happy")
 	petted.emit()
+
+
+func is_asleep() -> bool:
+	return _state in ["lie_down", "sleep"]
 
 
 func contains(point: Vector2) -> bool:
@@ -102,7 +112,7 @@ func _add(f: SpriteFrames, anim: String, folder: String, frames: Array, fps: flo
 	f.set_animation_speed(anim, fps)
 	f.set_animation_loop(anim, loop)
 	for i in frames:
-		f.add_frame(anim, load("%s%s/frame_%02d.png" % [DIR, folder, i]))
+		f.add_frame(anim, Coats.recolour(load("%s%s/frame_%02d.png" % [DIR, folder, i]), "dog", coat))
 
 
 func _feet_line(tex: Texture2D) -> int:

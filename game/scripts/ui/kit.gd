@@ -255,6 +255,13 @@ static func make_theme() -> Theme:
 	t.set_icon("grabber_highlight", "HSlider", knob)
 	t.set_icon("grabber_disabled", "HSlider", knob)
 	t.set_constant("center_grabber", "HSlider", 0)
+	var field := _flat(Color(0.99, 0.96, 0.88), 3, 2)
+	field.border_color = Color(0.55, 0.36, 0.25)
+	field.set_border_width_all(1)
+	t.set_stylebox("normal", "LineEdit", field)
+	t.set_stylebox("focus", "LineEdit", field)
+	t.set_color("font_color", "LineEdit", INK)
+	t.set_color("caret_color", "LineEdit", INK)
 	t.set_stylebox("background", "ProgressBar", _flat(Color(0.29, 0.18, 0.14, 0.3), 0))
 	t.set_stylebox("fill", "ProgressBar", _flat(Color(0.7, 0.38, 0.25), 0))
 	return t

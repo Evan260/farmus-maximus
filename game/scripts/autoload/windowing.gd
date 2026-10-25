@@ -6,7 +6,7 @@ signal view_changed
 const SETTINGS_PATH := "user://window.json"
 const BASE := Vector2i(480, 270)
 ## How many rows of the scene the strip can show, counted up from the bottom: the middle one fits the field, the villa and the storehouse.
-const HEIGHTS := [120, 150, 190]
+const HEIGHTS := [136, 166, 206]
 const HEIGHT_NAMES := ["Short", "Medium", "Tall"]
 const SIZES := ["Small", "Medium", "Large"]
 
