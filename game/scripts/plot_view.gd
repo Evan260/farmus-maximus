@@ -1,0 +1,77 @@
+extends Node2D
+## One farm plot on screen: its soil patch, the crop growing in it, and the hover and ready cues.
+
+const SIZE := Vector2(30, 34)
+const BED := preload("res://assets/sprites/farm/plot_bed.png")
+const SHADOW := preload("res://assets/sprites/farm/shadow_small.png")
+const SPRITES := {
+	"stage0": preload("res://assets/sprites/lavender/final/stage0.png"),
+	"stage1": preload("res://assets/sprites/lavender/final/stage1.png"),
+	"stage2": preload("res://assets/sprites/lavender/final/stage2.png"),
+	"harvested": preload("res://assets/sprites/lavender/final/harvested.png"),
+	"bloom": [preload("res://assets/sprites/lavender/final/bloom_1.png"), preload("res://assets/sprites/lavender/final/bloom_2.png")],
+}
+
+var index := 0
+var hovered := false
+var _bed: Sprite2D
+var _shadow: Sprite2D
+var _crop: Sprite2D
+var _visual := ""
+var _time := 0.0
+
+
+func _ready() -> void:
+	_bed = _sprite(BED, Vector2(0, -4))
+	_shadow = _sprite(SHADOW, Vector2(2, -2))
+	_crop = _sprite(null, Vector2(-1, -29))
+	# Mirroring every other plant keeps a field of identical sprites from looking stamped.
+	_crop.flip_h = index % 2 == 1
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	var visual := Game.plot_visual(index)
+	if visual != _visual:
+		_visual = visual
+		_bed.modulate = Color(0.55, 0.5, 0.48) if visual == "locked" else Color.WHITE
+		_crop.visible = visual not in ["locked", "empty"]
+		_shadow.visible = _crop.visible
+		if _crop.visible:
+			var tex: Variant = SPRITES[visual]
+			_crop.texture = tex[index % tex.size()] if tex is Array else tex
+	queue_redraw()
+
+
+func _draw() -> void:
+	if hovered:
+		draw_rect(Rect2(Vector2(-1, -31), SIZE + Vector2(2, 2)), Color(1, 0.96, 0.85, 0.7), false, 1.0)
+	match _visual:
+		"bloom":
+			# A small twinkle above ready plants, so a glance shows what can be harvested.
+			if fmod(_time + index * 0.37, 1.6) < 0.8:
+				var c := Color(1, 0.97, 0.8)
+				var p := Vector2(14, -33)
+				draw_rect(Rect2(p, Vector2.ONE), c)
+				draw_rect(Rect2(p + Vector2(-1, 1), Vector2(3, 1)), Color(c, 0.6))
+				draw_rect(Rect2(p + Vector2(0, 2), Vector2.ONE), c)
+		"empty":
+			draw_rect(Rect2(Vector2(14, -6), Vector2(1, 3)), Color(1, 1, 1, 0.35))
+			draw_rect(Rect2(Vector2(13, -5), Vector2(3, 1)), Color(1, 1, 1, 0.35))
+		"locked":
+			var c := Color(0.15, 0.12, 0.1, 0.55)
+			draw_rect(Rect2(Vector2(12, -8), Vector2(5, 4)), c)
+			draw_rect(Rect2(Vector2(13, -11), Vector2(3, 3)), c, false, 1.0)
+
+
+func contains(point: Vector2) -> bool:
+	return Rect2(position + Vector2(-1, -31), SIZE + Vector2(2, 2)).has_point(point)
+
+
+func _sprite(tex: Texture2D, pos: Vector2) -> Sprite2D:
+	var s := Sprite2D.new()
+	s.texture = tex
+	s.centered = false
+	s.position = pos
+	add_child(s)
+	return s

@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 import numpy as np
 from PIL import Image
 
@@ -117,3 +118,8 @@ left, right = frame(-24), frame(24)
 cmp = Image.new("RGB", (W, H * 2 + 4), (255, 255, 255)); cmp.paste(left, (0, 0)); cmp.paste(right, (0, H + 4))
 cmp.resize((W * 2, cmp.height * 2), Image.NEAREST).save(out + "parallax_extremes.png")
 print("ok")
+
+FIELD.save("game/assets/backgrounds/home_farm/field.png")
+Path("game/assets/sprites/farm").mkdir(parents=True, exist_ok=True)
+BED.save("game/assets/sprites/farm/plot_bed.png")
+SHADOW.save("game/assets/sprites/farm/shadow_small.png")
