@@ -1,4 +1,4 @@
-"""Paint the estate's ground strip: grass in the olive grove, tilled soil on the farm, packed earth in the workshop yard, and grass with the road to town in the vineyard.
+"""Paint the estate's ground strip: grass in the olive grove, tilled soil on the farm, packed earth in the workshop yard, grass in the vineyard, a flowery meadow in the pasture, and the road to town along the bottom of the last two.
 
 Usage: python tools/art/make_estate_ground.py game/assets/backgrounds/estate/ground.png --villa-door 851
 The image is 40 pixels wider than the estate on each side, so the camera never reaches its edge.
@@ -8,9 +8,9 @@ import argparse
 import numpy as np
 from PIL import Image
 
-W, H = 1920 + 80, 272
+W, H = 2400 + 80, 272
 TOP = 232
-ZONES = [(0, 480, "grass"), (480, 960, "soil"), (960, 1440, "yard"), (1440, 1920, "grass")]
+ZONES = [(0, 480, "grass"), (480, 960, "soil"), (960, 1440, "yard"), (1440, 1920, "grass"), (1920, 2400, "meadow")]
 ROAD_FROM = 1420
 
 
@@ -39,6 +39,9 @@ def main():
             r = rng.random()
             if k == "grass":
                 c = (96, 122, 58) if r > 0.25 else ((82, 108, 50) if r > 0.08 else (118, 140, 66))
+            elif k == "meadow":
+                # The pasture's grass is grazed short and dotted with small flowers.
+                c = (104, 128, 60) if r > 0.25 else ((90, 114, 54) if r > 0.06 else ((226, 214, 160) if r > 0.03 else (196, 150, 196)))
             elif k == "soil":
                 furrow = (y - TOP) % 6 in (0, 1)
                 c = (100, 70, 47) if furrow else (118, 84, 56)

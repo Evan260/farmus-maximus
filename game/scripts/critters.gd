@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 		_bird_timer = randf_range(25.0, 60.0)
 	for bird in _birds:
 		bird["pos"] += bird["vel"] * delta
-	_birds = _birds.filter(func(bird): return bird["pos"].x > -100 and bird["pos"].x < 2020)
+	_birds = _birds.filter(func(bird): return bird["pos"].x > -100 and bird["pos"].x < 2500)
 	# Insects rest at night, so they fade out rather than flying in the dark.
 	modulate.a = 1.0 - night * 0.9
 	queue_redraw()
@@ -53,7 +53,7 @@ func _new_target(from: Vector2) -> Vector2:
 	var points: Array = bloom_points.call()
 	if not points.is_empty() and randf() < 0.75:
 		return points[randi() % points.size()] + Vector2(randf_range(-6, 6), randf_range(-4, 2))
-	return Vector2(clampf(from.x + randf_range(-80, 80), 10, 1910), randf_range(190, 245))
+	return Vector2(clampf(from.x + randf_range(-80, 80), 10, 2390), randf_range(190, 245))
 
 
 func _spawn_flock() -> void:

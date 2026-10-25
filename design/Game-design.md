@@ -93,11 +93,12 @@ Every building starts as a **ruin** on the estate:
 | **Mill** | Wheat | Flour and straw | Workshop yard |
 | **Bakery oven** | Flour | Bread | Workshop yard |
 | **Olive press** | Olives | Olive oil | Olive grove |
-| **Unguent workshop** | Lavender and olive oil | Lavender oil (perfume and bath oil) | Workshop yard |
+| **Unguent workshop** | Lavender and olive oil | Lavender oil, and bath oil once the bathhouse wing is built | Vineyard slope |
 | **Beehives** | Nothing; bees visit nearby flowers | Honey and wax (lavender honey near lavender) | Olive grove |
 | **Wine press** | Grapes | Young wine | Vineyard |
 | **Cellar** | Young wine | Aged wine, worth more the longer it rests | Vineyard |
 | **Barn** | Wheat and straw as feed | Eggs, milk, manure | Pasture |
+| **Dairy** | Milk | Cheese | Pasture |
 | **Lararium** (household shrine) | Offerings | Temporary blessings | Home farm |
 | **Villa** | | The heart of the estate (section 7) | Home farm |
 
@@ -167,7 +168,8 @@ Each helper automates one part of the estate and walks around doing their job:
 | **Miller** | Runs the mill and the bakery | Repairing the mill |
 | **Beekeeper** | Tends the hives and herbs | Repairing the beehives |
 | **Presser** | Runs the olive and wine presses | Repairing the olive press |
-| **Stable hand** | Feeds the animals, collects eggs and milk | Repairing the barn |
+| **Stable hand** | Feeds the animals, collects eggs and milk, runs the dairy | Repairing the barn |
+| **Perfumer** | Runs the drying shed and the unguent workshop | Repairing the unguent workshop |
 | **Trader** | Takes the cart to market and sells the right goods | Buying a second cart |
 
 Each has a name, a small portrait and a little personality. The estate is run by a free family and hired neighbours; Roman estates relied on enslaved labour, and the game deliberately shows a free, family-run farm.
@@ -303,12 +305,22 @@ Coins ──▶ land deeds, ruins, repairs, upgrades, helpers, seeds, animals, d
 
 ---
 
-## 14. Open questions
+## 14. Decisions made while building
 
-- Is the market town a separate screen, or the far right end of the scroll?
-- How many zones at launch: all five, or fewer and bigger?
-- Do all goods have quality tiers, or only crops?
-- Does the player walk around as a character, or stay an unseen hand?
-- How much story: a light "you inherited your uncle's ruined farm", or none?
+These were open questions; the full build settled them as follows. Any of them can still change.
+
+| Question | Decision |
+|---|---|
+| Market town: its own screen, or the end of the scroll? | Its own screen, reached by the Town button. The cart's road runs off the right edge towards it. |
+| How many zones at launch? | All five: olive grove, home farm, workshop yard, vineyard slope, pasture. |
+| Which goods have quality? | Every good except materials, straw, wax, manure and truffles. Workshops pass the quality of their ingredients on. |
+| A walking character, or an unseen hand? | An unseen hand. The helpers, the dog and the townspeople are the people on screen. |
+| How much story? | Light: a letter from your uncle Marcus on the first day, and the regulars' lines on the notice board. |
+| When do deeds go on sale? | The grove with the restored farmhouse, the workshop yard and vineyard with the villa rustica, the pasture with the portico. |
+
+Also added during the build: a dairy (milk to cheese) and a perfumer to run the drying shed and unguent workshop, since no other helper covered them. The unguent workshop stands on the vineyard slope, because the workshop yard had no room for a fourth building.
+
+## 15. Still open
+
 - A "legacy" option to pass the estate to an heir and start again with bonuses?
 - Trademark, domain and social handle checks for the name.

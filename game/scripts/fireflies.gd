@@ -6,15 +6,15 @@ var _flies: Array = []
 
 func _ready() -> void:
 	for i in 40:
-		_flies.append({"pos": Vector2(randf_range(10, 1910), randf_range(170, 255)), "phase": randf() * TAU, "drift": Vector2(randf_range(-4, 4), randf_range(-2, 2))})
+		_flies.append({"pos": Vector2(randf_range(10, 2390), randf_range(170, 255)), "phase": randf() * TAU, "drift": Vector2(randf_range(-4, 4), randf_range(-2, 2))})
 
 
 func _process(delta: float) -> void:
 	for f in _flies:
 		f["phase"] += delta
 		f["pos"] += (f["drift"] + Vector2(sin(f["phase"] * 0.7) * 3.0, cos(f["phase"] * 0.9) * 2.0)) * delta
-		if f["pos"].x < 0 or f["pos"].x > 1920 or f["pos"].y < 160 or f["pos"].y > 260:
-			f["pos"] = Vector2(randf_range(10, 1910), randf_range(170, 255))
+		if f["pos"].x < 0 or f["pos"].x > 2400 or f["pos"].y < 160 or f["pos"].y > 260:
+			f["pos"] = Vector2(randf_range(10, 2390), randf_range(170, 255))
 	queue_redraw()
 
 

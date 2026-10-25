@@ -189,23 +189,25 @@ The first version that looks like the real game. Everything in it should be good
 ### Phase 6: Full game build (6 to 10 weeks, alongside the clips)
 
 **Systems:**
-- Processing chains: drying racks, olive press, unguent workshop, wine press and cellar, mill and oven, beehives, dairy, garum works.
+- Processing chains: drying shed, olive press, unguent workshop, wine press and cellar, mill and bakery oven, beehives, barn and dairy.
 - Orders on the market notice board.
 - Named helpers who unlock systems, and farmhands who automate tasks.
 - All seven villa stages, plus the other buildings and their levels.
 - The lararium and blessings.
-- Seasons, weather and the five Roman festivals.
+- Seasons, weather and the four Roman festivals.
 - The farmer's journal, rare sightings, dog finds.
 - Decorations.
 - Achievements, Steam Cloud, Steam Deck checks.
 - Localization: every string in translation files; a pixel font with Chinese and Japanese coverage.
 
 **Content:**
-- The other four lands: vineyard slopes, river valley, mountain pasture, coastal estate. Each needs its background painting, crops, buildings, animals and ambience.
+- The estate's five zones: olive grove, home farm, workshop yard, vineyard slope and pasture, all in one scrolling painting, plus the market town.
 - All crops, items, animals and creatures in the asset list.
-- Final music (30 to 60 minutes) and the full sound effect list.
+- Final music (30 to 60 minutes) and the full sound effect list (`Sound-list.md`).
 
-**Done when:** a new player can go from the ruined farmhouse to the grand estate across all five lands, every pacing target holds, and nothing in the asset list is still a placeholder.
+**Done when:** a new player can go from the ruined farmhouse to the grand estate across all five zones, every pacing target holds, and nothing in the asset list is still a placeholder.
+
+**Status:** every system above is built and tested, and the art is generated. Still to do: translations and their font, the Steam connection (GodotSteam plus the store's App ID), final music and sounds, and pacing tuned in real play.
 
 ### Phase 7: Demo and Steam Next Fest
 

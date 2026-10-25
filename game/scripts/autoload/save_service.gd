@@ -47,7 +47,7 @@ func save_game() -> void:
 	if not enabled:
 		return
 	var data := Game.to_dict()
-	data["version"] = 1
+	data["version"] = 2
 	data["saved_at"] = Time.get_unix_time_from_system()
 	_rotate_backups()
 	# Writing to a temporary file first means a crash mid-write never leaves a half-written save.
@@ -71,7 +71,8 @@ func load_game() -> void:
 			continue
 		Game.from_dict(parsed)
 		var away := Time.get_unix_time_from_system() - float(parsed.get("saved_at", Time.get_unix_time_from_system()))
-		if away >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
+		# With offline progress switched off, the estate simply waits exactly as it was left.
+		if Settings.offline_progress and away >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
 			pending_summary = Game.simulate_offline(away)
 		return
 	Game.new_game()

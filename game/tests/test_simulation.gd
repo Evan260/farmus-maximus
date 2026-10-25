@@ -1,5 +1,5 @@
 extends SceneTree
-## Headless checks of the farm rules: run with Godot --headless --script res://tests/test_simulation.gd
+## Headless checks of the estate rules: run with Godot --headless --script res://tests/test_simulation.gd
 
 var failures := 0
 
@@ -11,101 +11,234 @@ func _initialize() -> void:
 func _run() -> void:
 	var game: Node = root.get_node("Game")
 	game.new_game()
+	game.rng.seed = 7
 	_check(game.coins == 20, "starts with 20 sestertii")
 	_check(game.try_plant(0), "plants lavender in an unlocked plot")
 	_check(not game.try_plant(5), "cannot plant in a locked plot")
 	_check(game.plot_visual(0) == "stage0", "new planting shows as a cutting")
+	game.calendar.wet_left = 9999.0
 	game.advance(30.0)
 	_check(not game.is_ready(0), "not ready after 30 seconds")
 	game.advance(30.0)
-	_check(game.is_ready(0), "ready after 60 seconds")
+	_check(game.is_ready(0), "ready after 60 seconds in watered spring soil")
 	_check(game.try_harvest(0), "harvests a ready plant")
-	_check(game.stored_total() == 1, "harvest goes into the storeroom")
+	_check(game.stored_total() == 1 and game.count_item("lavender") == 1, "harvest goes into the storehouse")
 	_check(game.plot_visual(0) == "harvested", "plant shows as trimmed after harvest")
+	var key: String = game.storage.keys()[0]
+	var expected: int = game.market.cart_price(key)
 	_check(game.send_cart(), "sends the cart with goods")
-	_check(game.stored_total() == 0, "cart empties the storeroom")
+	_check(game.stored_total() == 0, "cart empties the storehouse")
 	var before: int = game.coins
 	game.advance(31.0)
-	_check(game.coins == before + 6, "cart returns with the sale price")
+	_check(game.coins == before + expected, "cart returns with the cart's price")
+	_check(game.market.cart_price("lavender") < game.market.price("lavender"), "the cart sells for less than the stalls")
 
-	# Offline: a farmhand keeps harvesting until the storeroom fills, then everything waits.
+	# Qualities: each quality is its own storage key, recipes take the plainest first.
+	game.new_game()
+	game.add_item("lavender", 2)
+	game.add_item("lavender@2", 1)
+	_check(game.count_item("lavender") == 3, "counts every quality of a good together")
+	_check(game.base_price("lavender@2") > game.base_price("lavender"), "excellent goods are worth more")
+	_check(is_equal_approx(game.take_items({"lavender": 2}), 0.0) and game.storage.has("lavender@2"), "takes common goods before excellent ones")
+	_check(game.journal.has("quality:lavender:2"), "the journal records a first excellent good")
+
+	# Growth depends on the season, water and manure.
+	game.new_game()
+	game.calendar.day = 12
+	game.calendar.wet_left = 0.0
+	game.calendar.weather = "sun"
+	game.try_plant(0)
+	var winter_rate: float = game.growth_rate(0)
+	game.calendar.day = 4
+	_check(game.growth_rate(0) > winter_rate, "lavender grows faster in summer than winter")
+	var dry: float = game.growth_rate(0)
+	game.levels["channels"] = 1
+	_check(game.growth_rate(0) > dry, "aqueduct channels water the home farm")
+	game.add_item("manure", 1)
+	game.plots[1]["unlocked"] = true
+	game.try_plant(1)
+	_check(game.plots[1]["manured"] and game.count_item("manure") == 0, "planting uses manure when there is some")
+
+	# A farmhand harvests and replants once hired.
 	game.new_game()
 	game.coins = 10000
-	for i in 4:
-		game.try_plant(i)
-	game.buy_upgrade("farmhand")
-	var summary: Dictionary = game.simulate_offline(3600.0 * 5)
-	_check(game.stored_total() == game.storage_capacity(), "offline harvesting stops at a full storeroom")
-	_check(int(summary["harvested"]) == game.storage_capacity(), "summary counts offline harvests")
-	_check(bool(summary["storage_full"]), "summary reports the full storeroom")
-
-	# Wheat is an annual: harvesting empties the plot, and a farmhand replants it.
-	game.new_game()
-	game.coins = 1000
 	game.selected_seed = "wheat"
-	_check(game.try_plant(0) and game.plots[0]["crop"] == "wheat", "plants the selected seed")
-	game.advance(45.0)
-	_check(game.try_harvest(0), "harvests ripe wheat")
-	_check(game.plots[0]["crop"] == "" and int(game.storage.get("wheat", 0)) == 2, "wheat leaves the plot empty and yields two sheaves")
+	_check(not game.hire_helper("farmhand"), "the farmhand needs the restored farmhouse")
+	game.villa_stage = 2
+	_check(game.hire_helper("farmhand"), "hires the farmhand")
 	game.try_plant(0)
-	game.buy_upgrade("farmhand")
-	game.advance(45.0)
-	game.advance(6.0)
-	_check(game.plots[0]["crop"] == "wheat" and int(game.storage.get("wheat", 0)) == 4, "the farmhand harvests and replants wheat")
+	game.calendar.wet_left = 9999.0
+	game.advance(40.0)
+	game.advance(10.0)
+	_check(game.plots[0]["crop"] == "wheat" and game.count_item("wheat") == 2, "the farmhand harvests and replants wheat")
+	game.selected_seed = "lavender"
+	for i in 4:
+		game.plots[i]["crop"] = ""
+		game.try_plant(i)
+	game.storage = {}
+	var summary: Dictionary = game.simulate_offline(3600.0 * 5)
+	_check(game.stored_total() == game.storage_capacity(), "offline harvesting stops at a full storehouse")
+	_check(bool(summary["storage_full"]), "summary reports the full storehouse")
 
-	# The estate: land deeds open zones, and buildings go from ruin to working and refine goods.
+	# The estate: deeds need the villa, buildings need materials, and workshops refine goods once loaded.
 	game.new_game()
-	game.coins = 5000
+	game.coins = 9000
 	var grove_plot := -1
 	for i in game.plots.size():
 		if game.plots[i]["zone"] == "grove":
 			grove_plot = i
 			break
-	_check(not game.plots[grove_plot]["unlocked"], "grove plots start locked")
+	_check(not game.buy_zone("grove"), "the grove deed waits for the restored farmhouse")
+	game.villa_stage = 2
 	_check(game.buy_zone("grove") and game.plots[grove_plot]["unlocked"], "buying the grove deed opens its plots")
 	_check(game.try_plant(grove_plot) and game.plots[grove_plot]["crop"] == "olives", "grove plots grow olive trees")
-	_check(not game.do_building_action("mill"), "a building in land you do not own cannot be bought")
+	game.villa_stage = 3
 	game.buy_zone("yard")
 	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "owned", "buying a ruin")
+	_check(not game.do_building_action("drying_shed"), "repairs need materials")
+	game.add_item("timber", 2, true)
 	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "repairing", "repairing a ruin takes time")
 	game.advance(31.0)
 	_check(game.buildings["drying_shed"]["state"] == "working", "repairs finish on their own")
-	game.storage = {"lavender": 4, "wheat": 3}
+	game.storage = {"lavender": 6, "wheat": 3}
 	_check("lavender" in game.reserved_items(), "a working building's ingredients are reserved")
+	_check(game.load_building("drying_shed") == 2 and game.count_item("lavender") == 2, "loading fills the queue from the storehouse")
+	game.simulate_offline(45.0)
+	_check(game.count_item("dried_lavender") == 2, "the drying shed works through its queue, even offline")
 	game.send_cart()
-	_check(int(game.storage.get("lavender", 0)) == 4 and not game.storage.has("wheat"), "the cart leaves reserved ingredients and sells the rest")
+	_check(game.count_item("lavender") == 2 and game.count_item("wheat") == 0, "the cart leaves reserved ingredients and sells the rest")
 	game.cart = game._empty_cart()
-	game.simulate_offline(60.0)
-	_check(int(game.storage.get("dried_lavender", 0)) == 2 and not game.storage.has("lavender"), "the drying shed turns lavender into dried lavender, even offline")
 	_check(game.do_building_action("drying_shed") and int(game.buildings["drying_shed"]["level"]) == 1, "upgrading a working building")
+	_check(game.building_queue_max("drying_shed") == 3, "an upgrade lets a building queue more")
 
-	# The villa takes time to build and finishes on its own, even offline.
+	# Mills make two goods; bakeries can switch recipes; bees need nobody.
+	game.buildings["mill"]["state"] = "working"
+	game.storage = {"wheat": 3}
+	game.load_building("mill")
+	game.advance(26.0)
+	_check(game.count_item("flour") == 2 and game.count_item("straw") == 1, "the mill makes flour and straw")
+	game.buildings["beehives"]["state"] = "working"
+	game.zones_owned["grove"] = true
+	game.advance(91.0)
+	_check(game.count_item("honey") + game.count_item("lavender_honey") >= 1 and game.count_item("wax") >= 1, "the hives make honey and wax on their own")
+
+	# A helper keeps their buildings loaded.
+	game.villa_stage = 3
+	game.storage = {"wheat": 12}
+	game.hire_helper("miller")
+	game.simulate_offline(200.0)
+	_check(game.count_item("wheat") == 0 and game.count_item("flour") >= 6, "the miller keeps the mill going")
+
+	# The cellar ages wine, and the barn turns feed into eggs, milk and manure.
 	game.new_game()
-	game.coins = 1000
-	_check(game.upgrade_villa(), "pays for the villa upgrade")
-	_check(game.villa_build["active"] and game.villa_stage == 1, "villa is under construction, not finished instantly")
-	_check(game.villa_next_cost() == -1, "cannot pay twice while building")
-	game.simulate_offline(50.0)
-	_check(not game.villa_build["active"] and game.villa_stage == 2, "construction finishes while the game is closed")
+	game.coins = 9000
+	game.villa_stage = 4
+	game.levels["storage"] = 4
+	for id in ["cellar", "barn"]:
+		game.buildings[id]["state"] = "working"
+	game.zones_owned["vineyard"] = true
+	game.zones_owned["pasture"] = true
+	game.add_item("young_wine", 2)
+	_check(game.load_building("cellar") == 2, "young wine goes into casks")
+	game.advance(100.0)
+	_check(game.draw_wine() == 0, "wine must rest before it can be drawn")
+	game.simulate_offline(3700.0)
+	_check(game.draw_wine() == 2 and game.count_item("aged_wine") == 2 and game.storage.has("aged_wine@2"), "long-rested wine comes out excellent")
+	_check(game.journal.has("milestone:excellent_wine"), "an excellent wine is a milestone")
+	_check(game.market.buy("chicken") and game.market.buy("goat"), "buys animals for a working barn")
+	game.add_item("straw", 4)
+	_check(game.load_building("barn") == 4, "feed goes into the barn")
+	game.advance(61.0)
+	_check(game.count_item("eggs") == 1 and game.count_item("milk") == 1 and game.count_item("manure") == 1, "animals make eggs, milk and manure")
 
-	# The day clock moves and wraps around midnight.
-	game.day_time = 23.9
-	game.advance(60.0)
-	_check(game.day_time < 23.9, "the day wraps past midnight")
+	# The market: demand, favourites, orders and the shop.
+	game.new_game()
+	game.add_item("lavender", 10)
+	game.market.favourites = []
+	var fresh: int = game.market.price("lavender")
+	game.market.sell("lavender", 5)
+	_check(game.market.price("lavender") < fresh, "selling a lot lowers today's price")
+	game.market.new_day()
+	game.market.favourites = ["lavender"]
+	_check(game.market.price("lavender") > fresh, "a daily favourite sells for more")
+	game.market.add_order()
+	var order: Dictionary = game.market.orders[0]
+	game.add_item(order["item"], int(order["amount"]), true)
+	var coins_before: int = game.coins
+	_check(game.market.deliver(0) and game.coins == coins_before + int(order["coins"]), "filling an order pays its reward")
+	game.coins = 100
+	_check(game.market.buy("seed_violet") and game.crop_unlocked("lavender_violet"), "buying cuttings unlocks a lavender variety")
+	_check(not game.market.buy("seed_violet"), "cuttings are bought once")
+
+	# The calendar: seasons, weather and festivals.
+	game.new_game()
+	game.calendar.day = 0
+	game.day_time = 23.99
+	game.advance(5.0)
+	_check(game.calendar.day == 1 and game.calendar.festival().get("id", "") == "cerealia", "Cerealia falls on the second day of spring")
+	_check(game.journal.has("festival:cerealia"), "a festival is recorded in the journal")
+	game.add_item("bread", 1)
+	var festive: int = game.market.price("bread")
+	game.calendar.day = 2
+	_check(festive > game.market.price("bread"), "festival goods sell for more")
+	game.calendar.day = 4
+	_check(game.calendar.season_id() == "summer", "four days make a season")
+
+	# The lararium and the villa.
+	game.new_game()
+	game.coins = 9000
+	game.villa_stage = 4
+	game.buildings["lararium"]["state"] = "working"
+	game.add_item("bread", 1)
+	_check(game.offer("ceres") and game.blessed("ceres"), "an offering of bread brings Ceres's blessing")
+	_check(not game.offer("mercury"), "only one blessing at a time")
+	game.advance(1801.0)
+	_check(game.blessing.is_empty(), "blessings wear off")
+	game.villa_stage = 2
+	_check(not game.upgrade_villa(), "the villa rustica needs materials")
+	game.add_item("stone", 6, true)
+	game.add_item("timber", 4, true)
+	game.add_item("tiles", 4, true)
+	_check(game.upgrade_villa(), "pays coins and materials for the next villa stage")
+	_check(game.villa_build["active"] and game.villa_stage == 2, "the villa is under construction, not finished instantly")
+	game.simulate_offline(95.0)
+	_check(not game.villa_build["active"] and game.villa_stage == 3, "construction finishes while the game is closed")
+	game.villa_stage = 4
+	_check(game.missing({"provisions": 2}) != "", "provisions are bread or wine")
+	game.add_item("young_wine", 1)
+	game.add_item("bread", 1)
+	_check(game.missing({"provisions": 2}) == "", "bread and wine both count as provisions")
+
+	# Decorations, the dog and the journal.
+	game.coins = 9000
+	_check(game.buy_decoration("statue") and game.decorations.has("statue"), "buys a decoration")
+	_check(not game.buy_decoration("golden_statue"), "the golden statue waits for the grand estate")
+	game.dog_timer = 0.0
+	var find: String = game.dog_dig()
+	_check(find != "" and game.journal.has("find:" + find), "the dog digs something up now and then")
+	_check(game.dog_dig() == "", "and then rests before the next find")
+	game.stats["harvested"] = 1
+	game.check_achievements()
+	_check(game.journal.achievements.has("first_harvest"), "achievements unlock from stats")
+	_check(game.journal.catalogue().size() > 80, "the journal has pages for everything")
 
 	# Saving round trip.
+	game.calendar.day = 9
+	game.helpers["miller"] = 1
+	game.buildings["cellar"]["casks"] = [120.0]
 	var data: Dictionary = JSON.parse_string(JSON.stringify(game.to_dict()))
 	var coins: int = game.coins
 	var stored: int = game.stored_total()
 	var stage: int = game.villa_stage
 	var hour: float = game.day_time
-	game.zones_owned["yard"] = true
-	game.buildings["mill"]["state"] = "working"
-	data = JSON.parse_string(JSON.stringify(game.to_dict()))
 	game.new_game()
 	game.from_dict(data)
 	_check(game.coins == coins and game.stored_total() == stored and game.villa_stage == stage and is_equal_approx(game.day_time, hour), "save data round-trips")
-	_check(game.zone_owned("yard") and game.buildings["mill"]["state"] == "working", "zones and buildings round-trip")
+	_check(game.calendar.day == 9 and game.helpers.has("miller") and game.decorations.has("statue"), "calendar, helpers and decorations round-trip")
+	_check(game.buildings["cellar"]["casks"].size() == 1 and game.journal.has("find:" + find), "casks and the journal round-trip")
+	var old := {"levels": {"farmhand": 2}, "coins": 5}
+	game.from_dict(old)
+	_check(int(game.helpers.get("farmhand", 0)) == 2, "an old save's farmhand upgrade becomes the hired farmhand")
 
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)

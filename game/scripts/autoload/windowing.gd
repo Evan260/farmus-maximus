@@ -5,13 +5,22 @@ signal view_changed
 
 const SETTINGS_PATH := "user://window.json"
 const BASE := Vector2i(480, 270)
-## How many rows of the scene the strip shows, counted up from the bottom: enough for the field, the villa and the storehouse.
-const STRIP_ROWS := 150
+## How many rows of the scene the strip can show, counted up from the bottom: the middle one fits the field, the villa and the storehouse.
+const HEIGHTS := [120, 150, 190]
+const HEIGHT_NAMES := ["Short", "Medium", "Tall"]
 const SIZES := ["Small", "Medium", "Large"]
 
 var strip := false
 var transparent := true
 var size_index := 0
+var height_index := 1
+## Where the strip sits on the screen: "bottom" or "top".
+var dock := "bottom"
+## Focus mode makes the strip quieter and slower, for long stretches of work.
+var focus_mode := false
+## When on, the strip drifts to whichever zone has the most going on.
+var follow := false
+var screen := -1
 ## The strip's horizontal offset from centre, in screen pixels, set by dragging it.
 var offset_x := 0
 var scale := 1
@@ -39,16 +48,13 @@ func _notification(what: int) -> void:
 			_update_fps()
 
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_F10:
-				toggle_strip()
-			KEY_F9:
-				if strip:
-					offset_x = 0
-					_apply()
-					_save()
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_strip"):
+		toggle_strip()
+	elif event.is_action_pressed("reset_strip") and strip:
+		offset_x = 0
+		_apply()
+		_save()
 
 
 func _input(event: InputEvent) -> void:
@@ -84,6 +90,33 @@ func cycle_size() -> void:
 	_save()
 
 
+func cycle_height() -> void:
+	height_index = (height_index + 1) % HEIGHTS.size()
+	_apply()
+	_save()
+
+
+func toggle_dock() -> void:
+	dock = "top" if dock == "bottom" else "bottom"
+	_apply()
+	_save()
+
+
+func set_focus_mode(on: bool) -> void:
+	focus_mode = on
+	_apply()
+	_save()
+
+
+func set_follow(on: bool) -> void:
+	follow = on
+	_save()
+
+
+func strip_rows() -> int:
+	return int(HEIGHTS[height_index])
+
+
 ## The strip window's polygon of clickable area, in game pixels of the visible view; everything outside lets clicks through to the desktop.
 func set_click_area(points: PackedVector2Array) -> void:
 	if not (strip and transparent):
@@ -100,8 +133,10 @@ func _apply() -> void:
 	win.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 	win.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	if screen >= 0 and screen < DisplayServer.get_screen_count() and win.current_screen != screen:
+		win.current_screen = screen
 	if strip:
-		win.content_scale_size = Vector2i(BASE.x, STRIP_ROWS)
+		win.content_scale_size = Vector2i(BASE.x, strip_rows())
 		win.borderless = true
 		win.always_on_top = true
 		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
@@ -118,6 +153,8 @@ func _apply() -> void:
 		win.size = BASE * scale
 		win.position = usable.position + (usable.size - win.size) / 2
 	_update_fps()
+	# Focus mode turns everything down a little, so a strip left running all day stays in the background.
+	AudioServer.set_bus_volume_db(0, -8.0 if strip and focus_mode else 0.0)
 	view_changed.emit()
 
 
@@ -125,20 +162,27 @@ func _place_strip() -> void:
 	var win := get_window()
 	var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
 	# The strip may take at most 40% of the screen's height; larger sizes shrink to fit smaller screens.
-	var max_scale := maxi(1, int(usable.size.y * 0.4) / STRIP_ROWS)
+	var max_scale := maxi(1, int(usable.size.y * 0.4) / strip_rows())
 	scale = clampi([2, 3, 4][size_index], 1, max_scale)
 	scale = mini(scale, maxi(1, usable.size.x / BASE.x))
 	# As wide as the painted background, which extends 16 pixels past each side of the main view.
 	var width := mini(usable.size.x, (BASE.x + 32) * scale)
-	win.size = Vector2i(width, STRIP_ROWS * scale)
+	win.size = Vector2i(width, strip_rows() * scale)
 	var x := usable.position.x + (usable.size.x - width) / 2 + offset_x
 	x = clampi(x, usable.position.x, usable.position.x + usable.size.x - width)
-	win.position = Vector2i(x, usable.position.y + usable.size.y - win.size.y)
+	# The usable rect already leaves out the taskbar, wherever it sits, so the strip never covers it.
+	var y := usable.position.y if dock == "top" else usable.position.y + usable.size.y - win.size.y
+	win.position = Vector2i(x, y)
 
 
 func _update_fps() -> void:
 	# A cozy game left running all day should barely touch the CPU or battery.
-	Engine.max_fps = 30 if strip or not _focused else 60
+	var fps := 60
+	if strip or not _focused:
+		fps = 30
+	if Settings.low_power or (strip and focus_mode):
+		fps = 15 if not _focused or focus_mode else 30
+	Engine.max_fps = fps
 
 
 func _load() -> void:
@@ -151,9 +195,15 @@ func _load() -> void:
 	transparent = bool(d.get("transparent", true))
 	size_index = clampi(int(d.get("size_index", 0)), 0, SIZES.size() - 1)
 	offset_x = int(d.get("offset_x", 0))
+	height_index = clampi(int(d.get("height_index", 1)), 0, HEIGHTS.size() - 1)
+	dock = String(d.get("dock", "bottom"))
+	focus_mode = bool(d.get("focus_mode", false))
+	follow = bool(d.get("follow", false))
+	screen = int(d.get("screen", -1))
 
 
 func _save() -> void:
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "size_index": size_index, "offset_x": offset_x}))
+		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "size_index": size_index, "offset_x": offset_x,
+			"height_index": height_index, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))

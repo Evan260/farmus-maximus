@@ -66,7 +66,8 @@ func _look_for_state() -> String:
 
 func _refresh() -> void:
 	_look = _look_for_state()
-	var tex: Texture2D = load("%s%s_%s.png" % [DIR, id, _look])
+	var path := "%s%s_%s.png" % [DIR, id, _look]
+	var tex: Texture2D = load(path if ResourceLoader.exists(path) else "%s%s_working.png" % [DIR, id])
 	_sprite.texture = tex
 	var used := tex.get_image().get_used_rect()
 	_sprite.region_rect = used

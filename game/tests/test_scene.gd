@@ -26,6 +26,7 @@ func _run() -> void:
 	var i := 0
 	main._click_plot(i)
 	_check(game.plots[i]["crop"] == "lavender", "clicking an empty plot plants lavender")
+	game.calendar.wet_left = 9999.0
 	game.advance(60.0)
 	await process_frame
 	_check(main._plot_at(empty.position + Vector2(14, -20)) == empty, "a grown plant responds where its leaves are")
@@ -33,9 +34,13 @@ func _run() -> void:
 	_check(game.stored_total() == 1, "clicking a blooming plot harvests it")
 	var top: Vector2 = main._villa_rect().position + Vector2(main._villa_rect().size.x / 2, 10)
 	main._click(top)
-	_check(main.hud._building_panel.visible and main.hud._building_id == "villa", "clicking the farmhouse opens its panel")
-	main.hud._b_action.pressed.emit()
+	_check(main.hud._building.visible and main.hud._building.id == "villa", "clicking the farmhouse opens its panel")
+	main.hud._building._action.pressed.emit()
 	_check(game.villa_build["active"], "the farmhouse panel starts the restoration")
+	for b in main.building_views:
+		var r: Rect2 = b.world_rect()
+		var point: Vector2 = r.position + Vector2(r.size.x / 2.0, 8)
+		_check(main._plot_at(point) == null and main._building_at(point) == b, "a gamepad can pick the %s" % b.id)
 	for s in main.signs:
 		var r: Rect2 = s.world_rect()
 		# The ground strip's top edge wanders between rows 229 and 235.

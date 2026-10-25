@@ -12,7 +12,70 @@
 			"yield": 1,
 			"item": "lavender",
 			"perennial": true,
-			"zone": "home"
+			"zone": "home",
+			"seasons": {
+				"spring": 1,
+				"summer": 1.3,
+				"autumn": 1,
+				"winter": 0.6
+			}
+		},
+		"lavender_violet": {
+			"name": "Deep violet lavender",
+			"sprite": "lavender",
+			"recolor": "violet",
+			"plant_cost": 4,
+			"grow_seconds": 60,
+			"regrow_seconds": 40,
+			"yield": 1,
+			"item": "lavender",
+			"perennial": true,
+			"zone": "home",
+			"locked": true,
+			"seasons": {
+				"spring": 1,
+				"summer": 1.3,
+				"autumn": 1,
+				"winter": 0.6
+			}
+		},
+		"lavender_bluegrey": {
+			"name": "Blue-grey lavender",
+			"sprite": "lavender",
+			"recolor": "bluegrey",
+			"plant_cost": 4,
+			"grow_seconds": 55,
+			"regrow_seconds": 36,
+			"yield": 1,
+			"item": "lavender",
+			"perennial": true,
+			"zone": "home",
+			"locked": true,
+			"seasons": {
+				"spring": 1,
+				"summer": 1.3,
+				"autumn": 1,
+				"winter": 0.6
+			}
+		},
+		"lavender_white": {
+			"name": "White lavender",
+			"sprite": "lavender",
+			"recolor": "white",
+			"plant_cost": 8,
+			"grow_seconds": 80,
+			"regrow_seconds": 55,
+			"yield": 1,
+			"item": "white_lavender",
+			"perennial": true,
+			"zone": "home",
+			"locked": true,
+			"seasons": {
+				"spring": 1,
+				"summer": 1.3,
+				"autumn": 1,
+				"winter": 0.6
+			}
 		},
 		"wheat": {
 			"name": "Wheat",
@@ -21,7 +84,14 @@
 			"yield": 2,
 			"item": "wheat",
 			"perennial": false,
-			"zone": "home"
+			"zone": "home",
+			"grain": true,
+			"seasons": {
+				"spring": 1.2,
+				"summer": 1.2,
+				"autumn": 1,
+				"winter": 0.7
+			}
 		},
 		"olives": {
 			"name": "Olive tree",
@@ -31,13 +101,65 @@
 			"yield": 3,
 			"item": "olives",
 			"perennial": true,
-			"zone": "grove"
+			"zone": "grove",
+			"fruit": true,
+			"seasons": {
+				"spring": 1,
+				"summer": 1,
+				"autumn": 1.5,
+				"winter": 0.8
+			}
+		},
+		"herbs": {
+			"name": "Rosemary",
+			"plant_cost": 6,
+			"grow_seconds": 50,
+			"regrow_seconds": 35,
+			"yield": 2,
+			"item": "herbs",
+			"perennial": true,
+			"zone": "grove",
+			"locked": true,
+			"seasons": {
+				"spring": 1.2,
+				"summer": 1.2,
+				"autumn": 1,
+				"winter": 0.7
+			}
+		},
+		"grapes": {
+			"name": "Grapevine",
+			"plant_cost": 25,
+			"grow_seconds": 160,
+			"regrow_seconds": 100,
+			"yield": 3,
+			"item": "grapes",
+			"perennial": true,
+			"zone": "vineyard",
+			"fruit": true,
+			"locked": true,
+			"seasons": {
+				"spring": 1,
+				"summer": 1.3,
+				"autumn": 1.4,
+				"winter": 0.6
+			}
 		}
 	},
 	"items": {
 		"lavender": {
 			"name": "Lavender bundle",
-			"price": 6
+			"price": 6,
+			"seasons": {
+				"spring": 1.1,
+				"summer": 1,
+				"autumn": 1,
+				"winter": 1.2
+			}
+		},
+		"white_lavender": {
+			"name": "White lavender",
+			"price": 22
 		},
 		"wheat": {
 			"name": "Wheat sheaf",
@@ -47,17 +169,52 @@
 			"name": "Olives",
 			"price": 4
 		},
+		"herbs": {
+			"name": "Rosemary",
+			"price": 5
+		},
+		"grapes": {
+			"name": "Grapes",
+			"price": 5
+		},
 		"dried_lavender": {
 			"name": "Dried lavender",
-			"price": 16
+			"price": 16,
+			"seasons": {
+				"spring": 1,
+				"summer": 1,
+				"autumn": 1.1,
+				"winter": 1.3
+			}
 		},
 		"flour": {
 			"name": "Flour",
 			"price": 10
 		},
+		"straw": {
+			"name": "Straw",
+			"price": 2,
+			"no_quality": true
+		},
 		"bread": {
 			"name": "Bread",
-			"price": 26
+			"price": 26,
+			"seasons": {
+				"spring": 1,
+				"summer": 0.9,
+				"autumn": 1,
+				"winter": 1.3
+			}
+		},
+		"herb_bread": {
+			"name": "Herb bread",
+			"price": 40,
+			"seasons": {
+				"spring": 1,
+				"summer": 0.9,
+				"autumn": 1,
+				"winter": 1.3
+			}
 		},
 		"olive_oil": {
 			"name": "Olive oil",
@@ -67,13 +224,80 @@
 			"name": "Honey",
 			"price": 18
 		},
+		"lavender_honey": {
+			"name": "Lavender honey",
+			"price": 30
+		},
+		"wax": {
+			"name": "Beeswax",
+			"price": 8,
+			"no_quality": true
+		},
 		"lavender_oil": {
 			"name": "Lavender oil",
 			"price": 70
+		},
+		"bath_oil": {
+			"name": "Bath oil",
+			"price": 150
+		},
+		"young_wine": {
+			"name": "Young wine",
+			"price": 24
+		},
+		"aged_wine": {
+			"name": "Aged wine",
+			"price": 50,
+			"seasons": {
+				"spring": 1,
+				"summer": 1,
+				"autumn": 1.1,
+				"winter": 1.3
+			}
+		},
+		"eggs": {
+			"name": "Eggs",
+			"price": 5
+		},
+		"milk": {
+			"name": "Milk",
+			"price": 6
+		},
+		"cheese": {
+			"name": "Cheese",
+			"price": 30
+		},
+		"manure": {
+			"name": "Manure",
+			"price": 1,
+			"no_quality": true,
+			"kind": "farm"
+		},
+		"stone": {
+			"name": "Stone",
+			"price": 8,
+			"no_quality": true,
+			"kind": "material"
+		},
+		"timber": {
+			"name": "Timber",
+			"price": 8,
+			"no_quality": true,
+			"kind": "material"
+		},
+		"tiles": {
+			"name": "Roof tiles",
+			"price": 10,
+			"no_quality": true,
+			"kind": "material"
+		},
+		"truffle": {
+			"name": "Truffle",
+			"price": 90,
+			"no_quality": true
 		}
 	},
 	"plots": {
-		"count": 23,
 		"unlock_cost_base": 15,
 		"unlock_cost_growth": 1.3,
 		"zones": [
@@ -83,6 +307,10 @@
 			},
 			{
 				"zone": "grove",
+				"count": 6
+			},
+			{
+				"zone": "vineyard",
 				"count": 6
 			}
 		]
@@ -135,19 +363,15 @@
 				450
 			]
 		},
-		"farmhand": {
-			"name": "Farmhand",
-			"label": "Harvests every (s)",
+		"channels": {
+			"name": "Aqueduct channels",
+			"label": "Water the farm",
 			"values": [
 				0,
-				6,
-				3,
-				1.5
+				1
 			],
 			"costs": [
-				150,
-				400,
-				900
+				180
 			]
 		}
 	},
@@ -160,8 +384,74 @@
 			{
 				"name": "Restored farmhouse",
 				"sprite": "stage2",
-				"cost": 250,
-				"build_seconds": 45
+				"cost": {
+					"coins": 250
+				},
+				"build_seconds": 45,
+				"unlocks": "A farmhand to hire, and land deeds on sale"
+			},
+			{
+				"name": "Villa rustica",
+				"sprite": "stage3",
+				"cost": {
+					"coins": 600,
+					"stone": 6,
+					"timber": 4,
+					"tiles": 4
+				},
+				"build_seconds": 90,
+				"unlocks": "The workshop yard and vineyard deeds, and cellar plans"
+			},
+			{
+				"name": "Villa with portico",
+				"sprite": "stage4",
+				"cost": {
+					"coins": 1200,
+					"stone": 10,
+					"timber": 6,
+					"tiles": 6,
+					"provisions": 4
+				},
+				"build_seconds": 120,
+				"unlocks": "The lararium, the pasture deed and decorations"
+			},
+			{
+				"name": "Villa with peristyle garden",
+				"sprite": "stage5",
+				"cost": {
+					"coins": 2000,
+					"stone": 14,
+					"tiles": 8,
+					"provisions": 6
+				},
+				"build_seconds": 150,
+				"unlocks": "Rosemary for the grove, and the fountain"
+			},
+			{
+				"name": "Bathhouse wing",
+				"sprite": "stage6",
+				"cost": {
+					"coins": 3200,
+					"stone": 18,
+					"timber": 8,
+					"tiles": 10,
+					"provisions": 8
+				},
+				"build_seconds": 180,
+				"unlocks": "Lavender oil becomes precious bath oil"
+			},
+			{
+				"name": "Grand estate",
+				"sprite": "stage7",
+				"cost": {
+					"coins": 5000,
+					"stone": 24,
+					"timber": 10,
+					"tiles": 14,
+					"provisions": 12
+				},
+				"build_seconds": 240,
+				"unlocks": "Statues and mosaics"
 			}
 		]
 	},
@@ -179,16 +469,22 @@
 	},
 	"seeds": [
 		"lavender",
-		"wheat"
+		"lavender_violet",
+		"lavender_bluegrey",
+		"lavender_white",
+		"wheat",
+		"herbs",
+		"grapes"
 	],
 	"estate": {
-		"width": 1920,
+		"width": 2400,
 		"zones": [
 			{
 				"id": "grove",
 				"name": "Olive grove",
 				"x": 0,
-				"deed": 300
+				"deed": 300,
+				"requires_villa": 2
 			},
 			{
 				"id": "home",
@@ -201,13 +497,24 @@
 				"name": "Workshop yard",
 				"x": 960,
 				"sign_x": 300,
-				"deed": 120
+				"deed": 120,
+				"requires_villa": 3
 			},
 			{
 				"id": "vineyard",
-				"name": "Vineyard road",
+				"name": "Vineyard slope",
 				"x": 1440,
-				"deed": 450
+				"sign_x": 330,
+				"deed": 450,
+				"requires_villa": 3
+			},
+			{
+				"id": "pasture",
+				"name": "Pasture",
+				"x": 1920,
+				"sign_x": 360,
+				"deed": 800,
+				"requires_villa": 4
 			}
 		]
 	},
@@ -217,143 +524,1661 @@
 			"zone": "yard",
 			"x": 1030,
 			"buy": 40,
-			"repair": 100,
+			"repair": {
+				"coins": 100,
+				"timber": 2
+			},
 			"repair_seconds": 30,
-			"in": {
-				"lavender": 2
-			},
-			"out": {
-				"dried_lavender": 1
-			},
-			"seconds": 20,
-			"upgrade_costs": [
-				180,
-				450
+			"recipes": [
+				{
+					"in": {
+						"lavender": 2
+					},
+					"out": {
+						"dried_lavender": 1
+					},
+					"seconds": 20
+				}
 			],
-			"speed": [
-				1,
-				1.5,
-				2
-			]
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 180
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 450,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 1080,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "perfumer"
 		},
 		"mill": {
 			"name": "Mill",
 			"zone": "yard",
 			"x": 1180,
 			"buy": 60,
-			"repair": 160,
+			"repair": {
+				"coins": 160,
+				"stone": 3,
+				"timber": 2
+			},
 			"repair_seconds": 40,
-			"in": {
-				"wheat": 3
-			},
-			"out": {
-				"flour": 2
-			},
-			"seconds": 25,
-			"upgrade_costs": [
-				240,
-				600
+			"recipes": [
+				{
+					"in": {
+						"wheat": 3
+					},
+					"out": {
+						"flour": 2,
+						"straw": 1
+					},
+					"seconds": 25
+				}
 			],
-			"speed": [
-				1,
-				1.5,
-				2
-			]
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 240
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 600,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 1440,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "miller"
 		},
 		"bakery": {
-			"name": "Bakery",
+			"name": "Bakery oven",
 			"zone": "yard",
 			"x": 1340,
 			"buy": 80,
-			"repair": 220,
+			"repair": {
+				"coins": 220,
+				"stone": 4,
+				"tiles": 2
+			},
 			"repair_seconds": 45,
-			"in": {
-				"flour": 2
-			},
-			"out": {
-				"bread": 1
-			},
-			"seconds": 30,
-			"upgrade_costs": [
-				300,
-				750
+			"recipes": [
+				{
+					"in": {
+						"flour": 2
+					},
+					"out": {
+						"bread": 1
+					},
+					"seconds": 30
+				},
+				{
+					"in": {
+						"flour": 2,
+						"herbs": 1
+					},
+					"out": {
+						"herb_bread": 1
+					},
+					"seconds": 35
+				}
 			],
-			"speed": [
-				1,
-				1.5,
-				2
-			]
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 300
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 750,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 1800,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "miller"
 		},
 		"beehives": {
 			"name": "Beehives",
 			"zone": "grove",
 			"x": 205,
 			"buy": 50,
-			"repair": 120,
-			"repair_seconds": 30,
-			"in": {},
-			"out": {
-				"honey": 1
+			"repair": {
+				"coins": 120,
+				"timber": 1
 			},
-			"seconds": 90,
-			"upgrade_costs": [
-				220,
-				550
+			"repair_seconds": 30,
+			"recipes": [
+				{
+					"in": {},
+					"out": {
+						"honey": 1,
+						"wax": 1
+					},
+					"seconds": 90,
+					"lavender_honey": true
+				}
 			],
-			"speed": [
-				1,
-				1.5,
-				2
-			]
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 220
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 550,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 1320,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "beekeeper"
 		},
 		"olive_press": {
 			"name": "Olive press",
 			"zone": "grove",
 			"x": 410,
 			"buy": 90,
-			"repair": 260,
+			"repair": {
+				"coins": 260,
+				"stone": 3,
+				"timber": 3
+			},
 			"repair_seconds": 50,
-			"in": {
-				"olives": 4
-			},
-			"out": {
-				"olive_oil": 1
-			},
-			"seconds": 40,
-			"upgrade_costs": [
-				320,
-				800
+			"recipes": [
+				{
+					"in": {
+						"olives": 4
+					},
+					"out": {
+						"olive_oil": 1
+					},
+					"seconds": 40
+				}
 			],
-			"speed": [
-				1,
-				1.5,
-				2
-			]
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 320
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 800,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 1920,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "presser"
 		},
 		"unguent": {
 			"name": "Unguent workshop",
 			"zone": "vineyard",
 			"x": 1560,
 			"buy": 150,
-			"repair": 400,
+			"repair": {
+				"coins": 400,
+				"stone": 4,
+				"tiles": 3,
+				"provisions": 2
+			},
 			"repair_seconds": 60,
-			"in": {
-				"lavender": 2,
-				"olive_oil": 1
-			},
-			"out": {
-				"lavender_oil": 1
-			},
-			"seconds": 60,
-			"upgrade_costs": [
-				500,
-				1200
+			"recipes": [
+				{
+					"in": {
+						"lavender": 2,
+						"olive_oil": 1
+					},
+					"out": {
+						"lavender_oil": 1
+					},
+					"seconds": 60
+				},
+				{
+					"in": {
+						"lavender_oil": 1,
+						"olive_oil": 1
+					},
+					"out": {
+						"bath_oil": 1
+					},
+					"seconds": 75,
+					"requires_villa": 6
+				}
 			],
-			"speed": [
-				1,
-				1.5,
-				2
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 500
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 1250,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 3000,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "perfumer"
+		},
+		"wine_press": {
+			"name": "Wine press",
+			"zone": "vineyard",
+			"x": 1745,
+			"buy": 120,
+			"repair": {
+				"coins": 350,
+				"timber": 4,
+				"tiles": 2,
+				"provisions": 2
+			},
+			"repair_seconds": 50,
+			"recipes": [
+				{
+					"in": {
+						"grapes": 4
+					},
+					"out": {
+						"young_wine": 1
+					},
+					"seconds": 40
+				}
+			],
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 360
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 900,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 2160,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "presser"
+		},
+		"cellar": {
+			"name": "Cellar",
+			"zone": "vineyard",
+			"x": 1868,
+			"buy": 160,
+			"repair": {
+				"coins": 500,
+				"stone": 6,
+				"timber": 2,
+				"provisions": 3
+			},
+			"repair_seconds": 60,
+			"recipes": [],
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 400
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 1000,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 2400,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "presser",
+			"kind": "cellar",
+			"requires_villa": 3,
+			"casks": [
+				4,
+				6,
+				8,
+				10
+			],
+			"aging": [
+				300,
+				1200,
+				3600
 			]
+		},
+		"barn": {
+			"name": "Barn",
+			"zone": "pasture",
+			"x": 2062,
+			"buy": 200,
+			"repair": {
+				"coins": 600,
+				"stone": 6,
+				"timber": 6,
+				"tiles": 4,
+				"provisions": 3
+			},
+			"repair_seconds": 70,
+			"recipes": [],
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 450
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 1125,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 2700,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "stablehand",
+			"kind": "barn",
+			"animals": {
+				"chicken": [
+					4,
+					6,
+					8,
+					10
+				],
+				"goat": [
+					2,
+					3,
+					4,
+					5
+				]
+			},
+			"cycle_seconds": 60,
+			"feed": [
+				"straw",
+				"wheat"
+			],
+			"feed_max": [
+				20,
+				30,
+				40,
+				50
+			],
+			"makes": {
+				"chicken": "eggs",
+				"goat": "milk"
+			}
+		},
+		"dairy": {
+			"name": "Dairy",
+			"zone": "pasture",
+			"x": 2215,
+			"buy": 120,
+			"repair": {
+				"coins": 380,
+				"stone": 3,
+				"tiles": 2,
+				"provisions": 2
+			},
+			"repair_seconds": 50,
+			"recipes": [
+				{
+					"in": {
+						"milk": 3
+					},
+					"out": {
+						"cheese": 1
+					},
+					"seconds": 45
+				}
+			],
+			"queue": 2,
+			"levels": [
+				{
+					"cost": {
+						"coins": 300
+					},
+					"speed": 1.5,
+					"batch": 1,
+					"queue": 3
+				},
+				{
+					"cost": {
+						"coins": 750,
+						"stone": 2,
+						"timber": 2
+					},
+					"speed": 2,
+					"batch": 2,
+					"queue": 4
+				},
+				{
+					"cost": {
+						"coins": 1800,
+						"stone": 4,
+						"tiles": 4
+					},
+					"speed": 2.5,
+					"batch": 2,
+					"queue": 5,
+					"quality": 1
+				}
+			],
+			"helper": "stablehand"
+		},
+		"lararium": {
+			"name": "Lararium",
+			"zone": "home",
+			"x": 618,
+			"buy": 60,
+			"repair": {
+				"coins": 200,
+				"stone": 2
+			},
+			"repair_seconds": 40,
+			"recipes": [],
+			"queue": 2,
+			"levels": [],
+			"helper": "",
+			"kind": "shrine",
+			"requires_villa": 4
 		}
+	},
+	"quality": {
+		"names": [
+			"Common",
+			"Fine",
+			"Excellent"
+		],
+		"price": [
+			1,
+			1.5,
+			2.5
+		],
+		"timely_seconds": 20
+	},
+	"provisions": [
+		"bread",
+		"herb_bread",
+		"young_wine",
+		"aged_wine"
+	],
+	"helpers": {
+		"farmhand": {
+			"name": "Gaius",
+			"role": "Farmhand",
+			"does": "Harvests and replants the home fields",
+			"unlock": {
+				"villa": 2
+			},
+			"costs": [
+				150,
+				400,
+				900
+			],
+			"intervals": [
+				6,
+				3,
+				1.5
+			],
+			"zones": [
+				"home"
+			],
+			"quote": "Lavender before breakfast, wheat after lunch, a nap under the pine in between."
+		},
+		"miller": {
+			"name": "Livia",
+			"role": "Miller",
+			"does": "Runs the mill and the bakery oven",
+			"unlock": {
+				"building": "mill"
+			},
+			"costs": [
+				220
+			],
+			"quote": "Good bread starts with honest flour. And a strong arm."
+		},
+		"beekeeper": {
+			"name": "Aulus",
+			"role": "Beekeeper",
+			"does": "Tends the hives and picks the rosemary",
+			"unlock": {
+				"building": "beehives"
+			},
+			"costs": [
+				180
+			],
+			"crops": [
+				"herbs"
+			],
+			"intervals": [
+				5
+			],
+			"quote": "Talk softly to the bees and they will tell you everything."
+		},
+		"perfumer": {
+			"name": "Cornelia",
+			"role": "Perfumer",
+			"does": "Runs the drying shed and the unguent workshop",
+			"unlock": {
+				"building": "unguent"
+			},
+			"costs": [
+				380
+			],
+			"quote": "A drop of lavender oil and even a senator smiles."
+		},
+		"presser": {
+			"name": "Titus",
+			"role": "Presser",
+			"does": "Picks olives and grapes, runs the presses and the cellar",
+			"unlock": {
+				"building": "olive_press"
+			},
+			"costs": [
+				320
+			],
+			"crops": [
+				"olives",
+				"grapes"
+			],
+			"intervals": [
+				5
+			],
+			"quote": "Olives in the morning, grapes by evening. My feet have never been so purple."
+		},
+		"stablehand": {
+			"name": "Julia",
+			"role": "Stable hand",
+			"does": "Feeds the animals and runs the dairy",
+			"unlock": {
+				"building": "barn"
+			},
+			"costs": [
+				320
+			],
+			"quote": "The goats eat everything. Everything! Even my hat, once."
+		},
+		"trader": {
+			"name": "Felix",
+			"role": "Trader",
+			"does": "Takes the cart to market whenever it is worth the trip",
+			"unlock": {
+				"purchase": "second_cart"
+			},
+			"costs": [
+				0
+			],
+			"quote": "I know which stall pays best on any day of the week."
+		}
+	},
+	"market": {
+		"cart_cut": 0.7,
+		"demand_step": 0.04,
+		"demand_floor": 0.5,
+		"favourites": 2,
+		"favourite_bonus": 1.5,
+		"mercury_bonus": 1.15,
+		"trader_fill": 0.6,
+		"orders": {
+			"max": 3,
+			"every_seconds": 300,
+			"bonus": [
+				1.6,
+				2.2
+			],
+			"aureus_chance": 0.12,
+			"amount": [
+				3,
+				10
+			],
+			"rare_seed_chance": 0.06
+		},
+		"regulars": [
+			{
+				"id": "septimus",
+				"name": "Septimus",
+				"role": "Merchant from Ostia",
+				"line": "My ship sails for Ostia soon. I need {n} {item}."
+			},
+			{
+				"id": "flavia",
+				"name": "Flavia",
+				"role": "Baker",
+				"line": "The ovens are hungry! Could you bring {n} {item}?"
+			},
+			{
+				"id": "valerius",
+				"name": "Valerius's steward",
+				"role": "Senator's household",
+				"line": "The senator holds a banquet. He requires {n} {item}."
+			},
+			{
+				"id": "tullia",
+				"name": "Old Tullia",
+				"role": "Herbalist",
+				"line": "My remedies want {n} {item}, dear. No hurry."
+			},
+			{
+				"id": "decimus",
+				"name": "Decimus",
+				"role": "Innkeeper",
+				"line": "Travellers drink my inn dry. {n} {item}, please!"
+			}
+		],
+		"catalog": [
+			{
+				"id": "seed_violet",
+				"name": "Deep violet lavender cuttings",
+				"price": 60,
+				"unlock_crop": "lavender_violet",
+				"group": "seeds"
+			},
+			{
+				"id": "seed_bluegrey",
+				"name": "Blue-grey lavender cuttings",
+				"price": 80,
+				"unlock_crop": "lavender_bluegrey",
+				"group": "seeds"
+			},
+			{
+				"id": "seed_herbs",
+				"name": "Rosemary seedlings",
+				"price": 40,
+				"unlock_crop": "herbs",
+				"requires_villa": 5,
+				"group": "seeds"
+			},
+			{
+				"id": "seed_grapes",
+				"name": "Grapevine cuttings",
+				"price": 120,
+				"unlock_crop": "grapes",
+				"requires_zone": "vineyard",
+				"group": "seeds"
+			},
+			{
+				"id": "stone",
+				"name": "Stone",
+				"price": 12,
+				"item": "stone",
+				"group": "materials"
+			},
+			{
+				"id": "timber",
+				"name": "Timber",
+				"price": 12,
+				"item": "timber",
+				"group": "materials"
+			},
+			{
+				"id": "tiles",
+				"name": "Roof tiles",
+				"price": 15,
+				"item": "tiles",
+				"group": "materials"
+			},
+			{
+				"id": "chicken",
+				"name": "A hen",
+				"price": 30,
+				"animal": "chicken",
+				"group": "animals"
+			},
+			{
+				"id": "goat",
+				"name": "A goat",
+				"price": 80,
+				"animal": "goat",
+				"group": "animals"
+			},
+			{
+				"id": "second_cart",
+				"name": "A second cart and a trader",
+				"price": 600,
+				"once": true,
+				"requires_villa": 3,
+				"group": "estate"
+			},
+			{
+				"id": "exchange",
+				"name": "Change an aureus for 100 sestertii",
+				"aureus": 1,
+				"gives_coins": 100,
+				"group": "estate"
+			}
+		]
+	},
+	"calendar": {
+		"days_per_season": 4,
+		"seasons": [
+			{
+				"id": "spring",
+				"name": "Spring"
+			},
+			{
+				"id": "summer",
+				"name": "Summer"
+			},
+			{
+				"id": "autumn",
+				"name": "Autumn"
+			},
+			{
+				"id": "winter",
+				"name": "Winter"
+			}
+		],
+		"weather": {
+			"spring": {
+				"rain": 0.3,
+				"cloudy": 0.3
+			},
+			"summer": {
+				"rain": 0.1,
+				"cloudy": 0.2
+			},
+			"autumn": {
+				"rain": 0.35,
+				"cloudy": 0.35
+			},
+			"winter": {
+				"rain": 0.3,
+				"cloudy": 0.4
+			}
+		},
+		"weather_seconds": [
+			180,
+			420
+		],
+		"wet_seconds": 240,
+		"mist_chance": 0.5,
+		"dry_growth": 0.8,
+		"manure_growth": 1.25,
+		"festival_bonus": 1.5,
+		"festivals": [
+			{
+				"id": "cerealia",
+				"name": "Cerealia",
+				"season": 0,
+				"day": 1,
+				"about": "The festival of Ceres: grain, flour and bread sell well",
+				"items": [
+					"wheat",
+					"flour",
+					"bread",
+					"herb_bread"
+				]
+			},
+			{
+				"id": "floralia",
+				"name": "Floralia",
+				"season": 0,
+				"day": 3,
+				"about": "The festival of flowers: lavender and honey sell well",
+				"items": [
+					"lavender",
+					"white_lavender",
+					"dried_lavender",
+					"honey",
+					"lavender_honey",
+					"lavender_oil"
+				],
+				"decoration": "garland_arch"
+			},
+			{
+				"id": "vinalia",
+				"name": "Vinalia",
+				"season": 1,
+				"day": 3,
+				"about": "The grape harvest festival: grapes and wine sell well",
+				"items": [
+					"grapes",
+					"young_wine",
+					"aged_wine"
+				],
+				"decoration": "pergola"
+			},
+			{
+				"id": "saturnalia",
+				"name": "Saturnalia",
+				"season": 3,
+				"day": 2,
+				"about": "Gifts, feasting and lanterns: food and fine oils sell well",
+				"items": [
+					"bread",
+					"herb_bread",
+					"aged_wine",
+					"cheese",
+					"honey",
+					"lavender_oil",
+					"bath_oil"
+				],
+				"decoration": "saturnalia_lanterns"
+			}
+		]
+	},
+	"blessings": {
+		"seconds": 1800,
+		"gods": {
+			"ceres": {
+				"name": "Ceres",
+				"does": "Grain grows twice as fast",
+				"offering": {
+					"bread": 1
+				}
+			},
+			"bacchus": {
+				"name": "Bacchus",
+				"does": "Wine ages twice as fast and presses work faster",
+				"offering": {
+					"young_wine": 1
+				}
+			},
+			"minerva": {
+				"name": "Minerva",
+				"does": "Olive trees give one more olive each",
+				"offering": {
+					"olive_oil": 1
+				}
+			},
+			"pomona": {
+				"name": "Pomona",
+				"does": "Fruit is more often fine or excellent",
+				"offering": {
+					"honey": 1
+				}
+			},
+			"mercury": {
+				"name": "Mercury",
+				"does": "Better prices at market",
+				"offering": {
+					"lavender_oil": 1
+				}
+			},
+			"lares": {
+				"name": "The Lares",
+				"does": "Workshops work faster",
+				"offering": {
+					"eggs": 2
+				}
+			}
+		}
+	},
+	"decorations": {
+		"column": {
+			"name": "Ivy column",
+			"price": 150,
+			"x": 497,
+			"y": 236,
+			"requires_villa": 4
+		},
+		"statue": {
+			"name": "Statue of Ceres",
+			"price": 400,
+			"x": 560,
+			"y": 236,
+			"requires_villa": 4
+		},
+		"lanterns": {
+			"name": "Path lantern",
+			"price": 120,
+			"x": 818,
+			"y": 245,
+			"requires_villa": 4,
+			"glow": true
+		},
+		"planters": {
+			"name": "Flower planters",
+			"price": 90,
+			"x": 905,
+			"y": 243,
+			"requires_villa": 4
+		},
+		"fountain": {
+			"name": "Fountain",
+			"price": 600,
+			"x": 1105,
+			"y": 238,
+			"requires_villa": 5,
+			"water": true
+		},
+		"bench": {
+			"name": "Marble bench",
+			"price": 160,
+			"x": 1262,
+			"y": 240,
+			"requires_villa": 4
+		},
+		"sundial": {
+			"name": "Sundial",
+			"price": 140,
+			"x": 1408,
+			"y": 238,
+			"requires_villa": 4
+		},
+		"birdbath": {
+			"name": "Birdbath",
+			"price": 110,
+			"x": 60,
+			"y": 240,
+			"requires_villa": 4
+		},
+		"dovecote": {
+			"name": "Dovecote",
+			"price": 350,
+			"x": 118,
+			"y": 236,
+			"requires_villa": 4
+		},
+		"mosaic": {
+			"name": "Dolphin mosaic",
+			"price": 700,
+			"x": 851,
+			"y": 246,
+			"requires_villa": 7,
+			"flat": true
+		},
+		"golden_statue": {
+			"name": "Golden statue",
+			"aureus": 3,
+			"x": 300,
+			"y": 236,
+			"requires_villa": 7
+		},
+		"pergola": {
+			"name": "Vine pergola",
+			"festival": "vinalia",
+			"price": 250,
+			"x": 1965,
+			"y": 238
+		},
+		"garland_arch": {
+			"name": "Garland arch",
+			"festival": "floralia",
+			"price": 180,
+			"x": 960,
+			"y": 242
+		},
+		"saturnalia_lanterns": {
+			"name": "Saturnalia lamps",
+			"festival": "saturnalia",
+			"price": 200,
+			"x": 2310,
+			"y": 240,
+			"glow": true
+		}
+	},
+	"dog": {
+		"find_seconds": [
+			240,
+			600
+		],
+		"finds": [
+			{
+				"id": "old_coin",
+				"weight": 6,
+				"coins": [
+					15,
+					60
+				]
+			},
+			{
+				"id": "truffle",
+				"weight": 3,
+				"item": "truffle"
+			},
+			{
+				"id": "rare_seed",
+				"weight": 1,
+				"unlock_crop": "lavender_white",
+				"once": true
+			}
+		]
+	},
+	"journal": {
+		"animals": {
+			"dog": "The farm dog",
+			"donkey": "The donkey",
+			"bees": "Honeybees",
+			"butterflies": "Butterflies",
+			"birds": "Swallows",
+			"fireflies": "Fireflies",
+			"cat": "The storehouse cat",
+			"chicken": "Hens",
+			"goat": "Goats",
+			"dragonfly": "Dragonflies",
+			"snail": "Snails",
+			"lizard": "A wall lizard",
+			"rabbit": "Rabbits",
+			"stork": "Storks",
+			"fox": "The fox",
+			"hoopoe": "The hoopoe"
+		},
+		"finds": {
+			"old_coin": "An old coin",
+			"truffle": "A truffle",
+			"rare_seed": "A rare white lavender seed"
+		},
+		"sightings": {
+			"rainbow": "A rainbow",
+			"shooting_star": "A shooting star",
+			"fox": "The fox at dusk",
+			"white_butterfly": "The white butterfly",
+			"cat_and_dog": "The cat and dog asleep together",
+			"hoopoe": "The hoopoe",
+			"mist": "Morning mist over the fields"
+		},
+		"milestones": {
+			"all_zones": "Every zone of the estate is yours",
+			"all_buildings": "Every building restored",
+			"grand_estate": "The grand estate is complete",
+			"all_helpers": "Every helper hired",
+			"all_festivals": "Every festival celebrated",
+			"excellent_wine": "An excellent aged wine"
+		}
+	},
+	"achievements": [
+		{
+			"id": "first_harvest",
+			"name": "First bloom",
+			"desc": "Harvest your first crop",
+			"when": {
+				"stat": "harvested",
+				"at": 1
+			}
+		},
+		{
+			"id": "harvest_100",
+			"name": "Green fingers",
+			"desc": "Harvest 100 crops",
+			"when": {
+				"stat": "harvested",
+				"at": 100
+			}
+		},
+		{
+			"id": "harvest_1000",
+			"name": "Bountiful",
+			"desc": "Harvest 1,000 crops",
+			"when": {
+				"stat": "harvested",
+				"at": 1000
+			}
+		},
+		{
+			"id": "harvest_10000",
+			"name": "Breadbasket of Rome",
+			"desc": "Harvest 10,000 crops",
+			"when": {
+				"stat": "harvested",
+				"at": 10000
+			}
+		},
+		{
+			"id": "earn_1000",
+			"name": "A tidy sum",
+			"desc": "Earn 1,000 sestertii",
+			"when": {
+				"stat": "earned",
+				"at": 1000
+			}
+		},
+		{
+			"id": "earn_10000",
+			"name": "Prosperous",
+			"desc": "Earn 10,000 sestertii",
+			"when": {
+				"stat": "earned",
+				"at": 10000
+			}
+		},
+		{
+			"id": "earn_100000",
+			"name": "Equestrian fortune",
+			"desc": "Earn 100,000 sestertii",
+			"when": {
+				"stat": "earned",
+				"at": 100000
+			}
+		},
+		{
+			"id": "cart_10",
+			"name": "Steady donkey",
+			"desc": "Send the cart 10 times",
+			"when": {
+				"stat": "cart_trips",
+				"at": 10
+			}
+		},
+		{
+			"id": "cart_100",
+			"name": "Well-worn road",
+			"desc": "Send the cart 100 times",
+			"when": {
+				"stat": "cart_trips",
+				"at": 100
+			}
+		},
+		{
+			"id": "market_visit",
+			"name": "To market, to market",
+			"desc": "Visit the market town",
+			"when": {
+				"stat": "market_visits",
+				"at": 1
+			}
+		},
+		{
+			"id": "sell_100",
+			"name": "Stallholder",
+			"desc": "Sell 100 goods at the market yourself",
+			"when": {
+				"stat": "sold_market",
+				"at": 100
+			}
+		},
+		{
+			"id": "order_1",
+			"name": "At your service",
+			"desc": "Fill an order",
+			"when": {
+				"stat": "orders",
+				"at": 1
+			}
+		},
+		{
+			"id": "order_25",
+			"name": "Trusted supplier",
+			"desc": "Fill 25 orders",
+			"when": {
+				"stat": "orders",
+				"at": 25
+			}
+		},
+		{
+			"id": "aureus",
+			"name": "Gold!",
+			"desc": "Earn an aureus",
+			"when": {
+				"stat": "aureus_earned",
+				"at": 1
+			}
+		},
+		{
+			"id": "villa_2",
+			"name": "A roof again",
+			"desc": "Restore the villa to stage 2",
+			"when": {
+				"villa": 2
+			}
+		},
+		{
+			"id": "villa_3",
+			"name": "Villa rustica",
+			"desc": "Restore the villa to stage 3",
+			"when": {
+				"villa": 3
+			}
+		},
+		{
+			"id": "villa_4",
+			"name": "A fine portico",
+			"desc": "Restore the villa to stage 4",
+			"when": {
+				"villa": 4
+			}
+		},
+		{
+			"id": "villa_5",
+			"name": "The peristyle",
+			"desc": "Restore the villa to stage 5",
+			"when": {
+				"villa": 5
+			}
+		},
+		{
+			"id": "villa_6",
+			"name": "Hot baths",
+			"desc": "Restore the villa to stage 6",
+			"when": {
+				"villa": 6
+			}
+		},
+		{
+			"id": "villa_7",
+			"name": "Farmus Maximus",
+			"desc": "Restore the villa to stage 7",
+			"when": {
+				"villa": 7
+			}
+		},
+		{
+			"id": "first_deed",
+			"name": "Landowner",
+			"desc": "Buy your first land deed",
+			"when": {
+				"zones": 2
+			}
+		},
+		{
+			"id": "all_zones",
+			"name": "The whole estate",
+			"desc": "Own every zone",
+			"when": {
+				"zones": 5
+			}
+		},
+		{
+			"id": "first_building",
+			"name": "Back to work",
+			"desc": "Restore a building",
+			"when": {
+				"buildings": 1
+			}
+		},
+		{
+			"id": "all_buildings",
+			"name": "Nothing left in ruins",
+			"desc": "Restore every building",
+			"when": {
+				"buildings": 11
+			}
+		},
+		{
+			"id": "first_helper",
+			"name": "An extra pair of hands",
+			"desc": "Hire a helper",
+			"when": {
+				"helpers": 1
+			}
+		},
+		{
+			"id": "all_helpers",
+			"name": "The household",
+			"desc": "Hire every helper",
+			"when": {
+				"helpers": 7
+			}
+		},
+		{
+			"id": "fine",
+			"name": "Fine work",
+			"desc": "Harvest something of fine quality",
+			"when": {
+				"journal": "quality:1"
+			}
+		},
+		{
+			"id": "excellent",
+			"name": "Excellent!",
+			"desc": "Harvest something of excellent quality",
+			"when": {
+				"journal": "quality:2"
+			}
+		},
+		{
+			"id": "lavender_oil",
+			"name": "Essence of summer",
+			"desc": "Make lavender oil",
+			"when": {
+				"journal": "item:lavender_oil"
+			}
+		},
+		{
+			"id": "bath_oil",
+			"name": "Fit for a senator",
+			"desc": "Make bath oil",
+			"when": {
+				"journal": "item:bath_oil"
+			}
+		},
+		{
+			"id": "cheese",
+			"name": "Say cheese",
+			"desc": "Make cheese",
+			"when": {
+				"journal": "item:cheese"
+			}
+		},
+		{
+			"id": "excellent_wine",
+			"name": "Falernian quality",
+			"desc": "Draw an excellent aged wine",
+			"when": {
+				"journal": "milestone:excellent_wine"
+			}
+		},
+		{
+			"id": "white_lavender",
+			"name": "Snow in summer",
+			"desc": "Grow white lavender",
+			"when": {
+				"journal": "crop:lavender_white"
+			}
+		},
+		{
+			"id": "truffle",
+			"name": "Good nose",
+			"desc": "The dog finds a truffle",
+			"when": {
+				"journal": "find:truffle"
+			}
+		},
+		{
+			"id": "pets_50",
+			"name": "Best friends",
+			"desc": "Pet the dog 50 times",
+			"when": {
+				"stat": "pets",
+				"at": 50
+			}
+		},
+		{
+			"id": "rainbow",
+			"name": "After the rain",
+			"desc": "See a rainbow",
+			"when": {
+				"journal": "sighting:rainbow"
+			}
+		},
+		{
+			"id": "shooting_star",
+			"name": "Make a wish",
+			"desc": "See a shooting star",
+			"when": {
+				"journal": "sighting:shooting_star"
+			}
+		},
+		{
+			"id": "fox",
+			"name": "Sly visitor",
+			"desc": "Spot the fox",
+			"when": {
+				"journal": "sighting:fox"
+			}
+		},
+		{
+			"id": "cat_and_dog",
+			"name": "Unlikely friends",
+			"desc": "Find the cat and dog asleep together",
+			"when": {
+				"journal": "sighting:cat_and_dog"
+			}
+		},
+		{
+			"id": "blessing",
+			"name": "Pious",
+			"desc": "Receive a blessing at the lararium",
+			"when": {
+				"stat": "blessings",
+				"at": 1
+			}
+		},
+		{
+			"id": "all_festivals",
+			"name": "A year of feasts",
+			"desc": "Celebrate every festival",
+			"when": {
+				"journal": "milestone:all_festivals"
+			}
+		},
+		{
+			"id": "decorations_5",
+			"name": "House proud",
+			"desc": "Own 5 decorations",
+			"when": {
+				"decorations": 5
+			}
+		},
+		{
+			"id": "journal_half",
+			"name": "Keen observer",
+			"desc": "Fill half of the farmer's journal",
+			"when": {
+				"journal_share": 0.5
+			}
+		},
+		{
+			"id": "journal_full",
+			"name": "Naturalist",
+			"desc": "Fill the whole farmer's journal",
+			"when": {
+				"journal_share": 1.0
+			}
+		}
+	],
+	"tutorial": [
+		{
+			"id": "plant",
+			"text": "Click an empty plot to plant lavender",
+			"done": {
+				"stat": "planted",
+				"at": 1
+			}
+		},
+		{
+			"id": "harvest",
+			"text": "When the lavender blooms, click it to harvest",
+			"done": {
+				"stat": "harvested",
+				"at": 1
+			}
+		},
+		{
+			"id": "cart",
+			"text": "Click the cart to send your goods to market",
+			"done": {
+				"stat": "cart_trips",
+				"at": 1
+			}
+		},
+		{
+			"id": "unlock",
+			"text": "Click a plot with a lock to dig a new bed",
+			"done": {
+				"stat": "plots_unlocked",
+				"at": 1
+			}
+		},
+		{
+			"id": "villa",
+			"text": "Save 250 sestertii, then click the farmhouse to restore it",
+			"done": {
+				"villa": 2
+			}
+		},
+		{
+			"id": "market",
+			"text": "Visit the market town (the Town button) to sell at full price",
+			"done": {
+				"stat": "market_visits",
+				"at": 1
+			}
+		},
+		{
+			"id": "deed",
+			"text": "Buy the olive grove: click its sign",
+			"done": {
+				"zones": 2
+			}
+		},
+		{
+			"id": "building",
+			"text": "Buy and repair the beehives in the grove",
+			"done": {
+				"buildings": 1
+			}
+		}
+	],
+	"demo": {
+		"max_villa": 3,
+		"zones": [
+			"grove",
+			"home"
+		]
 	}
 }

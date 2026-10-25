@@ -1,6 +1,6 @@
 # Godot
 game/.godot/
-game/export_presets.cfg
+builds/
 exports/
 
 # Secrets
