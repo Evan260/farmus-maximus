@@ -1,4 +1,4 @@
-# Otium: Claude Code Guide
+# Farmus Maximus: Claude Code Guide
 
 A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Steam Deck), with a full-window mode and a desktop idle strip. Claude writes the code and generates the art; the user tests, gives feedback, adds music and sound effects, and handles marketing.
 

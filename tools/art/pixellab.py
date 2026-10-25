@@ -1,6 +1,6 @@
 """Generate and clean up game art with the PixelLab API.
 
-Usage examples (run from the Otium folder):
+Usage examples (run from the project folder):
   python tools/art/pixellab.py balance
   python tools/art/pixellab.py pixen "lavender bush in bloom" 32x32 --out game/assets/sprites/lavender/bloom.png --transparent
   python tools/art/pixellab.py character "small farm dog" 48x48 --template dog --out-dir game/assets/sprites/dog
@@ -322,7 +322,7 @@ def main():
     s = sub.add_parser("pixen")
     s.add_argument("description")
     s.add_argument("size", help="WIDTHxHEIGHT, multiples of 4")
-    s.add_argument("--out", required=True, help="path relative to the Otium folder")
+    s.add_argument("--out", required=True, help="path relative to the project folder")
     s.add_argument("--transparent", action="store_true")
     s.add_argument("--view", default="side", choices=["side", "low top-down", "high top-down"])
     s.add_argument("--direction")

@@ -1,4 +1,4 @@
-# Otium: Game Plan
+# Farmus Maximus: Game Plan
 
 How the game gets built, in what order, and how we know each step is done. The design itself lives in `Game-design.md`, the art in `Asset-list.md`, the money in `Business-plan.md`, and the competitor research in `reports/Cozy idle game feature comparison.md`.
 
@@ -38,7 +38,7 @@ From the competitor research, a cozy idle game missing any of these is judged in
 - [ ] Free seasonal content after launch (the Roman festivals make this natural)
 - [ ] A cheap supporter pack (about 1 in 10 Rusty's Retirement buyers bought one)
 
-### Where Otium stands out: gaps none of the five competitors fill
+### Where Farmus Maximus stands out: gaps none of the five competitors fill
 
 | Opening | What we build |
 |---|---|
@@ -329,5 +329,4 @@ Claude writes the code and generates the art, so the build itself is fast. The c
 - Whether to add a legacy (prestige) system.
 - How much story: a light "inherited the ruined farm" framing, or none.
 - Whether townspeople appear on screen or only through orders.
-- Final name and trademark check for "Otium".
-- Layered parallax or one painting per land (settled in Phase 1).
+- Trademark, domain and social handle checks for "Farmus Maximus".

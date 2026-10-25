@@ -1,4 +1,4 @@
-# Otium: Asset List
+# Farmus Maximus: Asset List
 
 Every art, audio and store asset the game needs, based on `Game-design.md`. Counts are estimates to help plan the work.
 
@@ -415,7 +415,7 @@ Mostly done in the engine with small sprite pieces.
 | Season and weather indicator | 4 seasons, 4 to 5 weather icons | about 9 |
 | Time of day indicator | Sun or sundial | PixelLab |
 | Title screen | Logo, background scene | PixelLab |
-| Logo | "Otium" wordmark | PixelLab plus touch-up |
+| Logo | "Farmus Maximus" wordmark | PixelLab plus touch-up |
 | Fonts | A readable pixel font, plus a display font with a Roman feel (licensed or free for commercial use) | License |
 
 **Estimate:** about 60 UI pieces, 2 fonts.

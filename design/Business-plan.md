@@ -1,4 +1,4 @@
-# Otium: Business Plan
+# Farmus Maximus: Business Plan
 
 ## The game
 

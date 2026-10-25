@@ -1,6 +1,6 @@
-# Otium: Game Design
+# Farmus Maximus: Game Design
 
-*Working title. Otium is Latin for leisure: peaceful time away from work.*
+*A play on the Circus Maximus, ancient Rome's grandest stage, given to a humble farm.*
 
 The complete design of the game, kept high level. Art details are in `Asset-list.md`, the build order in `Game-plan.md`.
 
@@ -311,4 +311,4 @@ Coins ──▶ land deeds, ruins, repairs, upgrades, helpers, seeds, animals, d
 - Does the player walk around as a character, or stay an unseen hand?
 - How much story: a light "you inherited your uncle's ruined farm", or none?
 - A "legacy" option to pass the estate to an heir and start again with bonuses?
-- Final name.
+- Trademark, domain and social handle checks for the name.

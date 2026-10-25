@@ -12,7 +12,23 @@ var _timer := 0.0
 
 
 func _ready() -> void:
+	_migrate_from_old_name()
 	load_game()
+
+
+## Godot keeps saves in a folder named after the game, so the files from before the rename to Farmus Maximus are copied over once.
+func _migrate_from_old_name() -> void:
+	var old_dir := OS.get_user_data_dir().get_base_dir().path_join("Otium")
+	if not DirAccess.dir_exists_absolute(old_dir):
+		return
+	var files := ["save.json", "settings.json", "window.json"]
+	for i in range(1, BACKUPS + 1):
+		files.append("save.json.bak%d" % i)
+	for f in files:
+		var from := old_dir.path_join(f)
+		var to := OS.get_user_data_dir().path_join(f)
+		if FileAccess.file_exists(from) and not FileAccess.file_exists(to):
+			DirAccess.copy_absolute(from, to)
 
 
 func _process(delta: float) -> void:

@@ -1,4 +1,4 @@
-# Otium: Website Plan
+# Farmus Maximus: Website Plan
 
 The game's website: what it is for, how it looks, every section on the page, and the assets it needs.
 
@@ -75,7 +75,7 @@ Use the pixel font sparingly. Long text in a pixel font is hard to read.
 
 ### 0. Navigation bar
 
-- Left: the Otium logo (small).
+- Left: the Farmus Maximus logo (small).
 - Right: Features, Devlog, Press, Discord, and the **lavender main button** (changes per stage, see above).
 - Becomes a slim sticky bar after scrolling past the hero, so the main button is always one click away.
 - On phones: logo plus main button, with the other links in a menu.
@@ -87,7 +87,7 @@ The most important part of the site. Visitors decide in about three seconds.
 - **An animated, layered scene of the home farm** built from the game's own parallax layers: sky, mountains, hills with the aqueduct, cypresses, the villa, and a foreground of swaying lavender rows.
 - **Alive from the first second:** lavender sways in waves, butterflies drift, a bee or two, the dog asleep in the sun, smoke curling from the bread oven, aqueduct water glinting.
 - **Mouse parallax** on desktop: layers shift slightly as the mouse moves, which makes the scene feel deep.
-- **Centred over the sky:** the Otium logo, a one-line tagline, the main button, and a small "Coming to Steam" line with the Steam and Steam Deck icons.
+- **Centred over the sky:** the Farmus Maximus logo, a one-line tagline, the main button, and a small "Coming to Steam" line with the Steam and Steam Deck icons.
 - **Ambient sound toggle** in a corner (cicadas, breeze, a distant bell). **Off by default**; browsers block autoplaying sound anyway, and surprise audio drives people away.
 - A small bobbing arrow or a butterfly that flutters downward, inviting a scroll.
 
@@ -230,7 +230,7 @@ Most visitors from TikTok and Shorts arrive on a phone, so the phone layout matt
 | Building the site | A static site: plain HTML, CSS and JavaScript, or Astro if you want reusable pages and a devlog written in Markdown |
 | Hero scene animation | Layered images and small JavaScript, or an HTML canvas drawing the game's own sprites. A later option: export the actual Godot hero scene for the web |
 | Hosting | Cloudflare Pages or Netlify (free, fast, automatic from GitHub) |
-| Domain | Something short such as `otiumgame.com` or `playotium.com`. Check availability and trademarks first |
+| Domain | Something short such as `farmusmaximus.com`. Check availability and trademarks first |
 | Email list | Kit (formerly ConvertKit), Buttondown or Mailchimp; all have free tiers |
 | Shared pet counter and dog name poll | A small server-side function (Cloudflare Workers with its free key-value storage), since a static page cannot store a shared count by itself |
 | Analytics | Plausible (privacy friendly, no cookie banner needed) or Google Analytics |
