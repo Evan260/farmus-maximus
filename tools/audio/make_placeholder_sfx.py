@@ -48,11 +48,19 @@ def plant():
     return n * 1.4 + tone(95, 0.18, decay=18) * 0.6
 
 
+def snip():
+    # A blade closing: a very short, bright click with the low end removed so it sounds crisp, not hissy.
+    n = rng.standard_normal(int(RATE * 0.018))
+    crisp = n - lowpass(n, 8)
+    return crisp * env(len(n), 0.0005, 260) * 0.9
+
+
 def harvest():
-    x = t(0.3)
-    sweep = lowpass(rng.standard_normal(len(x)), 6) * np.sin(np.pi * x / 0.3) ** 2 * 0.5
-    out = sweep
-    place(out, tone(1175, 0.25, decay=14, harmonics=(1, 0.3)) * 0.35, 0.08)
+    out = silence(0.4)
+    place(out, snip(), 0.0)
+    place(out, snip() * 0.8, 0.07)
+    place(out, tone(1568, 0.3, decay=11, harmonics=(1, 0.25)) * 0.22, 0.09)
+    place(out, tone(2093, 0.25, decay=13) * 0.12, 0.13)
     return out
 
 
@@ -109,9 +117,9 @@ def nope():
     return out
 
 
-def write(path, samples):
+def write(path, samples, level=0.8):
     peak = np.max(np.abs(samples)) or 1.0
-    data = (samples / peak * 0.8 * 32767).astype(np.int16)
+    data = (samples / peak * level * 32767).astype(np.int16)
     with wave.open(str(path), "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
@@ -133,10 +141,8 @@ if __name__ == "__main__" and len(sys.argv) == 2:
 
 
 def ambience_day(seconds=24.0):
-    # Breeze as slowly swelling filtered noise, with occasional bird chirps on top.
-    x = t(seconds)
-    wind = lowpass(rng.standard_normal(len(x)), 300) * (0.55 + 0.45 * np.sin(2 * np.pi * x / seconds * 3) ** 2) * 6
-    out = wind
+    # Occasional bird chirps over silence; broadband noise is left out because it reads as a fan, not a breeze.
+    out = silence(seconds)
     for _ in range(14):
         at = rng.uniform(0.5, seconds - 1)
         f0 = rng.uniform(2600, 3800)
@@ -149,8 +155,7 @@ def ambience_day(seconds=24.0):
 
 def ambience_night(seconds=24.0):
     # Crickets chirp in short pulses of a high tone over a very soft breeze.
-    x = t(seconds)
-    out = lowpass(rng.standard_normal(len(x)), 400) * 2.0
+    out = silence(seconds)
     for cricket in range(3):
         f = rng.uniform(4200, 5200)
         period = rng.uniform(0.7, 1.1)
@@ -175,6 +180,7 @@ def seam(x):
 if __name__ == "__main__" and len(sys.argv) > 2 and sys.argv[2] == "--ambience":
     out = Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
-    write(out / "day.wav", ambience_day())
-    write(out / "night.wav", ambience_night())
+    # Ambience sits well under the effects, so it is written at a lower level.
+    write(out / "day.wav", ambience_day(), 0.35)
+    write(out / "night.wav", ambience_night(), 0.25)
     print("wrote ambience")

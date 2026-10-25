@@ -17,7 +17,7 @@ const BUSES := ["Music", "Ambience", "Effects"]
 const SETTINGS_PATH := "user://settings.json"
 
 ## Volume per bus, 0 to 1.
-var volumes := {"Music": 0.7, "Ambience": 0.6, "Effects": 0.8}
+var volumes := {"Music": 0.7, "Ambience": 0.45, "Effects": 0.8}
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
 var _day: AudioStreamPlayer

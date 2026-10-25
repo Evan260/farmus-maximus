@@ -1,7 +1,6 @@
 extends Node2D
 ## One farm plot on screen: its soil patch, the crop growing in it, and the hover and ready cues.
 
-const SIZE := Vector2(30, 34)
 const BED := preload("res://assets/sprites/farm/plot_bed.png")
 const SHADOW := preload("res://assets/sprites/farm/shadow_small.png")
 const SPRITES := {
@@ -27,6 +26,7 @@ var _shadow: Sprite2D
 var _crop: Sprite2D
 var _visual := ""
 var _crop_id := ""
+var _hit := Rect2(Vector2(0, -5), Vector2(30, 8))
 var _time := 0.0
 
 
@@ -51,12 +51,13 @@ func _process(delta: float) -> void:
 		if _crop.visible:
 			var tex: Variant = SPRITES[crop][visual]
 			_crop.texture = tex[index % tex.size()] if tex is Array else tex
+		_hit = _hit_rect()
 	queue_redraw()
 
 
 func _draw() -> void:
 	if hovered:
-		draw_rect(Rect2(Vector2(-1, -31), SIZE + Vector2(2, 2)), Color(1, 0.96, 0.85, 0.7), false, 1.0)
+		draw_rect(_hit.grow(1), Color(1, 0.96, 0.85, 0.7), false, 1.0)
 	match _visual:
 		"bloom":
 			# A small twinkle above ready plants, so a glance shows what can be harvested.
@@ -83,7 +84,19 @@ func bounce() -> void:
 
 
 func contains(point: Vector2) -> bool:
-	return Rect2(position + Vector2(-1, -31), SIZE + Vector2(2, 2)).has_point(point)
+	return Rect2(position + _hit.position, _hit.size).has_point(point)
+
+
+## The clickable area: just the soil patch for an empty plot, or the soil plus the plant's visible pixels.
+func _hit_rect() -> Rect2:
+	var soil := Rect2(Vector2(0, -5), Vector2(30, 8))
+	if not _crop.visible or _crop.texture == null:
+		return soil
+	var used := Rect2(_crop.texture.get_image().get_used_rect())
+	if _crop.flip_h:
+		used.position.x = _crop.texture.get_width() - used.position.x - used.size.x
+	used.position += Vector2(-1, -29)
+	return soil.merge(used)
 
 
 func _sprite(tex: Texture2D, pos: Vector2) -> Sprite2D:
