@@ -73,7 +73,7 @@ Each phase lists what gets built, what "done" means, and a rough time estimate. 
 
 **Build:**
 - Install Godot 4 (standard version).
-- Create `C:\Users\evand\Desktop\Otium\` with `game\`, `design\` and later `website\`; move these docs and the art tests into `design\`.
+- Create `C:\Users\evand\Desktop\Farmus Maximus\` with `game\`, `design\` and later `website\`; move these docs and the art tests into `design\`.
 - Set up Git and a private GitHub repo, with Git LFS for art and audio.
 - Configure Godot for pixel art: 480 x 270 base, whole-number scaling, nearest-neighbour filtering, the "show more scene" stretch setting.
 - Save a fresh PixelLab API key as an environment variable (`PIXELLAB_TOKEN`).
