@@ -9,6 +9,8 @@ const ICONS := "res://assets/sprites/icons/"
 const INK := Color(0.29, 0.18, 0.14)
 const CREAM := Color(0.99, 0.95, 0.86)
 const FADED := Color(0.29, 0.18, 0.14, 0.45)
+const SHORT := Color(0.66, 0.2, 0.14)
+const HEADING := Color(0.55, 0.27, 0.18)
 
 
 static func label(parent: Node, text := "", over_scene := false) -> Label:
@@ -42,6 +44,81 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
+## A small square close button with a drawn cross, for the top-right corner of a window.
+static func close_button(parent: Node, action: Callable) -> Button:
+	var b := button(parent, "", action)
+	b.custom_minimum_size = Vector2(13, 13)
+	b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	b.tooltip_text = "Close"
+	var cross := Control.new()
+	cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cross.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cross.draw.connect(func():
+		var c := Rect2(Vector2.ZERO, cross.size).get_center().floor()
+		for i in range(-2, 3):
+			cross.draw_rect(Rect2(c + Vector2(i, i), Vector2.ONE), CREAM)
+			cross.draw_rect(Rect2(c + Vector2(i, -i), Vector2.ONE), CREAM))
+	b.add_child(cross)
+	return b
+
+
+## A heading that opens a section of a window, with a thin rule under it.
+static func section(parent: Node, text: String) -> Label:
+	var l := label(parent, text)
+	l.add_theme_color_override("font_color", HEADING)
+	var rule := ColorRect.new()
+	rule.color = Color(0.55, 0.27, 0.18, 0.35)
+	rule.custom_minimum_size = Vector2(0, 1)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(rule)
+	return l
+
+
+## A checklist of what something costs, one line per thing with its icon and how many you have of how many it needs.
+## Returns the lines so update_costs can refresh the counts without rebuilding.
+static func cost_list(parent: Node, cost: Dictionary) -> Array:
+	var lines := []
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	parent.add_child(grid)
+	for key in cost:
+		if int(cost[key]) <= 0:
+			continue
+		var r := row(grid)
+		var icon_item: String = {"coins": "sestertius", "aureus": "aureus", "provisions": "bread"}.get(key, key)
+		icon(r, icon_item)
+		var l := label(r)
+		l.set_meta("key", key)
+		l.set_meta("need", int(cost[key]))
+		lines.append(l)
+	update_costs(lines)
+	return lines
+
+
+static func update_costs(lines: Array) -> void:
+	for l in lines:
+		if not is_instance_valid(l):
+			continue
+		var key := String(l.get_meta("key"))
+		var need := int(l.get_meta("need"))
+		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
+		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key)).to_lower()))
+		l.text = "%s  %d / %d" % [TranslationServer.translate(name), mini(have, need), need] if key != "coins" else "%s %d" % [TranslationServer.translate(name), need]
+		l.add_theme_color_override("font_color", INK if have >= need else SHORT)
+
+
+static func progress(parent: Node) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(120, 5)
+	bar.max_value = 1.0
+	bar.step = 0.0
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(bar)
+	return bar
+
+
 static func row(parent: Node) -> HBoxContainer:
 	var r := HBoxContainer.new()
 	parent.add_child(r)
@@ -58,7 +135,7 @@ static func icon(parent: Node, item: String) -> TextureRect:
 	var t := TextureRect.new()
 	var path: String = ICONS + Game.item_base(item) + ".png"
 	t.texture = load(path) if ResourceLoader.exists(path) else null
-	t.custom_minimum_size = Vector2(12, 12)
+	t.custom_minimum_size = Vector2(16, 16)
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -162,15 +239,47 @@ static func make_theme() -> Theme:
 	t.set_color("font_pressed_color", "Button", Color(1, 0.93, 0.78))
 	t.set_color("font_hover_pressed_color", "Button", Color(1, 0.93, 0.78))
 	t.set_color("font_disabled_color", "Button", Color(0.92, 0.86, 0.8, 0.75))
-	var bar := StyleBoxFlat.new()
-	bar.bg_color = Color(0.29, 0.18, 0.14, 0.35)
-	t.set_stylebox("scroll", "VScrollBar", bar)
-	var grab := StyleBoxFlat.new()
-	grab.bg_color = Color(0.62, 0.36, 0.26)
-	t.set_stylebox("grabber", "VScrollBar", grab)
-	t.set_stylebox("grabber_highlight", "VScrollBar", grab)
-	t.set_stylebox("grabber_pressed", "VScrollBar", grab)
+	# A clear scrollbar: a dark track with a terracotta handle, wide enough to see and to grab.
+	var track := _flat(Color(0.29, 0.18, 0.14, 0.3), 2)
+	t.set_stylebox("scroll", "VScrollBar", track)
+	t.set_stylebox("scroll_focus", "VScrollBar", track)
+	t.set_stylebox("grabber", "VScrollBar", _flat(Color(0.7, 0.38, 0.25), 2))
+	t.set_stylebox("grabber_highlight", "VScrollBar", _flat(Color(0.8, 0.46, 0.3), 2))
+	t.set_stylebox("grabber_pressed", "VScrollBar", _flat(Color(0.6, 0.3, 0.2), 2))
+	# Sliders: the knob is a small pixel block that travels the whole track, end to end.
+	t.set_stylebox("slider", "HSlider", _flat(Color(0.29, 0.18, 0.14, 0.35), 0, 2))
+	t.set_stylebox("grabber_area", "HSlider", _flat(Color(0.7, 0.38, 0.25), 0, 2))
+	t.set_stylebox("grabber_area_highlight", "HSlider", _flat(Color(0.8, 0.46, 0.3), 0, 2))
+	var knob := _knob()
+	t.set_icon("grabber", "HSlider", knob)
+	t.set_icon("grabber_highlight", "HSlider", knob)
+	t.set_icon("grabber_disabled", "HSlider", knob)
+	t.set_constant("center_grabber", "HSlider", 0)
+	t.set_stylebox("background", "ProgressBar", _flat(Color(0.29, 0.18, 0.14, 0.3), 0))
+	t.set_stylebox("fill", "ProgressBar", _flat(Color(0.7, 0.38, 0.25), 0))
 	return t
+
+
+static func _flat(c: Color, width: int, height := 0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = c
+	s.content_margin_left = width
+	s.content_margin_right = width
+	s.content_margin_top = height
+	s.content_margin_bottom = height
+	return s
+
+
+static func _knob() -> ImageTexture:
+	var img := Image.create(5, 9, false, Image.FORMAT_RGBA8)
+	img.fill(CREAM)
+	for y in 9:
+		img.set_pixel(0, y, Color(0.36, 0.2, 0.15))
+		img.set_pixel(4, y, Color(0.36, 0.2, 0.15))
+	for x in 5:
+		img.set_pixel(x, 0, Color(0.36, 0.2, 0.15))
+		img.set_pixel(x, 8, Color(0.36, 0.2, 0.15))
+	return ImageTexture.create_from_image(img)
 
 
 ## A stretchable panel or button skin cut from one small image: the corners stay sharp, the middle stretches.

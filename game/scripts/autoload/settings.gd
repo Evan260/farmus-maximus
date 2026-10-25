@@ -13,6 +13,7 @@ const ACTIONS := {
 	"open_journal": {"name": "Journal", "key": KEY_J, "pad": JOY_BUTTON_Y},
 	"open_market": {"name": "Market town", "key": KEY_M, "pad": JOY_BUTTON_X},
 	"close_panel": {"name": "Close panel", "key": KEY_ESCAPE, "pad": JOY_BUTTON_B},
+	"dig_up": {"name": "Dig up a plant", "key": KEY_X, "pad": JOY_BUTTON_RIGHT_STICK},
 	"toggle_strip": {"name": "Desktop strip", "key": KEY_F10, "pad": -1},
 	"reset_strip": {"name": "Re-centre the strip", "key": KEY_F9, "pad": -1},
 }
@@ -26,6 +27,10 @@ var strong_cues := false
 var low_power := false
 var language := "en"
 var intro_seen := false
+## How much bigger or smaller than the estate the interface is drawn, in whole steps.
+var ui_scale_step := 0
+## Minutes in one in-game day.
+var day_minutes := 20
 var show_tutorial := true
 var keys := {}
 
@@ -81,6 +86,8 @@ func _load() -> void:
 		if d.has(name):
 			set(name, bool(d[name]))
 	language = String(d.get("language", language))
+	ui_scale_step = int(d.get("ui_scale_step", 0))
+	day_minutes = int(d.get("day_minutes", 20))
 	for action in d.get("keys", {}):
 		keys[action] = int(d["keys"][action])
 
@@ -91,5 +98,5 @@ func save() -> void:
 		f.store_string(JSON.stringify({
 			"offline_progress": offline_progress, "notifications": notifications, "large_text": large_text,
 			"reduced_motion": reduced_motion, "strong_cues": strong_cues, "low_power": low_power, "language": language,
-			"intro_seen": intro_seen, "show_tutorial": show_tutorial, "keys": keys,
+			"intro_seen": intro_seen, "show_tutorial": show_tutorial, "keys": keys, "ui_scale_step": ui_scale_step, "day_minutes": day_minutes,
 		}))

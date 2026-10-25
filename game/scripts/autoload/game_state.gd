@@ -6,6 +6,7 @@ const Market := preload("res://scripts/game/market.gd")
 const Journal := preload("res://scripts/game/journal.gd")
 
 signal planted(plot_index: int)
+signal dug_up(plot_index: int)
 signal unlocked(plot_index: int)
 signal harvested(plot_index: int, amount: int)
 signal storage_full
@@ -400,6 +401,20 @@ func try_plant(i: int, crop_id := "") -> bool:
 	return true
 
 
+## Clears a plot so something else can be planted there; whatever was growing is lost, but the bed stays dug.
+func dig_up(i: int) -> bool:
+	var p: Dictionary = plots[i]
+	if not p["unlocked"] or p["crop"] == "":
+		return false
+	p["crop"] = ""
+	p["growth"] = 0.0
+	p["cycle"] = 0
+	p["ready_age"] = 0.0
+	p["manured"] = false
+	dug_up.emit(i)
+	return true
+
+
 func try_harvest(i: int) -> bool:
 	if not is_ready(i):
 		return false
@@ -563,6 +578,7 @@ func send_cart() -> bool:
 	var loaded := 0
 	var value := 0
 	var goods := sellable_goods()
+	var taken := []
 	var keys := goods.keys()
 	# The most valuable goods go first, so a small cart makes the best of its trip.
 	keys.sort_custom(func(a, b): return market.cart_price(a) > market.cart_price(b))
@@ -574,11 +590,12 @@ func send_cart() -> bool:
 			value += market.cart_price(key)
 			market.note_sold(key, 1)
 		loaded += take
+		taken.append(key)
 		remove_key(key, take)
 	if loaded == 0:
 		message.emit("Nothing in the storehouse to sell")
 		return false
-	cart = {"away": true, "time_left": cart_trip_seconds(), "items": loaded, "value": value}
+	cart = {"away": true, "time_left": cart_trip_seconds(), "items": loaded, "value": value, "load": taken.slice(0, 4)}
 	add_stat("cart_trips", 1)
 	cart_left.emit(loaded, value)
 	return true
@@ -593,7 +610,7 @@ func advance(dt: float) -> Dictionary:
 	market.advance(dt)
 	result["made"] = _advance_buildings(dt)
 	var before := day_time
-	day_time = fmod(day_time + dt * 24.0 / float(Balance.get_value("time.day_seconds", 1200)), 24.0)
+	day_time = fmod(day_time + dt * 24.0 / day_seconds(), 24.0)
 	if day_time < before:
 		calendar.next_day()
 		market.new_day()
@@ -648,6 +665,11 @@ func simulate_offline(seconds: float) -> Dictionary:
 			summary["ready"] += 1
 	summary["storage_full"] = stored_total() >= storage_capacity()
 	return summary
+
+
+## Real seconds in one in-game day, as the player has set it.
+func day_seconds() -> float:
+	return float(Settings.day_minutes) * 60.0 if Settings.day_minutes > 0 else float(Balance.get_value("time.day_seconds", 1200))
 
 
 func blessed(god: String) -> bool:
@@ -1281,7 +1303,7 @@ func _new_building() -> Dictionary:
 
 
 func _empty_cart() -> Dictionary:
-	return {"away": false, "time_left": 0.0, "items": 0, "value": 0}
+	return {"away": false, "time_left": 0.0, "items": 0, "value": 0, "load": []}
 
 
 func to_dict() -> Dictionary:
@@ -1324,7 +1346,7 @@ func from_dict(d: Dictionary) -> void:
 	var c: Dictionary = d.get("cart", {})
 	cart = {
 		"away": bool(c.get("away", false)), "time_left": float(c.get("time_left", 0.0)),
-		"items": int(c.get("items", 0)), "value": int(c.get("value", 0)),
+		"items": int(c.get("items", 0)), "value": int(c.get("value", 0)), "load": Array(c.get("load", [])),
 	}
 	for z in d.get("zones_owned", {}):
 		if zones_owned.has(z):

@@ -1,14 +1,17 @@
 extends "res://scripts/ui/window_panel.gd"
-## The window for one building: buying and repairing it, then whatever it does once it works, and its upgrades.
+## The window for one building or the villa: its state, what it does, and the next step with exactly what that step needs.
 
 ## The id the panel uses for the farmhouse, which is not one of the estate's workshops.
 const VILLA := "villa"
+const WIDTH := 230
 
 var id := ""
 var _status: Label
-var _queue: Label
+var _bar: ProgressBar
+var _costs: Array = []
 var _action: Button
-var _action_note: Label
+var _note: Label
+var _queue: Label
 var _load: Button
 var _casks: Label
 var _feed: Label
@@ -26,38 +29,65 @@ func signature() -> String:
 
 func build() -> void:
 	_offer_buttons = {}
-	_queue = null
-	_load = null
-	_action = null
-	_casks = null
-	_feed = null
-	_blessing = null
+	_costs = []
+	for field in ["_bar", "_action", "_note", "_queue", "_load", "_casks", "_feed", "_blessing"]:
+		set(field, null)
 	if id == VILLA:
 		_build_villa()
 		return
 	var info := Game.building_info(id)
 	var b: Dictionary = Game.buildings[id]
 	var levels: Array = info.get("levels", [])
-	var level_text := ("   " + tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]) if b["state"] == "working" and not levels.is_empty() else ""
-	set_title(tr(String(info.get("name", id))) + level_text)
-	_status = UiKit.para(body, "", 230)
-	if b["state"] == "working":
-		match Game.building_kind(id):
-			"cellar":
-				_build_cellar()
-			"barn":
-				_build_barn()
-			"shrine":
-				_build_shrine()
-			_:
-				_build_workshop()
-	var act := Game.building_action(id)
-	if not act.is_empty():
-		var r := UiKit.row(body)
-		_action = UiKit.button(r, "", _do_action)
-		_action_note = UiKit.label(r)
-	if b["state"] == "working" and Game.building_kind(id) == "workshop":
-		UiKit.button(body, tr("Resume") if b["paused"] else tr("Pause"), func(): Game.set_building_paused(id, not b["paused"]))
+	var level := ("   " + tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]) if b["state"] == "working" and not levels.is_empty() else ""
+	set_title(tr(String(info.get("name", id))) + level)
+	_status = UiKit.para(body, "", WIDTH)
+	_status.add_theme_color_override("font_color", UiKit.FADED)
+	match b["state"]:
+		"ruin":
+			UiKit.section(body, tr("For sale"))
+			_next_step(Game.building_action(id)["cost"], tr("Buy this ruin"))
+		"owned":
+			UiKit.section(body, tr("Repairs"))
+			UiKit.para(body, tr("Builders work on it for %s once the repairs begin.") % UiKit.duration(float(info.get("repair_seconds", 30))), WIDTH)
+			_next_step(Game.building_action(id)["cost"], tr("Start the repairs"))
+		"repairing":
+			_bar = UiKit.progress(body)
+		"working":
+			match Game.building_kind(id):
+				"cellar":
+					_build_cellar()
+				"barn":
+					_build_barn()
+				"shrine":
+					_build_shrine()
+				_:
+					_build_workshop()
+			var act := Game.building_action(id)
+			if not act.is_empty():
+				UiKit.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
+				UiKit.para(body, _upgrade_text(levels[int(b["level"])]), WIDTH)
+				_next_step(act["cost"], tr("Upgrade"))
+			if Game.building_kind(id) == "workshop":
+				UiKit.button(body, tr("Resume work") if b["paused"] else tr("Pause work"), func(): Game.set_building_paused(id, not b["paused"]))
+
+
+## A checklist of what the next step needs, and the button that takes it.
+func _next_step(cost: Dictionary, verb: String) -> void:
+	_costs = UiKit.cost_list(body, cost)
+	_action = UiKit.button(body, verb, _do_action)
+	_note = UiKit.label(body)
+	_note.add_theme_color_override("font_color", UiKit.SHORT)
+
+
+func _upgrade_text(next: Dictionary) -> String:
+	var parts := [tr("Works %s times as fast") % str(next.get("speed", 1))]
+	if int(next.get("batch", 1)) > 1:
+		parts.append(tr("makes %d at a time") % int(next["batch"]))
+	if next.has("queue"):
+		parts.append(tr("holds %d batches") % int(next["queue"]))
+	if int(next.get("quality", 0)) > 0:
+		parts.append(tr("makes better goods"))
+	return ", ".join(parts) + "."
 
 
 func tick() -> void:
@@ -69,38 +99,40 @@ func tick() -> void:
 	match b["state"]:
 		"ruin":
 			var block := Game.building_block(id)
-			_status.text = tr("A ruin. %s.") % block if block != "" else tr("A ruin, for sale.")
+			_status.text = tr("An old ruin. %s.") % tr(block) if block != "" else tr("An old ruin, waiting for someone to bring it back.")
 		"owned":
-			_status.text = tr("Yours, but in ruins. Repair it to put it to work.")
+			_status.text = tr("Yours, but still in ruins.")
 		"repairing":
-			_status.text = tr("Being repaired: %s left") % UiKit.duration(float(b["time_left"]))
+			_status.text = tr("Builders at work: %s left") % UiKit.duration(float(b["time_left"]))
+			if _bar:
+				_bar.value = 1.0 - float(b["time_left"]) / float(info.get("repair_seconds", 30))
 		"working":
 			_status.text = _working_status()
-	if _action and is_instance_valid(_action):
-		var act := Game.building_action(id)
-		if not act.is_empty():
-			var label: String = {"buy": "Buy", "repair": "Repair", "upgrade": "Upgrade"}[act["action"]]
-			_action.text = "%s: %s" % [tr(label), UiKit.cost_text(act["cost"])]
-			var problem := Game.building_block(id)
-			if problem == "":
-				problem = Game.missing(act["cost"])
-			_action.disabled = problem != ""
-			_action_note.text = tr(problem)
-			if act["action"] == "upgrade":
-				var next: Dictionary = info["levels"][int(b["level"])]
-				_action_note.text = tr(problem) if problem != "" else tr("x%s speed") % str(next.get("speed", 1))
-	if _queue and is_instance_valid(_queue):
-		_queue.text = tr("Loaded: %d of %d batches") % [b["queue"].size() + (1 if b["busy"] else 0), Game.building_queue_max(id) + 1]
-		if _load and is_instance_valid(_load):
-			_load.disabled = b["queue"].size() >= Game.building_queue_max(id)
-	if _casks and is_instance_valid(_casks):
+			if _bar:
+				_bar.value = float(b["progress"]) / float(Game.current_recipe(id).get("seconds", 30)) if b["busy"] else 0.0
+	_tick_action(Game.building_action(id).get("cost", {}), Game.building_block(id))
+	if _queue:
+		_queue.text = tr("Batches waiting: %d of %d") % [b["queue"].size(), Game.building_queue_max(id)]
+	if _load:
+		_load.disabled = b["queue"].size() >= Game.building_queue_max(id)
+	if _casks:
 		_casks.text = _cask_text()
-	if _feed and is_instance_valid(_feed):
+	if _feed:
 		_feed.text = tr("Feed in the troughs: %d of %d") % [int(b["feed"]), Game.feed_capacity(id)]
-	if _blessing and is_instance_valid(_blessing):
+	if _blessing:
 		_blessing.text = tr("%s blesses the estate: %s left") % [tr(String(Game.gods()[Game.blessing["god"]]["name"])), UiKit.duration(float(Game.blessing["time_left"]))] if not Game.blessing.is_empty() else tr("Leave an offering for one blessing at a time.")
 		for god in _offer_buttons:
 			_offer_buttons[god].disabled = not Game.blessing.is_empty() or Game.missing(Game.gods()[god]["offering"]) != ""
+
+
+func _tick_action(cost: Dictionary, block: String) -> void:
+	UiKit.update_costs(_costs)
+	if not _action:
+		return
+	var problem := block if block != "" else Game.missing(cost)
+	_action.disabled = problem != ""
+	_note.text = tr(problem)
+	_note.visible = problem != ""
 
 
 func _working_status() -> String:
@@ -115,31 +147,31 @@ func _working_status() -> String:
 			if herd == 0:
 				return tr("Empty. Buy hens and goats at the market.")
 			if int(b["feed"]) == 0:
-				return tr("The animals are resting: there is no feed.")
+				return tr("The animals are resting: the troughs are empty.")
 			return tr("Next eggs and milk in %s") % UiKit.duration((float(Game.building_info(id).get("cycle_seconds", 60)) - float(b["progress"])) / Game.building_speed(id))
 		"shrine":
 			return tr("The household gods watch over the estate.")
 	if b["paused"]:
 		return tr("Paused")
 	if b["busy"]:
-		var seconds := float(Game.current_recipe(id).get("seconds", 30))
-		if float(b["progress"]) >= seconds:
+		if float(b["progress"]) >= float(Game.current_recipe(id).get("seconds", 30)):
 			return tr("Done, waiting for room in the storehouse")
-		return tr("Working: %d%%") % int(100.0 * float(b["progress"]) / seconds)
+		return tr("Working")
 	if Game.current_recipe(id).get("in", {}).is_empty():
-		return tr("The bees are at work")
-	return tr("Waiting to be loaded")
+		return tr("The bees are out among the flowers")
+	return tr("Idle: load it from the storehouse")
 
 
 func _build_workshop() -> void:
+	UiKit.section(body, tr("Makes"))
 	var list := Game.recipes(id)
 	if list.size() > 1:
 		var r := UiKit.row(body)
 		for k in list.size():
 			var outs: Dictionary = list[k]["out"]
-			var b := UiKit.button(r, tr(String(Balance.get_value("items.%s.name" % outs.keys()[0], ""))), func(): Game.set_recipe(id, k))
-			b.toggle_mode = true
-			b.button_pressed = int(Game.buildings[id]["recipe"]) == k
+			var choice := UiKit.button(r, tr(String(Balance.get_value("items.%s.name" % outs.keys()[0], ""))), func(): Game.set_recipe(id, k))
+			choice.toggle_mode = true
+			choice.button_pressed = int(Game.buildings[id]["recipe"]) == k
 	var recipe := Game.current_recipe(id)
 	var line := UiKit.row(body)
 	var ins: Dictionary = recipe.get("in", {})
@@ -148,19 +180,22 @@ func _build_workshop() -> void:
 	UiKit.label(line, (UiKit.goods_text(_scaled(ins)) if not ins.is_empty() else tr("Flowers nearby")) + "  >")
 	for item in recipe.get("out", {}):
 		UiKit.icon(line, item)
-	UiKit.label(line, "%s  (%s)" % [UiKit.goods_text(_scaled(recipe.get("out", {}))), UiKit.duration(float(recipe.get("seconds", 30)) / Game.building_speed(id))])
+	UiKit.label(line, UiKit.goods_text(_scaled(recipe.get("out", {}))))
+	UiKit.label(body, tr("Each batch takes %s") % UiKit.duration(float(recipe.get("seconds", 30)) / Game.building_speed(id))).add_theme_color_override("font_color", UiKit.FADED)
+	_bar = UiKit.progress(body)
 	if recipe.get("lavender_honey", false):
-		UiKit.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), 230)
+		UiKit.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), WIDTH)
 	if ins.is_empty():
 		return
+	UiKit.section(body, tr("Loading"))
 	_queue = UiKit.label(body)
 	var helper := String(Game.building_info(id).get("helper", ""))
 	if Game.helpers.has(helper):
-		UiKit.para(body, tr("%s keeps it loaded from the storehouse.") % Game.helper_info(helper).get("name", ""), 230)
+		UiKit.para(body, tr("%s keeps it loaded from the storehouse.") % Game.helper_info(helper).get("name", ""), WIDTH)
 	else:
 		_load = UiKit.button(body, tr("Load from the storehouse"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
 		if helper != "":
-			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), tr(String(Game.helper_info(helper).get("role", ""))).to_lower()], 230)
+			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), tr(String(Game.helper_info(helper).get("role", ""))).to_lower()], WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 
 
 func _scaled(goods: Dictionary) -> Dictionary:
@@ -171,12 +206,13 @@ func _scaled(goods: Dictionary) -> Dictionary:
 
 
 func _build_cellar() -> void:
-	_casks = UiKit.para(body, "", 230)
+	UiKit.section(body, tr("Casks"))
+	_casks = UiKit.para(body, "", WIDTH)
 	var r := UiKit.row(body)
 	UiKit.button(r, tr("Fill casks"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("No young wine, or no empty casks")))
 	UiKit.button(r, tr("Draw wine"), func(): if Game.draw_wine(id) == 0: Game.message.emit(tr("No wine is ready yet")))
 	if Game.helpers.has("presser"):
-		UiKit.para(body, tr("Titus fills the casks and draws the wine when it is excellent."), 230)
+		UiKit.para(body, tr("Titus fills the casks and draws the wine when it is excellent."), WIDTH)
 
 
 func _cask_text() -> String:
@@ -185,36 +221,40 @@ func _cask_text() -> String:
 	var counts := {-1: 0, 0: 0, 1: 0, 2: 0}
 	for age in b["casks"]:
 		counts[Game.cask_quality(float(age), id)] += 1
-	var text := tr("Casks: %d of %d") % [b["casks"].size(), Game.cellar_capacity(id)]
+	var lines := [tr("%d of %d casks in use") % [b["casks"].size(), Game.cellar_capacity(id)]]
 	if counts[-1] > 0:
-		text += "\n" + tr("Still resting: %d") % counts[-1]
+		lines.append(tr("Still resting: %d") % counts[-1])
 	for q in 3:
 		if counts[q] > 0:
-			text += "\n" + tr("Ready as %s wine: %d") % [tr(String(names[q])).to_lower(), counts[q]]
-	return text
+			lines.append(tr("Ready as %s wine: %d") % [tr(String(names[q])).to_lower(), counts[q]])
+	return "\n".join(lines)
 
 
 func _build_barn() -> void:
 	var b: Dictionary = Game.buildings[id]
+	UiKit.section(body, tr("Animals"))
 	for kind in ["chicken", "goat"]:
 		UiKit.label(body, "%s: %d of %d" % [tr("Hens" if kind == "chicken" else "Goats"), int(b["animals"].get(kind, 0)), Game.animal_capacity(kind, id)])
+	UiKit.para(body, tr("Hens lay eggs and goats give milk; all of them leave manure for the fields."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.section(body, tr("Feed"))
 	_feed = UiKit.label(body)
 	if Game.helpers.has("stablehand"):
-		UiKit.para(body, tr("Julia keeps the troughs full."), 230)
+		UiKit.para(body, tr("Julia keeps the troughs full."), WIDTH)
 	else:
 		UiKit.button(body, tr("Fill the troughs with straw or wheat"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("No straw or wheat in the storehouse")))
-	UiKit.para(body, tr("Hens lay eggs and goats give milk; all of them leave manure for the fields."), 230)
 
 
 func _build_shrine() -> void:
-	_blessing = UiKit.para(body, "", 230)
-	var list := UiKit.scroll(body, Vector2(240, 120))
+	UiKit.section(body, tr("Offerings"))
+	_blessing = UiKit.para(body, "", WIDTH)
+	var list := UiKit.scroll(body, Vector2(WIDTH + 10, 110))
 	for god in Game.gods():
 		var g: Dictionary = Game.gods()[god]
 		var r := UiKit.row(list)
 		var b := UiKit.button(r, tr("Offer"), func(): Game.offer(god))
+		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_offer_buttons[god] = b
-		UiKit.para(r, "%s: %s (%s)" % [tr(String(g["name"])), tr(String(g["does"])), UiKit.cost_text(g["offering"])], 190)
+		UiKit.para(r, "%s: %s (%s)" % [tr(String(g["name"])), tr(String(g["does"])), UiKit.cost_text(g["offering"])], WIDTH - 40)
 
 
 func _do_action() -> void:
@@ -223,30 +263,38 @@ func _do_action() -> void:
 
 func _build_villa() -> void:
 	var stages := Game.villa_stages()
-	set_title(tr(String(stages[clampi(Game.villa_stage - 1, 0, stages.size() - 1)]["name"])))
-	_status = UiKit.para(body, "", 230)
-	if Game.villa_stage < stages.size() and not Game.villa_build["active"]:
-		var next: Dictionary = stages[Game.villa_stage]
-		UiKit.para(body, tr("Next: %s") % tr(String(next["name"])), 230)
-		UiKit.para(body, tr("Brings: %s") % tr(String(next.get("unlocks", ""))), 230)
-		_action = UiKit.button(body, "", func(): Game.upgrade_villa())
-		_action_note = UiKit.para(body, "", 230)
+	var stage := clampi(Game.villa_stage - 1, 0, stages.size() - 1)
+	set_title(tr(String(stages[stage]["name"])) + "   " + tr("Stage %d of %d") % [Game.villa_stage, stages.size()])
+	_status = UiKit.para(body, "", WIDTH)
+	_status.add_theme_color_override("font_color", UiKit.FADED)
+	if Game.villa_build["active"]:
+		_bar = UiKit.progress(body)
+		return
+	if Game.villa_stage >= stages.size() or Game.demo_capped_villa():
+		return
+	var next: Dictionary = stages[Game.villa_stage]
+	UiKit.section(body, tr("Next improvement: %s") % tr(String(next["name"])))
+	UiKit.para(body, tr("Brings: %s.") % tr(String(next.get("unlocks", ""))), WIDTH)
+	UiKit.para(body, tr("Builders work on it for %s.") % UiKit.duration(float(next.get("build_seconds", 0))), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+	_costs = UiKit.cost_list(body, Game.villa_next_price())
+	_action = UiKit.button(body, tr("Build the %s") % tr(String(next["name"])).to_lower(), func(): Game.upgrade_villa())
+	_note = UiKit.label(body)
+	_note.add_theme_color_override("font_color", UiKit.SHORT)
+	if Game.count_item("stone") + Game.count_item("tiles") + Game.count_item("timber") == 0:
+		UiKit.para(body, tr("Stone, timber and roof tiles are sold at the market town."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 
 
 func _tick_villa() -> void:
 	var stages := Game.villa_stages()
 	if Game.villa_build["active"]:
-		_status.text = tr("Being restored: %s left") % UiKit.duration(float(Game.villa_build["time_left"]))
+		var next: Dictionary = stages[mini(Game.villa_stage, stages.size() - 1)]
+		_status.text = tr("Builders at work on the %s: %s left") % [tr(String(next["name"])).to_lower(), UiKit.duration(float(Game.villa_build["time_left"]))]
+		if _bar:
+			_bar.value = 1.0 - float(Game.villa_build["time_left"]) / maxf(1.0, float(next.get("build_seconds", 1)))
 	elif Game.villa_stage >= stages.size():
 		_status.text = tr("Fully restored. The grand estate is complete.")
 	elif Game.demo_capped_villa():
 		_status.text = tr("The rest of the villa's story is in the full game. Thank you for playing the demo!")
 	else:
-		_status.text = tr("Home of the estate.")
-	if _action and is_instance_valid(_action):
-		var price := Game.villa_next_price()
-		_action.visible = not price.is_empty()
-		_action.text = tr("Restore: %s") % UiKit.cost_text(price)
-		var problem := Game.missing(price)
-		_action.disabled = problem != ""
-		_action_note.text = tr(problem)
+		_status.text = tr("Your home. Each improvement changes how the villa looks and opens up more of the estate.")
+	_tick_action(Game.villa_next_price(), "")

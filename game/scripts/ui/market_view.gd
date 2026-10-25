@@ -16,6 +16,9 @@ var _signature := ""
 var _timer := 0.0
 var _fountain: CPUParticles2D
 var _bunting: Node2D
+## The town's panel is drawn on its own layer at the interface's scale, over the town picture at the estate's.
+var _ui_layer: CanvasLayer
+var _ui_root: Control
 
 
 func _ready() -> void:
@@ -39,7 +42,7 @@ func _ready() -> void:
 		w.position = Vector2(randf_range(40, 440), 262 + randi() % 6)
 		_scene.add_child(w)
 	_fountain = CPUParticles2D.new()
-	_fountain.position = Vector2(240, 205)
+	_fountain.position = Vector2(268, 170)
 	_fountain.amount = 24
 	_fountain.lifetime = 0.9
 	_fountain.direction = Vector2.UP
@@ -53,26 +56,45 @@ func _ready() -> void:
 	_bunting.draw.connect(_draw_bunting)
 	_scene.add_child(_bunting)
 
-	var root := Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.theme = UiKit.make_theme()
-	add_child(root)
-	var back := UiKit.button(root, tr("Back to the estate"), leave)
+	_ui_layer = CanvasLayer.new()
+	_ui_layer.layer = 9
+	_ui_layer.visible = false
+	add_child(_ui_layer)
+	_ui_root = Control.new()
+	_ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_root.theme = UiKit.make_theme()
+	_ui_layer.add_child(_ui_root)
+	var back := UiKit.button(_ui_root, tr("Back to the estate"), leave)
 	back.position = Vector2(4, 4)
 	var panel := PanelContainer.new()
-	root.add_child(panel)
+	_ui_root.add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.offset_top = 22
 	var col := UiKit.column(panel)
-	_header = UiKit.label(col)
+	var head := UiKit.row(col)
+	_header = UiKit.label(head)
+	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UiKit.close_button(head, leave)
 	_tabs = UiKit.row(col)
 	_list = UiKit.scroll(col, Vector2(300, 150))
+	Windowing.view_changed.connect(_fit)
+	_fit()
+
+
+## The town picture is scaled up by a whole number until it covers the window, and the panel follows the interface scale.
+func _fit() -> void:
+	var view := get_viewport().get_visible_rect().size
+	var cover := ceili(maxf(view.x / 480.0, view.y / 272.0))
+	_scene.scale = Vector2(cover, cover)
+	_scene.position = ((view - Vector2(480, 272) * cover) / 2.0).round()
+	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
+	_ui_root.size = (view / Windowing.ui_scale).floor()
 
 
 func enter() -> void:
 	visible = true
+	_ui_layer.visible = true
 	_bunting.queue_redraw()
 	Game.add_stat("market_visits", 1)
 	Sfx.play("market_bell")
@@ -97,6 +119,7 @@ func _draw_bunting() -> void:
 
 func leave() -> void:
 	visible = false
+	_ui_layer.visible = false
 	left_town.emit()
 
 

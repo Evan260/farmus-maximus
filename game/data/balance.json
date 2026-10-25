@@ -385,7 +385,9 @@
 				"name": "Restored farmhouse",
 				"sprite": "stage2",
 				"cost": {
-					"coins": 250
+					"coins": 200,
+					"stone": 3,
+					"tiles": 3
 				},
 				"build_seconds": 45,
 				"unlocks": "A farmhand to hire, and land deeds on sale"
@@ -2145,18 +2147,18 @@
 			}
 		},
 		{
-			"id": "villa",
-			"text": "Save 250 sestertii, then click the farmhouse to restore it",
-			"done": {
-				"villa": 2
-			}
-		},
-		{
 			"id": "market",
-			"text": "Visit the market town (the Town button) to sell at full price",
+			"text": "Visit the market town (the Town button): sell at full price, and buy stone and roof tiles",
 			"done": {
 				"stat": "market_visits",
 				"at": 1
+			}
+		},
+		{
+			"id": "villa",
+			"text": "Click the farmhouse, then gather what it needs to be restored",
+			"done": {
+				"villa": 2
 			}
 		},
 		{

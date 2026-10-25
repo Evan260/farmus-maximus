@@ -23,7 +23,10 @@ var follow := false
 var screen := -1
 ## The strip's horizontal offset from centre, in screen pixels, set by dragging it.
 var offset_x := 0
+## Screen pixels per estate pixel: the largest whole number that still shows the full height of the scene.
 var scale := 1
+## Screen pixels per interface pixel, which the player can set larger or smaller than the estate's.
+var ui_scale := 1
 var _dragging := false
 var _drag_from := Vector2i.ZERO
 var _drag_start_x := 0
@@ -35,7 +38,24 @@ func _ready() -> void:
 	if "--strip" in OS.get_cmdline_user_args():
 		strip = true
 		transparent = not "--solid" in OS.get_cmdline_user_args()
+	get_window().size_changed.connect(_on_resized)
+	Settings.changed.connect(_on_resized)
 	_apply.call_deferred()
+
+
+func _on_resized() -> void:
+	_rescale()
+	view_changed.emit()
+
+
+## Picks the pixel scales from the window's size; the estate's viewport is then the window divided by that scale, so it always fills the window.
+func _rescale() -> void:
+	var size := get_window().size
+	if not strip:
+		scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
+	# The interface needs room for its windows, so it never grows past what fits about 400 by 225 interface pixels.
+	var most := maxi(1, mini(size.x / 400, size.y / 225))
+	ui_scale = clampi(scale + Settings.ui_scale_step, 1, maxi(1, most))
 
 
 func _notification(what: int) -> void:
@@ -130,13 +150,11 @@ func set_click_area(points: PackedVector2Array) -> void:
 
 func _apply() -> void:
 	var win := get_window()
-	win.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
-	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
-	win.content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	# The window itself is drawn at full resolution; the estate scales its own viewport (see main.gd), and the interface its own layer.
+	win.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	if screen >= 0 and screen < DisplayServer.get_screen_count() and win.current_screen != screen:
 		win.current_screen = screen
 	if strip:
-		win.content_scale_size = Vector2i(BASE.x, strip_rows())
 		win.borderless = true
 		win.always_on_top = true
 		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
@@ -144,14 +162,17 @@ func _apply() -> void:
 		_place_strip()
 	else:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
-		win.content_scale_size = BASE
 		win.always_on_top = false
 		win.borderless = false
 		get_viewport().transparent_bg = false
 		var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
 		scale = clampi(mini((usable.size.x - 80) / BASE.x, (usable.size.y - 80) / BASE.y), 1, 6)
 		win.size = BASE * scale
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--window="):
+				win.size = Vector2i(int(arg.get_slice("=", 1).get_slice("x", 0)), int(arg.get_slice("x", 1)))
 		win.position = usable.position + (usable.size - win.size) / 2
+	_rescale()
 	_update_fps()
 	# Focus mode turns everything down a little, so a strip left running all day stays in the background.
 	AudioServer.set_bus_volume_db(0, -8.0 if strip and focus_mode else 0.0)

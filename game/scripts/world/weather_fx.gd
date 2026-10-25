@@ -19,13 +19,14 @@ func _ready() -> void:
 		_shadows.append({"x": rng.randf_range(0, 2400), "w": w, "speed": rng.randf_range(3, 6), "tex": _shadow_texture(w)})
 
 
-## A cloud's shadow, dithered so it reads as soft shade rather than a dark block; drawn once, then only moved.
+## A cloud's shadow: a soft, even shade that fades out at its edges, drawn once and then only moved.
 func _shadow_texture(w: int) -> ImageTexture:
 	var img := Image.create(w, 42, false, Image.FORMAT_RGBA8)
-	for y in range(0, 42, 2):
-		var half := w / 2.0 * sqrt(maxf(0.0, 1.0 - pow((y - 21.0) / 22.0, 2)))
-		for x in range(int(w / 2.0 - half), int(w / 2.0 + half), 2):
-			img.set_pixel(clampi(x + (y / 2) % 2, 0, w - 1), y, Color(0.1, 0.08, 0.12, 0.18))
+	for y in 42:
+		for x in w:
+			var d := pow((x - w / 2.0) / (w / 2.0), 2) + pow((y - 21.0) / 21.0, 2)
+			if d < 1.0:
+				img.set_pixel(x, y, Color(0.1, 0.08, 0.14, 0.11 * smoothstep(1.0, 0.4, d)))
 	return ImageTexture.create_from_image(img)
 
 
@@ -43,8 +44,7 @@ func _draw() -> void:
 		for s in _shadows:
 			var x0 := int(s["x"]) - int(s["w"]) / 2
 			if x0 + int(s["w"]) >= view.position.x and x0 <= view.end.x:
-				# Whole-pixel steps of two keep the dither pattern from shimmering as the shadow drifts.
-				draw_texture(s["tex"], Vector2(x0 - x0 % 2, 228))
+				draw_texture(s["tex"], Vector2(x0, 228))
 	if _wet > 0.01:
 		var sky := Lighting.color_at(Game.day_time)
 		for p in _puddles:

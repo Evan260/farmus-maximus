@@ -15,7 +15,7 @@ func _init(title := "") -> void:
 	var head := UiKit.row(col)
 	_title = UiKit.label(head, title)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UiKit.button(head, "x", close)
+	UiKit.close_button(head, close)
 	body = UiKit.column(col)
 	visible = false
 

@@ -17,13 +17,14 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `tools/art/pixellab.py` | Art pipeline: generate with PixelLab, slice sheets, clean stray pixels; every paid call is logged in `tools/art/ledger.csv` |
 | `design/Art tests/content/gen_content.sh` | The script that generated the full game's buildings, people, animals, decorations and icons; it skips finished files |
 | `tools/art/split_layers.py`, `make_estate_ground.py` | Split the estate painting into parallax layers; paint the ground strip |
+| `tools/art/split_sky.py`, `make_icons.py` | Cut a sky into a clean base, moving clouds and the moon; make the 16-pixel list icons from the 32-pixel ones |
 | `.env` | `PIXELLAB_TOKEN` (git-ignored) |
 
 Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe`
 
 ## Fixed decisions
 
-- Base resolution 480 x 270, whole-number scaling, extra scene shown instead of black bars (`stretch/aspect = expand`, `scale_mode = integer`), nearest filtering.
+- Base scene 480 x 270 pixels. The estate is drawn in its own viewport (`main.gd`), scaled by the largest whole number that shows the full height, and sized to fill the window, so there are never black bars. The sky is drawn behind it at screen resolution so clouds and the moon glide; the interface is drawn over it at its own whole-number scale (`Windowing.scale`, `Windowing.ui_scale`).
 - All game data (crops, prices, timings, upgrades) lives in data files, never hard-coded.
 - Art: one cohesive background painting per land; nothing that moves inside a background; everything that moves or changes is a separate sprite; buildings sit on fixed anchor spots with one sprite per stage.
 - Characters are generated outline-free with natural proportions to match the backgrounds.
@@ -41,6 +42,6 @@ Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotE
 
 - Tests: `Godot_..._console.exe --headless --path game --script res://tests/test_simulation.gd` (and `test_scene.gd`).
 - Pacing: `--headless --path game --script res://tests/pacing_bot.gd -- --hours=40` plays the estate as a keen player and prints when each milestone arrives; run it after any balance change. `tests/check_real_save.gd` loads the real save into the current rules without writing anything.
-- Exact screenshots: `Godot_..._console.exe --path game --quit-after 300 -- --demo --shot=OUT.png`, plus `--strip`, `--strip --solid`, `--hour=22.5`, `--villa=2`, `--send-cart`, `--estate` (every zone, building, helper and decoration in use), `--zone=pasture`, `--weather=rain`, `--day=12` (winter), `--town` (the market screen), `--panel=journal` (or `helpers`, `store`, `settings`, `upgrades`, or a building id such as `cellar`). `--demo` never touches the real save.
+- Exact screenshots: `Godot_..._console.exe --path game --quit-after 300 -- --demo --shot=OUT.png`, plus `--strip`, `--strip --solid`, `--hour=22.5`, `--villa=2`, `--send-cart`, `--estate` (every zone, building, helper and decoration in use), `--zone=pasture`, `--weather=rain`, `--day=12` (winter), `--town` (the market screen), `--window=1420x710` (any window size), `--panel=journal` (or `helpers`, `store`, `settings`, `upgrades`, or a building id such as `cellar`). `--demo` never touches the real save.
 - Always wrap capture runs in `timeout 60` and pass `--quit-after`: a script error stops the scene before it can quit, and the window then waits forever.
 - The movie writer (`--write-movie`) always records at 480x270, so it cannot show the desktop strip's real shape; use `--shot` for that.

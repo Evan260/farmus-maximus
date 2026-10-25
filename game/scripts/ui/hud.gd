@@ -28,7 +28,6 @@ var _toast: Label
 var _toast_tween: Tween
 var _toast_queue: Array = []
 var _tip: Label
-var _cart_button: Button
 var _debug: PanelContainer
 var _stats_panel: PanelContainer
 var _buttons: VBoxContainer
@@ -50,11 +49,12 @@ func _ready() -> void:
 	# Above the scene, the firefly glow and the weather.
 	layer = 10
 	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# Clicks on empty parts of the interface pass through to the farm.
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = UiKit.make_theme()
 	add_child(_root)
+	Windowing.view_changed.connect(_fit)
+	_fit()
 
 	_stats_panel = PanelContainer.new()
 	_stats_panel.position = Vector2(4, 4)
@@ -73,7 +73,6 @@ func _ready() -> void:
 	_buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_buttons.offset_top = 4
 	_buttons.offset_right = -4
-	_cart_button = UiKit.button(_buttons, tr("Send cart"), func(): Game.send_cart())
 	UiKit.button(_buttons, tr("Upgrades"), func(): _open(_upgrades))
 	UiKit.button(_buttons, tr("Storehouse"), func(): _open(_store))
 	UiKit.button(_buttons, tr("Helpers"), func(): _open(_helpers))
@@ -142,9 +141,15 @@ func _process(_delta: float) -> void:
 	if not Game.blessing.is_empty():
 		cal += "\n" + tr("Blessing of %s") % tr(String(Game.gods()[Game.blessing["god"]]["name"]))
 	_calendar.text = cal
-	_cart_button.disabled = Game.cart["away"] or Game.stored_total() == 0
 	_seed_button.text = tr("Seed: %s") % tr(String(Game.crop_info(Game.selected_seed).get("name", "")))
 	_update_tip()
+
+
+## The interface is drawn at its own whole-number scale, laid out in the window's size divided by that scale.
+func _fit() -> void:
+	scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
+	_root.position = Vector2.ZERO
+	_root.size = (get_viewport().get_visible_rect().size / Windowing.ui_scale).floor()
 
 
 ## The compact bar's area in the strip, which must stay clickable when the rest of the sky lets clicks through.
@@ -192,7 +197,7 @@ func set_zone(zone_id: String) -> void:
 func set_info(text: String) -> void:
 	_info.visible = text != ""
 	_info.text = text
-	_info.position = Vector2(4, get_viewport().get_visible_rect().size.y - _info.get_minimum_size().y - 2)
+	_info.position = Vector2(4, _root.size.y - _info.get_minimum_size().y - 2)
 
 
 func toast(text: String) -> void:
@@ -209,7 +214,7 @@ func _show_toast(text: String) -> void:
 	if _toast_tween:
 		_toast_tween.kill()
 	_toast.modulate.a = 1.0
-	var view := get_viewport().get_visible_rect().size
+	var view := _root.size
 	_toast.position = Vector2(0, roundf(view.y * 0.2))
 	_toast.size.x = view.x
 	_toast_tween = create_tween()
@@ -218,8 +223,10 @@ func _show_toast(text: String) -> void:
 	_toast_tween.tween_callback(func(): if not _toast_queue.is_empty(): _show_toast(_toast_queue.pop_front()))
 
 
+## Text that floats up from a spot on screen; pos is in estate pixels relative to the view's corner.
 func float_text(pos: Vector2, text: String) -> void:
 	var l := UiKit.label(_root, text, true)
+	pos = (pos * Windowing.scale / Windowing.ui_scale).round()
 	l.position = pos
 	var t := create_tween().set_parallel()
 	t.tween_property(l, "position:y", pos.y - 12, 0.9)
@@ -256,7 +263,7 @@ func _update_tip() -> void:
 	_tip.visible = not step.is_empty() and not Windowing.strip and not _info.visible
 	if _tip.visible:
 		_tip.text = tr("Tip: %s") % tr(String(step["text"]))
-		_tip.position = Vector2(4, get_viewport().get_visible_rect().size.y - _tip.get_minimum_size().y - 2)
+		_tip.position = Vector2(4, _root.size.y - _tip.get_minimum_size().y - 2)
 
 
 func _on_discovered(id: String) -> void:
