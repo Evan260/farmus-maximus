@@ -20,6 +20,8 @@ var _debug: PanelContainer
 
 
 func _ready() -> void:
+	# Above the scene and the firefly glow layer.
+	layer = 10
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	# Clicks on empty parts of the interface pass through to the farm.
@@ -67,7 +69,7 @@ func _ready() -> void:
 	_toast.modulate.a = 0.0
 
 	_build_debug()
-	Game.message.connect(toast)
+	Game.message.connect(func(text): toast(text); Sfx.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast("The storeroom is full: send the cart to market"))
 	if not Saves.pending_summary.is_empty():
 		_show_away(Saves.pending_summary)
@@ -83,8 +85,11 @@ func _process(_delta: float) -> void:
 		_cart.text = "Cart ready  (carries %d)" % Game.cart_capacity()
 	_cart_button.disabled = Game.cart["away"] or Game.stored_total() == 0
 	var villa_cost := Game.villa_next_cost()
-	_villa_button.visible = villa_cost >= 0
-	if villa_cost >= 0:
+	_villa_button.visible = villa_cost >= 0 or Game.villa_build["active"]
+	if Game.villa_build["active"]:
+		_villa_button.text = "Building...  %ds" % ceili(float(Game.villa_build["time_left"]))
+		_villa_button.disabled = true
+	elif villa_cost >= 0:
 		var next: Dictionary = Game.villa_stages()[Game.villa_stage]
 		_villa_button.text = "%s  %d" % [next.get("name", "Upgrade villa"), villa_cost]
 		_villa_button.disabled = Game.coins < villa_cost
@@ -184,6 +189,7 @@ func _button(parent: Node, text: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(func(): Sfx.play("click", -8.0))
 	b.pressed.connect(action)
 	parent.add_child(b)
 	return b

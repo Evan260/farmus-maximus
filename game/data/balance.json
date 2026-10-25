@@ -28,32 +28,78 @@
 		"storage": {
 			"name": "Storeroom",
 			"label": "Holds",
-			"values": [12, 24, 40, 70, 120],
-			"costs": [40, 120, 320, 800]
+			"values": [
+				12,
+				24,
+				40,
+				70,
+				120
+			],
+			"costs": [
+				40,
+				120,
+				320,
+				800
+			]
 		},
 		"cart_capacity": {
 			"name": "Bigger cart",
 			"label": "Carries",
-			"values": [12, 24, 40, 70],
-			"costs": [50, 160, 420]
+			"values": [
+				12,
+				24,
+				40,
+				70
+			],
+			"costs": [
+				50,
+				160,
+				420
+			]
 		},
 		"cart_speed": {
 			"name": "Faster donkey",
 			"label": "Trip seconds",
-			"values": [30, 22, 15, 10],
-			"costs": [60, 180, 450]
+			"values": [
+				30,
+				22,
+				15,
+				10
+			],
+			"costs": [
+				60,
+				180,
+				450
+			]
 		},
 		"farmhand": {
 			"name": "Farmhand",
 			"label": "Harvests every (s)",
-			"values": [0, 6, 3, 1.5],
-			"costs": [150, 400, 900]
+			"values": [
+				0,
+				6,
+				3,
+				1.5
+			],
+			"costs": [
+				150,
+				400,
+				900
+			]
 		}
 	},
 	"villa": {
 		"stages": [
-			{ "name": "Ruined farmhouse", "sprite": "stage1" },
-			{ "name": "Restored farmhouse", "sprite": "stage2", "cost": 250 }
+			{
+				"name": "Ruined farmhouse",
+				"sprite": "stage1"
+			},
+			{
+				"name": "Restored farmhouse",
+				"sprite": "stage2",
+				"cost": 250,
+				"build_seconds": 45
+			}
 		]
 	},
 	"offline": {
@@ -63,5 +109,9 @@
 	},
 	"save": {
 		"interval_seconds": 60
+	},
+	"time": {
+		"day_seconds": 1200,
+		"start_hour": 16
 	}
 }

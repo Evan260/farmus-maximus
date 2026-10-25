@@ -39,12 +39,29 @@ func _run() -> void:
 	_check(int(summary["harvested"]) == game.storage_capacity(), "summary counts offline harvests")
 	_check(bool(summary["storage_full"]), "summary reports the full storeroom")
 
+	# The villa takes time to build and finishes on its own, even offline.
+	game.new_game()
+	game.coins = 1000
+	_check(game.upgrade_villa(), "pays for the villa upgrade")
+	_check(game.villa_build["active"] and game.villa_stage == 1, "villa is under construction, not finished instantly")
+	_check(game.villa_next_cost() == -1, "cannot pay twice while building")
+	game.simulate_offline(50.0)
+	_check(not game.villa_build["active"] and game.villa_stage == 2, "construction finishes while the game is closed")
+
+	# The day clock moves and wraps around midnight.
+	game.day_time = 23.9
+	game.advance(60.0)
+	_check(game.day_time < 23.9, "the day wraps past midnight")
+
 	# Saving round trip.
 	var data: Dictionary = JSON.parse_string(JSON.stringify(game.to_dict()))
 	var coins: int = game.coins
+	var stored: int = game.stored_total()
+	var stage: int = game.villa_stage
+	var hour: float = game.day_time
 	game.new_game()
 	game.from_dict(data)
-	_check(game.coins == coins and game.stored_total() == game.storage_capacity(), "save data round-trips")
+	_check(game.coins == coins and game.stored_total() == stored and game.villa_stage == stage and is_equal_approx(game.day_time, hour), "save data round-trips")
 
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)

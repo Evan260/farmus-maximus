@@ -20,3 +20,10 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-24T22:42:54,edit,game/assets/sprites/villa/stage2.png,0.0000,0,4.5109
 2026-10-24T22:43:58,edit,game/assets/sprites/villa/stage2.png,0.0000,0,4.5109
 2026-10-24T22:44:50,proflash,game/assets/sprites/farm/cart.png,0.0236,0,4.4873
+2026-10-24T23:00:32,animate,game/assets/sprites/dog/walk_east,0.0000,0,4.4873
+2026-10-24T23:02:37,animate,game/assets/sprites/dog/sit_east,0.0229,0,4.4644
+2026-10-24T23:04:41,animate,game/assets/sprites/dog/sleep_east,0.0212,0,4.4432
+2026-10-24T23:06:01,animate,game/assets/sprites/dog/happy_east,0.0147,0,4.4285
+2026-10-24T23:07:39,edit,game/assets/sprites/villa/scaffold.png,0.0092,0,4.4194
+2026-10-24T23:14:01,pixen,design/Art tests/phase3/night_sky_seed3.png,0.0108,0,4.4086
+2026-10-24T23:14:46,pixen,design/Art tests/phase3/night_sky_seed9.png,0.0095,0,4.3991

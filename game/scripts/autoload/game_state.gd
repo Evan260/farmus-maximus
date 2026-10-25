@@ -1,10 +1,13 @@
 extends Node
 ## The whole farm's state and the rules that change it. Live play and offline catch-up both run through advance().
 
+signal planted(plot_index: int)
+signal unlocked(plot_index: int)
 signal harvested(plot_index: int, amount: int)
 signal storage_full
 signal cart_left(items: int, value: int)
 signal cart_returned(coins: int)
+signal villa_build_started(stage: int)
 signal villa_upgraded(stage: int)
 signal message(text: String)
 
@@ -13,6 +16,10 @@ var storage := {}
 var plots: Array = []
 var levels := {}
 var villa_stage := 1
+## A villa stage under construction; it finishes on its own, even while the game is closed.
+var villa_build := {}
+## In-game clock in hours, 0 to 24.
+var day_time := 16.0
 var cart := {}
 var farmhand_timer := 0.0
 var stats := {}
@@ -39,6 +46,8 @@ func new_game() -> void:
 		plots.append({"unlocked": i < unlocked, "crop": "", "growth": 0.0, "cycle": 0})
 	levels = {"storage": 0, "cart_capacity": 0, "cart_speed": 0, "farmhand": 0}
 	villa_stage = 1
+	villa_build = {"active": false, "time_left": 0.0}
+	day_time = float(Balance.get_value("time.start_hour", 16))
 	cart = _empty_cart()
 	farmhand_timer = 0.0
 	stats = {"harvested": 0, "earned": 0}
@@ -139,10 +148,12 @@ func villa_stages() -> Array:
 	return Balance.get_value("villa.stages", [])
 
 
-## The price of the next villa stage, or -1 when the villa is fully built.
+## The price of the next villa stage, or -1 when the villa is fully built or already being built.
 func villa_next_cost() -> int:
 	var stages := villa_stages()
-	return int(stages[villa_stage].get("cost", 0)) if villa_stage < stages.size() else -1
+	if villa_build["active"] or villa_stage >= stages.size():
+		return -1
+	return int(stages[villa_stage].get("cost", 0))
 
 
 # Actions ----------------------------------------------------------------
@@ -159,6 +170,7 @@ func try_plant(i: int, crop_id := "lavender") -> bool:
 	p["crop"] = crop_id
 	p["growth"] = 0.0
 	p["cycle"] = 0
+	planted.emit(i)
 	return true
 
 
@@ -182,6 +194,7 @@ func try_unlock(i: int) -> bool:
 		return false
 	coins -= cost
 	p["unlocked"] = true
+	unlocked.emit(i)
 	return true
 
 
@@ -228,9 +241,19 @@ func upgrade_villa() -> bool:
 		message.emit("Not enough sestertii")
 		return false
 	coins -= cost
-	villa_stage += 1
-	villa_upgraded.emit(villa_stage)
+	var stage: Dictionary = villa_stages()[villa_stage]
+	villa_build = {"active": true, "time_left": float(stage.get("build_seconds", 0))}
+	villa_build_started.emit(villa_stage + 1)
+	if villa_build["time_left"] <= 0.0:
+		_finish_villa()
 	return true
+
+
+func _finish_villa() -> void:
+	villa_stage += 1
+	villa_build = {"active": false, "time_left": 0.0}
+	if not quiet:
+		villa_upgraded.emit(villa_stage)
 
 
 # Time -------------------------------------------------------------------
@@ -238,6 +261,11 @@ func upgrade_villa() -> bool:
 ## Moves the farm forward by dt seconds and reports what happened.
 func advance(dt: float) -> Dictionary:
 	var result := {"harvested": 0, "earned": 0}
+	day_time = fmod(day_time + dt * 24.0 / float(Balance.get_value("time.day_seconds", 1200)), 24.0)
+	if villa_build["active"]:
+		villa_build["time_left"] = float(villa_build["time_left"]) - dt
+		if villa_build["time_left"] <= 0.0:
+			_finish_villa()
 	for p in plots:
 		if p["unlocked"] and p["crop"] != "":
 			p["growth"] = minf(float(p["growth"]) + dt, time_to_ready(p))
@@ -317,7 +345,7 @@ func _empty_cart() -> Dictionary:
 func to_dict() -> Dictionary:
 	return {
 		"coins": coins, "storage": storage, "plots": plots, "levels": levels,
-		"villa_stage": villa_stage, "cart": cart, "farmhand_timer": farmhand_timer, "stats": stats,
+		"villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time, "cart": cart, "farmhand_timer": farmhand_timer, "stats": stats,
 	}
 
 
@@ -337,6 +365,9 @@ func from_dict(d: Dictionary) -> void:
 	for id in d.get("levels", {}):
 		levels[id] = int(d["levels"][id])
 	villa_stage = int(d.get("villa_stage", 1))
+	var vb: Dictionary = d.get("villa_build", {})
+	villa_build = {"active": bool(vb.get("active", false)), "time_left": float(vb.get("time_left", 0.0))}
+	day_time = float(d.get("day_time", day_time))
 	var c: Dictionary = d.get("cart", {})
 	cart = {
 		"away": bool(c.get("away", false)), "time_left": float(c.get("time_left", 0.0)),

@@ -64,6 +64,13 @@ func _draw() -> void:
 			draw_rect(Rect2(Vector2(13, -11), Vector2(3, 3)), c, false, 1.0)
 
 
+## A small hop of the plant, so planting and harvesting feel like they did something.
+func bounce() -> void:
+	var t := create_tween()
+	t.tween_property(_crop, "position:y", -31.0, 0.07)
+	t.tween_property(_crop, "position:y", -29.0, 0.12)
+
+
 func contains(point: Vector2) -> bool:
 	return Rect2(position + Vector2(-1, -31), SIZE + Vector2(2, 2)).has_point(point)
 
