@@ -3,6 +3,7 @@ extends Node2D
 ## climbs it to work from it, then climbs back down.
 
 const DIRS := ["res://assets/sprites/people/builder_small/", "res://assets/sprites/people/builder/"]
+const Walker := preload("res://scripts/world/walker.gd")
 
 ## The building's outline in estate pixels.
 var site := Rect2()
@@ -20,6 +21,7 @@ var _timer := 0.0
 var _offsets := {}
 var _dir := ""
 var _leaving := false
+var _pace := 0.0
 
 
 func _ready() -> void:
@@ -31,6 +33,8 @@ func _ready() -> void:
 	sprite.centered = false
 	sprite.sprite_frames = _frames()
 	add_child(sprite)
+	if sprite.sprite_frames.has_animation("walk"):
+		_pace = Walker.natural_pace(sprite.sprite_frames, "walk")
 	position = Vector2(site.position.x + randf() * site.size.x, site.end.y + 2)
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.8)
@@ -116,6 +120,8 @@ func _begin() -> void:
 			var to: Vector2 = step["to"]
 			sprite.flip_h = to.x < position.x
 			_play("walk")
+			if _pace > 0.0:
+				sprite.speed_scale = float(step.get("speed", 14.0)) / _pace
 		"climb":
 			_play("climb")
 		"wait":

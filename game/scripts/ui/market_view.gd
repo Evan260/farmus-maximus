@@ -5,9 +5,14 @@ extends CanvasLayer
 signal left_town
 
 const Walker := preload("res://scripts/world/walker.gd")
+const DeedCard := preload("res://scripts/ui/deed_card.gd")
 const BG := "res://assets/backgrounds/market/painting.png"
 ## The painting split into its sky, its clouds and the town in front, so the clouds can drift behind the rooftops.
 const SKY_DIR := "res://assets/backgrounds/market/sky/"
+const GRADIENT := preload("res://assets/shaders/sky_gradient.gdshader")
+const CLOUD_TINT := preload("res://assets/shaders/cloud_tint.gdshader")
+## The row where the town's sky meets the far hills behind the temple.
+const TOWN_HORIZON := 95.0
 ## The places in the painting that can be clicked, in the painting's pixels.
 const INK := Color8(42, 29, 41)
 const WOOD_DARK := Color8(66, 40, 45)
@@ -53,6 +58,13 @@ var _pad_bar: HBoxContainer
 var _signature := ""
 var _timer := 0.0
 var _clouds: Array[Sprite2D] = []
+var _sky_layer: CanvasLayer
+var _sky: Node2D
+var _gradient: Sprite2D
+var _sun: Sprite2D
+var _cloud_look: ShaderMaterial
+var _light: CanvasModulate
+var _sky_time := 0.0
 var _water: Node2D
 var _water_time := 0.0
 ## The pixels of the painting that show water in the fountain.
@@ -68,23 +80,19 @@ func _ready() -> void:
 	visible = false
 	_scene = Node2D.new()
 	add_child(_scene)
-	var bg := Sprite2D.new()
-	bg.centered = false
-	if ResourceLoader.exists(BG):
-		bg.texture = load(BG)
-	_scene.add_child(bg)
-	if ResourceLoader.exists(SKY_DIR + "front.png"):
-		bg.texture = load(SKY_DIR + "base.png")
-		_add_clouds()
-		var front := Sprite2D.new()
-		front.centered = false
-		front.texture = load(SKY_DIR + "front.png")
-		_scene.add_child(front)
+	_build_sky()
+	# The town is lit by the hour like the estate; the sky has its own layer underneath, so it is not dimmed twice.
+	_light = CanvasModulate.new()
+	add_child(_light)
+	var front := Sprite2D.new()
+	front.centered = false
+	front.texture = load(SKY_DIR + "front.png")
+	_scene.add_child(front)
 	_water = Node2D.new()
 	_water.draw.connect(_draw_water)
 	_scene.add_child(_water)
-	if bg.texture:
-		var img := bg.texture.get_image()
+	if ResourceLoader.exists(BG):
+		var img := (load(BG) as Texture2D).get_image()
 		for y in range(150, 210):
 			for x in range(225, 320):
 				var c := img.get_pixel(x, y)
@@ -147,17 +155,71 @@ func _ready() -> void:
 
 
 ## The town picture is scaled up by a whole number until it covers the window, and the windows follow the interface scale.
-func _add_clouds() -> void:
+## The town's sky follows the estate's clock: the same banded colours, sun and stars, with the painting's own clouds
+## drifting across it, lit for the hour.
+func _build_sky() -> void:
+	_sky_layer = CanvasLayer.new()
+	_sky_layer.layer = 7
+	_sky_layer.visible = false
+	add_child(_sky_layer)
+	_sky = Node2D.new()
+	_sky_layer.add_child(_sky)
+	_gradient = Sprite2D.new()
+	var white := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+	white.fill(Color.WHITE)
+	_gradient.texture = ImageTexture.create_from_image(white)
+	_gradient.centered = false
+	_gradient.scale = Vector2(480, TOWN_HORIZON + 40)
+	var paint := ShaderMaterial.new()
+	paint.shader = GRADIENT
+	paint.set_shader_parameter("area", _gradient.scale)
+	paint.set_shader_parameter("origin", Vector2.ZERO)
+	paint.set_shader_parameter("top", -20.0)
+	paint.set_shader_parameter("horizon", TOWN_HORIZON)
+	paint.set_shader_parameter("bands", 7.0)
+	_gradient.material = paint
+	_sky.add_child(_gradient)
+	_sun = Sprite2D.new()
+	_sun.texture = Lighting.ellipse_texture(15, 15, Color.WHITE)
+	_sky.add_child(_sun)
+	_cloud_look = ShaderMaterial.new()
+	_cloud_look.shader = CLOUD_TINT
 	var list: Array = JSON.parse_string(FileAccess.get_file_as_string(SKY_DIR + "clouds.json"))
 	for c in list:
 		var cloud := Sprite2D.new()
 		cloud.centered = false
 		cloud.texture = load(SKY_DIR + String(c["file"]))
 		cloud.position = Vector2(float(c["x"]), float(c["y"]))
+		cloud.material = _cloud_look
+		cloud.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		# High clouds drift a little faster than low ones, and pieces of one cloud share a band so they keep together.
 		cloud.set_meta("speed", 1.6 if float(c["y"]) < 40.0 else 1.0)
-		_scene.add_child(cloud)
+		_sky.add_child(cloud)
 		_clouds.append(cloud)
+
+
+func _light_town(delta: float) -> void:
+	var hour := Game.day_time
+	var overcast: bool = Game.calendar.weather in ["cloudy", "rain"]
+	var look := SkyPalette.at(hour, overcast)
+	var paint := _gradient.material as ShaderMaterial
+	for key in ["zenith", "middle", "low", "glow"]:
+		paint.set_shader_parameter(key, look[key])
+	var sun := SkyPalette.sun_position(hour, 480.0, TOWN_HORIZON, 75.0)
+	_sun.visible = not is_nan(sun.x)
+	if _sun.visible:
+		_sun.position = sun.round()
+		var height := clampf((TOWN_HORIZON - sun.y) / 75.0, 0.0, 1.0)
+		_sun.modulate = Color(1.0, 0.72, 0.45).lerp(Color(1.0, 0.98, 0.9), height)
+		paint.set_shader_parameter("sun", sun)
+		paint.set_shader_parameter("glow_radius", lerpf(140.0, 80.0, height))
+	paint.set_shader_parameter("stars", Lighting.night_amount(hour))
+	_sky_time += delta
+	paint.set_shader_parameter("time", _sky_time)
+	_cloud_look.set_shader_parameter("light", look["light"])
+	_cloud_look.set_shader_parameter("shade", look["shade"])
+	var light := Lighting.color_at(hour)
+	_light.color = light.darkened(0.12) if overcast else light
 
 
 func _drift_clouds(delta: float) -> void:
@@ -174,6 +236,8 @@ func _fit() -> void:
 	var cover := ceili(maxf(view.x / 480.0, view.y / 272.0))
 	_scene.scale = Vector2(cover, cover)
 	_scene.position = ((view - Vector2(480, 272) * cover) / 2.0).round()
+	_sky.scale = _scene.scale
+	_sky.position = _scene.position
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
 	_pad_bar.position = Vector2(4, _ui_root.size.y - 18)
@@ -182,6 +246,7 @@ func _fit() -> void:
 func enter() -> void:
 	visible = true
 	_ui_layer.visible = true
+	_sky_layer.visible = true
 	tab = ""
 	_panel.visible = false
 	_bunting.queue_redraw()
@@ -195,6 +260,7 @@ func enter() -> void:
 func leave() -> void:
 	visible = false
 	_ui_layer.visible = false
+	_sky_layer.visible = false
 	left_town.emit()
 
 
@@ -218,6 +284,7 @@ func _process(delta: float) -> void:
 	_water_time += delta
 	_water.queue_redraw()
 	_drift_clouds(delta)
+	_light_town(delta)
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = 0.3
@@ -523,21 +590,26 @@ func _owned_text(entry: Dictionary) -> String:
 	return ""
 
 
+## The temple's land registry: a deed for every part of the estate, sealed for the land that is already the family's.
 func _build_land() -> void:
+	var owned := Game.zones().filter(func(z): return Game.zone_owned(String(z["id"]))).size()
+	UiKit.label(_list, tr("Your land: %d of %d") % [owned, Game.zones().size()])
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	_list.add_child(grid)
 	for z in Game.zones():
-		if Game.zone_owned(String(z["id"])):
-			continue
-		var r := UiKit.row(_list)
-		var l := UiKit.label(r, "%s  -  %s" % [tr(String(z["name"])), UiKit.cost_text({"coins": int(z.get("deed", 0))})])
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var block: String = Game.zone_block(String(z["id"]))
-		if block != "":
-			UiKit.para(r, tr(block), 120).add_theme_color_override("font_color", UiKit.FADED)
-		else:
-			var b := UiKit.button(r, tr("Buy the deed"), func(): Game.buy_zone(String(z["id"])))
-			b.disabled = Game.coins < int(z.get("deed", 0))
-	if _list.get_child_count() == 0:
-		UiKit.label(_list, tr("The whole estate is yours."))
+		var id := String(z["id"])
+		var col := UiKit.column(grid)
+		var deed := DeedCard.new()
+		deed.title = tr(String(z["name"]))
+		deed.price = int(z.get("deed", 0))
+		deed.state = "owned" if Game.zone_owned(id) else ("sale" if Game.zone_block(id) == "" else "later")
+		col.add_child(deed)
+		if deed.state == "sale":
+			var b := UiKit.button(col, tr("Buy"), func(): Game.buy_zone(id))
+			b.disabled = Game.coins < deed.price
 
 
 func _build_decorations() -> void:

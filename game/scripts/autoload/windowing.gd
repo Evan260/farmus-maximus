@@ -55,7 +55,8 @@ func _rescale() -> void:
 		scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
 	# The interface needs room for its windows, so it never grows past what fits about 400 by 225 interface pixels.
 	var most := maxi(1, mini(size.x / 400, size.y / 225))
-	ui_scale = clampi(scale + Settings.ui_scale_step, 1, maxi(1, most))
+	# The normal interface is one step under the estate's own scale, which reads at a comfortable size on most screens.
+	ui_scale = clampi(scale - 1 + Settings.ui_scale_step, 1, maxi(1, most))
 
 
 func _notification(what: int) -> void:

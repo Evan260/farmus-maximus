@@ -71,6 +71,10 @@ func _run() -> void:
 	lists = journal.find_children("*", "ScrollContainer", true, false)
 	_check(lists[lists.size() - 1].scroll_vertical == 40, "choosing a journal entry keeps the list where it was")
 	journal.close()
+	game.day_time = 22.0
+	main.hud._start_sleep()
+	await create_timer(8.0).timeout
+	_check(game.day_time > 6.0 and game.day_time < 7.5 and game.speed == 1.0, "sleeping runs the night by and wakes at dawn (woke at %.2f)" % game.day_time)
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
 

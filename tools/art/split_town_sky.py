@@ -22,6 +22,7 @@ STEP = 70
 RIGHT_EDGE = 428
 LOWEST = 130
 SUN = (86, 38, 122, 82)
+POCKET = (355, 20, 432, 100)
 CLOUD_COLOURS = [(212, 185, 186), (253, 235, 197), (234, 206, 191), (240, 198, 163), (254, 237, 183), (255, 249, 206), (246, 221, 188)]
 
 
@@ -39,6 +40,13 @@ def sky_mask(im):
             if 0 <= ny < LOWEST and 0 <= nx < W and not sky[ny, nx]:
                 if np.abs(im[ny, nx] - im[y, x]).sum() <= (STEP if nx <= RIGHT_EDGE else 25):
                     q.append((ny, nx))
+    # Between the right-hand cypress and the house the sky shows in small pockets the flood cannot reach; there, any
+    # pixel in one of the sky's own colours is sky.
+    colours = {tuple(c) for c in im[sky]}
+    for y in range(POCKET[1], POCKET[3]):
+        for x in range(POCKET[0], POCKET[2]):
+            if tuple(im[y, x]) in colours:
+                sky[y, x] = True
     # Specks of cloud shading the flood could not step into are closed over.
     holes = ndimage.binary_fill_holes(sky) & ~sky
     lab, n = ndimage.label(holes)

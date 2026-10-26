@@ -1,11 +1,14 @@
 extends Node2D
-## The sky behind the estate, drawn at the screen's full resolution so clouds and the moon glide rather than step a pixel at a time.
-## Everything here is in the painting's pixels; the node is scaled up to the screen by the scene.
+## The sky behind the estate: a banded gradient that follows the hour, the sun and moon crossing it, stars at night and
+## clouds in three depths lit to match. Everything here is in the painting's pixels; the scene scales the node up.
 
 const SkyFx := preload("res://scripts/world/sky_fx.gd")
-const DIR := "res://assets/backgrounds/estate/"
 const WIDTH := 768.0
-const SMOOTH := preload("res://assets/shaders/smooth_pixels.gdshader")
+const GRADIENT := preload("res://assets/shaders/sky_gradient.gdshader")
+const CLOUD_TINT := preload("res://assets/shaders/cloud_tint.gdshader")
+const CLOUDS := "res://assets/backgrounds/sky_clouds/"
+## The row where the sky meets the distant hills.
+const HORIZON := 205.0
 ## The moon goes from new to full and back over this many nights.
 const MOON_CYCLE := 8
 const MOON_R := 20
@@ -16,64 +19,49 @@ const MOON_DARK := Color(0.55, 0.57, 0.72, 0.13)
 
 ## Supplied by the scene: whether the sky can be seen, which it cannot in the transparent desktop strip.
 var sky_visible: Callable = func() -> bool: return true
-var _day: Node2D
+var _gradient: Sprite2D
+var _sun: Sprite2D
 var _night: Node2D
 var _clouds: Array = []
+var _cloud_look: ShaderMaterial
 var _moon: Sprite2D
 var _moon_glow: Sprite2D
 var _moon_phases: Array[Texture2D] = []
 var _moon_phase := -1
+var _t := 0.0
 
 
 func _ready() -> void:
-	# The whole sky glides by fractions of a screen pixel, so slow clouds drift smoothly instead of stepping.
-	var smooth := ShaderMaterial.new()
-	smooth.shader = SMOOTH
-	material = smooth
-	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_gradient = Sprite2D.new()
+	_gradient.texture = _solid(Color.WHITE)
+	_gradient.centered = false
+	_gradient.position = Vector2(0, -400)
+	_gradient.scale = Vector2(WIDTH * 2, 400 + HORIZON + 80)
+	var paint := ShaderMaterial.new()
+	paint.shader = GRADIENT
+	paint.set_shader_parameter("area", _gradient.scale)
+	paint.set_shader_parameter("origin", _gradient.position)
+	paint.set_shader_parameter("horizon", HORIZON)
+	_gradient.material = paint
+	add_child(_gradient)
+	_sun = Sprite2D.new()
+	_sun.texture = _disc(9)
+	add_child(_sun)
 	_night = Node2D.new()
-	_day = Node2D.new()
-	_night.use_parent_material = true
-	_day.use_parent_material = true
 	add_child(_night)
-	add_child(_day)
-	_base(_day, DIR + "sky_day/base.png")
-	_base(_night, DIR + "sky_night/base.png")
 	_moon_glow = Sprite2D.new()
 	_moon_glow.texture = Lighting.ellipse_texture(64, 64, Color(0.85, 0.85, 1.0, 0.07))
-	_moon_glow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_night.add_child(_moon_glow)
 	_moon = Sprite2D.new()
 	for phase in MOON_CYCLE:
 		_moon_phases.append(_moon_texture(phase))
-	_moon.use_parent_material = true
 	_night.add_child(_moon)
-	_load_clouds(_night, DIR + "sky_night/", 0.6)
-	_load_clouds(_day, DIR + "sky_day/", 1.0)
+	_cloud_look = ShaderMaterial.new()
+	_cloud_look.shader = CLOUD_TINT
+	_scatter_clouds()
 	var fx := SkyFx.new()
 	fx.sky_visible = sky_visible
 	add_child(fx)
-
-
-## The sky's base, plus a mirrored copy to its right so a very wide window never runs out of sky.
-func _base(parent: Node2D, path: String) -> void:
-	var tex: Texture2D = load(path)
-	for k in 2:
-		var s := Sprite2D.new()
-		s.texture = tex
-		s.centered = false
-		s.position.x = WIDTH * k
-		s.flip_h = k == 1
-		s.use_parent_material = true
-		parent.add_child(s)
-	var top := tex.get_image().get_pixel(0, 0)
-	# Above the painting, the sky simply carries on in its top colour, for windows taller than the painting.
-	var above := Sprite2D.new()
-	above.texture = _solid(top)
-	above.centered = false
-	above.scale = Vector2(WIDTH * 2, 400)
-	above.position = Vector2(0, -400)
-	parent.add_child(above)
 
 
 func _solid(c: Color) -> ImageTexture:
@@ -82,35 +70,83 @@ func _solid(c: Color) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-func _load_clouds(parent: Node2D, dir: String, pace: float) -> void:
-	var list: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "clouds.json"))
-	if typeof(list) != TYPE_ARRAY:
+## The sun's face: a round disc with a paler rim, coloured by the hour.
+func _disc(r: int) -> ImageTexture:
+	var size := r * 2 + 1
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var d := Vector2(x - r, y - r).length()
+			if d <= r + 0.3:
+				img.set_pixel(x, y, Color(1, 1, 1) if d < r - 1.2 else Color(1, 1, 1, 0.75))
+	return ImageTexture.create_from_image(img)
+
+
+## Clouds in three depths across the whole sky: small faint ones low and far away drifting slowly, big ones high and
+## near drifting faster. The same seed lays them out every time.
+func _scatter_clouds() -> void:
+	var textures: Array[Texture2D] = []
+	var i := 0
+	while ResourceLoader.exists("%scloud_%d.png" % [CLOUDS, i]):
+		textures.append(load("%scloud_%d.png" % [CLOUDS, i]))
+		i += 1
+	if textures.is_empty():
 		return
-	for c in list:
-		var s := Sprite2D.new()
-		s.texture = load(dir + String(c["file"]))
-		s.centered = false
-		s.position = Vector2(float(c["x"]), float(c["y"]))
-		s.use_parent_material = true
-		parent.add_child(s)
-		# Higher clouds drift a little faster than the ones low on the horizon, which reads as depth.
-		var height := 1.0 - clampf(float(c["y"]) / 150.0, 0.0, 1.0)
-		_clouds.append({"sprite": s, "speed": pace * (0.6 + height * 1.6) * randf_range(0.8, 1.2)})
+	var by_size := textures.duplicate()
+	by_size.sort_custom(func(a, b): return a.get_width() < b.get_width())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for layer in [{"count": 6, "y": Vector2(118, 160), "speed": 0.5, "alpha": 0.7, "pick": 0.0},
+			{"count": 6, "y": Vector2(62, 118), "speed": 1.0, "alpha": 0.9, "pick": 0.4},
+			{"count": 5, "y": Vector2(-6, 60), "speed": 1.7, "alpha": 1.0, "pick": 0.65}]:
+		for k in int(layer["count"]):
+			var from := int(float(layer["pick"]) * by_size.size())
+			var tex: Texture2D = by_size[rng.randi_range(from, mini(by_size.size() - 1, from + 2))]
+			var s := Sprite2D.new()
+			s.texture = tex
+			s.centered = false
+			s.flip_h = rng.randf() < 0.5
+			s.material = _cloud_look
+			s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			s.position = Vector2((k + rng.randf_range(0.0, 0.8)) * WIDTH * 2 / int(layer["count"]), rng.randf_range(layer["y"].x, layer["y"].y))
+			add_child(s)
+			# Every third cloud only shows on grey days, so a fine day has open sky between its clouds.
+			_clouds.append({"sprite": s, "speed": float(layer["speed"]) * rng.randf_range(0.85, 1.15), "alpha": float(layer["alpha"]), "grey_only": _clouds.size() % 3 == 2})
+			var grey_only: bool = _clouds[-1]["grey_only"]
+			s.modulate.a = float(layer["alpha"]) if Game.calendar.weather in ["cloudy", "rain"] or not grey_only else 0.0
 
 
 func _process(delta: float) -> void:
-	var night := Lighting.night_amount(Game.day_time)
-	var light := Lighting.color_at(Game.day_time)
-	if Game.calendar.weather in ["cloudy", "rain"]:
-		light = light.darkened(0.15)
-	_day.modulate = Color(light, 1.0 - night)
+	_t += delta
+	var hour := Game.day_time
+	var overcast: bool = Game.calendar.weather in ["cloudy", "rain"]
+	var look := SkyPalette.at(hour, overcast)
+	var paint := _gradient.material as ShaderMaterial
+	for key in ["zenith", "middle", "glow"]:
+		paint.set_shader_parameter(key, look[key])
+	paint.set_shader_parameter("low", look["low"])
+	var sun := SkyPalette.sun_position(hour, WIDTH, HORIZON, 170.0)
+	_sun.visible = not is_nan(sun.x)
+	if _sun.visible:
+		_sun.position = sun.round()
+		var height := clampf((HORIZON - sun.y) / 170.0, 0.0, 1.0)
+		_sun.modulate = Color(1.0, 0.72, 0.45).lerp(Color(1.0, 0.98, 0.9), height) * Color(1, 1, 1, 0.5 if overcast else 1.0)
+		paint.set_shader_parameter("sun", sun)
+		paint.set_shader_parameter("glow_radius", lerpf(230.0, 130.0, height))
+	var night := Lighting.night_amount(hour)
+	paint.set_shader_parameter("stars", night * (0.3 if overcast else 1.0))
+	paint.set_shader_parameter("time", _t)
 	_night.modulate.a = night
-	var wind := (1.8 if Game.calendar.weather in ["rain", "cloudy"] else 1.0) * (0.3 if Settings.reduced_motion else 1.0)
+	_cloud_look.set_shader_parameter("light", look["light"])
+	_cloud_look.set_shader_parameter("shade", look["shade"])
+	var wind := (1.8 if overcast else 1.0) * (0.3 if Settings.reduced_motion else 1.0)
 	for c in _clouds:
 		var s: Sprite2D = c["sprite"]
 		s.position.x += float(c["speed"]) * wind * delta
 		if s.position.x > WIDTH * 2:
 			s.position.x = -s.texture.get_width()
+		var shown := float(c["alpha"]) if overcast or not c["grey_only"] else 0.0
+		s.modulate.a = move_toward(s.modulate.a, shown, delta * 0.2)
 	_place_moon()
 
 

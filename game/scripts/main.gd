@@ -78,6 +78,8 @@ var _cart_shadow: Sprite2D
 var _wheel: Sprite2D
 ## The cart's back rim and the inside of its bed, drawn behind the goods; the cart itself is the front wall and wheels.
 var _cart_back: Sprite2D
+## Where the cart's left edge stands when it is parked at home.
+var _cart_park_x := 0.0
 ## The goods heaped in the cart, drawn behind its side boards so they sit inside it.
 var _cart_load: Node2D
 var _cart_x := 0.0
@@ -200,6 +202,7 @@ func _ready() -> void:
 	_cart_load = Node2D.new()
 	world.add_child(_cart_load)
 	_cart = _add_trimmed(load("res://assets/sprites/farm/cart.png"), Vector2(CART_HOME_X, 0), true, RIG_BASE)
+	_cart_park_x = _cart.position.x
 	# The wheel is a separate sprite so it can turn; the body keeps the full cart's outline for placement.
 	_cart.texture = load("res://assets/sprites/farm/cart_front.png")
 	_wheel = Sprite2D.new()
@@ -476,6 +479,7 @@ func _spawn_helper(id: String) -> void:
 		w.find_work = func() -> float: return _ready_plot_x(info)
 		w.work_done = func(x: float) -> String: return Game.helper_harvest(id, _plot_near(x))
 		w.carry_to = _drop_spot
+		w.can_drop = _can_drop
 		w.work_seconds = clampf(Game.helper_interval(id) * 0.6, 0.8, 4.0)
 		Game.live_helpers[id] = true
 	world.add_child(w)
@@ -485,12 +489,24 @@ func _spawn_helper(id: String) -> void:
 ## Where a helper takes what they picked: into the cart when it is home and near, to a nearby workshop that uses it,
 ## or else to the storehouse.
 func _drop_spot(item: String, from_x: float) -> float:
-	if not Game.cart["away"] and absf(from_x - CART_HOME_X) < 520.0:
-		return _cart.position.x + 20.0
+	if absf(from_x - CART_HOME_X) < 520.0:
+		return _cart_side()
 	for v in building_views:
 		if Game.buildings[v.id]["state"] == "working" and Game.current_recipe(v.id).get("in", {}).has(item) and absf(v.position.x - from_x) < 320.0:
 			return v.position.x
 	return _storehouse.position.x + _storehouse.region_rect.size.x / 2.0
+
+
+## Where a helper stands to load the cart: beside its back end, clear of the wheels.
+func _cart_side() -> float:
+	return _cart_park_x - 5.0
+
+
+## The cart takes a load only while it stands parked at home; a helper bringing goods waits for it otherwise.
+func _can_drop(at: float) -> bool:
+	if at != _cart_side():
+		return true
+	return not Game.cart["away"] and absf(_cart.position.x - _cart_park_x) < 1.0
 
 
 ## The plot whose plant stands at this spot, as a helper reaching it sees it.

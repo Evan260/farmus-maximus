@@ -15,6 +15,9 @@ const SeedsPanel := preload("res://scripts/ui/seeds_panel.gd")
 const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
+## Bedtime: the sleep button shows from evening until shortly before dawn, and sleeping runs on until this morning hour.
+const SLEEP_FROM := 19.5
+const WAKE_AT := 6.5
 const WEATHER_NAMES := {"sun": "Sunny", "cloudy": "Cloudy", "rain": "Rain", "mist": "Mist"}
 const SHORT_ZONES := {"grove": "Grove", "home": "Farm", "yard": "Yard", "vineyard": "Vines", "pasture": "Pasture"}
 
@@ -24,6 +27,9 @@ var _storage: Label
 var _cart: Label
 var _calendar: Label
 var _seed_button: Button
+var _sleep_button: Button
+## Seconds since the farmer went to sleep, or below zero while awake.
+var _slept := -1.0
 var _info: Label
 var _toast: Label
 var _toast_tween: Tween
@@ -67,6 +73,7 @@ func _ready() -> void:
 	_cart = UiKit.label(col)
 	_calendar = UiKit.label(col)
 	_seed_button = UiKit.button(col, "", func(): _open(_seeds))
+	_sleep_button = UiKit.button(col, tr("Sleep until morning"), _start_sleep)
 
 	_buttons = VBoxContainer.new()
 	_root.add_child(_buttons)
@@ -122,7 +129,8 @@ func _ready() -> void:
 		Saves.pending_summary = {}
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_update_sleep(delta)
 	var in_strip := Windowing.strip
 	_stats_panel.visible = not in_strip
 	_buttons.visible = not in_strip
@@ -386,3 +394,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open(_journal)
 		get_viewport().set_input_as_handled()
 
+
+
+## Sleeping runs the night by in a few seconds instead of skipping it, so the sky and the light can be seen changing.
+func _start_sleep() -> void:
+	_slept = 0.0
+	close_windows()
+	toast(tr("Good night..."))
+
+
+func _update_sleep(delta: float) -> void:
+	var night := Game.day_time >= SLEEP_FROM or Game.day_time < WAKE_AT - 1.5
+	_sleep_button.visible = night and _slept < 0.0
+	if _slept < 0.0:
+		return
+	_slept += delta
+	var left := fposmod(WAKE_AT - Game.day_time, 24.0) / 24.0 * Game.day_seconds()
+	# The night shrinks to a sliver of its length every second, easing in at the start and out towards dawn.
+	Game.speed = maxf(1.0, left * 0.9 * minf(1.0, _slept / 0.8))
+	if left < 20.0 or _slept > 12.0:
+		Game.speed = 1.0
+		_slept = -1.0

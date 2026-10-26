@@ -212,3 +212,15 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T19:15:02,pixen,game/assets/sprites/wild/tuft.png,0.0075,0,0.8345
 2026-10-25T19:15:23,pixen,game/assets/sprites/wild/sprig.png,0.0067,0,0.8278
 2026-10-25T19:16:00,pixen,game/assets/sprites/wild/clover.png,0.0078,0,0.8200
+2026-10-25T19:32:14,animate,game/assets/sprites/people/farmhand/carry_east,0.0000,0,0.8200
+2026-10-25T19:35:00,animate,game/assets/sprites/people/beekeeper/carry_east,0.0000,0,0.8200
+2026-10-25T19:35:03,pixen,game/assets/backgrounds/sky_clouds/cloud_0.png,0.0099,0,0.8100
+2026-10-25T19:35:53,pixen,game/assets/backgrounds/sky_clouds/cloud_1.png,0.0094,0,0.8006
+2026-10-25T19:36:31,animate,game/assets/sprites/people/presser/carry_east,0.0094,0,0.8006
+2026-10-25T19:37:10,pixen,game/assets/backgrounds/sky_clouds/cloud_2.png,0.0128,0,0.7878
+2026-10-25T19:37:53,pixen,game/assets/backgrounds/sky_clouds/cloud_3.png,0.0086,0,0.7793
+2026-10-25T19:38:59,pixen,game/assets/backgrounds/sky_clouds/cloud_4.png,0.0113,0,0.7679
+2026-10-25T19:39:04,animate,game/assets/sprites/people/farmhand/place_east,0.0199,0,0.7679
+2026-10-25T19:39:41,pixen,game/assets/backgrounds/sky_clouds/cloud_5.png,0.0085,0,0.7595
+2026-10-25T19:40:23,animate,game/assets/sprites/people/beekeeper/place_east,0.0085,0,0.7595
+2026-10-25T19:41:43,animate,game/assets/sprites/people/presser/place_east,0.0166,0,0.7429

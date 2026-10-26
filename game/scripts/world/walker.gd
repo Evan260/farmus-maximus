@@ -5,13 +5,15 @@ extends Node2D
 var dir := ""
 var min_x := 0.0
 var max_x := 100.0
-var speed := 14.0
+var speed := 18.0
 ## Called for a spot worth walking to, such as a ripe plot; returns NAN when there is none.
 var find_work: Callable
 ## Called with the spot when the work there is finished; returns what was picked, if anything, to carry away.
 var work_done: Callable
 ## Called with what was picked; returns where to take it, or NAN to keep working.
 var carry_to: Callable
+## Called with the drop-off spot; false while it cannot take the load yet, such as the cart being away at market.
+var can_drop: Callable
 ## Seconds of the work animation at each stop.
 var work_seconds := 3.0
 var idle_anim := ""
@@ -23,6 +25,8 @@ var _timer := 0.0
 var _target := 0.0
 var _working_next := false
 var _offsets := {}
+## How fast each walking animation's feet travel at its own frame rate, so the legs can be matched to the pace.
+var _stride := {}
 var _carry: Sprite2D
 var _delivering := false
 
@@ -56,21 +60,26 @@ func _process(delta: float) -> void:
 				if not is_nan(leave_at):
 					_fade_out()
 				elif _delivering:
-					# Setting the load down: a short pause bent over the cart or the doorway.
-					_delivering = false
-					_state = "drop"
-					_timer = 0.6
-					_play("work")
+					_state = "wait"
+					_timer = 0.0
+					_play("carry_still")
 				elif _working_next:
 					_state = "work"
 					_timer = work_seconds
 					_play("work")
 				else:
 					_rest()
+		"wait":
+			# Holding the load until the spot can take it, then setting it down.
+			if _timer <= 0.0:
+				_timer = 0.5
+				if not can_drop.is_valid() or can_drop.call(_target):
+					_set_down()
 		_:
 			if _timer <= 0.0:
 				if _state == "drop":
 					_carry.visible = false
+					_delivering = false
 				elif _state == "work" and work_done.is_valid():
 					var picked: Variant = work_done.call(_target)
 					if picked is String and picked != "" and carry_to.is_valid():
@@ -91,8 +100,26 @@ func _carry_away(item: String, to: float) -> void:
 	_target = to
 	_state = "walk"
 	sprite.flip_h = _target < position.x
-	_carry.position.x = -6.0 if sprite.flip_h else 6.0
-	_play("walk")
+	_carry.position = Vector2(-6.0 if sprite.flip_h else 6.0, -24.0)
+	_carry.modulate.a = 1.0
+	_play("carry" if has_animation("carry") else "walk")
+
+
+## Leans over and sets the load down: it drops from the hands into the cart or through the doorway.
+func _set_down() -> void:
+	_state = "drop"
+	_timer = 1.0
+	if has_animation("place"):
+		# The placing animation shows the load going in, so the carried icon steps aside for it.
+		_carry.visible = false
+		_play("place")
+		_timer = sprite.sprite_frames.get_frame_count("place") / sprite.sprite_frames.get_animation_speed("place")
+		return
+	_play("stand")
+	var reach := -1.0 if sprite.flip_h else 1.0
+	var fall := _carry.create_tween().set_parallel()
+	fall.tween_property(_carry, "position", _carry.position + Vector2(10.0 * reach, 12.0), 0.5).set_delay(0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.tween_property(_carry, "modulate:a", 0.0, 0.2).set_delay(0.7)
 
 
 func _fade_out() -> void:
@@ -136,10 +163,18 @@ func _rest() -> void:
 
 
 func _play(anim: String) -> void:
+	var still := anim == "carry_still"
+	if still:
+		anim = "carry" if has_animation("carry") else "stand"
 	if not sprite.sprite_frames.has_animation(anim):
 		anim = "stand"
 	sprite.play(anim)
 	sprite.offset = _offsets.get(anim, Vector2.ZERO)
+	# The legs keep pace with the ground: a walk cycle plays exactly as fast as the walker moves.
+	sprite.speed_scale = speed / float(_stride[anim]) if _stride.has(anim) else 1.0
+	if still:
+		sprite.pause()
+		sprite.frame = 0
 
 
 func _frames() -> SpriteFrames:
@@ -150,18 +185,44 @@ func _frames() -> SpriteFrames:
 	if still:
 		f.add_frame("stand", still)
 		_offsets["stand"] = _anchor(still)
-	for anim in ["walk", "work", "graze", "sleep"]:
+	for anim in ["walk", "carry", "work", "place", "graze", "sleep"]:
 		var folder := "%s%s_east/" % [dir, anim]
 		if not ResourceLoader.exists(folder + "frame_00.png"):
 			continue
 		f.add_animation(anim)
-		f.set_animation_speed(anim, 9.0 if anim == "walk" else 6.0)
+		f.set_animation_speed(anim, 9.0 if anim in ["walk", "carry"] else 6.0)
+		f.set_animation_loop(anim, anim != "place")
 		var i := 0
 		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
 			f.add_frame(anim, load("%sframe_%02d.png" % [folder, i]))
 			i += 1
 		_offsets[anim] = _anchor(f.get_frame_texture(anim, 0))
+		if anim in ["walk", "carry"]:
+			var pace := natural_pace(f, anim)
+			if pace > 0.0:
+				_stride[anim] = pace
 	return f
+
+
+## How many pixels a second a walk animation's feet cover at its frame rate: two steps a cycle, each step as long as
+## the feet are furthest apart.
+static func natural_pace(f: SpriteFrames, anim: String) -> float:
+	var spread := []
+	for i in f.get_frame_count(anim):
+		var img := f.get_frame_texture(anim, i).get_image()
+		var used := img.get_used_rect()
+		var left := used.end.x
+		var right := used.position.x
+		for y in range(used.end.y - 3, used.end.y):
+			for x in range(used.position.x, used.end.x):
+				if img.get_pixel(x, y).a > 0.0:
+					left = mini(left, x)
+					right = maxi(right, x)
+		spread.append(right - left + 1)
+	var step: int = spread.max() - spread.min()
+	if step < 4:
+		return 0.0
+	return 2.0 * step * f.get_animation_speed(anim) / f.get_frame_count(anim)
 
 
 ## Places the feet on the node's position whatever the frame size, since animation frames are larger than the still pose.
