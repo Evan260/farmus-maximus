@@ -31,6 +31,8 @@ var _dragging := false
 var _drag_from := Vector2i.ZERO
 var _drag_start_x := 0
 var _focused := true
+## Whether the window was maximized or fullscreen before it became the strip, so leaving the strip brings that back.
+var _mode_before_strip := Window.MODE_WINDOWED
 
 
 func _ready() -> void:
@@ -156,6 +158,10 @@ func _apply() -> void:
 	if screen >= 0 and screen < DisplayServer.get_screen_count() and win.current_screen != screen:
 		win.current_screen = screen
 	if strip:
+		# Windows keeps a maximized window's frame and size whatever is asked of it, so the strip starts from a plain window.
+		if win.mode != Window.MODE_WINDOWED:
+			_mode_before_strip = win.mode
+			win.mode = Window.MODE_WINDOWED
 		win.borderless = true
 		win.always_on_top = true
 		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
@@ -173,6 +179,9 @@ func _apply() -> void:
 			if arg.begins_with("--window="):
 				win.size = Vector2i(int(arg.get_slice("=", 1).get_slice("x", 0)), int(arg.get_slice("x", 1)))
 		win.position = usable.position + (usable.size - win.size) / 2
+		if _mode_before_strip != Window.MODE_WINDOWED:
+			win.mode = _mode_before_strip
+			_mode_before_strip = Window.MODE_WINDOWED
 	_rescale()
 	_update_fps()
 	# Focus mode turns everything down a little, so a strip left running all day stays in the background.
