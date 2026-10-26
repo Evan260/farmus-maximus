@@ -61,7 +61,7 @@ func _next() -> void:
 	wreath.scale = Vector2(0.3, 0.3)
 	r.add_child(wreath)
 	var words := UiKit.column(r)
-	words.add_theme_constant_override("separation", 0)
+	words.add_theme_constant_override("separation", -1)
 	UiKit.label(words, tr("Achievement")).add_theme_color_override("font_color", UiKit.HEADING)
 	UiKit.label(words, tr(String(a["name"])))
 	UiKit.para(words, tr(String(a.get("desc", ""))), 140).add_theme_color_override("font_color", UiKit.FADED)
