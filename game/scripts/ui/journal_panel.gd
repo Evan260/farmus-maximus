@@ -49,6 +49,9 @@ func build() -> void:
 	marks.add_child(gap)
 	for s in SECTIONS:
 		_bookmark(marks, s)
+	var space := Control.new()
+	space.custom_minimum_size = Vector2(5, 0)
+	spread.add_child(space)
 	var book := Control.new()
 	book.custom_minimum_size = Vector2(STACK * 2 + PAGE_W * 2 + SPINE, PAGE_H + STACK)
 	book.draw.connect(func(): _draw_book(book))
@@ -65,7 +68,7 @@ func build() -> void:
 	_grid(right)
 
 
-## A divider tab sticking out of the pages; the open section's tab is paper coloured and joins its page.
+## A divider tab beside the book; the open section's tab is paper coloured.
 func _bookmark(parent: Node, s: String) -> void:
 	var open := s == section
 	var b := Button.new()
@@ -77,16 +80,12 @@ func _bookmark(parent: Node, s: String) -> void:
 		var box := StyleBoxFlat.new()
 		box.bg_color = PAPER if open else (TAB.lightened(0.1) if state.begins_with("hover") else TAB)
 		box.border_color = EDGE
-		box.border_width_left = 1
-		box.border_width_top = 1
-		box.border_width_bottom = 1
+		box.set_border_width_all(1)
 		box.content_margin_left = 5
 		box.content_margin_right = 3
 		box.content_margin_top = 2
 		box.content_margin_bottom = 2
-		if open:
-			box.expand_margin_right = STACK
-		elif state == "focus":
+		if state == "focus" and not open:
 			box.draw_center = false
 			box.border_color = UiKit.CREAM
 		b.add_theme_stylebox_override(state, box)

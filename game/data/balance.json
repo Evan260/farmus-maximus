@@ -324,6 +324,10 @@
 			{
 				"zone": "vineyard",
 				"count": 6
+			},
+			{
+				"zone": "home",
+				"count": 5
 			}
 		]
 	},
@@ -1315,12 +1319,9 @@
 		"trader": {
 			"name": "Felix",
 			"role": "Trader",
-			"does": "Takes the cart to market whenever it is worth the trip",
-			"unlock": {
-				"purchase": "second_cart"
-			},
+			"does": "Takes the cart to market with the goods you mark for sale, whenever it is worth the trip",
 			"costs": [
-				0
+				120
 			],
 			"quote": "I know which stall pays best on any day of the week."
 		}
@@ -1444,14 +1445,6 @@
 				"price": 200,
 				"animal": "goat",
 				"group": "animals"
-			},
-			{
-				"id": "second_cart",
-				"name": "A second cart and a trader",
-				"price": 2500,
-				"once": true,
-				"requires_villa": 3,
-				"group": "estate"
 			},
 			{
 				"id": "exchange",
@@ -2214,9 +2207,9 @@
 		},
 		{
 			"id": "cart",
-			"text": "Click the cart to send your goods to market",
+			"text": "Click the cart to ride to market and sell your goods at the stalls",
 			"done": {
-				"stat": "cart_trips",
+				"stat": "sold_market",
 				"at": 1
 			}
 		},

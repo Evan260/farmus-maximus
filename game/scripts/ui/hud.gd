@@ -143,9 +143,11 @@ func _process(delta: float) -> void:
 	_coins.text = tr("Sestertii  %d") % Game.coins + (("   " + tr("Aurei  %d") % Game.aureus) if Game.aureus > 0 else "")
 	_storage.text = tr("Storehouse  %d / %d") % [Game.stored_total(), Game.storage_capacity()]
 	if Game.cart["away"]:
-		_cart.text = tr("Cart back in  %s") % UiKit.duration(float(Game.cart["time_left"]))
+		_cart.text = tr("Trader back in  %s") % UiKit.duration(float(Game.cart["time_left"]))
+	elif Game.helpers.has("trader"):
+		_cart.text = tr("Trader ready  (carries %d)") % Game.cart_capacity()
 	else:
-		_cart.text = tr("Cart ready  (carries %d)") % Game.cart_capacity()
+		_cart.text = tr("Cart ready for market")
 	var cal := "%s %d  %s" % [tr(Game.calendar.season_name()), Game.calendar.day_of_season() + 1, tr(WEATHER_NAMES.get(Game.calendar.weather, ""))]
 	var festival: Dictionary = Game.calendar.festival()
 	if not festival.is_empty():
@@ -311,7 +313,6 @@ func _build_zone_bar() -> void:
 		var b := UiKit.button(_zone_bar, tr(SHORT_ZONES.get(id, id)), func(): zone_chosen.emit(id))
 		b.toggle_mode = true
 		_zone_buttons[id] = b
-	UiKit.button(_zone_bar, tr("Town"), func(): town_requested.emit())
 	_zone_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_zone_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_zone_bar.offset_top = 4
@@ -360,7 +361,7 @@ func _build_compact() -> void:
 	_root.add_child(_compact)
 	var row := UiKit.row(_compact)
 	_compact_label = UiKit.label(row)
-	UiKit.button(row, tr("Sell"), func(): Game.send_cart())
+	UiKit.button(row, tr("Market"), func(): Windowing.toggle_strip(); town_requested.emit())
 	UiKit.button(row, tr("Expand"), func(): Windowing.toggle_strip())
 	# Top-left, where the strip shows only sky or desktop, so it never covers the cart or the plots.
 	_compact.position = Vector2(4, 4)

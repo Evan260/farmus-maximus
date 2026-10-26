@@ -10,13 +10,13 @@ func _init() -> void:
 
 
 func signature() -> String:
-	return JSON.stringify(Game.storage) + str(Game.use_manure) + str(Game.reserved_items()) + str(Game.levels.get("storage", 0))
+	return JSON.stringify(Game.storage) + str(Game.use_manure) + str(Game.reserved_items()) + str(Game.levels.get("storage", 0)) + JSON.stringify(Game.keep_goods)
 
 
 func build() -> void:
 	_grow = null
 	_capacity = UiKit.label(body)
-	var keep := Game.reserved_items()
+	UiKit.para(body, tr("The trader takes goods marked for sale to market. Mark the ones you want to keep."), 250).add_theme_color_override("font_color", UiKit.FADED)
 	var list := UiKit.scroll(body, Vector2(250, 140))
 	var keys := Game.storage.keys()
 	keys.sort_custom(func(a, b): return Game.item_name(a) < Game.item_name(b))
@@ -26,7 +26,13 @@ func build() -> void:
 		var name := UiKit.label(r, "%s  x%d" % [tr(Game.item_name(key)), int(Game.storage[key])])
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var kind := String(Balance.get_value("items.%s.kind" % Game.item_base(key), "good"))
-		var note := tr("kept for workshops") if Game.item_base(key) in keep else (tr("cart %d each") % Game.market.cart_price(key) if kind == "good" else tr("for building, takes no room") if kind == "material" else tr("for the fields"))
+		if kind == "good":
+			# The trader only takes goods marked for sale; a click keeps a good at home instead.
+			var selling := Game.for_sale(key)
+			var mark := UiKit.button(r, tr("For sale") if selling else tr("Keep"), func(): Game.set_for_sale(key, not selling); refresh())
+			mark.custom_minimum_size = Vector2(56, 0)
+			continue
+		var note := tr("for building, takes no room") if kind == "material" else tr("for the fields")
 		UiKit.label(r, note).add_theme_color_override("font_color", UiKit.FADED)
 	if keys.is_empty():
 		UiKit.label(list, tr("Empty"))

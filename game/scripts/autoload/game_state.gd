@@ -63,6 +63,8 @@ var pets := {}
 var blessing := {}
 ## When on, every planting and regrowth uses one manure from the storehouse.
 var use_manure := true
+## Goods the player keeps for themselves: the trader leaves them in the storehouse. Keyed by the good's plain name.
+var keep_goods := {}
 var stats := {}
 var calendar: RefCounted
 var market: RefCounted
@@ -97,10 +99,13 @@ func new_game() -> void:
 	plots = []
 	var unlocked_count := int(Balance.get_value("start.unlocked_plots", 4))
 	# Home plots come first, so saves from before the estate grew still line up with the same plots.
+	var homes := 0
 	for group in Balance.get_value("plots.zones", [{"zone": "home", "count": 17}]):
 		for k in int(group["count"]):
 			var home: bool = group["zone"] == "home"
-			plots.append(_new_plot(String(group["zone"]), home and k < unlocked_count))
+			plots.append(_new_plot(String(group["zone"]), home and homes < unlocked_count))
+			if home:
+				homes += 1
 	zones_owned = {}
 	for z in zones():
 		zones_owned[z["id"]] = int(z.get("deed", 0)) == 0
@@ -378,14 +383,20 @@ func crop_zones(crop_id: String) -> Array:
 
 
 ## The crop an empty plot gets: the chosen seed when it grows in that zone, otherwise the zone's own crop.
+## The chosen seed, if it can grow in this plot's part of the estate; otherwise nothing is planted.
 func seed_for_plot(i: int) -> String:
 	var zone := String(plots[i]["zone"])
 	if zone in crop_zones(selected_seed) and crop_unlocked(selected_seed):
 		return selected_seed
-	for crop in Balance.get_value("crops", {}):
-		if crop_zones(crop)[0] == zone and crop_unlocked(crop):
-			return crop
 	return ""
+
+
+## Why the chosen seed cannot go in this plot, in words for the player.
+func seed_block(i: int) -> String:
+	if not crop_unlocked(selected_seed):
+		return "Buy cuttings for this land at the market"
+	var where := " or ".join(crop_zones(selected_seed).map(func(z): return String(zone_info(z).get("name", "")).to_lower()))
+	return "%s grows on the %s: choose another seed for this land" % [String(crop_info(selected_seed).get("name", selected_seed)), where]
 
 
 func try_plant(i: int, crop_id := "") -> bool:
@@ -393,7 +404,7 @@ func try_plant(i: int, crop_id := "") -> bool:
 	if crop_id == "":
 		crop_id = seed_for_plot(i)
 	if crop_id == "":
-		message.emit("Buy cuttings for this land at the market")
+		message.emit(seed_block(i))
 		return false
 	if not p["unlocked"] or p["crop"] != "":
 		return false
@@ -605,7 +616,7 @@ func send_cart() -> bool:
 		taken.append(key)
 		remove_key(key, take)
 	if loaded == 0:
-		message.emit("Nothing in the storehouse to sell")
+		message.emit("Nothing marked for sale in the storehouse")
 		return false
 	cart = {"away": true, "time_left": cart_trip_seconds(), "items": loaded, "value": value, "load": taken.slice(0, 4)}
 	add_stat("cart_trips", 1)
@@ -874,7 +885,19 @@ func reserved_amounts() -> Dictionary:
 	return keep
 
 
-## Goods the cart may take, by storage key: everything except materials and what the workshops keep back.
+## Whether the trader may take a good to market; the player marks goods they want to keep.
+func for_sale(key: String) -> bool:
+	return not keep_goods.has(item_base(key))
+
+
+func set_for_sale(key: String, sell: bool) -> void:
+	if sell:
+		keep_goods.erase(item_base(key))
+	else:
+		keep_goods[item_base(key)] = true
+
+
+## Goods the trader may take, by storage key: goods marked for sale, less what the workshops keep back.
 ## The plainest units are the ones kept, since workshops use those first, so the better ones go to market.
 func sellable_goods() -> Dictionary:
 	# A nearly full storehouse sells everything, so goods kept for workshops can never jam the farm.
@@ -882,7 +905,7 @@ func sellable_goods() -> Dictionary:
 	var out := {}
 	for q in 3:
 		for key in storage.keys():
-			if item_quality(key) != q or Balance.get_value("items.%s.kind" % item_base(key), "good") != "good":
+			if item_quality(key) != q or Balance.get_value("items.%s.kind" % item_base(key), "good") != "good" or not for_sale(key):
 				continue
 			var base := item_base(key)
 			var kept := mini(int(keep.get(base, 0)), int(storage[key]))
@@ -1354,6 +1377,7 @@ func _empty_cart() -> Dictionary:
 
 func to_dict() -> Dictionary:
 	return {
+		"keep_goods": keep_goods,
 		"coins": coins, "aureus": aureus, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
 		"crops_unlocked": crops_unlocked, "villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time,
 		"cart": cart, "zones_owned": zones_owned, "buildings": buildings, "helpers": helpers, "helper_timers": helper_timers,
@@ -1366,6 +1390,9 @@ func from_dict(d: Dictionary) -> void:
 	new_game()
 	coins = int(d.get("coins", coins))
 	aureus = int(d.get("aureus", 0))
+	keep_goods = {}
+	for base in d.get("keep_goods", {}):
+		keep_goods[base] = true
 	selected_seed = String(d.get("selected_seed", selected_seed))
 	storage = {}
 	for key in d.get("storage", {}):

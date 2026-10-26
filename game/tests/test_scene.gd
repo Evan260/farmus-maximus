@@ -71,6 +71,12 @@ func _run() -> void:
 	lists = journal.find_children("*", "ScrollContainer", true, false)
 	_check(lists[lists.size() - 1].scroll_vertical == 40, "choosing a journal entry keeps the list where it was")
 	journal.close()
+	var pets: Control = main.hud._companions
+	pets.open()
+	await process_frame
+	await process_frame
+	_check(not pets._scroll.get_v_scroll_bar().visible, "the companions window fits without scrolling")
+	pets.close()
 	game.day_time = 22.0
 	main.hud._start_sleep()
 	await create_timer(8.0).timeout

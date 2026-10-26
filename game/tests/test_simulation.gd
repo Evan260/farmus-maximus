@@ -34,6 +34,12 @@ func _run() -> void:
 	game.advance(31.0)
 	_check(game.coins == before + expected, "cart returns with the cart's price")
 	_check(game.market.cart_price("lavender") < game.market.price("lavender"), "the cart sells for less than the stalls")
+	game.add_item("bread", 3, true)
+	game.add_item("lavender", 2, true)
+	game.set_for_sale("bread", false)
+	game.send_cart()
+	_check(game.count_item("bread") == 3 and game.count_item("lavender") == 0, "the trader leaves goods marked to keep in the storehouse")
+	game.advance(60.0)
 
 	# Qualities: each quality is its own storage key, recipes take the plainest first.
 	game.new_game()

@@ -167,7 +167,7 @@ func _ready() -> void:
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
 	_villa_outline = Node2D.new()
-	_villa_outline.draw.connect(func(): if _villa_hovered: UiKit.outline(_villa_outline, _villa_rect(), Color(1, 0.96, 0.85, 0.7)))
+	_villa_outline.draw.connect(_draw_villa_overlay)
 	world.add_child(_villa_outline)
 	_place_villa()
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
@@ -323,6 +323,8 @@ func go_to_town() -> void:
 
 
 func _process(delta: float) -> void:
+	if Game.villa_build["active"]:
+		_villa_outline.queue_redraw()
 	var night := Lighting.night_amount(Game.day_time)
 	var light: Color = Lighting.color_at(Game.day_time) * SEASON_TINT.get(Game.calendar.season_id(), Color.WHITE)
 	if Game.calendar.weather in ["cloudy", "rain"]:
@@ -489,7 +491,9 @@ func _spawn_helper(id: String) -> void:
 ## Where a helper takes what they picked: into the cart when it is home and near, to a nearby workshop that uses it,
 ## or else to the storehouse.
 func _drop_spot(item: String, from_x: float) -> float:
-	if absf(from_x - CART_HOME_X) < 520.0:
+	# Goods go into the cart only when the trader will take them; anything kept or needed stays on the estate.
+	var for_trader := Game.helpers.has("trader") and Game.for_sale(item) and not item in Game.reserved_items()
+	if for_trader and absf(from_x - CART_HOME_X) < 520.0:
 		return _cart_side()
 	for v in building_views:
 		if Game.buildings[v.id]["state"] == "working" and Game.current_recipe(v.id).get("in", {}).has(item) and absf(v.position.x - from_x) < 320.0:
@@ -541,10 +545,10 @@ func _load_demo_state() -> void:
 	for i in Game.plots.size():
 		var p: Dictionary = Game.plots[i]
 		if p["zone"] == "home":
-			p["unlocked"] = i < 15
+			p["unlocked"] = i < 15 or i >= Game.plots.size() - 5
 			if p["unlocked"]:
 				p["crop"] = ["lavender", "lavender", "lavender_violet", "lavender", "lavender_bluegrey", "lavender", "lavender_white", "wheat"][i % 8]
-				p["growth"] = stages[i] * Game.time_to_ready(p)
+				p["growth"] = stages[i % stages.size()] * Game.time_to_ready(p)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--hour="):
 			Game.day_time = float(arg.trim_prefix("--hour="))
@@ -611,6 +615,11 @@ func _build_plots() -> void:
 	# Vines stand in a row along the front of the slope, leaving the presses and the cellar in view behind them.
 	for i in 6:
 		spots.append(Vector2(1452 + i * 40, FRONT_ROW))
+	# Beds added later, on the far side of the walkway to the farmhouse.
+	for x in [866, 902, 938]:
+		spots.append(Vector2(x, FRONT_ROW))
+	for x in [884, 920]:
+		spots.append(Vector2(x, BACK_ROW))
 	var count := mini(spots.size(), Game.plots.size())
 	var order := range(count)
 	order.sort_custom(func(a, b): return spots[a].y < spots[b].y)
@@ -672,6 +681,9 @@ func _grow_wild(v: Node2D) -> Node2D:
 	for i in int(r.size.x / 6.0):
 		var at := Vector2(roundf(rng.randf_range(r.position.x - 30.0, r.end.x + 30.0)), roundf(rng.randf_range(r.end.y + 4.0, 267.0)))
 		if plot_views.any(func(p): return absf(at.x - p.position.x - 15.0) < 22.0 and absf(at.y - p.position.y) < 12.0):
+			continue
+		# The castellum at the head of the water channel stands on clear ground.
+		if absf(at.x - 470.0) < 30.0:
 			continue
 		var tex: Texture2D = tufts[rng.randi() % tufts.size()]
 		plants.append([tex, at - Vector2(roundf(tex.get_width() / 2.0), tex.get_height()), at.y, ground])
@@ -887,8 +899,8 @@ func _click(point: Vector2) -> void:
 	if b:
 		hud.show_building(b.id)
 		return
-	if _cart_rect().has_point(point):
-		Game.send_cart()
+	if _cart_rect().has_point(point) and not Game.cart["away"]:
+		go_to_town()
 		return
 	if _villa_rect().has_point(point):
 		hud.show_building(hud.VILLA)
@@ -1020,7 +1032,7 @@ func _update_hover(point: Vector2) -> void:
 	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
 		hud.set_info(tr("Storehouse: %d / %d") % [Game.stored_total(), Game.storage_capacity()])
 	elif _cart_rect().has_point(point):
-		hud.set_info(tr("Click the cart to sell"))
+		hud.set_info(tr("The trader is away at market") if Game.cart["away"] else tr("Ride the cart to market"))
 	else:
 		hud.set_info("")
 
@@ -1036,7 +1048,7 @@ func _describe_plot(i: int) -> void:
 		"empty":
 			var seed_id := Game.seed_for_plot(i)
 			if seed_id == "":
-				hud.set_info(tr("Buy cuttings for this land at the market"))
+				hud.set_info(tr(Game.seed_block(i)))
 			else:
 				var seed := Game.crop_info(seed_id)
 				hud.set_info(tr("Plant %s: %d sestertii") % [tr(String(seed.get("name", ""))).to_lower(), int(seed.get("plant_cost", 0))])
@@ -1207,13 +1219,16 @@ func _on_build_started() -> void:
 	var old := [_villa.texture, _villa.region_rect, _villa.position]
 	_place_villa()
 	if not Settings.reduced_motion:
-		Rise.reveal(_villa, old[0], old[1], old[2])
+		Rise.rise(_villa, old[0], old[1], old[2])
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 16)
 	hud.toast(tr("Work on the villa has begun"))
 
 
 func _on_villa_finished() -> void:
+	var old := [_villa.texture, _villa.region_rect, _villa.position]
 	_place_villa()
+	if not Settings.reduced_motion:
+		Rise.sink(_villa, old[0], old[1], old[2])
 	Sfx.play("villa_complete")
 	hud.toast(tr("The villa has been restored: %s!") % tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"])).to_lower())
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
@@ -1331,6 +1346,20 @@ func _villa_texture() -> Texture2D:
 
 func _villa_rect() -> Rect2:
 	return Rect2(_villa.position, _villa.region_rect.size)
+
+
+## The farmhouse's hover outline, and while it is being restored a progress bar over its roof like the other buildings'.
+func _draw_villa_overlay() -> void:
+	var r := _villa_rect()
+	if _villa_hovered:
+		UiKit.outline(_villa_outline, r, Color(1, 0.96, 0.85, 0.7))
+	if not Game.villa_build["active"]:
+		return
+	var total := float(Game.villa_stages()[mini(Game.villa_stage, Game.villa_stages().size() - 1)].get("build_seconds", 1))
+	var fill := clampf(1.0 - float(Game.villa_build["time_left"]) / maxf(total, 1.0), 0.0, 1.0)
+	var bar := Rect2(roundf(r.position.x + r.size.x / 2.0 - 16.0), r.position.y - 6, 32, 3)
+	_villa_outline.draw_rect(bar, Color(0.2, 0.14, 0.12, 0.8))
+	_villa_outline.draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(roundf(30.0 * fill), 1)), Color(0.98, 0.84, 0.4))
 
 
 func _place_villa() -> void:

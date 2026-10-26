@@ -75,7 +75,10 @@ func _refresh() -> void:
 	_sprite.region_rect = used
 	# The node sits at the middle of the building's base, so every look stands on the same spot.
 	_sprite.position = Vector2(round(-used.size.x / 2.0), -used.size.y)
-	if was == "ruin" and _look == "scaffold" and old[0] != null and not Settings.reduced_motion:
-		Rise.reveal(_sprite, old[0], old[1], old[2])
+	if old[0] != null and not Settings.reduced_motion:
+		if was == "ruin" and _look == "scaffold":
+			Rise.rise(_sprite, old[0], old[1], old[2])
+		elif was == "scaffold" and _look == "working":
+			Rise.sink(_sprite, old[0], old[1], old[2])
 	_shadow.texture = Lighting.ellipse_texture(used.size.x + 8, 7, Color(0.16, 0.11, 0.12, 0.28))
 	_shadow.position = Vector2(round(-used.size.x / 2.0) - 4, -5)

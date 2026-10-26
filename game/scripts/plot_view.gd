@@ -59,7 +59,9 @@ func _process(delta: float) -> void:
 			# Plants of any size stand on the middle of the soil patch, measured from their lowest visible pixel,
 			# so 48-pixel olive trees are planted in the bed just like 32-pixel lavender.
 			var used := _crop.texture.get_image().get_used_rect()
-			_crop.position = Vector2(15 - _crop.texture.get_width() / 2, 0 - used.end.y)
+			# Mirrored plants are measured from the other side, so they stand on the middle of the soil just the same.
+			var left := (_crop.texture.get_width() - used.end.x) if _crop.flip_h else used.position.x
+			_crop.position = Vector2(roundf(15 - left - used.size.x / 2.0), 0 - used.end.y)
 		_hit = _hit_rect()
 	queue_redraw()
 

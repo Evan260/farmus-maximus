@@ -11,7 +11,7 @@ var _names := {}
 
 func _init() -> void:
 	super("Your companions")
-	fixed_size = Vector2(250, 150)
+	fixed_size = Vector2(250, 200)
 
 
 func open() -> void:

@@ -70,13 +70,21 @@ func _act() -> void:
 		elif game.plots[i]["unlocked"] and game.plots[i]["crop"] == "":
 			var zone := String(game.plots[i]["zone"])
 			game.selected_seed = "wheat" if zone == "home" and i % 3 == 2 else "lavender"
+			if not zone in game.crop_zones(game.selected_seed):
+				for crop in root.get_node("Balance").get_value("crops", {}):
+					if game.crop_zones(crop)[0] == zone and game.crop_unlocked(crop):
+						game.selected_seed = crop
+						break
 			game.try_plant(i)
 	for id in game.buildings:
 		game.load_building(id)
 		if game.building_kind(id) == "cellar":
 			game.draw_wine(id)
-	if not game.cart["away"] and game.stored_total() >= mini(game.cart_capacity(), game.storage_capacity() - 2):
-		game.send_cart()
+	# Until the trader is hired, the player rides to market and sells at the stalls whenever the storehouse fills up.
+	if not game.helpers.has("trader") and game.stored_total() >= game.storage_capacity() - 2:
+		var goods: Dictionary = game.sellable_goods()
+		for key in goods:
+			game.market.sell(key, int(goods[key]))
 	# Spending, most important first; materials are bought as needed.
 	var reserve := 0
 	var price: Dictionary = game.villa_next_price()

@@ -17,6 +17,8 @@ func signature() -> String:
 func build() -> void:
 	_buttons = {}
 	for id in IDS:
+		if id == "cart_capacity":
+			UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), 230).add_theme_color_override("font_color", UiKit.FADED)
 		_buttons[id] = UiKit.button(body, "", func(): Game.buy_upgrade(id))
 
 
