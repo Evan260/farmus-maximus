@@ -35,7 +35,8 @@ func build() -> void:
 				slider.custom_minimum_size = Vector2(120, 8)
 				slider.value_changed.connect(func(v): Sfx.set_volume(bus, v))
 				r.add_child(slider)
-			UiKit.para(body, tr("Music and sound files dropped into the game's audio folders are picked up by name."), 230).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
+			UiKit.para(body, tr("Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks."), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Display":
 			var sizes := {-1: "Smaller", 0: "Normal", 1: "Larger", 2: "Largest"}
 			UiKit.setting(body, tr("Interface size"), tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))

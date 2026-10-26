@@ -5,6 +5,9 @@ extends Node
 ## Files named like cluck_1, cluck_2 are takes of one sound, "cluck", and one is picked at random each time.
 const SFX_DIR := "res://assets/audio/sfx/"
 const MUSIC_DIR := "res://assets/audio/music/"
+## The player's own music, beside the saves, played between the game's tracks; the Sound settings open it.
+const PLAYER_MUSIC_DIR := "user://music/"
+const MUSIC_TYPES := ["ogg", "mp3", "wav"]
 const BUSES := ["Music", "Ambience", "Effects"]
 const SETTINGS_PATH := "user://settings.json"
 
@@ -61,11 +64,49 @@ func _process(delta: float) -> void:
 	if _rain:
 		_rain.volume_db = move_toward(_rain.volume_db, 0.0 if rain > 0.0 else -60.0, delta * 15.0)
 	# Music plays a track, then leaves several minutes of plain ambience before the next, so it never wears thin.
-	if not _tracks.is_empty() and not _music.playing:
+	if not _music.playing:
 		_music_gap -= delta
 		if _music_gap <= 0.0:
-			_music.stream = _tracks[randi() % _tracks.size()]
-			_music.play()
+			var track := _pick_track()
+			if track:
+				_music.stream = track
+				_music.play()
+			else:
+				# Nothing to play yet; music the player adds to their folder is noticed on a later look.
+				_music_gap = 30.0
+
+
+## A track chosen at random from the game's music and the player's own folder, which is looked at afresh each time.
+func _pick_track() -> AudioStream:
+	var choices: Array = _tracks.duplicate()
+	var folder := ProjectSettings.globalize_path(PLAYER_MUSIC_DIR)
+	if DirAccess.dir_exists_absolute(folder):
+		for file in DirAccess.get_files_at(folder):
+			if file.get_extension().to_lower() in MUSIC_TYPES:
+				choices.append(folder.path_join(file))
+	if choices.is_empty():
+		return null
+	var pick: Variant = choices[randi() % choices.size()]
+	return pick if pick is AudioStream else _load_external(String(pick))
+
+
+## Reads a music file from outside the game's own files; an unreadable file is skipped.
+func _load_external(path: String) -> AudioStream:
+	match path.get_extension().to_lower():
+		"ogg":
+			return AudioStreamOggVorbis.load_from_file(path)
+		"mp3":
+			return AudioStreamMP3.load_from_file(path)
+		"wav":
+			return AudioStreamWAV.load_from_file(path)
+	return null
+
+
+## Opens the player's music folder in the file explorer, making it first if need be.
+func open_music_folder() -> void:
+	var folder := ProjectSettings.globalize_path(PLAYER_MUSIC_DIR)
+	DirAccess.make_dir_recursive_absolute(folder)
+	OS.shell_open(folder)
 
 
 func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamPlayer:
