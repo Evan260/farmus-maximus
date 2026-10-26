@@ -4,7 +4,8 @@ extends Node2D
 
 signal petted
 
-const DIR := "res://assets/sprites/animals/cat_small/"
+## The breed's folder of pictures, set from the breed before the cat is added.
+var dir := "res://assets/sprites/animals/cat_small/"
 const SPEED := 9.0
 
 var min_x := 0.0
@@ -106,11 +107,11 @@ func _frames() -> SpriteFrames:
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
 	f.add_animation("stand")
-	var still := _coloured(load(DIR + "east.png"))
+	var still := _coloured(load(dir + "east.png"))
 	f.add_frame("stand", still)
 	_offsets["stand"] = _anchor(still)
 	for anim in [["walk", "walk_east", 8.0, true], ["sleep", "sleep_east", 5.0, false]]:
-		var folder := DIR + String(anim[1]) + "/"
+		var folder := dir + String(anim[1]) + "/"
 		if not ResourceLoader.exists(folder + "frame_00.png"):
 			continue
 		f.add_animation(anim[0])

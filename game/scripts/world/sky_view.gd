@@ -187,7 +187,8 @@ func _process(delta: float) -> void:
 	_night.modulate.a = night
 	_cloud_look.set_shader_parameter("light", look["light"])
 	_cloud_look.set_shader_parameter("shade", look["shade"])
-	var wind := (1.8 if overcast else 1.0) * (0.3 if Settings.reduced_motion else 1.0)
+	# Sleeping fast-forwards the night, and the clouds hurry across with it.
+	var wind := (1.8 if overcast else 1.0) * (0.3 if Settings.reduced_motion else 1.0) * minf(Game.speed, 30.0)
 	for c in _clouds:
 		var s: Sprite2D = c["sprite"]
 		s.position.x += float(c["speed"]) * wind * delta

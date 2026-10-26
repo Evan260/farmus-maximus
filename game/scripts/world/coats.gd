@@ -8,17 +8,33 @@ const CAT := {"ginger": "Ginger tabby", "grey": "Grey tabby", "black": "Black", 
 const HEN := ["brown", "white", "black", "blue", "ginger"]
 const GOAT := ["patched", "white", "dark_patched", "grey_patched", "black"]
 
+## Breeds, each its own shape and build; the first of each is the one the coat colours were made for.
+const BREEDS := {
+	"dog": {"hound": "Farm hound", "molossian": "Molossian mastiff", "sighthound": "Sighthound", "lapdog": "Melitan lapdog", "sheepdog": "Sheepdog"},
+	"cat": {"tabby": "Tabby", "longhair": "Long-haired", "spotted": "Spotted", "stocky": "Stocky"},
+}
+
 static var _cache := {}
 
 
-static func options(animal: String) -> Dictionary:
+## The coats a pet can wear: the farm hound and the tabby come in several, the other breeds in their own colours.
+static func options(animal: String, breed := "") -> Dictionary:
+	if breed != "" and breed != BREEDS[animal].keys()[0]:
+		return {"natural": "Natural coat"}
 	return DOG if animal == "dog" else CAT
+
+
+## The folder holding a breed's pictures.
+static func breed_dir(animal: String, breed: String) -> String:
+	if animal == "dog":
+		return "res://assets/sprites/dog/" if breed in ["", "hound"] or not BREEDS["dog"].has(breed) else "res://assets/sprites/dog_breeds/%s/" % breed
+	return "res://assets/sprites/animals/cat_small/" if breed in ["", "tabby"] or not BREEDS["cat"].has(breed) else "res://assets/sprites/animals/cat_breeds/%s/small/" % breed
 
 
 static func recolour(tex: Texture2D, animal: String, coat: String) -> Texture2D:
 	if animal in ["hen", "goat"]:
 		return _recolour_livestock(tex, animal, coat)
-	if coat == "" or coat == options(animal).keys()[0]:
+	if coat in ["", "natural"] or coat == options(animal).keys()[0]:
 		return tex
 	var key := "%s|%s" % [tex.resource_path, coat]
 	if _cache.has(key):

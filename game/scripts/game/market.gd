@@ -8,6 +8,9 @@ var orders: Array = []
 var order_timer := 0.0
 ## One-off purchases already made, such as the second cart.
 var purchases := {}
+## What the cart brought to town this visit, by storage key; the stalls can only sell from it.
+var brought := {}
+var cart_in_town := false
 var _game: Node
 
 
@@ -37,8 +40,40 @@ func cart_price(key: String) -> int:
 
 
 ## Sells goods at the stalls in person, at full price.
+## Loads the cart for a visit to town: goods marked for sale, the best paid first, as many as the cart carries.
+func pack_cart() -> void:
+	brought = {}
+	cart_in_town = true
+	var room: int = _game.cart_capacity()
+	var goods: Dictionary = _game.sellable_goods()
+	var keys := goods.keys()
+	keys.sort_custom(func(a, b): return price(a) > price(b))
+	for key in keys:
+		var take := mini(int(goods[key]), room)
+		if take <= 0:
+			break
+		brought[key] = take
+		room -= take
+
+
+## Home again: whatever was not sold goes back to being ordinary stock in the storehouse.
+func unpack_cart() -> void:
+	brought = {}
+	cart_in_town = false
+
+
+func brought_total() -> int:
+	var n := 0
+	for k in brought:
+		n += int(brought[k])
+	return n
+
+
 func sell(key: String, amount: int) -> int:
 	amount = mini(amount, int(_game.storage.get(key, 0)))
+	if cart_in_town:
+		amount = mini(amount, int(brought.get(key, 0)))
+		brought[key] = int(brought.get(key, 0)) - maxi(amount, 0)
 	if amount <= 0:
 		return 0
 	var total := 0

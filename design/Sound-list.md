@@ -14,7 +14,7 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `unlock` | Digging a new bed; a new animal in the barn | Yes |
 | `coins` | Buying, selling, the cart's return | Yes |
 | `cart` | The cart leaving or coming home | Yes |
-| `dog` | Petting the dog: happy panting (2 takes) | Yes |
+| `dog` | Petting the dog: one friendly woof | Yes |
 | `cat` | Petting the cat: a purr, or now and then a contented chirp (3 takes) | Yes |
 | `cluck` | Clicking a hen (3 takes) | Yes |
 | `stork` | Clicking the stork on the villa roof: its bill clattering | Yes |
@@ -61,7 +61,7 @@ The animal calls come from these Freesound recordings. All are CC0 (free for any
 | `stork` | [20200624.stork.nest.01.wav](https://freesound.org/people/dobroide/sounds/525217/) by dobroide | CC BY 4.0: credit "Stork bill clattering by dobroide (freesound.org), CC BY 4.0" |
 | `cat` | [Cat purr.wav](https://freesound.org/people/Trautwein/sounds/260881/) by Trautwein, [cat chirp.wav](https://freesound.org/people/dreamstobecome/sounds/451250/) by dreamstobecome | CC0 |
 | `rooster` | [Chickens clucking and rooster](https://freesound.org/people/evsecrets/sounds/346961/) by evsecrets | CC0 |
-| `dog` | [dog panting](https://freesound.org/people/keweldog/sounds/181767/) by keweldog | CC0 |
+| `dog` | [Single Dog Bark](https://freesound.org/people/kwahmah_02/sounds/277058/) by kwahmah_02 | CC0 |
 | `rustle` | [Foley: Cotton clothes rustling](https://freesound.org/people/khenshom/sounds/481075/) by khenshom | CC0 |
 
 ## Music (`game/assets/audio/music/`)

@@ -324,7 +324,13 @@ func unlock_crop(crop_id: String) -> void:
 
 func time_to_ready(plot: Dictionary) -> float:
 	var info := crop_info(plot["crop"])
-	return float(info.get("regrow_seconds" if int(plot["cycle"]) > 0 else "grow_seconds", 60))
+	return float(info.get("regrow_seconds" if int(plot["cycle"]) > 0 else "grow_seconds", 60)) * float(plot.get("pace", 1.0))
+
+
+## Plants are not all alike: each sowing and each regrowth takes a little more or less time than the crop's usual.
+func _new_pace() -> float:
+	var spread := float(Balance.get_value("plots.growth_spread", 0.12))
+	return rng.randf_range(1.0 - spread, 1.0 + spread)
 
 
 func is_ready(i: int) -> bool:
@@ -463,6 +469,7 @@ func try_plant(i: int, crop_id := "") -> bool:
 	p["growth"] = 0.0
 	p["cycle"] = 0
 	p["ready_age"] = 0.0
+	p["pace"] = _new_pace()
 	_apply_manure(p)
 	add_stat("planted", 1)
 	discover("crop:" + crop_id)
@@ -522,6 +529,7 @@ func _harvest(i: int, by_hand := false) -> int:
 	p["ready_age"] = 0.0
 	p["cycle"] = int(p["cycle"]) + 1
 	p["manured"] = false
+	p["pace"] = _new_pace()
 	# Perennials like lavender regrow from the same plant; annuals like wheat leave the plot empty.
 	if not info.get("perennial", false):
 		p["crop"] = ""
@@ -1447,7 +1455,7 @@ func dog_dig() -> String:
 
 
 static func default_pets() -> Dictionary:
-	return {"dog": {"name": "Fidus", "coat": "golden"}, "cat": {"name": "Mica", "coat": "ginger"}}
+	return {"dog": {"name": "Fidus", "coat": "golden", "breed": "hound"}, "cat": {"name": "Mica", "coat": "ginger", "breed": "tabby"}}
 
 
 func pet_name(kind: String) -> String:
@@ -1510,6 +1518,7 @@ func from_dict(d: Dictionary) -> void:
 		p["cycle"] = int(s.get("cycle", 0))
 		p["manured"] = bool(s.get("manured", false))
 		p["ready_age"] = float(s.get("ready_age", 0.0))
+		p["pace"] = float(s.get("pace", 1.0))
 		plots[i] = p
 	for id in d.get("levels", {}):
 		if levels.has(id):
@@ -1555,7 +1564,8 @@ func from_dict(d: Dictionary) -> void:
 		helper_timers[id] = float(d["helper_timers"][id])
 	decorations = Dictionary(d.get("decorations", {}))
 	for kind in d.get("pets", {}):
-		pets[kind] = {"name": String(d["pets"][kind].get("name", "")), "coat": String(d["pets"][kind].get("coat", ""))}
+		pets[kind] = {"name": String(d["pets"][kind].get("name", "")), "coat": String(d["pets"][kind].get("coat", "")),
+			"breed": String(d["pets"][kind].get("breed", "hound" if kind == "dog" else "tabby"))}
 	var bl: Dictionary = d.get("blessing", {})
 	blessing = {"god": String(bl["god"]), "time_left": float(bl.get("time_left", 0.0))} if bl.has("god") else {}
 	use_manure = bool(d.get("use_manure", true))

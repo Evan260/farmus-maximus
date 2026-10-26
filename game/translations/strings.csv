@@ -181,6 +181,7 @@ Equestrian fortune,Equestrian fortune
 Essence of summer,Essence of summer
 "Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door.","Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door."
 Every building restored,Every building restored
+Every farm needs a dog and a cat. Choose their breeds and coats and give them names.,Every farm needs a dog and a cat. Choose their breeds and coats and give them names.
 Every farm needs a dog and a cat. Choose their coats and give them names.,Every farm needs a dog and a cat. Choose their coats and give them names.
 Every festival celebrated,Every festival celebrated
 "Every field, grove and pasture is yours.","Every field, grove and pasture is yours."
@@ -288,7 +289,9 @@ Lavender bundle,Lavender bundle
 Lavender honey,Lavender honey
 Lavender oil,Lavender oil
 Lavender oil becomes precious bath oil,Lavender oil becomes precious bath oil
+Lays a gravel footpath beside the road in %s.,Lays a gravel footpath beside the road in %s.
 Lays kerbstones along the road in %s.,Lays kerbstones along the road in %s.
+Lays kerbstones and milestones along the road in %s.,Lays kerbstones and milestones along the road in %s.
 Leave an offering for one blessing at a time.,Leave an offering for one blessing at a time.
 Length of a day,Length of a day
 Level %d of %d,Level %d of %d
@@ -319,6 +322,7 @@ Minerva,Minerva
 More cuttings are sold at the market.,More cuttings are sold at the market.
 Morning mist over the fields,Morning mist over the fields
 Music and sound files dropped into the game's audio folders are picked up by name.,Music and sound files dropped into the game's audio folders are picked up by name.
+"My dear heir,","My dear heir,"
 "My dear heir,
 
 The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.
@@ -353,6 +357,7 @@ Not enough in the storehouse,Not enough in the storehouse
 Not for sale,Not for sale
 Nothing growing here to dig up,Nothing growing here to dig up
 Nothing left in ruins,Nothing left in ruins
+"Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut.","Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut."
 "Nothing to sell. Bring goods from the storehouse: they are sold here at full price, without the trader's cut.","Nothing to sell. Bring goods from the storehouse: they are sold here at full price, without the trader's cut."
 Off,Off
 Offer,Offer
@@ -390,6 +395,7 @@ Pet the dog 50 times,Pet the dog 50 times
 "Picks olives and grapes, runs the presses and the cellar","Picks olives and grapes, runs the presses and the cellar"
 Pious,Pious
 Plant %s: %d sestertii,Plant %s: %d sestertii
+"Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.","Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping."
 Pomona,Pomona
 Press a key...,Press a key...
 Presser,Presser
@@ -414,6 +420,7 @@ Restored farmhouse,Restored farmhouse
 Resume,Resume
 Resume work,Resume work
 Ride the cart to market,Ride the cart to market
+"Rome, on the Kalends of March","Rome, on the Kalends of March"
 Roof tiles,Roof tiles
 Rosemary,Rosemary
 "Rosemary for the grove, and the fountain","Rosemary for the grove, and the fountain"
@@ -502,6 +509,7 @@ The bees are out among the flowers,The bees are out among the flowers
 The builders have gone home for the night and come back in %s. %s of work left.,The builders have gone home for the night and come back in %s. %s of work left.
 The builders have started work,The builders have started work
 The cart and donkey carry the trader's loads to market.,The cart and donkey carry the trader's loads to market.
+"The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first.","The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first."
 The cart carries %d goods.,The cart carries %d goods.
 The cart heads to market with %d sestertii of goods,The cart heads to market with %d sestertii of goods
 The cart is back: +%d sestertii,The cart is back: +%d sestertii
@@ -525,6 +533,7 @@ The household,The household
 The household gods watch over the estate.,The household gods watch over the estate.
 "The lararium, the pasture deed and decorations","The lararium, the pasture deed and decorations"
 The northern lights,The northern lights
+"The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
 The ovens are hungry! Could you bring {n} {item}?,The ovens are hungry! Could you bring {n} {item}?
 The peristyle,The peristyle
 The rest of the villa's story is in the full game. Thank you for playing the demo!,The rest of the villa's story is in the full game. Thank you for playing the demo!
@@ -595,6 +604,7 @@ Wine press,Wine press
 Wine rested long enough to be excellent.,Wine rested long enough to be excellent.
 Wine rests here and improves with time.,Wine rests here and improves with time.
 Winter,Winter
+"With love,","With love,"
 Work on the villa has begun,Work on the villa has begun
 Working,Working
 Working: %d%%,Working: %d%%
@@ -635,3 +645,4 @@ sestertii,sestertii
 "waters the home farm, so it grows faster","waters the home farm, so it grows faster"
 x%s speed,x%s speed
 you have,you have
+your uncle Marcus,your uncle Marcus

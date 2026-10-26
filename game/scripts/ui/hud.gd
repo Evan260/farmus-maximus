@@ -135,6 +135,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_update_sleep(delta)
+	_place_info()
 	var in_strip := Windowing.strip
 	_stats_panel.visible = not in_strip
 	_buttons.visible = not in_strip
@@ -224,7 +225,16 @@ func set_zone(zone_id: String) -> void:
 func set_info(text: String) -> void:
 	_info.visible = text != ""
 	_info.text = text
-	_info.position = Vector2(4, _above_toolbar() - _info.get_minimum_size().y - 2)
+	_place_info()
+
+
+## The hover text sits just above the pointer, so it never hides the plants along the bottom of the field.
+func _place_info() -> void:
+	if not _info.visible:
+		return
+	var at := get_viewport().get_mouse_position() / Windowing.ui_scale
+	var size := _info.get_minimum_size()
+	_info.position = (at + Vector2(8, -size.y - 6)).clamp(Vector2(2, 2), _root.size - size - Vector2(2, 2)).round()
 
 
 func toast(text: String) -> void:
@@ -323,15 +333,44 @@ func _build_zone_bar() -> void:
 
 
 func _show_intro() -> void:
-	var p := PanelContainer.new()
-	_root.add_child(p)
-	var col := UiKit.column(p)
-	UiKit.label(col, tr("A letter from your uncle Marcus"))
-	UiKit.para(col, tr("My dear heir,\n\nThe old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.\n\nPlant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.\n\nWith love, Marcus"), 230)
-	UiKit.button(col, tr("Begin"), func(): Settings.set_value("intro_seen", true); p.queue_free(); _open(_companions))
-	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+	var holder := UiKit.column(_root)
+	holder.alignment = BoxContainer.ALIGNMENT_CENTER
+	var letter := PanelContainer.new()
+	var paper := StyleBoxTexture.new()
+	paper.texture = LetterPaper.sheet(Vector2i(250, 236))
+	paper.set_content_margin_all(14)
+	letter.add_theme_stylebox_override("panel", paper)
+	holder.add_child(letter)
+	var col := UiKit.column(letter)
+	col.add_theme_constant_override("separation", 4)
+	var ink := LetterPaper.INK
+	var date := UiKit.label(col, tr("Rome, on the Kalends of March"))
+	date.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	date.add_theme_color_override("font_color", ink.lerp(LetterPaper.PARCH, 0.35))
+	UiKit.label(col, tr("My dear heir,")).add_theme_color_override("font_color", ink)
+	for line in [tr("The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."),
+			tr("Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.")]:
+		UiKit.para(col, line, 222).add_theme_color_override("font_color", ink)
+	var sign := UiKit.row(col)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sign.add_child(gap)
+	var bye := UiKit.column(sign)
+	UiKit.label(bye, tr("With love,")).add_theme_color_override("font_color", ink)
+	UiKit.label(bye, tr("your uncle Marcus")).add_theme_color_override("font_color", ink)
+	var wax := TextureRect.new()
+	wax.texture = LetterPaper.seal()
+	wax.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	wax.custom_minimum_size = Vector2(18, 18)
+	wax.size_flags_vertical = Control.SIZE_SHRINK_END
+	sign.add_child(wax)
+	var begin := UiKit.button(holder, tr("Begin"), func(): Settings.set_value("intro_seen", true); holder.queue_free(); _open(_companions))
+	begin.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	begin.custom_minimum_size = Vector2(90, 0)
+	holder.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	holder.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	holder.grow_vertical = Control.GROW_DIRECTION_BOTH
+	UiKit.fade_in(holder, 0.6)
 
 
 func _on_achievement(a: Dictionary) -> void:

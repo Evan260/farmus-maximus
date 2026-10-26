@@ -251,3 +251,32 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T23:10:43,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/trader/greet_east,0.0154,0,0.2800
 2026-10-25T23:10:52,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/presser/greet_east,0.0324,0,0.2629
 2026-10-26T00:03:37,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/donkey/idle_east,0.0177,0,0.2251
+2026-10-26T13:47:07,character,game/assets/sprites/dog_breeds/sighthound,0.1451,0,5.0800
+2026-10-26T13:47:12,character,game/assets/sprites/dog_breeds/lapdog,0.2029,0,5.0222
+2026-10-26T13:47:37,character,game/assets/sprites/dog_breeds/molossian,0.2029,0,5.0222
+2026-10-26T13:47:39,character,game/assets/sprites/dog_breeds/sheepdog,0.2029,0,5.0222
+2026-10-26T13:47:55,animate,game/assets/sprites/dog_breeds/sighthound/walk_east,0.0682,0,5.0118
+2026-10-26T13:48:37,animate,game/assets/sprites/dog_breeds/sheepdog/walk_east,0.0401,0,4.9821
+2026-10-26T13:48:42,animate,game/assets/sprites/dog_breeds/lapdog/walk_east,0.0401,0,4.9821
+2026-10-26T13:48:56,animate,game/assets/sprites/dog_breeds/molossian/walk_east,0.0401,0,4.9821
+2026-10-26T13:49:15,animate,game/assets/sprites/dog_breeds/sighthound/sit_east,0.0586,0,4.9532
+2026-10-26T13:49:42,animate,game/assets/sprites/dog_breeds/sheepdog/sit_east,0.0417,0,4.9404
+2026-10-26T13:50:03,animate,game/assets/sprites/dog_breeds/sighthound/sleep_east,0.0129,0,4.9404
+2026-10-26T13:50:22,animate,game/assets/sprites/dog_breeds/lapdog/sit_east,0.0722,0,4.9098
+2026-10-26T13:50:39,animate,game/assets/sprites/dog_breeds/molossian/sit_east,0.0741,0,4.8929
+2026-10-26T13:50:50,animate,game/assets/sprites/dog_breeds/sheepdog/sleep_east,0.0602,0,4.8802
+2026-10-26T13:51:13,animate,game/assets/sprites/dog_breeds/sighthound/happy_east,0.0603,0,4.8687
+2026-10-26T13:51:59,animate,game/assets/sprites/dog_breeds/sheepdog/happy_east,0.0399,0,4.8403
+2026-10-26T13:51:59,animate,game/assets/sprites/dog_breeds/molossian/sleep_east,0.0525,0,4.8403
+2026-10-26T13:53:31,animate,game/assets/sprites/dog_breeds/molossian/happy_east,0.0185,0,4.8218
+2026-10-26T13:53:40,animate,game/assets/sprites/dog_breeds/lapdog/sleep_east,0.1255,0,4.7844
+2026-10-26T13:55:21,animate,game/assets/sprites/dog_breeds/lapdog/happy_east,0.0000,0,4.7844
+2026-10-26T13:57:41,character,game/assets/sprites/animals/cat_breeds/stocky,0.1251,0,4.6407
+2026-10-26T13:57:57,character,game/assets/sprites/animals/cat_breeds/longhair,0.1251,0,4.6407
+2026-10-26T13:59:08,animate,game/assets/sprites/animals/cat_breeds/longhair/walk_east,0.0721,0,4.5686
+2026-10-26T13:59:13,animate,game/assets/sprites/animals/cat_breeds/stocky/walk_east,0.0721,0,4.5686
+2026-10-26T13:59:15,character,game/assets/sprites/animals/cat_breeds/spotted,0.1972,0,4.5686
+2026-10-26T14:00:21,animate,game/assets/sprites/animals/cat_breeds/stocky/sleep_east,0.0143,0,4.5543
+2026-10-26T14:00:39,animate,game/assets/sprites/animals/cat_breeds/longhair/sleep_east,0.0329,0,4.5357
+2026-10-26T14:00:59,animate,game/assets/sprites/animals/cat_breeds/spotted/walk_east,0.0534,0,4.5152
+2026-10-26T14:02:29,animate,game/assets/sprites/animals/cat_breeds/spotted/sleep_east,0.0167,0,4.4985

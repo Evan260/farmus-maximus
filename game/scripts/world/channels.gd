@@ -21,8 +21,8 @@ const BASE_Y := 41
 var from_x := 476.0
 var to_x := 972.0
 ## The walkway to the farmhouse, which crosses the channel on a footbridge.
-var bridge_from := 815.0
-var bridge_to := 859.0
+var bridge_from := 816.0
+var bridge_to := 866.0
 var _t := 0.0
 var _house: Sprite2D
 ## The castellum part built: footings, half-built walls, and walls waiting for their roof.

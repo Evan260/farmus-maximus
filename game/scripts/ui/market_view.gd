@@ -314,12 +314,14 @@ func enter() -> void:
 	_bunting.queue_redraw()
 	_props.queue_redraw()
 	Game.add_stat("market_visits", 1)
+	Game.market.pack_cart()
 	Sfx.play("market_bell")
 	_signature = ""
 	_refresh()
 
 
 func leave() -> void:
+	Game.market.unpack_cart()
 	Dissolve.play(self, func() -> void:
 		visible = false
 		_ui_layer.visible = false
@@ -624,17 +626,18 @@ func _refresh() -> void:
 
 
 func _build_stalls() -> void:
-	var keys := Game.storage.keys().filter(func(k): return Balance.get_value("items.%s.kind" % Game.item_base(k), "good") == "good")
+	var keys: Array = Game.market.brought.keys().filter(func(k): return int(Game.market.brought[k]) > 0 and int(Game.storage.get(k, 0)) > 0)
 	keys.sort_custom(func(a, b): return Game.market.price(a) > Game.market.price(b))
+	UiKit.para(_list, tr("The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first.") % [Game.market.brought_total(), Game.cart_capacity()], 280).add_theme_color_override("font_color", UiKit.FADED)
 	if keys.is_empty():
-		UiKit.para(_list, tr("Nothing to sell. Bring goods from the storehouse: they are sold here at full price, without the trader's cut."), 280)
+		UiKit.para(_list, tr("Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut."), 280)
 	for key in keys:
 		var r := UiKit.row(_list)
 		UiKit.icon(r, key)
-		var l := UiKit.label(r, "%s x%d  -  %d" % [tr(Game.item_name(key)), int(Game.storage[key]), Game.market.price(key)])
+		var l := UiKit.label(r, "%s x%d  -  %d" % [tr(Game.item_name(key)), mini(int(Game.market.brought[key]), int(Game.storage[key])), Game.market.price(key)])
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		UiKit.button(r, tr("Sell 1"), func(): _sell(key, 1))
-		UiKit.button(r, tr("Sell all"), func(): _sell(key, int(Game.storage.get(key, 0))))
+		UiKit.button(r, tr("Sell all"), func(): _sell(key, int(Game.market.brought.get(key, 0))))
 
 
 func _sell(key: String, n: int) -> void:
