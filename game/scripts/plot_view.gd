@@ -86,22 +86,17 @@ static func texture_for(crop: String, visual: String, variant := 0) -> Texture2D
 
 ## Lavender varieties are the same plant in a different flower colour: only the purple pixels change.
 static func _recolor(tex: Texture2D, how: String) -> Texture2D:
-	var img := tex.get_image()
-	img.convert(Image.FORMAT_RGBA8)
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			if c.a == 0.0 or c.h < 0.68 or c.h > 0.92 or c.s < 0.15:
-				continue
-			match how:
-				"violet":
-					c = Color.from_hsv(0.76, minf(1.0, c.s * 1.25), c.v * 0.78, c.a)
-				"bluegrey":
-					c = Color.from_hsv(0.6, c.s * 0.55, minf(1.0, c.v * 1.05), c.a)
-				"white":
-					c = Color.from_hsv(0.75, c.s * 0.12, 0.82 + c.v * 0.18, c.a)
-			img.set_pixel(x, y, c)
-	return ImageTexture.create_from_image(img)
+	return Recolour.apply(tex, "flower:" + how, func(c: Color, _down: float) -> Color:
+		if c.h < 0.68 or c.h > 0.92 or c.s < 0.15:
+			return c
+		match how:
+			"violet":
+				return Color.from_hsv(0.76, minf(1.0, c.s * 1.25), c.v * 0.78, c.a)
+			"bluegrey":
+				return Color.from_hsv(0.6, c.s * 0.55, minf(1.0, c.v * 1.05), c.a)
+			"white":
+				return Color.from_hsv(0.75, c.s * 0.12, 0.82 + c.v * 0.18, c.a)
+		return c)
 
 
 func _draw() -> void:

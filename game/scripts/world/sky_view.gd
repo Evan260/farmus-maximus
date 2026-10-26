@@ -168,25 +168,9 @@ func _process(delta: float) -> void:
 	_t += delta
 	var hour := Game.day_time
 	var overcast: bool = Game.calendar.weather in ["cloudy", "rain"]
-	var look := SkyPalette.at(hour, overcast)
-	var paint := _gradient.material as ShaderMaterial
-	for key in ["zenith", "middle", "glow"]:
-		paint.set_shader_parameter(key, look[key])
-	paint.set_shader_parameter("low", look["low"])
-	var sun := SkyPalette.sun_position(hour, WIDTH, HORIZON, 170.0)
-	_sun.visible = not is_nan(sun.x)
-	if _sun.visible:
-		_sun.position = sun.round()
-		var height := clampf((HORIZON - sun.y) / 170.0, 0.0, 1.0)
-		_sun.modulate = Color(1.0, 0.72, 0.45).lerp(Color(1.0, 0.98, 0.9), height) * Color(1, 1, 1, 0.5 if overcast else 1.0)
-		paint.set_shader_parameter("sun", sun)
-		paint.set_shader_parameter("glow_radius", lerpf(230.0, 130.0, height))
+	SkyPalette.paint(_gradient.material as ShaderMaterial, _sun, _cloud_look, hour, overcast, WIDTH, HORIZON, 170.0, Vector2(230, 130), _t)
 	var night := Lighting.night_amount(hour)
-	paint.set_shader_parameter("stars", night * (0.3 if overcast else 1.0))
-	paint.set_shader_parameter("time", _t)
 	_night.modulate.a = night
-	_cloud_look.set_shader_parameter("light", look["light"])
-	_cloud_look.set_shader_parameter("shade", look["shade"])
 	# Sleeping fast-forwards the night, and the clouds hurry across with it.
 	var wind := (1.8 if overcast else 1.0) * (0.3 if Settings.reduced_motion else 1.0) * minf(Game.speed, 30.0)
 	for c in _clouds:

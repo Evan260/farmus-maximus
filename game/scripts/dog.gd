@@ -29,7 +29,7 @@ func _ready() -> void:
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = _build_frames()
 	sprite.centered = false
-	var feet := _feet_line(load(dir + "walk_east/frame_00.png"))
+	var feet := Frames.feet_line(load(dir + "walk_east/frame_00.png"))
 	sprite.offset = Vector2(-30, -feet)
 	sprite.animation_finished.connect(_on_animation_finished)
 	add_child(sprite)
@@ -133,7 +133,3 @@ func _add(f: SpriteFrames, anim: String, folder: String, frames: Array, fps: flo
 	for i in frames:
 		f.add_frame(anim, Coats.recolour(load("%s%s/frame_%02d.png" % [dir, folder, i]), "dog", coat))
 
-
-func _feet_line(tex: Texture2D) -> int:
-	var used := tex.get_image().get_used_rect()
-	return used.position.y + used.size.y

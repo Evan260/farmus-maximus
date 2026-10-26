@@ -250,30 +250,25 @@ func _frames() -> SpriteFrames:
 	f.add_animation("stand")
 	if still:
 		f.add_frame("stand", still)
-		_offsets["stand"] = _anchor(still)
+		_offsets["stand"] = Frames.anchor(still)
 	if walk_folder != "walk" and ResourceLoader.exists("%s%s_east/frame_00.png" % [dir, walk_folder]):
 		f.clear("stand")
 		f.add_frame("stand", _dressed(load("%s%s_east/frame_00.png" % [dir, walk_folder])))
-		_offsets["stand"] = _anchor(f.get_frame_texture("stand", 0))
+		_offsets["stand"] = Frames.anchor(f.get_frame_texture("stand", 0))
 	for anim in ["walk", "carry", "work", "place", "graze", "sleep", "react"]:
 		var folder := "%s%s_east/" % [dir, {"walk": walk_folder, "react": react_folder}.get(anim, anim)]
 		# The greeting is drawn with empty or ordinary hands, so someone carrying a baby does not use it.
-		if not ResourceLoader.exists(folder + "frame_00.png") or (anim == "react" and walk_folder != "walk"):
+		if anim == "react" and walk_folder != "walk":
 			continue
-		f.add_animation(anim)
-		f.set_animation_speed(anim, 9.0 if anim in ["walk", "carry"] else 6.0)
-		f.set_animation_loop(anim, anim not in ["place", "react"])
-		if anim == "react":
-			f.set_animation_speed(anim, 10.0)
-		var i := 0
-		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
-			f.add_frame(anim, _dressed(load("%sframe_%02d.png" % [folder, i])))
-			i += 1
+		var fps := 10.0 if anim == "react" else (9.0 if anim in ["walk", "carry"] else 6.0)
+		var i := Frames.add_folder(f, anim, folder, fps, anim not in ["place", "react"], _dressed)
+		if i == 0:
+			continue
 		# A greeting plays forward and back, so a raised hand or a bow comes down again before they walk on.
 		if anim == "react" and dir.contains("/people/"):
 			for k in range(i - 2, 0, -1):
 				f.add_frame(anim, f.get_frame_texture(anim, k))
-		_offsets[anim] = _anchor(f.get_frame_texture(anim, 0))
+		_offsets[anim] = Frames.anchor(f.get_frame_texture(anim, 0))
 		if anim in ["walk", "carry"]:
 			var pace := natural_pace(f, anim)
 			if pace > 0.0:
@@ -312,8 +307,3 @@ func refresh_frames() -> void:
 func _dressed(tex: Texture2D) -> Texture2D:
 	return dress.call(tex) if dress.is_valid() else tex
 
-
-## Places the feet on the node's position whatever the frame size, since animation frames are larger than the still pose.
-func _anchor(tex: Texture2D) -> Vector2:
-	var used := tex.get_image().get_used_rect()
-	return Vector2(-roundf(tex.get_width() / 2.0), -(used.position.y + used.size.y))

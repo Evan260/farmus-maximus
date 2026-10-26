@@ -109,26 +109,13 @@ func _frames() -> SpriteFrames:
 	f.add_animation("stand")
 	var still := _coloured(load(dir + "east.png"))
 	f.add_frame("stand", still)
-	_offsets["stand"] = _anchor(still)
+	_offsets["stand"] = Frames.anchor(still)
 	for anim in [["walk", "walk_east", 8.0, true], ["sleep", "sleep_east", 5.0, false]]:
-		var folder := dir + String(anim[1]) + "/"
-		if not ResourceLoader.exists(folder + "frame_00.png"):
-			continue
-		f.add_animation(anim[0])
-		f.set_animation_speed(anim[0], float(anim[2]))
-		f.set_animation_loop(anim[0], bool(anim[3]))
-		var i := 0
-		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
-			f.add_frame(anim[0], _coloured(load("%sframe_%02d.png" % [folder, i])))
-			i += 1
-		_offsets[anim[0]] = _anchor(f.get_frame_texture(anim[0], 0))
+		if Frames.add_folder(f, anim[0], dir + String(anim[1]) + "/", float(anim[2]), bool(anim[3]), _coloured) > 0:
+			_offsets[anim[0]] = Frames.anchor(f.get_frame_texture(anim[0], 0))
 	return f
 
 
 func _coloured(tex: Texture2D) -> Texture2D:
 	return Coats.recolour(tex, "cat", coat) if coat != "" else tex
 
-
-func _anchor(tex: Texture2D) -> Vector2:
-	var used := tex.get_image().get_used_rect()
-	return Vector2(-roundf(tex.get_width() / 2.0), -(used.position.y + used.size.y))

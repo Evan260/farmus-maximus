@@ -40,6 +40,26 @@ static func at(hour: float, overcast: bool) -> Dictionary:
 	return out
 
 
+## Colours a sky shader, its sun and its clouds for the hour. `rise` is how high the sun climbs above the horizon and
+## `glow` the sun's glow radius when low and when high; the estate and the market town share this.
+static func paint(sky: ShaderMaterial, sun: Sprite2D, clouds: ShaderMaterial, hour: float, overcast: bool, width: float, horizon: float, rise: float, glow: Vector2, time: float) -> void:
+	var look := at(hour, overcast)
+	for key in ["zenith", "middle", "low", "glow"]:
+		sky.set_shader_parameter(key, look[key])
+	var pos := sun_position(hour, width, horizon, rise)
+	sun.visible = not is_nan(pos.x)
+	if sun.visible:
+		sun.position = pos.round()
+		var height := clampf((horizon - pos.y) / rise, 0.0, 1.0)
+		sun.modulate = Color(1.0, 0.72, 0.45).lerp(Color(1.0, 0.98, 0.9), height) * Color(1, 1, 1, 0.5 if overcast else 1.0)
+		sky.set_shader_parameter("sun", pos)
+		sky.set_shader_parameter("glow_radius", lerpf(glow.x, glow.y, height))
+	sky.set_shader_parameter("stars", Lighting.night_amount(hour) * (0.3 if overcast else 1.0))
+	sky.set_shader_parameter("time", time)
+	clouds.set_shader_parameter("light", look["light"])
+	clouds.set_shader_parameter("shade", look["shade"])
+
+
 ## Where the sun stands in a sky this wide, rising on the left and setting on the right; NAN at night.
 static func sun_position(hour: float, width: float, horizon: float, height: float) -> Vector2:
 	if hour < SUNRISE - 0.3 or hour > SUNSET + 0.3:

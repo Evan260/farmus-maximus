@@ -304,7 +304,7 @@ func _ready() -> void:
 	_donkey = AnimatedSprite2D.new()
 	_donkey.sprite_frames = _donkey_frames()
 	_donkey.centered = false
-	_donkey.offset = Vector2(-32, -_feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
+	_donkey.offset = Vector2(-32, -Frames.feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
 	_donkey.play("stand")
 	world.add_child(_donkey)
 	_harness = Node2D.new()
@@ -2010,7 +2010,7 @@ func _build_stone_cart() -> void:
 	_stone_donkey = AnimatedSprite2D.new()
 	_stone_donkey.sprite_frames = _donkey_frames()
 	_stone_donkey.centered = false
-	_stone_donkey.offset = Vector2(-32, -_feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
+	_stone_donkey.offset = Vector2(-32, -Frames.feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
 	_stone_donkey.position = Vector2(58, RIG_BASE)
 	_stone_donkey.play("stand")
 	_stone_cart.add_child(_stone_donkey)
@@ -2162,26 +2162,12 @@ func _move_rig(cart_x: float, seconds: float, returning := false) -> void:
 func _donkey_frames() -> SpriteFrames:
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
-	f.add_animation("walk")
-	f.set_animation_speed("walk", 9.0)
-	for i in range(1, 9):
-		f.add_frame("walk", load("res://assets/sprites/donkey/walk_east/frame_%02d.png" % i))
+	# The walk's first picture is its standing pose, so the cycle starts from the second.
+	Frames.add_folder(f, "walk", "res://assets/sprites/donkey/walk_east/", 9.0, true, Callable(), 1)
 	# Standing, the donkey breathes, flicks an ear and swishes its tail, slowly, rather than freezing.
-	f.add_animation("stand")
-	f.set_animation_speed("stand", 4.0)
-	for i in 9:
-		f.add_frame("stand", load("res://assets/sprites/donkey/idle_east/frame_%02d.png" % i))
-	f.add_animation("bray")
-	f.set_animation_speed("bray", 8.0)
-	f.set_animation_loop("bray", false)
-	for i in 9:
-		f.add_frame("bray", load("res://assets/sprites/donkey/bray_east/frame_%02d.png" % i))
+	Frames.add_folder(f, "stand", "res://assets/sprites/donkey/idle_east/", 4.0)
+	Frames.add_folder(f, "bray", "res://assets/sprites/donkey/bray_east/", 8.0, false)
 	return f
-
-
-func _feet_line(tex: Texture2D) -> int:
-	var used := tex.get_image().get_used_rect()
-	return used.position.y + used.size.y
 
 
 func _villa_texture() -> Texture2D:

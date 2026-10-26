@@ -187,16 +187,7 @@ func _frames() -> SpriteFrames:
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
 	for anim in [["walk", "walk_east"], ["work", "work_east"], ["climb", "climb_north"]]:
-		var folder := "%s%s/" % [_dir, anim[1]]
-		if not ResourceLoader.exists(folder + "frame_00.png"):
-			continue
-		f.add_animation(anim[0])
-		f.set_animation_speed(anim[0], 9.0)
-		var i := 0
-		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
-			f.add_frame(anim[0], Outfits.dress(load("%sframe_%02d.png" % [folder, i]), outfit))
-			i += 1
-		var tex := f.get_frame_texture(anim[0], 0)
-		var used := tex.get_image().get_used_rect()
-		_offsets[anim[0]] = Vector2(-roundf(tex.get_width() / 2.0), -(used.position.y + used.size.y))
+		var dressed := func(tex: Texture2D) -> Texture2D: return Outfits.dress(tex, outfit)
+		if Frames.add_folder(f, anim[0], "%s%s/" % [_dir, anim[1]], 9.0, true, dressed) > 0:
+			_offsets[anim[0]] = Frames.anchor(f.get_frame_texture(anim[0], 0))
 	return f

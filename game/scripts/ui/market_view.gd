@@ -259,25 +259,10 @@ func _dress_woman() -> void:
 func _light_town(delta: float) -> void:
 	var hour := Game.day_time
 	var overcast: bool = Game.calendar.weather in ["cloudy", "rain"]
-	var look := SkyPalette.at(hour, overcast)
-	var paint := _gradient.material as ShaderMaterial
-	for key in ["zenith", "middle", "low", "glow"]:
-		paint.set_shader_parameter(key, look[key])
-	var sun := SkyPalette.sun_position(hour, 480.0, TOWN_HORIZON, 75.0)
-	_sun.visible = not is_nan(sun.x)
-	if _sun.visible:
-		_sun.position = sun.round()
-		var height := clampf((TOWN_HORIZON - sun.y) / 75.0, 0.0, 1.0)
-		_sun.modulate = Color(1.0, 0.72, 0.45).lerp(Color(1.0, 0.98, 0.9), height)
-		paint.set_shader_parameter("sun", sun)
-		paint.set_shader_parameter("glow_radius", lerpf(140.0, 80.0, height))
-	paint.set_shader_parameter("stars", Lighting.night_amount(hour))
 	_sky_time += delta
-	paint.set_shader_parameter("time", _sky_time)
+	SkyPalette.paint(_gradient.material as ShaderMaterial, _sun, _cloud_look, hour, overcast, 480.0, TOWN_HORIZON, 75.0, Vector2(140, 80), _sky_time)
 	if _banners:
 		_banners.queue_redraw()
-	_cloud_look.set_shader_parameter("light", look["light"])
-	_cloud_look.set_shader_parameter("shade", look["shade"])
 	var light := Lighting.color_at(hour)
 	_light.color = light.darkened(0.12) if overcast else light
 

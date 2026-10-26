@@ -29,14 +29,10 @@ func _ready() -> void:
 	if ResourceLoader.exists(ANIMALS + "fox/walk_east/frame_00.png"):
 		_fox = AnimatedSprite2D.new()
 		var f := SpriteFrames.new()
-		f.set_animation_speed("default", 10.0)
-		var i := 0
-		while ResourceLoader.exists(ANIMALS + "fox/walk_east/frame_%02d.png" % i):
-			f.add_frame("default", load(ANIMALS + "fox/walk_east/frame_%02d.png" % i))
-			i += 1
+		Frames.add_folder(f, "default", ANIMALS + "fox/walk_east/", 10.0)
 		_fox.sprite_frames = f
-		var used := f.get_frame_texture("default", 0).get_image().get_used_rect()
-		_fox.offset = Vector2(0, -(used.position.y + used.size.y) + f.get_frame_texture("default", 0).get_height() / 2.0)
+		var first := f.get_frame_texture("default", 0)
+		_fox.offset = Vector2(0, -Frames.feet_line(first) + first.get_height() / 2.0)
 		_fox.visible = false
 		add_child(_fox)
 	if ResourceLoader.exists(ANIMALS + "hoopoe/stand.png"):
