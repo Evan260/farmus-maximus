@@ -147,6 +147,7 @@ Comes out to cross the paths after rain.,Comes out to cross the paths after rain
 Common,Common
 Continue,Continue
 Cornelia,Cornelia
+Credits,Credits
 DEED,DEED
 Dairy,Dairy
 Darts low over the fields in summer and after rain.,Darts low over the fields in summer and after rain.
@@ -226,6 +227,7 @@ Floralia,Floralia
 Flour,Flour
 Flower planters,Flower planters
 Flowers nearby,Flowers nearby
+Font,Font
 For sale,For sale
 Fountain,Fountain
 Fruit is more often fine or excellent,Fruit is more often fine or excellent
@@ -309,8 +311,10 @@ Load from the storehouse,Load from the storehouse
 Loaded: %d of %d batches,Loaded: %d of %d batches
 Loading,Loading
 Lovely,Lovely
+Made by,Made by
 Made in the %s.,Made in the %s.
 Made in the workshops  %d,Made in the workshops  %d
+Made with the Godot Engine,Made with the Godot Engine
 Make a wish,Make a wish
 Make bath oil,Make bath oil
 Make cheese,Make cheese
@@ -330,6 +334,7 @@ Miller,Miller
 Minerva,Minerva
 More cuttings are sold at the market.,More cuttings are sold at the market.
 Morning mist over the fields,Morning mist over the fields
+Music,Music
 Music and sound files dropped into the game's audio folders are picked up by name.,Music and sound files dropped into the game's audio folders are picked up by name.
 "Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks.","Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks."
 "My dear heir,","My dear heir,"
@@ -469,6 +474,7 @@ Sly visitor,Sly visitor
 Snails,Snails
 Snow in summer,Snow in summer
 "Sometimes, at night, the two of them nap side by side.","Sometimes, at night, the two of them nap side by side."
+Sounds,Sounds
 Spot the fox,Spot the fox
 Spread manure when planting,Spread manure when planting
 Spread manure when planting: off,Spread manure when planting: off
@@ -619,6 +625,7 @@ Where the strip sits,Where the strip sits
 While you were away,While you were away
 White lavender,White lavender
 "White lavender, found by the dog or given by a grateful regular.","White lavender, found by the dog or given by a grateful regular."
+Who made the game,Who made the game
 Wine ages twice as fast and presses work faster,Wine ages twice as fast and presses work faster
 Wine press,Wine press
 Wine rested long enough to be excellent.,Wine rested long enough to be excellent.

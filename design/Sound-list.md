@@ -53,6 +53,8 @@ Each loops without a gap, so the end must join the start smoothly.
 
 The animal calls come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork, which is CC BY 4.0 and must be credited in the game's credits as shown.
 
+Every recording below is also named on the game's Credits screen, which reads `game/data/credits.json`; add a line there whenever a recording is added. A CC BY recording must be credited there in the form its licence asks.
+
 | Sound | Recording | Licence |
 |---|---|---|
 | `cluck` | [Chicken clucking](https://freesound.org/people/Breviceps/sounds/456803/) by Breviceps | CC0 |

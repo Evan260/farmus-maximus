@@ -14,6 +14,7 @@ const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 const UpgradesPanel := preload("res://scripts/ui/upgrades_panel.gd")
 const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
 const AchievementPopup := preload("res://scripts/ui/achievement_popup.gd")
+const CreditsPanel := preload("res://scripts/ui/credits_panel.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
 ## Lavender varieties share one icon, so each seed slot is tinted towards its flower colour.
@@ -47,6 +48,7 @@ var _toast: Label
 var _toast_tween: Tween
 var _toast_queue: Array = []
 var _achievements: Control
+var _credits: WindowPanel
 var _tip: Label
 var _debug: PanelContainer
 var _stats_panel: PanelContainer
@@ -114,6 +116,7 @@ func _ready() -> void:
 	_settings = _add_window(SettingsPanel.new())
 	_upgrades = _add_window(UpgradesPanel.new())
 	_companions = _add_window(CompanionsPanel.new())
+	_credits = _add_window(CreditsPanel.new())
 	add_to_group("hud")
 	_build_compact()
 	_build_toolbar()
@@ -261,7 +264,7 @@ func show_journal_entry(id: String) -> void:
 
 
 func open_window(name: String) -> void:
-	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades, "companions": _companions}.get(name)
+	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades, "companions": _companions, "credits": _credits}.get(name)
 	if w and not w.visible:
 		_open(w)
 

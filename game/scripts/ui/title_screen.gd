@@ -5,6 +5,7 @@ extends Control
 signal closed
 
 const FarmsPanel := preload("res://scripts/ui/farms_panel.gd")
+const CreditsPanel := preload("res://scripts/ui/credits_panel.gd")
 const LOGO := Color(0.99, 0.95, 0.86)
 const LOGO_SHADOW := Color(0.29, 0.18, 0.14)
 
@@ -13,6 +14,7 @@ var open_window: Callable
 var _menu: VBoxContainer
 var _card: PanelContainer
 var _farms: Node
+var _credits: Node
 
 
 func _ready() -> void:
@@ -49,6 +51,9 @@ func _ready() -> void:
 	add_child(_farms)
 	# The farm list takes the menu's place while it is open.
 	_farms.closed.connect(func(): _card.visible = true)
+	_credits = CreditsPanel.new()
+	add_child(_credits)
+	_credits.closed.connect(func(): _card.visible = true)
 	_show_menu()
 	UiKit.fade_in(self, 0.8)
 
@@ -67,6 +72,7 @@ func _show_menu() -> void:
 	if Saves.has_farm or Saves.free_slot() != 1:
 		UiKit.button(_menu, tr("Farms"), _open_farms)
 	UiKit.button(_menu, tr("Settings"), func(): open_window.call("settings"))
+	UiKit.button(_menu, tr("Credits"), func(): _card.visible = false; _credits.open())
 	UiKit.button(_menu, tr("Quit"), func(): Saves.save_game(); get_tree().quit())
 
 
