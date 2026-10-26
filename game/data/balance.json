@@ -387,10 +387,10 @@
 			"name": "Paved road",
 			"label": "Trader's trip, seconds",
 			"values": [
-				30,
-				22,
+				20,
 				15,
-				10
+				10,
+				7
 			],
 			"costs": [
 				300,
@@ -476,26 +476,26 @@
 				"name": "Bathhouse wing",
 				"sprite": "stage6",
 				"cost": {
-					"coins": 50000,
-					"stone": 18,
+					"coins": 33000,
+					"stone": 14,
 					"timber": 8,
 					"tiles": 10,
-					"provisions": 8
+					"provisions": 6
 				},
-				"build_seconds": 3600,
+				"build_seconds": 2700,
 				"unlocks": "Lavender oil becomes precious bath oil"
 			},
 			{
 				"name": "Grand estate",
 				"sprite": "stage7",
 				"cost": {
-					"coins": 120000,
-					"stone": 24,
+					"coins": 80000,
+					"stone": 18,
 					"timber": 10,
-					"tiles": 14,
-					"provisions": 12
+					"tiles": 10,
+					"provisions": 9
 				},
-				"build_seconds": 7200,
+				"build_seconds": 5400,
 				"unlocks": "Statues and mosaics"
 			}
 		],
@@ -1529,6 +1529,7 @@
 		"wet_seconds": 240,
 		"mist_chance": 0.5,
 		"aurora_chance": 0.07,
+		"aurora_sure_after_days": 30,
 		"dry_growth": 0.8,
 		"manure_growth": 1.25,
 		"festival_bonus": 1.5,

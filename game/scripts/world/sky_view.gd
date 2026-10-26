@@ -207,7 +207,9 @@ func _show_aurora(delta: float, night: float) -> void:
 	var evening: int = Game.calendar.day - (1 if Game.day_time < 12.0 else 0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = evening * 7717 + 13
-	var tonight := force_aurora or rng.randf() < float(Balance.get_value("calendar.aurora_chance", 0.07))
+	# Nobody should miss the lights by bad luck alone: after enough days without them, every clear night has them.
+	var overdue: bool = evening >= int(Balance.get_value("calendar.aurora_sure_after_days", 30)) and not Game.journal.has("sighting:aurora")
+	var tonight := force_aurora or overdue or rng.randf() < float(Balance.get_value("calendar.aurora_chance", 0.07))
 	var clear: bool = Game.calendar.weather == "sun"
 	var target := smoothstep(0.75, 1.0, night) if tonight and clear else 0.0
 	# Sleeping fast-forwards the night, and the lights with it, though never so fast that they flicker.

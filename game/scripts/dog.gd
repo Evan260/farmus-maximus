@@ -43,19 +43,27 @@ func _process(delta: float) -> void:
 		position.x = move_toward(position.x, _target_x, step)
 		if is_equal_approx(position.x, _target_x):
 			_choose_next()
-	elif _timer <= 0.0:
+	elif _timer <= 0.0 and _state != "getting_up":
 		_choose_next()
 
 
+## A sitting or sleeping dog gets up to greet whoever is petting it, then wags; a dog on its feet wags straight away.
 func pet() -> void:
-	# A sitting or sleeping dog stays put and enjoys it; only a dog already on its feet jumps up wagging.
-	if _state in ["sit_down", "sit", "lie_down", "sleep"]:
-		_timer = maxf(_timer, 5.0)
-	else:
-		_state = "happy"
-		_timer = 2.6
-		sprite.play("happy")
+	if _state in ["sit_down", "sit"]:
+		_state = "getting_up"
+		sprite.play_backwards("sit_down")
+	elif _state in ["lie_down", "sleep"]:
+		_state = "getting_up"
+		sprite.play_backwards("lie_down")
+	elif _state != "getting_up":
+		_wag()
 	petted.emit()
+
+
+func _wag() -> void:
+	_state = "happy"
+	_timer = 2.6
+	sprite.play("happy")
 
 
 func is_asleep() -> bool:
@@ -94,6 +102,9 @@ func _sit() -> void:
 
 
 func _on_animation_finished() -> void:
+	if _state == "getting_up":
+		_wag()
+		return
 	match sprite.animation:
 		"sit_down":
 			_state = "sit"

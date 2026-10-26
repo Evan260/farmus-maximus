@@ -28,7 +28,13 @@ func _run() -> void:
 		_milestones()
 	print("storage ", game.storage, " cap ", game.storage_capacity(), " sellable ", game.sellable_goods(), " cart ", game.cart, " keep ", game.reserved_amounts())
 	print("after %.1f hours: %d sestertii, villa stage %d, %d buildings working, %d helpers, journal %d%%" % [hours, game.coins, game.villa_stage, game.working_buildings(), game.helpers.size(), int(game.journal.share() * 100)])
+	_report()
 	quit()
+
+
+## Bots built on this one add their own summary here.
+func _report() -> void:
+	pass
 
 
 func _note(id: String, text: String) -> void:
