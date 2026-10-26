@@ -1769,8 +1769,8 @@ func _donkey_walk_home() -> void:
 ## its axle, and comes level again when the donkey is put back in.
 func _tip_cart(delta: float) -> void:
 	var axle := _wheel.position
-	var reach := 47.0 + _cart_grow.x
-	var target := atan(8.0 / reach) if _donkey_night != "" else 0.0
+	# The four-wheeled wagon stands on its own wheels, so only the two-wheeled carts tip.
+	var target := _rest_angle(44.0 + _cart_grow.x) if _donkey_night != "" and not _front_wheel.visible else 0.0
 	_cart_tilt = move_toward(_cart_tilt, target, delta * 0.25)
 	for sprite in [_cart, _cart_back]:
 		sprite.rotation = _cart_tilt
@@ -1779,7 +1779,14 @@ func _tip_cart(delta: float) -> void:
 	_cart_load.position = _cart.position + axle - axle.rotated(_cart_tilt)
 	if not _stone_parts.is_empty():
 		var rest: Vector2 = _stone_parts[0].get_meta("rest")
-		_tip_parts(_stone_parts, rest + Vector2(15, 23), atan(8.0 / 47.0) if _stone_night != "" else 0.0, delta)
+		_tip_parts(_stone_parts, rest + Vector2(15, 23), _rest_angle(44.0) if _stone_night != "" else 0.0, delta)
+
+
+## How far a cart tips forward before its shaft ends touch the ground: the shaft ends are reach pixels ahead of the
+## axle and 4 above it, and the ground is 12 below the axle, where the wheel stands.
+func _rest_angle(reach: float) -> float:
+	var tip := Vector2(reach, -4.0)
+	return asin(12.0 / tip.length()) - tip.angle()
 
 
 ## Tips a cart made of separate pictures about its axle, easing towards the angle; each part turns about the axle from

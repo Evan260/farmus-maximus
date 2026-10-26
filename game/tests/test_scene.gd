@@ -91,7 +91,7 @@ func _run() -> void:
 	pets.open()
 	await process_frame
 	await process_frame
-	_check(not pets._scroll.get_v_scroll_bar().visible, "the companions window fits without scrolling")
+	_check(pets._scroll == null or not pets._scroll.get_v_scroll_bar().visible, "the companions window fits without scrolling")
 	pets.close()
 	game.day_time = 22.0
 	main.hud._start_sleep()

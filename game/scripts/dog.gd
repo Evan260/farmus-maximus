@@ -69,12 +69,17 @@ func contains(point: Vector2) -> bool:
 func _choose_next() -> void:
 	var sleepy := Lighting.night_amount(Game.day_time)
 	var r := randf()
+	# A dog already sitting or lying down stays put rather than getting up only to settle again.
 	if r < 0.2 + sleepy * 0.6:
-		_state = "lie_down"
 		_timer = randf_range(20.0, 45.0)
-		sprite.play("lie_down")
+		if _state != "sleep":
+			_state = "lie_down"
+			sprite.play("lie_down")
 	elif r < 0.55 + sleepy * 0.3:
-		_sit()
+		if _state == "sit":
+			_timer = randf_range(8.0, 20.0)
+		else:
+			_sit()
 	else:
 		_state = "walk"
 		_target_x = clampf(position.x + randf_range(-140.0, 140.0), min_x, max_x)
@@ -104,8 +109,8 @@ func _build_frames() -> SpriteFrames:
 	_add(f, "walk", "walk_east", range(1, 9), 9.0, true)
 	_add(f, "sit_down", "sit_east", range(0, 3), 8.0, false)
 	_add(f, "sit", "sit_east", range(3, 9), 4.0, true)
-	_add(f, "lie_down", "sleep_east", range(0, 3), 6.0, false)
-	_add(f, "sleep", "sleep_east", range(3, 9), 3.0, true)
+	_add(f, "lie_down", "sleep_east", range(0, 4), 6.0, false)
+	_add(f, "sleep", "sleep_east", range(4, 9), 3.0, true)
 	_add(f, "happy", "happy_east", range(1, 9), 12.0, true)
 	return f
 
