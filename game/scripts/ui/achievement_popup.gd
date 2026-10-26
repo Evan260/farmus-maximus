@@ -40,20 +40,31 @@ func _next() -> void:
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	_card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	add_child(_card)
+	# A little snugger than a window's frame, since the card is a passing note.
+	var frame := _card.get_theme_stylebox("panel").duplicate() as StyleBox
+	for side in [SIDE_LEFT, SIDE_RIGHT]:
+		frame.set_content_margin(side, 4)
+	# The font leaves room above its letters but none below, so the bottom gets the extra pixel.
+	frame.set_content_margin(SIDE_TOP, 3)
+	frame.set_content_margin(SIDE_BOTTOM, 5)
+	_card.add_theme_stylebox_override("panel", frame)
 	var r := UiKit.row(_card)
-	r.add_theme_constant_override("separation", 5)
+	r.add_theme_constant_override("separation", 4)
 	var wreath := TextureRect.new()
-	wreath.texture = LAUREL
-	wreath.custom_minimum_size = Vector2(32, 32)
+	var cropped := AtlasTexture.new()
+	cropped.atlas = LAUREL
+	cropped.region = Rect2(LAUREL.get_image().get_used_rect())
+	wreath.texture = cropped
+	wreath.custom_minimum_size = cropped.region.size
 	wreath.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	wreath.pivot_offset = Vector2(16, 16)
+	wreath.pivot_offset = (cropped.region.size / 2.0).round()
 	wreath.scale = Vector2(0.3, 0.3)
 	r.add_child(wreath)
 	var words := UiKit.column(r)
-	words.add_theme_constant_override("separation", 1)
+	words.add_theme_constant_override("separation", 0)
 	UiKit.label(words, tr("Achievement")).add_theme_color_override("font_color", UiKit.HEADING)
 	UiKit.label(words, tr(String(a["name"])))
-	UiKit.para(words, tr(String(a.get("desc", ""))), 150).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(words, tr(String(a.get("desc", ""))), 140).add_theme_color_override("font_color", UiKit.FADED)
 	var card := _card
 	card.position = Vector2(size.x, size.y)
 	# A wrapped description only knows its height once laid out, so the card is measured a frame later, still out of sight.
