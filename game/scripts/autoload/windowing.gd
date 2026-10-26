@@ -102,25 +102,28 @@ func toggle_strip() -> void:
 
 func set_transparent(on: bool) -> void:
 	transparent = on
-	_apply()
-	_save()
+	_strip_changed()
 
 
 func cycle_size() -> void:
 	size_index = (size_index + 1) % SIZES.size()
-	_apply()
-	_save()
+	_strip_changed()
 
 
 func toggle_dock() -> void:
 	dock = "top" if dock == "bottom" else "bottom"
-	_apply()
-	_save()
+	_strip_changed()
 
 
 func set_focus_mode(on: bool) -> void:
 	focus_mode = on
-	_apply()
+	_strip_changed()
+
+
+## The strip's own settings only change the window while it is the strip; the full window is left exactly as it is.
+func _strip_changed() -> void:
+	if strip:
+		_apply()
 	_save()
 
 
@@ -161,13 +164,15 @@ func _apply() -> void:
 		win.always_on_top = false
 		win.borderless = false
 		get_viewport().transparent_bg = false
-		var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
-		scale = clampi(mini((usable.size.x - 80) / BASE.x, (usable.size.y - 80) / BASE.y), 1, 6)
-		win.size = BASE * scale
-		for arg in OS.get_cmdline_user_args():
-			if arg.begins_with("--window="):
-				win.size = Vector2i(int(arg.get_slice("=", 1).get_slice("x", 0)), int(arg.get_slice("x", 1)))
-		win.position = usable.position + (usable.size - win.size) / 2
+		# A maximized or fullscreen window belongs to Windows, which would keep its frame but draw the game at the new size.
+		if win.mode == Window.MODE_WINDOWED:
+			var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
+			scale = clampi(mini((usable.size.x - 80) / BASE.x, (usable.size.y - 80) / BASE.y), 1, 6)
+			win.size = BASE * scale
+			for arg in OS.get_cmdline_user_args():
+				if arg.begins_with("--window="):
+					win.size = Vector2i(int(arg.get_slice("=", 1).get_slice("x", 0)), int(arg.get_slice("x", 1)))
+			win.position = usable.position + (usable.size - win.size) / 2
 		if _mode_before_strip != Window.MODE_WINDOWED:
 			win.mode = _mode_before_strip
 			_mode_before_strip = Window.MODE_WINDOWED
