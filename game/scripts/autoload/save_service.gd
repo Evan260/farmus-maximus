@@ -21,17 +21,21 @@ var _timer := 0.0
 
 
 func _ready() -> void:
-	# Read-only runs load the real farm for checking without ever writing to it.
-	if "--readonly" in OS.get_cmdline_user_args():
-		enabled = false
-	_migrate_from_old_name()
-	_migrate_to_slots()
-	slot = clampi(int(_farms().get("last", 1)), 1, SLOTS)
+	var args := OS.get_cmdline_user_args()
 	# A "new farm" run starts from nothing and never touches the real save.
-	if "--new-farm" in OS.get_cmdline_user_args():
+	if "--new-farm" in args:
 		enabled = false
 		Game.new_game()
 		return
+	# Read-only runs load the real farm for checking without ever writing to it.
+	if "--readonly" in args:
+		enabled = false
+	# Older saves are brought over only on the very first start; once farms.json exists a deleted farm stays deleted.
+	if enabled and not FileAccess.file_exists(FARMS_PATH):
+		_migrate_from_old_name()
+		_migrate_to_slots()
+		_remember_slot()
+	slot = clampi(int(_farms().get("last", 1)), 1, SLOTS)
 	load_game(slot)
 
 
