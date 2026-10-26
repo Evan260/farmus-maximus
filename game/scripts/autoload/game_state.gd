@@ -1373,7 +1373,8 @@ func _ready_plot_for(info: Dictionary) -> int:
 
 ## The trader takes the cart out whenever the storehouse holds enough to make the trip worthwhile.
 func _trader_check() -> void:
-	if cart["away"]:
+	# The donkey spends the night in the barn, so the trader waits for morning.
+	if cart["away"] or is_night():
 		return
 	var sellable := 0
 	for n in sellable_goods().values():

@@ -114,6 +114,11 @@ var _cart_x := 0.0
 var _harness: Node2D
 var _cart_returning := false
 var _donkey: AnimatedSprite2D
+## Where the donkey is on its own between dusk and dawn: "" while it is hitched to the cart, "out" while it walks to
+## the barn, "barn" for the night, and "back" while it comes home in the morning.
+var _donkey_night := ""
+var _donkey_tween: Tween
+var _donkey_first_look := true
 var _rig_tween: Tween
 var _storehouse: Sprite2D
 var _glow_layer: CanvasLayer
@@ -374,7 +379,7 @@ func _open_panel(which: String) -> void:
 func _ride_to_market() -> void:
 	if _riding:
 		return
-	if Settings.reduced_motion or Windowing.strip:
+	if Settings.reduced_motion or Windowing.strip or _donkey_night != "":
 		go_to_town()
 		return
 	_riding = true
@@ -425,6 +430,7 @@ func _process(delta: float) -> void:
 	var keys := 0.0 if typing else Input.get_axis("pan_left", "pan_right") + Input.get_joy_axis(0, JOY_AXIS_RIGHT_X) * float(absf(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)) > 0.2)
 	if keys != 0.0 and not market.visible:
 		_pan_by(keys * PAN_SPEED * delta)
+	_stable_donkey()
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	_cart_load.position = _cart.position
 	_cart_back.position = _cart.position
@@ -663,6 +669,8 @@ func _load_demo_state() -> void:
 			Game.day_time = float(arg.trim_prefix("--hour="))
 		elif arg.begins_with("--villa="):
 			Game.villa_stage = int(arg.trim_prefix("--villa="))
+		elif arg == "--aurora":
+			(func() -> void: _sky_view.force_aurora = true).call_deferred()
 		elif arg == "--rainbow":
 			(func() -> void: _sky_view.fx.show_rainbow(40.0)).call_deferred()
 		elif arg.begins_with("--weather="):
@@ -1413,7 +1421,8 @@ func _plant_tops() -> Array:
 
 
 func _cart_rect() -> Rect2:
-	return Rect2(_cart.position, Vector2(_donkey.position.x + 24 - _cart.position.x, _cart.region_rect.size.y))
+	var reach := _donkey.position.x + 24 - _cart.position.x if _donkey_night == "" else _cart.region_rect.size.x
+	return Rect2(_cart.position, Vector2(reach, _cart.region_rect.size.y))
 
 
 func _on_harvested(plot_index: int, amount: int) -> void:
@@ -1495,6 +1504,16 @@ func _on_weather_changed(weather: String, before: String) -> void:
 
 
 func _on_cart_left(_items: int, value: int) -> void:
+	# Sent off while the donkey is stabled, it is fetched and put in the shafts straight away.
+	if _donkey_night != "":
+		if _donkey_tween:
+			_donkey_tween.kill()
+		_donkey_night = ""
+		_donkey.visible = true
+		_donkey.modulate.a = 1.0
+		_donkey.position.y = RIG_BASE
+		_donkey.speed_scale = 1.0
+		_harness.visible = true
 	Sfx.play("cart")
 	hud.toast(tr("The cart heads to market with %d sestertii of goods") % value)
 	_face_rig(false)
@@ -1568,6 +1587,70 @@ func _park_rig() -> void:
 	_cart.position.x = CART_HOME_X
 	_donkey.position = Vector2(_harness_x(CART_HOME_X, false), RIG_BASE)
 	_donkey.play("stand")
+
+
+## At nightfall, once the cart is home, the donkey is unhitched and walks down the road to the barn in the pasture,
+## turns in at its door and goes inside; at daybreak it comes out, walks back and is put in the shafts again.
+func _stable_donkey() -> void:
+	var night := Game.is_night()
+	var with_cart: bool = Game.cart["away"] or _cart_returning or _riding
+	if _donkey_night == "" and night and not with_cart:
+		# A farm opened at night finds the donkey already stabled rather than watching it walk the whole way.
+		if _donkey_first_look:
+			_donkey_night = "barn"
+			_donkey.visible = false
+			_harness.visible = false
+		else:
+			_donkey_walk_to_barn()
+	elif _donkey_night == "barn" and not night:
+		_donkey_walk_home()
+	_donkey_first_look = false
+
+
+func _donkey_walk_to_barn() -> void:
+	_donkey_night = "out"
+	_harness.visible = false
+	_dust(Vector2(_donkey.position.x, RIG_BASE), 6)
+	var door := Vector2((Pasture.BARN_LEFT + Pasture.BARN_RIGHT) / 2.0, 252.0)
+	_donkey.flip_h = false
+	_donkey_stroll(true)
+	_donkey_tween = create_tween()
+	_donkey_tween.tween_property(_donkey, "position:x", door.x, absf(door.x - _donkey.position.x) / 26.0)
+	_donkey_tween.tween_property(_donkey, "position:y", door.y, (RIG_BASE - door.y) / 14.0)
+	_donkey_tween.tween_callback(_donkey.play.bind("stand"))
+	_donkey_tween.tween_property(_donkey, "modulate:a", 0.0, 0.8)
+	_donkey_tween.tween_callback(func():
+		_donkey_night = "barn"
+		_donkey.visible = false)
+
+
+func _donkey_walk_home() -> void:
+	_donkey_night = "back"
+	var home := Vector2(_harness_x(CART_HOME_X, false), RIG_BASE)
+	_donkey.position = Vector2((Pasture.BARN_LEFT + Pasture.BARN_RIGHT) / 2.0, 252.0)
+	_donkey.modulate.a = 0.0
+	_donkey.visible = true
+	_donkey.flip_h = true
+	_donkey.play("stand")
+	_donkey_tween = create_tween()
+	_donkey_tween.tween_property(_donkey, "modulate:a", 1.0, 0.8)
+	_donkey_tween.tween_callback(_donkey_stroll.bind(true))
+	_donkey_tween.tween_property(_donkey, "position:y", float(RIG_BASE), (RIG_BASE - 252.0) / 14.0)
+	_donkey_tween.tween_property(_donkey, "position:x", home.x, absf(_donkey.position.x - home.x) / 26.0)
+	# Back at the cart it turns round to face the road, and the harness goes on again.
+	_donkey_tween.tween_callback(func():
+		_donkey_stroll(false)
+		_donkey_night = ""
+		_harness.visible = true
+		if not Game.cart["away"] and not _cart_returning:
+			_park_rig())
+
+
+## Walks the donkey at an amble on its own, its legs slowed to match, or puts it back to the cart's pace.
+func _donkey_stroll(walking: bool) -> void:
+	_donkey.play("walk" if walking else "stand")
+	var pace := Walker.natural_pace(_donkey.sprite_frames, "walk")
+	_donkey.speed_scale = 26.0 / pace if walking and pace > 0.0 else 1.0
 
 
 ## Where the donkey stands so the shaft tips reach its harness: going out the shafts point right, coming home the cart is turned round.

@@ -393,10 +393,12 @@ func _drawn(id: String) -> Texture2D:
 		"sighting:shooting_star": ["......W", "....wW.", "..ww...", "ww....."],
 		"sighting:rainbow": ["..RRRR..", ".RooooR.", "RoyyyyoR", "oy....yo", "y......y"],
 		"sighting:mist": ["WWW.WWWW", "........", ".WWWW.WW", "........", "WW.WWWWW"],
+		"sighting:aurora": ["v...vv.v", "vt.vttvt", "tA.tAAtA", "A..A..A.", "........"],
 	}
 	var colours := {"W": Color(0.97, 0.96, 0.93), "Y": Color(0.95, 0.76, 0.2), "K": Color(0.2, 0.15, 0.12), "P": Color(0.7, 0.55, 0.88),
 		"g": Color(0.8, 1.0, 0.5, 0.45), "G": Color(0.45, 0.6, 0.3), "T": Color(0.2, 0.55, 0.65), "B": Color(0.45, 0.3, 0.2), "b": Color(0.62, 0.45, 0.3),
-		"w": Color(1, 1, 0.85, 0.6), "R": Color(0.85, 0.3, 0.3), "o": Color(0.95, 0.6, 0.25), "y": Color(0.95, 0.88, 0.35)}
+		"w": Color(1, 1, 0.85, 0.6), "R": Color(0.85, 0.3, 0.3), "o": Color(0.95, 0.6, 0.25), "y": Color(0.95, 0.88, 0.35),
+		"A": Color(0.35, 0.95, 0.6), "t": Color(0.25, 0.7, 0.8), "v": Color(0.6, 0.4, 0.9, 0.7)}
 	colours["G"] = Color(0.75, 1.0, 0.45) if id == "animal:fireflies" else colours["G"]
 	var rows: Array = art.get(id, ["KKK", "K.K", "KKK"])
 	var img := Image.create(rows[0].length(), rows.size(), false, Image.FORMAT_RGBA8)

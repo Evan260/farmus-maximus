@@ -1514,6 +1514,7 @@
 		],
 		"wet_seconds": 240,
 		"mist_chance": 0.5,
+		"aurora_chance": 0.07,
 		"dry_growth": 0.8,
 		"manure_growth": 1.25,
 		"festival_bonus": 1.5,
@@ -1788,7 +1789,8 @@
 			"white_butterfly": "The white butterfly",
 			"cat_and_dog": "The cat and dog asleep together",
 			"hoopoe": "The hoopoe",
-			"mist": "Morning mist over the fields"
+			"mist": "Morning mist over the fields",
+			"aurora": "The northern lights"
 		},
 		"milestones": {
 			"all_zones": "Every zone of the estate is yours",
@@ -1825,6 +1827,7 @@
 			"sighting:cat_and_dog": "Sometimes, at night, the two of them nap side by side.",
 			"sighting:hoopoe": "The hoopoe lands in the fields for a moment, then is gone.",
 			"sighting:mist": "Early mornings sometimes bring mist over the fields.",
+			"sighting:aurora": "On a rare clear night, curtains of green and violet light ripple over the hills.",
 			"milestone:all_zones": "Every field, grove and pasture is yours.",
 			"milestone:all_buildings": "Every ruin on the estate is working again.",
 			"milestone:grand_estate": "The villa is restored to its full glory.",

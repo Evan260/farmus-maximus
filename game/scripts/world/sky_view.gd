@@ -6,6 +6,7 @@ const SkyFx := preload("res://scripts/world/sky_fx.gd")
 const WIDTH := 768.0
 const GRADIENT := preload("res://assets/shaders/sky_gradient.gdshader")
 const CLOUD_TINT := preload("res://assets/shaders/cloud_tint.gdshader")
+const AURORA := preload("res://assets/shaders/aurora.gdshader")
 const CLOUDS := "res://assets/backgrounds/sky_clouds/"
 ## The row where the sky meets the distant hills.
 const HORIZON := 205.0
@@ -31,6 +32,11 @@ var _moon_glow: Sprite2D
 var _moon_phases: Array[Texture2D] = []
 var _moon_phase := -1
 var _t := 0.0
+var _aurora: Sprite2D
+## How strongly the northern lights show right now, easing in and out.
+var _aurora_amount := 0.0
+## Set for screenshots: the lights show tonight whatever the dice say.
+var force_aurora := false
 
 
 func _ready() -> void:
@@ -46,6 +52,18 @@ func _ready() -> void:
 	paint.set_shader_parameter("horizon", HORIZON)
 	_gradient.material = paint
 	add_child(_gradient)
+	_aurora = Sprite2D.new()
+	_aurora.texture = _gradient.texture
+	_aurora.centered = false
+	_aurora.position = Vector2(0, -120)
+	_aurora.scale = Vector2(WIDTH * 2, 120 + HORIZON)
+	var lights := ShaderMaterial.new()
+	lights.shader = AURORA
+	lights.set_shader_parameter("area", _aurora.scale)
+	lights.set_shader_parameter("origin", _aurora.position)
+	_aurora.material = lights
+	_aurora.visible = false
+	add_child(_aurora)
 	_sun = Sprite2D.new()
 	_sun.texture = _disc(9)
 	add_child(_sun)
@@ -153,6 +171,26 @@ func _process(delta: float) -> void:
 		var shown := float(c["alpha"]) if overcast or not c["grey_only"] else 0.0
 		s.modulate.a = move_toward(s.modulate.a, shown, delta * 0.2)
 	_place_moon()
+	_show_aurora(delta, night)
+
+
+## The northern lights are rare this far south: on about one clear night in fourteen they ripple over the hills for
+## the darkest hours, fading in after dusk and away before dawn.
+func _show_aurora(delta: float, night: float) -> void:
+	var evening: int = Game.calendar.day - (1 if Game.day_time < 12.0 else 0)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = evening * 7717 + 13
+	var tonight := force_aurora or rng.randf() < float(Balance.get_value("calendar.aurora_chance", 0.07))
+	var clear: bool = Game.calendar.weather == "sun"
+	var target := smoothstep(0.75, 1.0, night) if tonight and clear else 0.0
+	_aurora_amount = target if force_aurora else move_toward(_aurora_amount, target, delta / 20.0)
+	_aurora.visible = _aurora_amount > 0.01
+	if _aurora.visible:
+		var lights := _aurora.material as ShaderMaterial
+		lights.set_shader_parameter("amount", _aurora_amount)
+		lights.set_shader_parameter("motion", 0.3 if Settings.reduced_motion else 1.0)
+		if _aurora_amount > 0.5 and sky_visible.call():
+			Game.discover("sighting:aurora")
 
 
 ## The moon rises on the left at dusk, climbs in an arc and sets on the right at dawn, like the real one seen facing south.
