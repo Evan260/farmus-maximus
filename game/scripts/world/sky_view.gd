@@ -19,6 +19,8 @@ const MOON_DARK := Color(0.55, 0.57, 0.72, 0.13)
 
 ## Supplied by the scene: whether the sky can be seen, which it cannot in the transparent desktop strip.
 var sky_visible: Callable = func() -> bool: return true
+## Rainbows and shooting stars.
+var fx: Node2D
 var _gradient: Sprite2D
 var _sun: Sprite2D
 var _night: Node2D
@@ -59,7 +61,7 @@ func _ready() -> void:
 	_cloud_look = ShaderMaterial.new()
 	_cloud_look.shader = CLOUD_TINT
 	_scatter_clouds()
-	var fx := SkyFx.new()
+	fx = SkyFx.new()
 	fx.sky_visible = sky_visible
 	add_child(fx)
 

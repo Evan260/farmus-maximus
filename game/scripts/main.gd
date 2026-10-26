@@ -179,7 +179,6 @@ func _ready() -> void:
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_villa_scaffold = Scaffold.new()
-	_villa_scaffold.ladders = Balance.get_value("villa.ladders", [])
 	_villa_scaffold.visible = false
 	world.add_child(_villa_scaffold)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
@@ -352,8 +351,8 @@ func _ride_to_market() -> void:
 	Sfx.play("cart")
 	_face_rig(false)
 	_donkey.play("walk")
-	_move_rig(_cart.position.x + 130.0, 130.0 / 90.0)
-	await get_tree().create_timer(1.1).timeout
+	_move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
+	await get_tree().create_timer(2.1).timeout
 	go_to_town()
 	_riding = false
 
@@ -506,7 +505,7 @@ func _sync_builders() -> void:
 		sites["project_" + id] = {"rect": _project_site(String(id)), "ladders": [], "left": left}
 	if Game.villa_build["active"]:
 		var r := _villa_rect()
-		var ladders: Array = Balance.get_value("villa.ladders", []).map(func(x): return r.position.x + float(x))
+		var ladders: Array = _villa_ladders().map(func(x): return r.position.x + x)
 		var left := func() -> float: return float(Game.villa_build["time_left"])
 		sites["villa_a"] = {"rect": r, "ladders": ladders, "left": left}
 		sites["villa_b"] = {"rect": r, "ladders": ladders, "left": left}
@@ -622,6 +621,8 @@ func _load_demo_state() -> void:
 			Game.day_time = float(arg.trim_prefix("--hour="))
 		elif arg.begins_with("--villa="):
 			Game.villa_stage = int(arg.trim_prefix("--villa="))
+		elif arg == "--rainbow":
+			(func() -> void: _sky_view.fx.show_rainbow(40.0)).call_deferred()
 		elif arg.begins_with("--weather="):
 			Game.calendar.weather = arg.trim_prefix("--weather=")
 			Game.calendar.weather_left = 9999.0
@@ -1552,6 +1553,13 @@ func _draw_villa_overlay() -> void:
 	_villa_outline.draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(roundf(30.0 * fill), 1)), Color(0.98, 0.84, 0.4))
 
 
+## Where the farmhouse's ladders stand, in pixels from its left edge; they are set as shares of its width, since each
+## stage of the farmhouse is drawn a different size.
+func _villa_ladders() -> Array:
+	var width := _villa_rect().size.x
+	return Balance.get_value("villa.ladders", []).map(func(share): return roundf(width * float(share)))
+
+
 func _place_villa() -> void:
 	var tex := _villa_texture()
 	_villa.texture = tex
@@ -1563,6 +1571,7 @@ func _place_villa() -> void:
 	_make_windows(tex, used)
 	if _villa_scaffold:
 		_villa_scaffold.rect = _villa_rect()
+		_villa_scaffold.ladders = _villa_ladders()
 		_villa_scaffold.visible = Game.villa_build["active"] or _villa_scaffold.share > 0.0 and _villa_scaffold.visible
 		_villa_scaffold.queue_redraw()
 	# Storks only nest on a well-kept roof, so they arrive with the peristyle garden.
