@@ -4,7 +4,13 @@ extends PanelContainer
 signal closed
 
 var body: VBoxContainer
+## Above the body and outside its scrolling, for tabs that should stay put while the page under them scrolls.
+var top: VBoxContainer
 var _title: Label
+var _col: VBoxContainer
+var _scroll: ScrollContainer
+## Set when the next rebuild shows a different page, such as another tab, so it starts from the top.
+var _reset_scroll := false
 var _refresh_timer := 0.0
 var _signature := "-"
 ## When set, the window keeps this size whatever it shows, so switching tabs never makes it jump.
@@ -12,17 +18,27 @@ var fixed_size := Vector2.ZERO
 
 
 func _init(title := "") -> void:
-	var col := VBoxContainer.new()
-	add_child(col)
-	var head := UiKit.row(col)
+	_col = VBoxContainer.new()
+	add_child(_col)
+	var head := UiKit.row(_col)
 	_title = UiKit.label(head, title)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	UiKit.close_button(head, close)
-	body = UiKit.column(col)
+	top = UiKit.column(_col)
+	body = UiKit.column(_col)
 	visible = false
 
 
 func _ready() -> void:
+	if fixed_size != Vector2.ZERO:
+		# A page longer than the window scrolls inside it, so the window is the same size on every tab.
+		_scroll = ScrollContainer.new()
+		_scroll.custom_minimum_size = fixed_size
+		_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		_col.remove_child(body)
+		_col.add_child(_scroll)
+		_scroll.add_child(body)
+		body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	grow_horizontal = Control.GROW_DIRECTION_BOTH
 	grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -35,6 +51,13 @@ func set_title(text: String) -> void:
 func open() -> void:
 	visible = true
 	_signature = ""
+	_reset_scroll = true
+	refresh()
+
+
+## Rebuilds straight away to show another tab or page, starting it from the top.
+func show_page() -> void:
+	_reset_scroll = true
 	refresh()
 
 
@@ -59,11 +82,35 @@ func refresh() -> void:
 		tick()
 		return
 	_signature = sig
+	var scrolled: Array = [] if _reset_scroll else _scroll_positions()
+	_reset_scroll = false
+	UiKit.clear(top)
 	UiKit.clear(body)
-	body.custom_minimum_size = fixed_size
 	build()
 	tick()
+	if scrolled.is_empty():
+		for s in _scrolls():
+			s.scroll_vertical = 0
+	else:
+		_restore_scroll.call_deferred(scrolled)
 	UiKit.pad_focus.call_deferred(self)
+
+
+func _scrolls() -> Array[Node]:
+	return find_children("*", "ScrollContainer", true, false)
+
+
+func _scroll_positions() -> Array:
+	return _scrolls().map(func(s): return s.scroll_vertical)
+
+
+## A rebuilt window keeps its place in every list, once the new lists are laid out long enough to scroll that far.
+func _restore_scroll(values: Array) -> void:
+	for pass_ in 2:
+		var scrolls := _scrolls()
+		for i in mini(values.size(), scrolls.size()):
+			scrolls[i].scroll_vertical = values[i]
+		await get_tree().process_frame
 
 
 ## A summary of the state this window shows; when it changes, the window is rebuilt.

@@ -19,6 +19,8 @@ var _offsets := {}
 
 
 func _ready() -> void:
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	var shadow := Sprite2D.new()
 	shadow.texture = Lighting.ellipse_texture(14, 3, Color(0.16, 0.11, 0.12, 0.3))
 	shadow.centered = false

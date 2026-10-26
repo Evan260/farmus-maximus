@@ -7,7 +7,7 @@ var _waiting_for := ""
 
 func _init() -> void:
 	super("Settings")
-	fixed_size = Vector2(250, 190)
+	fixed_size = Vector2(264, 190)
 
 
 func signature() -> String:
@@ -17,9 +17,9 @@ func signature() -> String:
 
 
 func build() -> void:
-	var tabs := UiKit.row(body)
+	var tabs := UiKit.row(top)
 	for t in ["Sound", "Display", "Play", "Keys"]:
-		var b := UiKit.button(tabs, tr(t), func(): tab = t; refresh())
+		var b := UiKit.button(tabs, tr(t), func(): tab = t; show_page())
 		b.toggle_mode = true
 		b.button_pressed = t == tab
 	match tab:

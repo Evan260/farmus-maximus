@@ -19,6 +19,8 @@ var _target_x := 0.0
 
 
 func _ready() -> void:
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	_shadow = Sprite2D.new()
 	_shadow.texture = Lighting.ellipse_texture(26, 5, Color(0.16, 0.11, 0.12, 0.3))
 	_shadow.position = Vector2(0, -1)

@@ -94,10 +94,11 @@ var _windows_night := -1
 var _hammer_timer := 0.0
 var _camera: Camera2D
 var _sky_layer: CanvasLayer
-var _zone_shade: Node2D
 var _helpers := {}
 ## Builders at work, by the site they are working on.
 var _builders := {}
+## Weeds and bushes grown up around each building still in ruins, by building.
+var _overgrowth := {}
 var _traveller_timer := 40.0
 var _dog_dig_check := 5.0
 var _follow_timer := 0.0
@@ -170,15 +171,13 @@ func _ready() -> void:
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
 	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(HOME + 198, 0), true, 236)
 	_build_buildings()
+	_sync_overgrowth.call_deferred()
 	var decor := DecorView.new()
 	decor.glow_layer = _glow_layer
 	world.add_child(decor)
 	_add_texture(load(BG + "ground.png"), Vector2(-40, 0))
 	var pasture := Pasture.new()
 	world.add_child(pasture)
-	_zone_shade = Node2D.new()
-	_zone_shade.draw.connect(_draw_zone_shade)
-	world.add_child(_zone_shade)
 	var ground_fx := WeatherFx.new()
 	ground_fx.plant_tops = _plant_tops
 	world.add_child(ground_fx)
@@ -394,6 +393,7 @@ func _busiest_zone() -> String:
 func _update_life(delta: float) -> void:
 	if Engine.get_process_frames() % 30 == 0:
 		_sync_builders()
+		_sync_overgrowth()
 	_dog_dig_check -= delta
 	if _dog_dig_check <= 0.0:
 		_dog_dig_check = 5.0
@@ -614,6 +614,43 @@ func _build_buildings() -> void:
 		building_views.append(v)
 
 
+## A building nobody has started to repair stands in weeds, long grass and brambles; they are cleared when work begins.
+func _sync_overgrowth() -> void:
+	for v in building_views:
+		var wild := String(Game.buildings[v.id]["state"]) in ["ruin", "owned"]
+		if wild and not _overgrowth.has(v.id):
+			_overgrowth[v.id] = _grow_wild(v)
+		elif not wild and _overgrowth.has(v.id):
+			var node: Node2D = _overgrowth[v.id]
+			_overgrowth.erase(v.id)
+			var fade := node.create_tween()
+			fade.tween_property(node, "modulate:a", 0.0, 1.5)
+			fade.tween_callback(node.queue_free)
+
+
+func _grow_wild(v: Node2D) -> Node2D:
+	var node := Node2D.new()
+	world.add_child(node)
+	world.move_child(node, v.get_index() + 1)
+	var r: Rect2 = v.world_rect()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(v.id)
+	var kinds := ["grass", "grass", "weeds", "weeds", "bramble", "thistle", "bush"]
+	var x := r.position.x - 10.0
+	while x < r.end.x + 6.0:
+		var tex: Texture2D = load("res://assets/sprites/wild/%s.png" % kinds[rng.randi() % kinds.size()])
+		var used := tex.get_image().get_used_rect()
+		var plant := Sprite2D.new()
+		plant.texture = tex
+		plant.centered = false
+		plant.flip_h = rng.randf() < 0.5
+		plant.position = Vector2(roundf(x - used.position.x), roundf(r.end.y + rng.randi_range(0, 3) - used.end.y))
+		node.add_child(plant)
+		_sway(plant)
+		x += used.size.x * rng.randf_range(0.6, 1.0)
+	return node
+
+
 func _build_signs() -> void:
 	for z in Game.zones():
 		if int(z.get("deed", 0)) == 0:
@@ -623,13 +660,6 @@ func _build_signs() -> void:
 		s.position = Vector2(float(z["x"]) + float(z.get("sign_x", 240)), 240)
 		world.add_child(s)
 		signs.append(s)
-
-
-func _draw_zone_shade() -> void:
-	# Land that is not owned yet is shaded, so it reads as somebody else's field.
-	for z in Game.zones():
-		if not Game.zone_owned(z["id"]):
-			_zone_shade.draw_rect(Rect2(float(z["x"]), 226, 480, 50), Color(0.12, 0.1, 0.08, 0.35))
 
 
 ## Frames the scene: the camera follows cam_x across the estate, anchored to the bottom so the desktop strip shows the farm.
@@ -1074,7 +1104,6 @@ func _on_building_changed(id: String) -> void:
 
 func _on_zone_bought(zone_id: String) -> void:
 	Sfx.play("villa_complete")
-	_zone_shade.queue_redraw()
 	var z := Game.zone_info(zone_id)
 	_dust(Vector2(float(z["x"]) + 240, 250), 30)
 	hud.toast(tr("The %s is yours!") % tr(String(z.get("name", ""))).to_lower())

@@ -202,3 +202,10 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T17:37:45,animate,game/assets/sprites/people/builder_small/walk_east,0.0141,0,0.9221
 2026-10-25T17:39:04,animate,game/assets/sprites/people/builder_small/work_east,0.0148,0,0.9073
 2026-10-25T17:40:13,animate,game/assets/sprites/people/builder_small/climb_north,0.0134,0,0.8939
+2026-10-25T18:46:31,pixen,game/assets/sprites/wild/bush.png,0.0070,0,0.8869
+2026-10-25T18:47:14,pixen,game/assets/sprites/wild/weeds.png,0.0070,0,0.8799
+2026-10-25T18:47:52,pixen,game/assets/sprites/wild/grass.png,0.0078,0,0.8721
+2026-10-25T18:48:17,pixen,game/assets/sprites/wild/thistle.png,0.0073,0,0.8648
+2026-10-25T18:48:44,pixen,game/assets/sprites/wild/bramble.png,0.0072,0,0.8577
+2026-10-25T18:49:56,pixen,game/assets/sprites/wild/weeds.png,0.0070,0,0.8507
+2026-10-25T18:50:41,pixen,game/assets/sprites/wild/grass.png,0.0087,0,0.8419

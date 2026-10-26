@@ -41,6 +41,8 @@ func _ready() -> void:
 	_carry.position = Vector2(0, -24)
 	_carry.visible = false
 	add_child(_carry)
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	_timer = randf_range(1.0, 4.0)
 	_play("stand")
 
@@ -52,7 +54,7 @@ func _process(delta: float) -> void:
 			position.x = move_toward(position.x, _target, speed * delta)
 			if is_equal_approx(position.x, _target):
 				if not is_nan(leave_at):
-					queue_free()
+					_fade_out()
 				elif _delivering:
 					# Setting the load down: a short pause bent over the cart or the doorway.
 					_delivering = false
@@ -91,6 +93,13 @@ func _carry_away(item: String, to: float) -> void:
 	sprite.flip_h = _target < position.x
 	_carry.position.x = -6.0 if sprite.flip_h else 6.0
 	_play("walk")
+
+
+func _fade_out() -> void:
+	set_process(false)
+	var fade := create_tween()
+	fade.tween_property(self, "modulate:a", 0.0, 0.6)
+	fade.tween_callback(queue_free)
 
 
 func has_animation(anim: String) -> bool:

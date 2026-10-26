@@ -6,6 +6,13 @@ const SkyFx := preload("res://scripts/world/sky_fx.gd")
 const DIR := "res://assets/backgrounds/estate/"
 const WIDTH := 768.0
 const SMOOTH := preload("res://assets/shaders/smooth_pixels.gdshader")
+## The moon goes from new to full and back over this many nights.
+const MOON_CYCLE := 8
+const MOON_R := 20
+const MOON_LIGHT := Color8(241, 237, 204)
+const MOON_SEA := Color8(220, 215, 186)
+## The dark part of the moon still shows faintly against the sky, lit by the earth.
+const MOON_DARK := Color(0.55, 0.57, 0.72, 0.13)
 
 ## Supplied by the scene: whether the sky can be seen, which it cannot in the transparent desktop strip.
 var sky_visible: Callable = func() -> bool: return true
@@ -14,6 +21,8 @@ var _night: Node2D
 var _clouds: Array = []
 var _moon: Sprite2D
 var _moon_glow: Sprite2D
+var _moon_phases: Array[Texture2D] = []
+var _moon_phase := -1
 
 
 func _ready() -> void:
@@ -35,7 +44,8 @@ func _ready() -> void:
 	_moon_glow.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_night.add_child(_moon_glow)
 	_moon = Sprite2D.new()
-	_moon.texture = load(DIR + "sky_night/moon.png")
+	for phase in MOON_CYCLE:
+		_moon_phases.append(_moon_texture(phase))
 	_moon.use_parent_material = true
 	_night.add_child(_moon)
 	_load_clouds(_night, DIR + "sky_night/", 0.6)
@@ -114,3 +124,42 @@ func _place_moon() -> void:
 		return
 	_moon.position = Vector2(lerpf(40.0, 700.0, t), 150.0 - sin(t * PI) * 120.0)
 	_moon_glow.position = _moon.position
+	# After midnight it is still the moon that rose the evening before.
+	var night: int = Game.calendar.day - (1 if hour < 12.0 else 0)
+	var phase := posmod(night, MOON_CYCLE)
+	if phase != _moon_phase:
+		_moon_phase = phase
+		_moon.texture = _moon_phases[phase]
+		_moon_glow.modulate.a = 0.2 + 0.8 * _lit_share(phase)
+
+
+## How much of the moon's face is lit, from 0 at new moon to 1 at full.
+func _lit_share(phase: int) -> float:
+	return (1.0 - cos(TAU * phase / MOON_CYCLE)) / 2.0
+
+
+## The moon on one night of its cycle: lit from the right while it grows towards full, from the left as it wanes.
+func _moon_texture(phase: int) -> Texture2D:
+	var size := MOON_R * 2 + 1
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var turn := cos(TAU * phase / MOON_CYCLE)
+	var seas := [Vector3(-6, -5, 4.5), Vector3(4, -8, 3.0), Vector3(5, 4, 5.0), Vector3(-4, 8, 3.0), Vector3(-9, 2, 2.5)]
+	for y in size:
+		for x in size:
+			var u := (x - MOON_R) / float(MOON_R)
+			var v := (y - MOON_R) / float(MOON_R)
+			if u * u + v * v > 1.0:
+				continue
+			var w := sqrt(1.0 - v * v)
+			var lit := u > w * turn if phase * 2 <= MOON_CYCLE else u < -w * turn
+			if phase == 0:
+				lit = false
+			if not lit:
+				img.set_pixel(x, y, MOON_DARK)
+				continue
+			var c := MOON_LIGHT
+			for sea in seas:
+				if Vector2(x - MOON_R - sea.x, y - MOON_R - sea.y).length() < sea.z:
+					c = MOON_SEA
+			img.set_pixel(x, y, c)
+	return ImageTexture.create_from_image(img)
