@@ -125,9 +125,12 @@ func _draw() -> void:
 			draw_rect(Rect2(Vector2(14, -6), Vector2(1, 3)), Color(1, 1, 1, 0.35))
 			draw_rect(Rect2(Vector2(13, -5), Vector2(3, 1)), Color(1, 1, 1, 0.35))
 		"locked":
-			var c := Color(0.15, 0.12, 0.1, 0.55)
-			draw_rect(Rect2(Vector2(12, -8), Vector2(5, 4)), c)
-			UiKit.outline(self, Rect2(14, -10, 1, 1), c)
+			# A tiny padlock: a rounded shackle over a small body.
+			var c := Color(0.15, 0.12, 0.1, 0.5)
+			draw_rect(Rect2(14, -9, 1, 1), c)
+			draw_rect(Rect2(13, -8, 1, 1), c)
+			draw_rect(Rect2(15, -8, 1, 1), c)
+			draw_rect(Rect2(13, -7, 3, 2), c)
 
 
 ## A small hop of the plant, so planting and harvesting feel like they did something.

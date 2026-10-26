@@ -92,7 +92,7 @@ func _bookmark(parent: Node, s: String) -> void:
 		b.add_theme_stylebox_override(state, box)
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
 		b.add_theme_color_override(c, UiKit.INK if open else UiKit.INK.lightened(0.15))
-	b.pressed.connect(func(): section = s; selected = ""; show_page())
+	b.pressed.connect(func(): Sfx.play("tab", -4.0); section = s; selected = ""; show_page())
 	parent.add_child(b)
 
 

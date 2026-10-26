@@ -19,7 +19,7 @@ func signature() -> String:
 func build() -> void:
 	var tabs := UiKit.row(top)
 	for t in ["Sound", "Display", "Play", "Keys"]:
-		var b := UiKit.button(tabs, tr(t), func(): tab = t; show_page())
+		var b := UiKit.tab_button(tabs, tr(t), func(): tab = t; show_page())
 		b.toggle_mode = true
 		b.button_pressed = t == tab
 	match tab:
@@ -66,12 +66,11 @@ func build() -> void:
 					b.toggle_mode = true
 					b.button_pressed = Settings.language == loc
 		"Keys":
-			var list := UiKit.scroll(body, Vector2(240, 130))
 			for action in Settings.ACTIONS:
-				var r := UiKit.row(list)
+				var r := UiKit.row(body)
 				UiKit.label(r, tr(String(Settings.ACTIONS[action]["name"]))).custom_minimum_size = Vector2(130, 0)
 				var text := tr("Press a key...") if _waiting_for == action else _key_name(action)
-				UiKit.button(r, text, func(): _waiting_for = action; refresh())
+				UiKit.button(r, text, func(): _waiting_for = action; refresh()).custom_minimum_size = Vector2(80, 0)
 
 
 func _toggle(text: String, on: bool, action: Callable) -> void:

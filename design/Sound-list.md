@@ -14,6 +14,7 @@ Every sound the game asks for, by file name. Drop a `.wav` or `.ogg` with exactl
 | `cart` | The cart leaving or coming home | Yes |
 | `pet` | Petting the dog | Yes |
 | `purr` | Petting the cat | Yes |
+| `tab` | Turning to a tab in a window or a bookmark in the journal | Yes |
 | `hammer` | Repairs and villa building | Yes |
 | `villa_complete` | A building or villa stage finished, a deed bought, an achievement | Yes |
 | `nope` | Something cannot be done (not enough coins, no room) | Yes |

@@ -18,6 +18,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `design/Art tests/content/gen_content.sh` | The script that generated the full game's buildings, people, animals, decorations and icons; it skips finished files |
 | `tools/art/split_layers.py`, `make_estate_ground.py` | Split the estate painting into parallax layers; paint the ground strip |
 | `tools/art/split_sky.py`, `make_icons.py` | Cut a sky into a clean base, moving clouds and the moon; make the 16-pixel list icons from the 32-pixel ones |
+| `tools/art/split_town_sky.py` | Cut the market town painting into its sky, drifting clouds and the town in front |
 | `.env` | `PIXELLAB_TOKEN` (git-ignored) |
 
 Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe`

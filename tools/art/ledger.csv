@@ -209,3 +209,6 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T18:48:44,pixen,game/assets/sprites/wild/bramble.png,0.0072,0,0.8577
 2026-10-25T18:49:56,pixen,game/assets/sprites/wild/weeds.png,0.0070,0,0.8507
 2026-10-25T18:50:41,pixen,game/assets/sprites/wild/grass.png,0.0087,0,0.8419
+2026-10-25T19:15:02,pixen,game/assets/sprites/wild/tuft.png,0.0075,0,0.8345
+2026-10-25T19:15:23,pixen,game/assets/sprites/wild/sprig.png,0.0067,0,0.8278
+2026-10-25T19:16:00,pixen,game/assets/sprites/wild/clover.png,0.0078,0,0.8200

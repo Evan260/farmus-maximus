@@ -518,7 +518,8 @@ func _load_demo_state() -> void:
 	Settings.intro_seen = true
 	Settings.show_tutorial = false
 	Game.new_game()
-	Game.coins = 1800
+	Game.coins = 1000000
+	Game.aureus = 100
 	Game.storage = {"lavender": 7}
 	var stages := [1.0, 1.0, 0.7, 1.0, 0.4, 1.0, 1.0, 0.1, 1.0, 1.0, 0.8, 1.0, 1.0, 0.3, 1.0, 1.0, 0.0]
 	for i in Game.plots.size():
@@ -623,9 +624,10 @@ func _sync_overgrowth() -> void:
 		elif not wild and _overgrowth.has(v.id):
 			var node: Node2D = _overgrowth[v.id]
 			_overgrowth.erase(v.id)
-			var fade := node.create_tween()
-			fade.tween_property(node, "modulate:a", 0.0, 1.5)
-			fade.tween_callback(node.queue_free)
+			for part in [node, node.get_meta("ground")]:
+				var fade: Tween = part.create_tween()
+				fade.tween_property(part, "modulate:a", 0.0, 1.5)
+				fade.tween_callback(part.queue_free)
 
 
 func _grow_wild(v: Node2D) -> Node2D:
@@ -635,19 +637,38 @@ func _grow_wild(v: Node2D) -> Node2D:
 	var r: Rect2 = v.world_rect()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(v.id)
-	var kinds := ["grass", "grass", "weeds", "weeds", "bramble", "thistle", "bush"]
-	var x := r.position.x - 10.0
-	while x < r.end.x + 6.0:
+	var plants := []
+	# A few big weeds and brambles against the walls...
+	var kinds := ["grass", "grass", "weeds", "weeds", "bramble", "thistle"]
+	var x := r.position.x - 8.0 + rng.randf_range(0.0, 10.0)
+	while x < r.end.x:
 		var tex: Texture2D = load("res://assets/sprites/wild/%s.png" % kinds[rng.randi() % kinds.size()])
 		var used := tex.get_image().get_used_rect()
+		plants.append([tex, Vector2(roundf(x - used.position.x), roundf(r.end.y + rng.randi_range(0, 2) - used.end.y)), used.end.y])
+		x += used.size.x * rng.randf_range(1.3, 2.2)
+	# ...and little tufts scattered over the ground in front, kept off the planting beds. They are drawn with the beds,
+	# over the ground strip, rather than with the building behind it.
+	var ground := Node2D.new()
+	world.add_child(ground)
+	world.move_child(ground, plot_views[0].get_index())
+	node.set_meta("ground", ground)
+	var tufts := GroundPlants.textures()
+	for i in int(r.size.x / 6.0):
+		var at := Vector2(roundf(rng.randf_range(r.position.x - 30.0, r.end.x + 30.0)), roundf(rng.randf_range(r.end.y + 4.0, 267.0)))
+		if plot_views.any(func(p): return absf(at.x - p.position.x - 15.0) < 22.0 and absf(at.y - p.position.y) < 12.0):
+			continue
+		var tex: Texture2D = tufts[rng.randi() % tufts.size()]
+		plants.append([tex, at - Vector2(roundf(tex.get_width() / 2.0), tex.get_height()), at.y, ground])
+	# Plants lower on the ground stand in front of those behind them.
+	plants.sort_custom(func(a, b): return a[1].y + a[0].get_height() < b[1].y + b[0].get_height())
+	for entry in plants:
 		var plant := Sprite2D.new()
-		plant.texture = tex
+		plant.texture = entry[0]
 		plant.centered = false
 		plant.flip_h = rng.randf() < 0.5
-		plant.position = Vector2(roundf(x - used.position.x), roundf(r.end.y + rng.randi_range(0, 3) - used.end.y))
-		node.add_child(plant)
+		plant.position = entry[1]
+		(entry[3] if entry.size() > 3 else node).add_child(plant)
 		_sway(plant)
-		x += used.size.x * rng.randf_range(0.6, 1.0)
 	return node
 
 
@@ -809,7 +830,10 @@ func _world_input(event: InputEvent) -> void:
 			else:
 				# A press that did not move far is a click; one that moved was a drag across the estate.
 				if _pressed and not _dragging and event.button_index == MOUSE_BUTTON_LEFT:
-					_click(world.get_global_mouse_position())
+					if hud.close_windows():
+						Sfx.play("click", -10.0)
+					else:
+						_click(world.get_global_mouse_position())
 				_pressed = false
 				_dragging = false
 	elif event is InputEventPanGesture:
@@ -827,13 +851,8 @@ func _world_input(event: InputEvent) -> void:
 		_update_hover(world.get_global_mouse_position())
 
 
+## A click goes to whatever the pointer shows as hovered: plants and signs first, then the dog and cat, then buildings.
 func _click(point: Vector2) -> void:
-	if dog.contains(point):
-		dog.pet()
-		return
-	if cat.contains(point):
-		cat.pet()
-		return
 	var view := _plot_at(point)
 	if view:
 		_click_plot(view.index)
@@ -842,6 +861,12 @@ func _click(point: Vector2) -> void:
 		if s.contains(point):
 			Game.buy_zone(s.zone_id)
 			return
+	if dog.contains(point):
+		dog.pet()
+		return
+	if cat.contains(point):
+		cat.pet()
+		return
 	var b := _building_at(point)
 	if b:
 		hud.show_building(b.id)
@@ -956,10 +981,11 @@ func _update_hover(point: Vector2) -> void:
 		s.hovered = s.contains(point)
 		if s.hovered:
 			sign_hit = s
-	var building: Node2D = null if view or sign_hit else _building_at(point)
+	var pet: bool = not view and not sign_hit and (dog.contains(point) or cat.contains(point))
+	var building: Node2D = null if view or sign_hit or pet else _building_at(point)
 	for b in building_views:
 		b.hovered = b == building
-	var on_villa := not view and not sign_hit and not building and not _cart_rect().has_point(point) and _villa_rect().has_point(point)
+	var on_villa := not view and not sign_hit and not pet and not building and not _cart_rect().has_point(point) and _villa_rect().has_point(point)
 	if on_villa != _villa_hovered:
 		_villa_hovered = on_villa
 		_villa_outline.queue_redraw()
@@ -969,14 +995,12 @@ func _update_hover(point: Vector2) -> void:
 		var z := Game.zone_info(sign_hit.zone_id)
 		var block := Game.zone_block(sign_hit.zone_id)
 		hud.set_info(tr(block) if block != "" else tr("Buy the %s deed: %d sestertii") % [tr(String(z.get("name", ""))).to_lower(), int(z.get("deed", 0))])
+	elif pet:
+		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if dog.contains(point) else "cat"))
 	elif building:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.building_info(building.id).get("name", ""))))
 	elif _villa_hovered:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.villa_stages()[clampi(Game.villa_stage - 1, 0, Game.villa_stages().size() - 1)].get("name", "Farmhouse"))))
-	elif dog.contains(point):
-		hud.set_info(tr("Pet %s") % Game.pet_name("dog"))
-	elif cat.contains(point):
-		hud.set_info(tr("Pet %s") % Game.pet_name("cat"))
 	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
 		hud.set_info(tr("Storehouse: %d / %d") % [Game.stored_total(), Game.storage_capacity()])
 	elif _cart_rect().has_point(point):
@@ -1164,7 +1188,10 @@ func _hearts(at: Vector2) -> void:
 
 func _on_build_started() -> void:
 	Sfx.play("hammer")
+	var old := [_villa.texture, _villa.region_rect, _villa.position]
 	_place_villa()
+	if not Settings.reduced_motion:
+		Rise.reveal(_villa, old[0], old[1], old[2])
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 16)
 	hud.toast(tr("Work on the villa has begun"))
 
@@ -1437,7 +1464,7 @@ func _spawn_pets() -> void:
 	cat.min_x = HOME + 385
 	cat.max_x = HOME + 452
 	cat.position = Vector2(HOME + 420, 246)
-	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Sfx.play("purr", -4.0); Game.add_stat("pets", 1))
+	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Sfx.play("purr", -6.0, 0.03); Game.add_stat("pets", 1))
 	world.add_child(cat)
 	dog = Dog.new()
 	dog.coat = String(Game.pets.get("dog", {}).get("coat", ""))

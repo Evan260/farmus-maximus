@@ -95,13 +95,25 @@ def pet():
 
 
 def purr():
-    # A purr is a low rumble pulsing about 26 times a second, louder breathing out than breathing in.
-    out = silence(1.3)
-    for at, seconds, level in [(0.0, 0.55, 1.0), (0.62, 0.6, 0.7)]:
+    # A soft purr: short bursts of breathy mid-range noise about 24 times a second, with the deep rumble filtered out
+    # so it sounds like a small cat rather than an engine.
+    out = silence(1.0)
+    for at, seconds, level in [(0.0, 0.42, 1.0), (0.48, 0.45, 0.75)]:
         x = t(seconds)
-        rumble = lowpass(rng.standard_normal(len(x)), 60)
-        pulse = 0.5 + 0.5 * np.sin(2 * np.pi * 26 * x) ** 2
-        place(out, rumble * pulse * np.sin(np.pi * x / seconds) * level, at)
+        n = rng.standard_normal(len(x))
+        breath = lowpass(n, 6) - lowpass(n, 40)
+        pulse = np.abs(np.sin(np.pi * 24 * x)) ** 4
+        place(out, breath * (0.15 + pulse) * np.sin(np.pi * x / seconds) * level, at)
+    return out
+
+
+def tab():
+    # Turning to a tab or bookmark: a quick paper flick, two soft brushes of bright noise.
+    out = silence(0.12)
+    for at, level in [(0.0, 1.0), (0.035, 0.55)]:
+        n = rng.standard_normal(int(RATE * 0.05))
+        brush = lowpass(n, 3) - lowpass(n, 18)
+        place(out, brush * env(len(n), 0.004, 55) * level, at)
     return out
 
 
@@ -142,7 +154,7 @@ def main():
     out = Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
     for name, fn in [("plant", plant), ("harvest", harvest), ("coins", coins), ("cart", cart), ("unlock", unlock),
-                     ("pet", pet), ("hammer", hammer), ("villa_complete", villa_complete), ("click", click), ("nope", nope), ("purr", purr)]:
+                     ("pet", pet), ("hammer", hammer), ("villa_complete", villa_complete), ("click", click), ("nope", nope), ("purr", purr), ("tab", tab)]:
         write(out / f"{name}.wav", fn())
         print("wrote", name)
 

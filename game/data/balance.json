@@ -349,10 +349,10 @@
 			"name": "Bigger cart",
 			"label": "Carries",
 			"values": [
-				12,
-				24,
-				40,
-				70
+				16,
+				30,
+				50,
+				90
 			],
 			"costs": [
 				50,

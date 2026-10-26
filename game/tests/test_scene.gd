@@ -23,6 +23,12 @@ func _run() -> void:
 		_check(hit == v, "plot %d is clicked at its own soil patch" % v.index)
 	var empty: Node2D = main._view(0)
 	_check(main._plot_at(empty.position + Vector2(14, -20)) != empty, "an empty plot does not respond above its soil")
+	var spot: Node2D = main._view(1)
+	main.dog.position = spot.position + Vector2(20, 0)
+	var pick: Vector2 = spot.position + Vector2(14, -1)
+	if main.dog.contains(pick):
+		main._click(pick)
+		_check(game.plots[1]["crop"] != "", "a plot under the pointer takes the click, even with the dog standing over it")
 	var i := 0
 	main._click_plot(i)
 	_check(game.plots[i]["crop"] == "lavender", "clicking an empty plot plants lavender")

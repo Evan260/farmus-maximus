@@ -6,6 +6,8 @@ signal left_town
 
 const Walker := preload("res://scripts/world/walker.gd")
 const BG := "res://assets/backgrounds/market/painting.png"
+## The painting split into its sky, its clouds and the town in front, so the clouds can drift behind the rooftops.
+const SKY_DIR := "res://assets/backgrounds/market/sky/"
 ## The places in the painting that can be clicked, in the painting's pixels.
 const INK := Color8(42, 29, 41)
 const WOOD_DARK := Color8(66, 40, 45)
@@ -34,7 +36,7 @@ const SPOTS := [
 	{"id": "Shop", "name": "The shop", "hint": "Cuttings, materials and animals", "rect": Rect2(398, 118, 82, 145)},
 	{"id": "Decorations", "name": "The craftsman", "hint": "Statues, lanterns and other decorations", "rect": Rect2(326, 140, 52, 62)},
 	{"id": "Land", "name": "The temple", "hint": "Land deeds are kept here", "rect": Rect2(226, 55, 94, 115)},
-	{"id": "Notice board", "name": "Notice board", "hint": "Requests from the townsfolk", "rect": Rect2(84, 164, 26, 46)},
+	{"id": "Notice board", "name": "Notice board", "hint": "Requests from the townsfolk", "rect": Rect2(82, 163, 30, 54)},
 	{"id": "Prices", "name": "Price slate", "hint": "Today's prices and what is wanted", "rect": Rect2(380, 186, 18, 26)},
 ]
 
@@ -50,6 +52,7 @@ var _panel: PanelContainer
 var _pad_bar: HBoxContainer
 var _signature := ""
 var _timer := 0.0
+var _clouds: Array[Sprite2D] = []
 var _water: Node2D
 var _water_time := 0.0
 ## The pixels of the painting that show water in the fountain.
@@ -70,6 +73,13 @@ func _ready() -> void:
 	if ResourceLoader.exists(BG):
 		bg.texture = load(BG)
 	_scene.add_child(bg)
+	if ResourceLoader.exists(SKY_DIR + "front.png"):
+		bg.texture = load(SKY_DIR + "base.png")
+		_add_clouds()
+		var front := Sprite2D.new()
+		front.centered = false
+		front.texture = load(SKY_DIR + "front.png")
+		_scene.add_child(front)
 	_water = Node2D.new()
 	_water.draw.connect(_draw_water)
 	_scene.add_child(_water)
@@ -137,6 +147,28 @@ func _ready() -> void:
 
 
 ## The town picture is scaled up by a whole number until it covers the window, and the windows follow the interface scale.
+func _add_clouds() -> void:
+	var list: Array = JSON.parse_string(FileAccess.get_file_as_string(SKY_DIR + "clouds.json"))
+	for c in list:
+		var cloud := Sprite2D.new()
+		cloud.centered = false
+		cloud.texture = load(SKY_DIR + String(c["file"]))
+		cloud.position = Vector2(float(c["x"]), float(c["y"]))
+		# High clouds drift a little faster than low ones, and pieces of one cloud share a band so they keep together.
+		cloud.set_meta("speed", 1.6 if float(c["y"]) < 40.0 else 1.0)
+		_scene.add_child(cloud)
+		_clouds.append(cloud)
+
+
+func _drift_clouds(delta: float) -> void:
+	if Settings.reduced_motion:
+		return
+	for cloud in _clouds:
+		cloud.position.x += float(cloud.get_meta("speed")) * delta
+		if cloud.position.x > 480.0:
+			cloud.position.x = -cloud.texture.get_width()
+
+
 func _fit() -> void:
 	var view := get_viewport().get_visible_rect().size
 	var cover := ceili(maxf(view.x / 480.0, view.y / 272.0))
@@ -185,6 +217,7 @@ func _process(delta: float) -> void:
 	_pad_bar.visible = not Input.get_connected_joypads().is_empty()
 	_water_time += delta
 	_water.queue_redraw()
+	_drift_clouds(delta)
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = 0.3
@@ -246,13 +279,14 @@ func _px(x: float, y: float, w: float, h: float, c: Color) -> void:
 
 ## A plank board on two posts under a little tiled roof, with a paper pinned up for each request waiting.
 func _draw_notice_board() -> void:
-	_px(84, 209, 28, 1, SHADOW)
-	_px(82, 210, 32, 1, SHADOW)
+	# The posts stand on the step in front of the colonnade, a few rows below the board.
+	_px(84, 216, 28, 1, SHADOW)
+	_px(82, 217, 32, 1, SHADOW)
 	for x in [87, 104]:
-		_px(x, 186, 1, 24, WOOD_LIGHT)
-		_px(x + 1, 186, 1, 24, WOOD)
-		_px(x + 2, 186, 1, 24, WOOD_DARK)
-		_px(x, 209, 3, 1, INK)
+		_px(x, 186, 1, 31, WOOD_LIGHT)
+		_px(x + 1, 186, 1, 31, WOOD)
+		_px(x + 2, 186, 1, 31, WOOD_DARK)
+		_px(x, 216, 3, 1, INK)
 	_px(84, 166, 26, 21, INK)
 	_px(85, 167, 24, 19, WOOD)
 	for y in [167, 173, 179]:
@@ -335,18 +369,19 @@ func _draw_water() -> void:
 	for side in [-1, 1]:
 		var top_x: int = 252 if side < 0 else 291
 		var land := 0
-		for y in range(174, 197):
-			var x: int = top_x + side * int(pow(y - 174, 2) / 150.0)
+		# Water leaving the lip moves outwards fastest at first, then falls nearly straight down.
+		for y in range(174, 200):
+			var x: int = top_x + side * int(roundf(0.8 * sqrt(y - 174)))
 			land = x
 			_water.draw_rect(Rect2(x, y, 1, 1), FOAM if posmod(y - int(t), 5) == 0 else FALL)
 			_water.draw_rect(Rect2(x - side, y, 1, 1), FALL_SOFT)
-		_water.draw_rect(Rect2(land - 1 + 2 * (int(t) % 2), 195, 1, 1), FOAM)
-		_water.draw_rect(Rect2(land, 194 - int(t) % 2, 1, 1), FALL)
+		_water.draw_rect(Rect2(land - 1 + 2 * (int(t) % 2), 199, 1, 1), FOAM)
+		_water.draw_rect(Rect2(land, 198 - int(t) % 2, 1, 1), FALL)
 		for ring in 2:
 			var r: int = posmod(int(t / 2.0) + ring * 4, 8) + 1
 			var fade := 1.0 - r / 9.0
 			for dx in [-r, r]:
-				_water_pixel(land + dx, 197 + ring, Color(FOAM, 0.75 * fade))
+				_water_pixel(land + dx, 200 + ring, Color(FOAM, 0.75 * fade))
 	for k in 3:
 		_water_pixel(258 + posmod(int(t * 0.3) + k * 10, 29), 171, GLINT)
 	for k in 5:

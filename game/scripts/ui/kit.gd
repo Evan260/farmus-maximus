@@ -45,6 +45,17 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
+## A tab along the top of a window: it sounds like turning a page rather than pressing a button.
+static func tab_button(parent: Node, text: String, action: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(func(): Sfx.play("tab", -4.0))
+	b.pressed.connect(action)
+	parent.add_child(b)
+	return b
+
+
 ## A small square close button with a drawn cross, for the top-right corner of a window.
 static func close_button(parent: Node, action: Callable) -> Button:
 	var b := button(parent, "", action)
