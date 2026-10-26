@@ -110,6 +110,9 @@ func _ready() -> void:
 		w.min_x = 20
 		w.max_x = 460
 		w.position = Vector2(randf_range(40, 440), 262 + randi() % 6)
+		# Townsfolk go indoors for the night through one of the doorways on the square.
+		w.rests_at_night = true
+		w.home_x = [120.0, 360.0][randi() % 2]
 		_scene.add_child(w)
 	_bunting = Node2D.new()
 	_bunting.draw.connect(_draw_bunting)

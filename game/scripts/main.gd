@@ -18,6 +18,7 @@ const DecorView := preload("res://scripts/world/decor_view.gd")
 const Channels := preload("res://scripts/world/channels.gd")
 const Builder := preload("res://scripts/world/builder.gd")
 const Cat := preload("res://scripts/world/cat.gd")
+const Scaffold := preload("res://scripts/world/scaffold.gd")
 const Hud := preload("res://scripts/ui/hud.gd")
 const MarketView := preload("res://scripts/ui/market_view.gd")
 const SWAY := preload("res://assets/shaders/sway.gdshader")
@@ -71,6 +72,8 @@ var _land_far: Sprite2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
 var _villa_outline: Node2D
+## Scaffolding stood in front of the farmhouse while it is being restored.
+var _villa_scaffold: Node2D
 var _villa_hovered := false
 var _stork: Sprite2D
 var _cart: Sprite2D
@@ -80,6 +83,10 @@ var _wheel: Sprite2D
 var _cart_back: Sprite2D
 ## Where the cart's left edge stands when it is parked at home.
 var _cart_park_x := 0.0
+## True while the cart is setting off for the market with the player.
+var _riding := false
+## How many pixels longer and taller than the first cart the current one is.
+var _cart_grow := Vector2i.ZERO
 ## The goods heaped in the cart, drawn behind its side boards so they sit inside it.
 var _cart_load: Node2D
 var _cart_x := 0.0
@@ -165,6 +172,10 @@ func _ready() -> void:
 	_scenery.append(_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236)))
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
+	_villa_scaffold = Scaffold.new()
+	_villa_scaffold.ladders = Balance.get_value("villa.ladders", [])
+	_villa_scaffold.visible = false
+	world.add_child(_villa_scaffold)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
 	_villa_outline = Node2D.new()
 	_villa_outline.draw.connect(_draw_villa_overlay)
@@ -219,6 +230,8 @@ func _ready() -> void:
 	_harness = Node2D.new()
 	_harness.draw.connect(_draw_harness)
 	world.add_child(_harness)
+	_size_cart()
+	Game.upgrade_bought.connect(_on_upgrade_bought)
 	_park_rig()
 	for id in Game.helpers:
 		_spawn_helper(id)
@@ -239,7 +252,7 @@ func _ready() -> void:
 	hud.town_requested.connect(go_to_town)
 	add_child(hud)
 	market = MarketView.new()
-	market.left_town.connect(func(): hud.visible = true)
+	market.left_town.connect(_back_from_market)
 	add_child(market)
 
 	Game.planted.connect(func(i): Sfx.play("plant"); _view(i).bounce())
@@ -312,6 +325,31 @@ func _open_panel(which: String) -> void:
 		hud.open_window(which)
 	else:
 		hud.show_building(which)
+
+
+## The donkey sets off down the road with the cart before the market town comes into view.
+func _ride_to_market() -> void:
+	if _riding:
+		return
+	if Settings.reduced_motion or Windowing.strip:
+		go_to_town()
+		return
+	_riding = true
+	Sfx.play("cart")
+	_face_rig(false)
+	_donkey.play("walk")
+	_move_rig(_cart.position.x + 130.0, 130.0 / 90.0)
+	await get_tree().create_timer(1.1).timeout
+	go_to_town()
+	_riding = false
+
+
+func _back_from_market() -> void:
+	hud.visible = true
+	if not Game.cart["away"] and not _cart_returning:
+		if _rig_tween:
+			_rig_tween.kill()
+		_park_rig()
 
 
 func go_to_town() -> void:
@@ -410,7 +448,9 @@ func _update_life(delta: float) -> void:
 	if trader:
 		trader.visible = not Game.cart["away"]
 	_traveller_timer -= delta
-	if _traveller_timer <= 0.0:
+	if _traveller_timer <= 0.0 and Game.is_night():
+		_traveller_timer = 30.0
+	elif _traveller_timer <= 0.0:
 		_traveller_timer = randf_range(90.0, 240.0)
 		var who: String = ["shepherd", "traveller"][randi() % 2]
 		if ResourceLoader.exists(PEOPLE + who + "/east.png"):
@@ -476,6 +516,9 @@ func _spawn_helper(id: String) -> void:
 	w.min_x = float(ground[0])
 	w.max_x = float(ground[1])
 	w.position = Vector2(randf_range(w.min_x, w.max_x), 269)
+	# At night helpers go indoors: the farmhouse for those working near it, otherwise the end of their own patch.
+	w.rests_at_night = true
+	w.home_x = clampf(VILLA_BASE.x, w.min_x, w.max_x)
 	var info := Game.helper_info(id)
 	if info.has("zones") or info.has("crops"):
 		w.find_work = func() -> float: return _ready_plot_x(info)
@@ -538,9 +581,10 @@ func _load_demo_state() -> void:
 	Settings.intro_seen = true
 	Settings.show_tutorial = false
 	Game.new_game()
-	Game.coins = 1000000
-	Game.aureus = 100
-	Game.storage = {"lavender": 7}
+	# Enough of everything to buy and build anything straight away.
+	Game.coins = 10000000
+	Game.aureus = 1000
+	Game.storage = {"lavender": 7, "stone": 999, "timber": 999, "tiles": 999}
 	var stages := [1.0, 1.0, 0.7, 1.0, 0.4, 1.0, 1.0, 0.1, 1.0, 1.0, 0.8, 1.0, 1.0, 0.3, 1.0, 1.0, 0.0]
 	for i in Game.plots.size():
 		var p: Dictionary = Game.plots[i]
@@ -560,6 +604,10 @@ func _load_demo_state() -> void:
 			Game.calendar.wet_left = 9999.0 if Game.calendar.weather == "rain" else 0.0
 		elif arg.begins_with("--day="):
 			Game.calendar.day = int(arg.trim_prefix("--day="))
+		elif arg.begins_with("--cart="):
+			Game.levels["cart_capacity"] = int(arg.trim_prefix("--cart="))
+		elif arg == "--build-villa":
+			Game.upgrade_villa.call_deferred()
 		elif arg == "--send-cart":
 			Game.send_cart.call_deferred()
 		elif arg == "--estate":
@@ -577,7 +625,7 @@ func _demo_estate() -> void:
 		"unguent": "ruin", "wine_press": "working", "cellar": "working", "barn": "working", "dairy": "repairing", "lararium": "working"}
 	for id in looks:
 		Game.buildings[id]["state"] = looks[id]
-		Game.buildings[id]["time_left"] = 20.0
+		Game.buildings[id]["time_left"] = float(Game.building_info(id).get("repair_seconds", 60)) * 0.8
 	Game.buildings["mill"]["busy"] = true
 	Game.buildings["mill"]["progress"] = 12.0
 	Game.buildings["cellar"]["casks"] = [100.0, 2000.0, 4000.0]
@@ -588,7 +636,7 @@ func _demo_estate() -> void:
 	for d in ["statue", "lanterns", "planters", "fountain", "bench", "dovecote", "column", "sundial", "birdbath", "pergola"]:
 		Game.decorations[d] = true
 	Game.levels["channels"] = 1
-	Game.storage = {"lavender": 3, "lavender@1": 2, "olive_oil": 2, "bread@2": 1, "stone": 4, "honey": 2}
+	Game.storage = {"lavender": 3, "lavender@1": 2, "olive_oil": 2, "bread@2": 1, "honey": 2, "stone": 999, "timber": 999, "tiles": 999}
 	var fills := {"grove": [1.0, 0.5, 1.0, 0.2, 1.0, 0.8], "vineyard": [1.0, 0.7, 1.0, 0.3, 1.0, 0.6]}
 	var counts := {"grove": 0, "vineyard": 0}
 	for i in Game.plots.size():
@@ -844,11 +892,6 @@ func _world_input(event: InputEvent) -> void:
 			_pan_by(-notch)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN or event.button_index == MOUSE_BUTTON_WHEEL_RIGHT:
 			_pan_by(notch)
-		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not Windowing.strip:
-			var under := _plot_at(world.get_global_mouse_position())
-			if under:
-				Game.dig_up(under.index)
-				_update_hover(world.get_global_mouse_position())
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE]:
 			if event.pressed:
 				_pressed = true
@@ -900,7 +943,7 @@ func _click(point: Vector2) -> void:
 		hud.show_building(b.id)
 		return
 	if _cart_rect().has_point(point) and not Game.cart["away"]:
-		go_to_town()
+		_ride_to_market()
 		return
 	if _villa_rect().has_point(point):
 		hud.show_building(hud.VILLA)
@@ -984,19 +1027,28 @@ func _move_selection(dir: Vector2) -> void:
 	_update_hover(_pad_point)
 
 
+## A click on a plot does what the tool in hand does there; a ripe plant is picked with any tool but the spade.
 func _click_plot(i: int) -> void:
-	match Game.plot_visual(i):
-		"locked":
-			if not Game.zone_owned(String(Game.plots[i]["zone"])):
-				hud.toast(tr("Buy this land first"))
-			else:
-				Game.try_unlock(i)
-		"empty":
+	var look := Game.plot_visual(i)
+	if look == "locked":
+		if not Game.zone_owned(String(Game.plots[i]["zone"])):
+			hud.toast(tr("Buy this land first"))
+		else:
+			Game.try_unlock(i)
+	elif hud.tool == "dig":
+		if look in ["empty"]:
+			hud.toast(tr("Nothing growing here to dig up"))
+		else:
+			Game.dig_up(i)
+	elif look == "bloom":
+		Game.try_harvest(i)
+	elif look == "empty":
+		if hud.tool == "seed":
 			Game.try_plant(i)
-		"bloom":
-			Game.try_harvest(i)
-		_:
-			hud.toast(tr("Still growing. Right-click to dig it up."))
+		else:
+			hud.toast(tr("Choose a seed in the toolbar to plant here"))
+	else:
+		hud.toast(tr("Still growing"))
 	_update_hover(_pad_point if _pad_point != Vector2.INF else world.get_global_mouse_position())
 
 
@@ -1047,20 +1099,22 @@ func _describe_plot(i: int) -> void:
 				hud.set_info(tr("Dig a new bed here: %d sestertii") % Game.unlock_cost())
 		"empty":
 			var seed_id := Game.seed_for_plot(i)
-			if seed_id == "":
+			if hud.tool != "seed":
+				hud.set_info(tr("An empty bed: choose a seed in the toolbar"))
+			elif seed_id == "":
 				hud.set_info(tr(Game.seed_block(i)))
 			else:
 				var seed := Game.crop_info(seed_id)
 				hud.set_info(tr("Plant %s: %d sestertii") % [tr(String(seed.get("name", ""))).to_lower(), int(seed.get("plant_cost", 0))])
 		"bloom":
-			hud.set_info(tr("%s is ready: click to harvest, right-click to dig up") % crop_name)
+			hud.set_info(tr("Dig up the %s") % crop_name.to_lower() if hud.tool == "dig" else tr("%s is ready: click to harvest") % crop_name)
 		_:
 			var notes := []
 			if not Game.watered(i):
 				notes.append(tr("dry"))
 			if Game.plots[i].get("manured", false):
 				notes.append(tr("manured"))
-			hud.set_info(tr("%s growing: %d%%") % [crop_name, int(Game.growth_fraction(i) * 100)] + ("  (%s)" % ", ".join(notes) if not notes.is_empty() else "") + "   " + tr("right-click to dig up"))
+			hud.set_info(tr("%s growing: %d%%") % [crop_name, int(Game.growth_fraction(i) * 100)] + ("  (%s)" % ", ".join(notes) if not notes.is_empty() else "") + ("   " + tr("click to dig up") if hud.tool == "dig" else ""))
 
 
 func _plot_at(point: Vector2) -> Node2D:
@@ -1216,19 +1270,20 @@ func _hearts(at: Vector2) -> void:
 
 func _on_build_started() -> void:
 	Sfx.play("hammer")
-	var old := [_villa.texture, _villa.region_rect, _villa.position]
 	_place_villa()
+	_villa_scaffold.visible = true
 	if not Settings.reduced_motion:
-		Rise.rise(_villa, old[0], old[1], old[2])
+		_villa_scaffold.rise()
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 16)
 	hud.toast(tr("Work on the villa has begun"))
 
 
 func _on_villa_finished() -> void:
-	var old := [_villa.texture, _villa.region_rect, _villa.position]
 	_place_villa()
-	if not Settings.reduced_motion:
-		Rise.sink(_villa, old[0], old[1], old[2])
+	if Settings.reduced_motion:
+		_villa_scaffold.visible = false
+	else:
+		_villa_scaffold.sink().tween_callback(func(): _villa_scaffold.visible = Game.villa_build["active"])
 	Sfx.play("villa_complete")
 	hud.toast(tr("The villa has been restored: %s!") % tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"])).to_lower())
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
@@ -1246,13 +1301,51 @@ func _park_rig() -> void:
 
 ## Where the donkey stands so the shaft tips reach its harness: going out the shafts point right, coming home the cart is turned round.
 func _harness_x(cart_x: float, homeward: bool) -> float:
-	return cart_x + 2.0 if homeward else cart_x + 58.0
+	return cart_x + 2.0 if homeward else cart_x + 58.0 + _cart_grow.x
+
+
+## Each bigger cart is a few planks longer and a board taller; the extra planks are copied from the middle of the bed,
+## so the wheels, shafts and rims stay as drawn.
+func _size_cart() -> void:
+	var level := int(Game.levels.get("cart_capacity", 0))
+	_cart_grow = Vector2i(level * 6, level * 2)
+	var used := load("res://assets/sprites/farm/cart.png").get_image().get_used_rect() as Rect2i
+	var at := Vector2i(used.position.x + 30, used.position.y + 13)
+	for pair in [[_cart_back, "cart_back"], [_cart, "cart_front"]]:
+		var s: Sprite2D = pair[0]
+		s.texture = _stretched(load("res://assets/sprites/farm/%s.png" % pair[1]), _cart_grow, at)
+		s.region_rect = Rect2(used.position, used.size + _cart_grow)
+		s.position.y = RIG_BASE - s.region_rect.size.y
+	_face_rig(_cart.flip_h)
+	_harness.queue_redraw()
+	if not Game.cart["away"] and not _cart_returning:
+		_park_rig()
+
+
+func _on_upgrade_bought(id: String) -> void:
+	if id == "cart_capacity":
+		_size_cart()
+		_dust(Vector2(_cart.position.x + 30, RIG_BASE), 14)
+
+
+func _stretched(tex: Texture2D, grow: Vector2i, at: Vector2i) -> Texture2D:
+	if grow == Vector2i.ZERO:
+		return tex
+	var src := tex.get_image()
+	src.convert(Image.FORMAT_RGBA8)
+	var out := Image.create(src.get_width() + grow.x, src.get_height() + grow.y, false, Image.FORMAT_RGBA8)
+	for y in out.get_height():
+		var sy := y if y < at.y else (at.y - 3 + (y - at.y) % 3 if y < at.y + grow.y else y - grow.y)
+		for x in out.get_width():
+			var sx := x if x < at.x else (at.x - 6 + (x - at.x) % 6 if x < at.x + grow.x else x - grow.x)
+			out.set_pixel(x, y, src.get_pixel(sx, sy))
+	return ImageTexture.create_from_image(out)
 
 
 func _face_rig(homeward: bool) -> void:
 	_cart.flip_h = homeward
 	_donkey.flip_h = homeward
-	_wheel.position = Vector2(45.0 if homeward else 15.0, 23.0)
+	_wheel.position = Vector2(45.0 + _cart_grow.x if homeward else 15.0, 23.0 + _cart_grow.y)
 	_update_cart_load()
 
 
@@ -1261,7 +1354,7 @@ func _face_rig(homeward: bool) -> void:
 func _draw_harness() -> void:
 	var home := _cart.flip_h
 	var dir := -1.0 if home else 1.0
-	var a := Vector2(_cart.position.x + (26.0 if home else 34.0), _cart.position.y + 17.0).round()
+	var a := Vector2(_cart.position.x + (26.0 if home else 34.0 + _cart_grow.x), _cart.position.y + 17.0 + _cart_grow.y).round()
 	var b := Vector2(_donkey.position.x + 12.0 * dir, float(RIG_BASE) - 20.0).round()
 	var leather := Color(0.3, 0.17, 0.11)
 	var steps := int(absf(b.x - a.x))
@@ -1292,7 +1385,7 @@ func _update_cart_load() -> void:
 		var path := "res://assets/sprites/icons/%s.png" % Game.item_base(key)
 		if ResourceLoader.exists(path) and not path in paths:
 			paths.append(path)
-	paths = paths.slice(0, 4)
+	paths = paths.slice(0, 4 + _cart_grow.x / 8)
 	while _cart_load.get_child_count() < paths.size():
 		var icon := Sprite2D.new()
 		icon.centered = false
@@ -1305,7 +1398,7 @@ func _update_cart_load() -> void:
 			var x := 4.0 + k * 8.0
 			# Each good sits down in the bed: its visible bottom is placed below the cart's rim, which hides it.
 			var bottom := icon.texture.get_image().get_used_rect().end.y
-			icon.position = Vector2(x if not _cart.flip_h else 60.0 - x - 16.0, 9 - bottom)
+			icon.position = Vector2(x if not _cart.flip_h else 60.0 + _cart_grow.x - x - 16.0, 9 - bottom)
 
 
 ## Moves cart and donkey together; when returning, the donkey walks in front on the left.
@@ -1336,8 +1429,6 @@ func _feet_line(tex: Texture2D) -> int:
 
 
 func _villa_texture() -> Texture2D:
-	if Game.villa_build["active"]:
-		return load("res://assets/sprites/villa/scaffold.png")
 	var stages := Game.villa_stages()
 	var stage: Dictionary = stages[clampi(Game.villa_stage - 1, 0, stages.size() - 1)]
 	var path := "res://assets/sprites/villa/%s.png" % stage.get("sprite", "stage1")
@@ -1371,6 +1462,10 @@ func _place_villa() -> void:
 	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 7, SHADOW)
 	_villa_shadow.position = Vector2(_villa.position.x - 6, VILLA_BASE.y - 5)
 	_make_windows(tex, used)
+	if _villa_scaffold:
+		_villa_scaffold.rect = _villa_rect()
+		_villa_scaffold.visible = Game.villa_build["active"] or _villa_scaffold.share > 0.0 and _villa_scaffold.visible
+		_villa_scaffold.queue_redraw()
 	# Storks only nest on a well-kept roof, so they arrive with the peristyle garden.
 	_stork.visible = _stork.texture != null and Game.villa_stage >= 5 and not Game.villa_build["active"]
 	if _stork.texture:
@@ -1383,8 +1478,8 @@ func _make_windows(tex: Texture2D, used: Rect2i) -> void:
 		w["sprite"].queue_free()
 	_windows = []
 	_windows_night = -1
-	# The ruin and the scaffolding have no glass, only dark holes, so they stay dark.
-	if Game.villa_build["active"] or Game.villa_stage <= 1:
+	# The ruin has no glass, only dark holes, so it stays dark.
+	if Game.villa_stage <= 1:
 		return
 	var img := tex.get_image()
 	img.convert(Image.FORMAT_RGBA8)

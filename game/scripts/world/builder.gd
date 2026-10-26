@@ -21,6 +21,8 @@ var _timer := 0.0
 var _offsets := {}
 var _dir := ""
 var _leaving := false
+## True through the night, when the builder has gone home and the work waits for morning.
+var _resting := false
 var _pace := 0.0
 
 
@@ -67,6 +69,22 @@ func _seconds_left() -> float:
 
 
 func _process(delta: float) -> void:
+	if not _leaving:
+		var night: bool = Game.is_night()
+		if night and not _resting:
+			_resting = true
+			_plan = []
+			_climb_down()
+			_plan.append({"kind": "rest"})
+			_begin()
+		elif _resting and not night:
+			_resting = false
+			create_tween().tween_property(self, "modulate:a", 1.0, 0.8)
+			_plan = []
+			_next()
+			return
+	if not _plan.is_empty() and _plan[0]["kind"] == "rest":
+		return
 	if _plan.is_empty():
 		if _leaving:
 			queue_free()
@@ -127,6 +145,10 @@ func _begin() -> void:
 		"wait":
 			_timer = float(step["seconds"])
 			_play(String(step["anim"]))
+		"rest":
+			_play("work")
+			sprite.pause()
+			create_tween().tween_property(self, "modulate:a", 0.0, 0.8)
 
 
 func _play(anim: String) -> void:

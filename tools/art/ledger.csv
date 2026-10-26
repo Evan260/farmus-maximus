@@ -230,3 +230,4 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T19:56:27,proflash,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/mill/mill_3.png,0.0242,0,0.6620
 2026-10-25T19:59:34,proflash,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/castellum_1.png,0.0236,0,0.6384
 2026-10-25T19:59:54,proflash,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/castellum_2.png,0.0231,0,0.6154
+2026-10-25T20:10:58,animate,game/assets/sprites/people/presser/walk_new,0.0000,0,0.6154

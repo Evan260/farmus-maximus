@@ -19,6 +19,10 @@ var work_seconds := 3.0
 var idle_anim := ""
 ## For passers-by: the spot where they leave the estate; they walk straight there and are gone.
 var leave_at := NAN
+## People go indoors for the night: they walk to this spot, fade away, and come back out in the morning.
+var rests_at_night := false
+var home_x := NAN
+var _homeward := false
 var sprite: AnimatedSprite2D
 var _state := "idle"
 var _timer := 0.0
@@ -52,12 +56,19 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if rests_at_night and _night_check():
+		return
 	_timer -= delta
 	match _state:
 		"walk":
 			position.x = move_toward(position.x, _target, speed * delta)
 			if is_equal_approx(position.x, _target):
-				if not is_nan(leave_at):
+				if _homeward:
+					_homeward = false
+					_state = "home"
+					_play("stand")
+					create_tween().tween_property(self, "modulate:a", 0.0, 0.8)
+				elif not is_nan(leave_at):
 					_fade_out()
 				elif _delivering:
 					_state = "wait"
@@ -120,6 +131,27 @@ func _set_down() -> void:
 	var fall := _carry.create_tween().set_parallel()
 	fall.tween_property(_carry, "position", _carry.position + Vector2(10.0 * reach, 12.0), 0.5).set_delay(0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	fall.tween_property(_carry, "modulate:a", 0.0, 0.2).set_delay(0.7)
+
+
+## Sends the walker home at nightfall, once any load is set down, and brings them back out at daybreak. True while
+## they are indoors, so nothing else happens.
+func _night_check() -> bool:
+	var night: bool = Game.is_night()
+	if _state == "home":
+		if night:
+			return true
+		_state = "idle"
+		_timer = randf_range(0.5, 2.0)
+		create_tween().tween_property(self, "modulate:a", 1.0, 0.8)
+		return false
+	if night and not _homeward and not _delivering and _state in ["idle", "walk", "work"]:
+		_homeward = true
+		_working_next = false
+		_target = home_x if not is_nan(home_x) else position.x
+		_state = "walk"
+		sprite.flip_h = _target < position.x
+		_play("walk")
+	return false
 
 
 func _fade_out() -> void:

@@ -2191,7 +2191,7 @@
 	"tutorial": [
 		{
 			"id": "plant",
-			"text": "Click an empty plot to plant lavender",
+			"text": "Pick lavender in the toolbar at the bottom, then click an empty plot to plant it",
 			"done": {
 				"stat": "planted",
 				"at": 1

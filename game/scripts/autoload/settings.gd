@@ -93,6 +93,9 @@ func _load() -> void:
 			set(name, bool(d[name]))
 	language = String(d.get("language", language))
 	ui_scale_step = int(d.get("ui_scale_step", 0))
+	# Normal became one step smaller, so settings saved before that keep the same size on screen.
+	if d.has("ui_scale_step") and not d.has("ui_sizes"):
+		ui_scale_step = mini(ui_scale_step + 1, 2)
 	day_minutes = int(d.get("day_minutes", 20))
 	for action in d.get("keys", {}):
 		keys[action] = int(d["keys"][action])
@@ -106,5 +109,5 @@ func save() -> void:
 		f.store_string(JSON.stringify({
 			"offline_progress": offline_progress, "notifications": notifications, "large_text": large_text,
 			"reduced_motion": reduced_motion, "strong_cues": strong_cues, "low_power": low_power, "language": language,
-			"intro_seen": intro_seen, "show_tutorial": show_tutorial, "keys": keys, "ui_scale_step": ui_scale_step, "day_minutes": day_minutes,
+			"intro_seen": intro_seen, "show_tutorial": show_tutorial, "keys": keys, "ui_scale_step": ui_scale_step, "ui_sizes": 2, "day_minutes": day_minutes,
 		}))

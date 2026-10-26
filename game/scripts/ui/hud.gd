@@ -11,10 +11,11 @@ const HelpersPanel := preload("res://scripts/ui/helpers_panel.gd")
 const JournalPanel := preload("res://scripts/ui/journal_panel.gd")
 const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 const UpgradesPanel := preload("res://scripts/ui/upgrades_panel.gd")
-const SeedsPanel := preload("res://scripts/ui/seeds_panel.gd")
 const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
+## Lavender varieties share one icon, so each seed slot is tinted towards its flower colour.
+const SEED_TINTS := {"lavender_violet": Color(0.82, 0.62, 1.0), "lavender_bluegrey": Color(0.72, 0.84, 1.0), "lavender_white": Color(1.15, 1.15, 1.15)}
 ## Bedtime: the sleep button shows from evening until shortly before dawn, and sleeping runs on until this morning hour.
 const SLEEP_FROM := 19.5
 const WAKE_AT := 6.5
@@ -26,7 +27,12 @@ var _coins: Label
 var _storage: Label
 var _cart: Label
 var _calendar: Label
-var _seed_button: Button
+## The tool in hand: "harvest", "seed" (the seed is Game.selected_seed) or "dig".
+var tool := "harvest"
+var _toolbar: PanelContainer
+var _tool_row: HBoxContainer
+var _tool_buttons := {}
+var _tool_signature := ""
 var _sleep_button: Button
 ## Seconds since the farmer went to sleep, or below zero while awake.
 var _slept := -1.0
@@ -49,7 +55,6 @@ var _helpers: WindowPanel
 var _journal: WindowPanel
 var _settings: WindowPanel
 var _upgrades: WindowPanel
-var _seeds: WindowPanel
 var _companions: WindowPanel
 
 
@@ -72,7 +77,6 @@ func _ready() -> void:
 	_storage = UiKit.label(col)
 	_cart = UiKit.label(col)
 	_calendar = UiKit.label(col)
-	_seed_button = UiKit.button(col, "", func(): _open(_seeds))
 	_sleep_button = UiKit.button(col, tr("Sleep until morning"), _start_sleep)
 
 	_buttons = VBoxContainer.new()
@@ -102,10 +106,10 @@ func _ready() -> void:
 	_journal = _add_window(JournalPanel.new())
 	_settings = _add_window(SettingsPanel.new())
 	_upgrades = _add_window(UpgradesPanel.new())
-	_seeds = _add_window(SeedsPanel.new())
 	_companions = _add_window(CompanionsPanel.new())
 	add_to_group("hud")
 	_build_compact()
+	_build_toolbar()
 	_build_debug()
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
@@ -155,7 +159,7 @@ func _process(delta: float) -> void:
 	if not Game.blessing.is_empty():
 		cal += "\n" + tr("Blessing of %s") % tr(String(Game.gods()[Game.blessing["god"]]["name"]))
 	_calendar.text = cal
-	_seed_button.text = tr("Seed: %s") % tr(String(Game.crop_info(Game.selected_seed).get("name", "")))
+	_update_toolbar()
 	_update_tip()
 
 
@@ -220,7 +224,7 @@ func set_zone(zone_id: String) -> void:
 func set_info(text: String) -> void:
 	_info.visible = text != ""
 	_info.text = text
-	_info.position = Vector2(4, _root.size.y - _info.get_minimum_size().y - 2)
+	_info.position = Vector2(4, _above_toolbar() - _info.get_minimum_size().y - 2)
 
 
 func toast(text: String) -> void:
@@ -286,7 +290,7 @@ func _update_tip() -> void:
 	_tip.visible = not step.is_empty() and not Windowing.strip and not _info.visible
 	if _tip.visible:
 		_tip.text = tr("Tip: %s") % tr(String(step["text"]))
-		_tip.position = Vector2(4, _root.size.y - _tip.get_minimum_size().y - 2)
+		_tip.position = Vector2(4, _above_toolbar() - _tip.get_minimum_size().y - 2)
 
 
 func _on_discovered(id: String) -> void:
@@ -389,6 +393,12 @@ func _build_debug() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F1:
 		_debug.visible = not _debug.visible
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode >= KEY_1 and event.keycode <= KEY_9:
+		var slots := _tool_buttons.keys()
+		var k := int(event.keycode - KEY_1)
+		if k < slots.size():
+			select_tool(String(slots[k]))
+			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("close_panel") and close_windows():
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("open_journal"):
@@ -416,3 +426,66 @@ func _update_sleep(delta: float) -> void:
 	if left < 20.0 or _slept > 12.0:
 		Game.speed = 1.0
 		_slept = -1.0
+
+
+## The toolbar along the bottom: harvest, a seed for every crop the estate has, and the spade for digging plants up.
+func _build_toolbar() -> void:
+	_toolbar = PanelContainer.new()
+	_root.add_child(_toolbar)
+	_tool_row = UiKit.row(_toolbar)
+	_tool_row.add_theme_constant_override("separation", 2)
+
+
+func _update_toolbar() -> void:
+	_toolbar.visible = not Windowing.strip
+	var sig := JSON.stringify(Game.crops_unlocked)
+	if sig != _tool_signature:
+		_tool_signature = sig
+		UiKit.clear(_tool_row)
+		_tool_buttons = {}
+		_tool_slot("harvest", load("res://assets/sprites/icons/tool_harvest.png"), tr("Harvest: click ripe plants to pick them"), Color.WHITE)
+		for crop in Balance.get_value("seeds", []):
+			if not Game.crop_unlocked(crop):
+				continue
+			var info := Game.crop_info(crop)
+			var item := String(info.get("item", crop))
+			var path := "res://assets/sprites/icons/%s.png" % item
+			var tint: Color = SEED_TINTS.get(crop, Color.WHITE)
+			var text := tr("Plant %s: %d sestertii") % [tr(String(info.get("name", crop))).to_lower(), int(info.get("plant_cost", 0))]
+			_tool_slot("seed:" + crop, load(path) if ResourceLoader.exists(path) else null, text, tint)
+		_tool_slot("dig", load("res://assets/sprites/icons/tool_dig.png"), tr("Dig up: clear a plant from its bed"), Color.WHITE)
+	var current := "seed:" + Game.selected_seed if tool == "seed" else tool
+	for id in _tool_buttons:
+		_tool_buttons[id].button_pressed = id == current
+	_toolbar.position = Vector2(roundf((_root.size.x - _toolbar.size.x) / 2.0), _root.size.y - _toolbar.size.y - 2)
+
+
+func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
+	var b := Button.new()
+	b.icon = icon
+	b.toggle_mode = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(22, 22)
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
+		b.add_theme_color_override(state, tint)
+	b.pressed.connect(func(): select_tool(id))
+	b.mouse_entered.connect(func(): set_info(text))
+	b.mouse_exited.connect(func(): set_info(""))
+	_tool_row.add_child(b)
+	_tool_buttons[id] = b
+
+
+func select_tool(id: String) -> void:
+	Sfx.play("tab", -6.0)
+	if id.begins_with("seed:"):
+		tool = "seed"
+		Game.selected_seed = id.get_slice(":", 1)
+	else:
+		tool = id
+	_update_toolbar()
+
+
+## The row just above the toolbar, where messages about the pointer and tips are shown.
+func _above_toolbar() -> float:
+	return _toolbar.position.y if _toolbar and _toolbar.visible else _root.size.y

@@ -13,6 +13,7 @@ func _run() -> void:
 	var data_file: Node = root.get_node("Balance")
 	var secs := func(path: String) -> float: return float(data_file.get_value(path, 0)) + 1.0
 	game.new_game()
+	game.day_time = 8.0
 	game.rng.seed = 7
 	_check(game.coins == 20, "starts with 20 sestertii")
 	_check(game.try_plant(0), "plants lavender in an unlocked plot")
@@ -43,6 +44,7 @@ func _run() -> void:
 
 	# Qualities: each quality is its own storage key, recipes take the plainest first.
 	game.new_game()
+	game.day_time = 8.0
 	game.add_item("lavender", 2)
 	game.add_item("lavender@2", 1)
 	_check(game.count_item("lavender") == 3, "counts every quality of a good together")
@@ -52,6 +54,7 @@ func _run() -> void:
 
 	# Growth depends on the season, water and manure.
 	game.new_game()
+	game.day_time = 8.0
 	game.calendar.day = 12
 	game.calendar.wet_left = 0.0
 	game.calendar.weather = "sun"
@@ -69,6 +72,7 @@ func _run() -> void:
 
 	# A farmhand harvests and replants once hired.
 	game.new_game()
+	game.day_time = 8.0
 	game.coins = 10000
 	game.selected_seed = "wheat"
 	_check(not game.hire_helper("farmhand"), "the farmhand needs the restored farmhouse")
@@ -99,6 +103,7 @@ func _run() -> void:
 
 	# The estate: deeds need the villa, buildings need materials, and workshops refine goods once loaded.
 	game.new_game()
+	game.day_time = 8.0
 	game.coins = 9000
 	var grove_plot := -1
 	for i in game.plots.size():
@@ -152,6 +157,7 @@ func _run() -> void:
 
 	# The cellar ages wine, and the barn turns feed into eggs, milk and manure.
 	game.new_game()
+	game.day_time = 8.0
 	game.coins = 9000
 	game.villa_stage = 4
 	game.levels["storage"] = 4
@@ -174,6 +180,7 @@ func _run() -> void:
 
 	# The market: demand, favourites, orders and the shop.
 	game.new_game()
+	game.day_time = 8.0
 	game.add_item("lavender", 60, true)
 	game.market.favourites = []
 	var fresh: int = game.market.price("lavender")
@@ -193,6 +200,7 @@ func _run() -> void:
 
 	# The calendar: seasons, weather and festivals.
 	game.new_game()
+	game.day_time = 8.0
 	game.calendar.day = 0
 	game.day_time = 23.99
 	game.advance(5.0)
@@ -207,6 +215,7 @@ func _run() -> void:
 
 	# The lararium and the villa.
 	game.new_game()
+	game.day_time = 8.0
 	game.coins = 9000
 	game.villa_stage = 4
 	game.buildings["lararium"]["state"] = "working"
@@ -220,9 +229,14 @@ func _run() -> void:
 	game.add_item("stone", 6, true)
 	game.add_item("timber", 4, true)
 	game.add_item("tiles", 4, true)
+	game.day_time = 8.0
 	_check(game.upgrade_villa(), "pays coins and materials for the next villa stage")
 	_check(game.villa_build["active"] and game.villa_stage == 2, "the villa is under construction, not finished instantly")
-	game.simulate_offline(secs.call("villa.stages.2.build_seconds"))
+	game.day_time = 22.0
+	game.advance(60.0)
+	_check(game.villa_build["active"] and is_equal_approx(float(game.villa_build["time_left"]), secs.call("villa.stages.2.build_seconds") - 1.0), "building work stops for the night")
+	# Building only goes on by day, so a night may fall in the middle of it.
+	game.simulate_offline(secs.call("villa.stages.2.build_seconds") + game.day_seconds())
 	_check(not game.villa_build["active"] and game.villa_stage == 3, "construction finishes while the game is closed")
 	game.villa_stage = 4
 	_check(game.missing({"provisions": 2}) != "", "provisions are bread or wine")
@@ -253,6 +267,7 @@ func _run() -> void:
 	var stage: int = game.villa_stage
 	var hour: float = game.day_time
 	game.new_game()
+	game.day_time = 8.0
 	game.from_dict(data)
 	_check(game.coins == coins and game.stored_total() == stored and game.villa_stage == stage and is_equal_approx(game.day_time, hour), "save data round-trips")
 	_check(game.calendar.day == 9 and game.helpers.has("miller") and game.decorations.has("statue"), "calendar, helpers and decorations round-trip")

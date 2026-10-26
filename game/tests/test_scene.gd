@@ -12,6 +12,7 @@ func _run() -> void:
 	var game: Node = root.get_node("Game")
 	root.get_node("Saves").enabled = false
 	game.new_game()
+	game.day_time = 8.0
 	game.coins = 1000
 	var main: Node2D = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
@@ -23,6 +24,7 @@ func _run() -> void:
 		_check(hit == v, "plot %d is clicked at its own soil patch" % v.index)
 	var empty: Node2D = main._view(0)
 	_check(main._plot_at(empty.position + Vector2(14, -20)) != empty, "an empty plot does not respond above its soil")
+	main.hud.select_tool("seed:lavender")
 	var spot: Node2D = main._view(1)
 	main.dog.position = spot.position + Vector2(20, 0)
 	var pick: Vector2 = spot.position + Vector2(14, -1)
@@ -32,6 +34,11 @@ func _run() -> void:
 	var i := 0
 	main._click_plot(i)
 	_check(game.plots[i]["crop"] == "lavender", "clicking an empty plot plants lavender")
+	main.hud.select_tool("dig")
+	main._click_plot(i)
+	_check(game.plots[i]["crop"] == "", "the spade digs a plant up")
+	main.hud.select_tool("seed:lavender")
+	main._click_plot(i)
 	game.calendar.wet_left = 9999.0
 	game.advance(60.0)
 	await process_frame

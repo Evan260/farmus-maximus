@@ -30,6 +30,7 @@ signal helper_hired(helper_id: String)
 signal decoration_bought(decoration_id: String)
 signal animal_added(kind: String)
 signal pets_changed
+signal upgrade_bought(upgrade_id: String)
 
 var coins := 0
 ## Gold coins from special orders and festivals, spent on rare decorations.
@@ -334,10 +335,17 @@ func watered(i: int) -> bool:
 
 
 ## How fast a plot grows right now: the season, water, manure and the gods all play a part.
+## Night falls once the light is mostly gone; people go home, building work stops and plants grow slowly.
+func is_night() -> bool:
+	return Lighting.night_amount(day_time) > 0.5
+
+
 func growth_rate(i: int) -> float:
 	var p: Dictionary = plots[i]
 	var info := crop_info(p["crop"])
 	var rate := float(info.get("seasons", {}).get(calendar.season_id(), 1.0))
+	# Plants keep growing in the dark, but at about a third of their daytime pace.
+	rate *= 1.0 - 0.65 * Lighting.night_amount(day_time)
 	if not watered(i):
 		rate *= float(Balance.get_value("calendar.dry_growth", 0.8))
 	if p.get("manured", false):
@@ -551,6 +559,8 @@ func buy_upgrade(id: String) -> bool:
 		return false
 	coins -= cost
 	levels[id] = int(levels.get(id, 0)) + 1
+	if not quiet:
+		upgrade_bought.emit(id)
 	return true
 
 
@@ -637,7 +647,7 @@ func advance(dt: float) -> Dictionary:
 	if day_time < before:
 		calendar.next_day()
 		market.new_day()
-	if villa_build["active"]:
+	if villa_build["active"] and not is_night():
 		villa_build["time_left"] = float(villa_build["time_left"]) - dt
 		if villa_build["time_left"] <= 0.0:
 			_finish_villa()
@@ -948,6 +958,8 @@ func _advance_buildings(dt: float) -> int:
 	for id in buildings:
 		var b: Dictionary = buildings[id]
 		if b["state"] == "repairing":
+			if is_night():
+				continue
 			b["time_left"] = float(b["time_left"]) - dt
 			if b["time_left"] <= 0.0:
 				b["state"] = "working"
@@ -1215,6 +1227,10 @@ func _advance_helpers(dt: float) -> int:
 		if not info.has("zones") and not info.has("crops"):
 			continue
 		if live_helpers.has(id) and not quiet:
+			continue
+		# Helpers go home at night, so nothing is picked until morning.
+		if is_night():
+			helper_timers[id] = 0.0
 			continue
 		var intervals: Array = info.get("intervals", [5])
 		var interval := float(intervals[mini(int(helpers[id]) - 1, intervals.size() - 1)])
