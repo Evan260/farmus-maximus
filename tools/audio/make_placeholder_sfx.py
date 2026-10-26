@@ -117,6 +117,107 @@ def tab():
     return out
 
 
+def glide(f0, f1, seconds, harmonics=(1.0, 0.5, 0.3, 0.2)):
+    x = t(seconds)
+    f = f0 + (f1 - f0) * (x / seconds)
+    phase = 2 * np.pi * np.cumsum(f) / RATE
+    return sum(h * np.sin(phase * (i + 1)) for i, h in enumerate(harmonics))
+
+
+def cluck():
+    # A hen: three quick, nasal "buk"s and a rising "bawk".
+    out = silence(0.75)
+    for i, at in enumerate([0.0, 0.11, 0.2]):
+        b = glide(620 - i * 30, 480, 0.06, (1, 0.8, 0.5, 0.4, 0.3)) * env(int(RATE * 0.06), 0.004, 45)
+        place(out, b * 0.6, at)
+    a = glide(560, 880, 0.24, (1, 0.7, 0.5, 0.35, 0.25)) * env(int(RATE * 0.24), 0.01, 9)
+    place(out, a * 0.7, 0.34)
+    return lowpass(out, 3)
+
+
+def bleat():
+    # A goat: a quavering "meh-eh-eh", the voice wobbling quickly in loudness and a little in pitch.
+    x = t(0.8)
+    f = 360 + 18 * np.sin(2 * np.pi * 6.5 * x)
+    phase = 2 * np.pi * np.cumsum(f) / RATE
+    voice = sum(h * np.sin(phase * (i + 1)) for i, h in enumerate((1, 0.9, 0.7, 0.5, 0.35, 0.2)))
+    tremolo = 0.45 + 0.55 * np.abs(np.sin(2 * np.pi * 7.0 * x))
+    shape = np.clip(x / 0.05, 0, 1) * np.exp(-x * 2.2)
+    return lowpass(voice * tremolo * shape, 4) * 0.6
+
+
+def stork():
+    # A stork on its nest clattering its bill: a run of hollow wooden clicks that speeds up and then slows.
+    out = silence(1.1)
+    at = 0.0
+    gap = 0.085
+    while at < 1.0:
+        n = rng.standard_normal(int(RATE * 0.012))
+        click = (lowpass(n, 2) - lowpass(n, 12)) * env(len(n), 0.0005, 300)
+        place(out, click + tone(1100, 0.012, decay=280) * 0.4, at)
+        at += gap
+        gap = max(0.05, gap * 0.94) if at < 0.6 else gap * 1.08
+    return out
+
+
+def donkey():
+    # A donkey's bray: a squealing "hee" breathing in and a rough low "haw" breathing out, twice over.
+    out = silence(1.6)
+    for k in range(2):
+        hee = glide(820, 980, 0.22, (1, 0.6, 0.4)) + 0.3 * lowpass(rng.standard_normal(int(RATE * 0.22)), 6)
+        place(out, hee * env(int(RATE * 0.22), 0.02, 4) * 0.5, k * 0.7)
+        x = t(0.4)
+        haw = glide(300, 230, 0.4, (1, 0.9, 0.8, 0.6, 0.5, 0.4)) * (0.6 + 0.4 * np.sign(np.sin(2 * np.pi * 40 * x)))
+        place(out, lowpass(haw, 5) * env(len(x), 0.02, 3) * 0.55, k * 0.7 + 0.24)
+    return out
+
+
+def mrrp():
+    # A cat answering a stroke: a short rolled "mrrp" that rises and falls.
+    x = t(0.32)
+    f = 520 + 160 * np.sin(np.pi * x / 0.32)
+    phase = 2 * np.pi * np.cumsum(f) / RATE
+    voice = np.sin(phase) + 0.45 * np.sin(2 * phase) + 0.2 * np.sin(3 * phase)
+    trill = 0.55 + 0.45 * np.sin(2 * np.pi * 28 * x)
+    return lowpass(voice * trill * np.sin(np.pi * x / 0.32), 4) * 0.5
+
+
+def _hoof(sharp):
+    n = rng.standard_normal(int(RATE * 0.04))
+    body = lowpass(n, 3 if sharp else 14) - (lowpass(n, 30) if sharp else 0)
+    return body * env(len(n), 0.001, 90 if sharp else 60) + tone(260 if sharp else 140, 0.04, decay=70) * 0.5
+
+
+def cart_ride(stone):
+    # Setting off down the road: the donkey's hooves, the wheels crunching over gravel or knocking over paving joints,
+    # and now and then the cart's wood creaking.
+    seconds = 2.4
+    out = silence(seconds)
+    at = 0.05
+    k = 0
+    while at < seconds - 0.1:
+        place(out, _hoof(stone) * (0.55 if k % 2 else 0.45), at)
+        at += 0.19 if k % 2 == 0 else 0.23
+        k += 1
+    if stone:
+        at = 0.1
+        while at < seconds - 0.05:
+            place(out, _hoof(True) * 0.25, at)
+            at += rng.uniform(0.09, 0.16)
+        rumble = lowpass(rng.standard_normal(int(RATE * seconds)), 40) * 0.4
+    else:
+        crunch = rng.standard_normal(int(RATE * seconds))
+        crunch = (lowpass(crunch, 2) - lowpass(crunch, 8)) * (rng.random(len(crunch)) < 0.25)
+        rumble = lowpass(crunch, 2) * 0.5 + lowpass(rng.standard_normal(int(RATE * seconds)), 60) * 0.3
+    place(out, rumble, 0)
+    for at in rng.uniform(0.3, seconds - 0.4, 2):
+        creak = glide(rng.uniform(280, 420), rng.uniform(380, 520), 0.18, (1, 0.6, 0.4, 0.3)) * (0.6 + 0.4 * rng.random(int(RATE * 0.18)))
+        place(out, creak * env(int(RATE * 0.18), 0.03, 8) * 0.12, at)
+    fade = np.ones(len(out))
+    fade[: int(RATE * 0.25)] = np.linspace(0, 1, int(RATE * 0.25))
+    return out * fade
+
+
 def hammer():
     out = knock() * 1.2
     return np.concatenate([out, silence(0.05)])

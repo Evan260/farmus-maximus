@@ -7,6 +7,7 @@ const STRAW := [Color8(128, 108, 64), Color8(160, 136, 82), Color8(190, 166, 104
 const FLOWERS := [Color8(232, 200, 84), Color8(236, 230, 212), Color8(196, 150, 200)]
 
 static var _cache: Array[Texture2D] = []
+static var _tall: Array[Texture2D] = []
 
 
 ## A dozen different tufts, the same every time the game runs.
@@ -19,9 +20,19 @@ static func textures() -> Array[Texture2D]:
 	return _cache
 
 
-static func _tuft(rng: RandomNumberGenerator, dry: bool, flowering: bool) -> Texture2D:
+## Long grass the scythe has missed, for field edges and fence lines: taller, thinner and often gone to seed.
+static func tall_textures() -> Array[Texture2D]:
+	if _tall.is_empty():
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 77
+		for i in 10:
+			_tall.append(_tuft(rng, i % 3 == 2, i % 4 == 1, Vector2i(8, 13)))
+	return _tall
+
+
+static func _tuft(rng: RandomNumberGenerator, dry: bool, flowering: bool, heights := Vector2i(4, 8)) -> Texture2D:
 	var w := rng.randi_range(6, 10)
-	var h := rng.randi_range(4, 8)
+	var h := rng.randi_range(heights.x, heights.y)
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var colours: Array = STRAW if dry else GREENS
 	var tips: Array[Vector2i] = []

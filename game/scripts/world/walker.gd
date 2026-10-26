@@ -21,6 +21,11 @@ var idle_anim := ""
 var leave_at := NAN
 ## People go indoors for the night: they walk to this spot, fade away, and come back out in the morning.
 var rests_at_night := false
+## Optional: changes each picture as it is loaded, for animals in different coats.
+var dress: Callable
+## The folder of walking frames to use instead of walk_east, such as a woman carrying her baby; its first frame is
+## also how she stands.
+var walk_folder := "walk"
 var home_x := NAN
 var _homeward := false
 var sprite: AnimatedSprite2D
@@ -212,13 +217,17 @@ func _play(anim: String) -> void:
 func _frames() -> SpriteFrames:
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
-	var still: Texture2D = load(dir + "east.png") if ResourceLoader.exists(dir + "east.png") else null
+	var still: Texture2D = _dressed(load(dir + "east.png")) if ResourceLoader.exists(dir + "east.png") else null
 	f.add_animation("stand")
 	if still:
 		f.add_frame("stand", still)
 		_offsets["stand"] = _anchor(still)
+	if walk_folder != "walk" and ResourceLoader.exists("%s%s_east/frame_00.png" % [dir, walk_folder]):
+		f.clear("stand")
+		f.add_frame("stand", _dressed(load("%s%s_east/frame_00.png" % [dir, walk_folder])))
+		_offsets["stand"] = _anchor(f.get_frame_texture("stand", 0))
 	for anim in ["walk", "carry", "work", "place", "graze", "sleep"]:
-		var folder := "%s%s_east/" % [dir, anim]
+		var folder := "%s%s_east/" % [dir, walk_folder if anim == "walk" else anim]
 		if not ResourceLoader.exists(folder + "frame_00.png"):
 			continue
 		f.add_animation(anim)
@@ -226,7 +235,7 @@ func _frames() -> SpriteFrames:
 		f.set_animation_loop(anim, anim != "place")
 		var i := 0
 		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
-			f.add_frame(anim, load("%sframe_%02d.png" % [folder, i]))
+			f.add_frame(anim, _dressed(load("%sframe_%02d.png" % [folder, i])))
 			i += 1
 		_offsets[anim] = _anchor(f.get_frame_texture(anim, 0))
 		if anim in ["walk", "carry"]:
@@ -255,6 +264,17 @@ static func natural_pace(f: SpriteFrames, anim: String) -> float:
 	if step < 4:
 		return 0.0
 	return 2.0 * step * f.get_animation_speed(anim) / f.get_frame_count(anim)
+
+
+## Rebuilds the animations, for when how someone looks has changed.
+func refresh_frames() -> void:
+	if sprite:
+		sprite.sprite_frames = _frames()
+		_play("stand")
+
+
+func _dressed(tex: Texture2D) -> Texture2D:
+	return dress.call(tex) if dress.is_valid() else tex
 
 
 ## Places the feet on the node's position whatever the frame size, since animation frames are larger than the still pose.

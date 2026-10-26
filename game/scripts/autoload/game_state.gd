@@ -344,6 +344,27 @@ func watered(i: int) -> bool:
 
 
 ## How fast a plot grows right now: the season, water, manure and the gods all play a part.
+## The young woman of the market town expecting a child: how far along she is, from the calendar. "expecting" grows
+## from 0 to 1 over the days before the birth, and then she carries the baby for a while.
+func baby_story() -> Dictionary:
+	var story: Dictionary = Balance.get_value("story.baby", {})
+	if story.is_empty():
+		return {"stage": "none"}
+	var days := float(calendar.day) + day_time / 24.0 - float(story.get("starts_day", 3))
+	var expecting := float(story.get("expecting_days", 8))
+	if days < 0.0:
+		return {"stage": "none"}
+	if days < expecting:
+		return {"stage": "expecting", "share": days / expecting}
+	if days < expecting + float(story.get("baby_days", 6)):
+		if not stats.has("baby_born"):
+			stats["baby_born"] = 1
+			if not quiet:
+				message.emit("%s in the market town has had %s!" % [story.get("who", "Julia"), story.get("child", "a baby")])
+		return {"stage": "baby"}
+	return {"stage": "none"}
+
+
 ## Night falls once the light is mostly gone; people go home, building work stops and plants grow slowly.
 func is_night() -> bool:
 	return Lighting.night_amount(day_time) > 0.5

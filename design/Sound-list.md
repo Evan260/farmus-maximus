@@ -13,7 +13,12 @@ Every sound the game asks for, by file name. Drop a `.wav` or `.ogg` with exactl
 | `coins` | Buying, selling, the cart's return | Yes |
 | `cart` | The cart leaving or coming home | Yes |
 | `pet` | Petting the dog | Yes |
-| `purr` | Petting the cat | Yes |
+| `cat` | Petting the cat: a short rolled "mrrp" | Yes |
+| `cluck` | Clicking a hen | Yes |
+| `stork` | Clicking the stork on the farmhouse roof: its bill clattering | Yes |
+| `donkey` | Clicking the donkey: a bray | Yes |
+| `cart_dirt` | Riding the cart to market along the dirt road: hooves, gravel and creaking wood | Yes |
+| `cart_stone` | Riding the cart to market along the paved road: hooves and wheels knocking over the stones | Yes |
 | `tab` | Turning to a tab in a window or a bookmark in the journal | Yes |
 | `hammer` | Repairs and villa building | Yes |
 | `villa_complete` | A building or villa stage finished, a deed bought, an achievement | Yes |
@@ -23,7 +28,7 @@ Every sound the game asks for, by file name. Drop a `.wav` or `.ogg` with exactl
 | `cork` | Wine drawn from the cellar | No |
 | `rain_start` | Rain begins | No |
 | `rooster` | Dawn, once there are hens | No |
-| `goat` | Now and then, once there are goats | No |
+| `goat` | Now and then once there are goats, and clicking a goat | Yes |
 | `market_bell` | Arriving in the market town | No |
 | `page_turn` | Opening the journal | No |
 | `shrine_bell` | A blessing at the lararium | No |

@@ -2272,5 +2272,14 @@
 			"grove",
 			"home"
 		]
+	},
+	"story": {
+		"baby": {
+			"starts_day": 3,
+			"expecting_days": 8,
+			"baby_days": 6,
+			"who": "Julia",
+			"child": "a baby girl"
+		}
 	}
 }

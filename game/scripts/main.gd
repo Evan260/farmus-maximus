@@ -76,6 +76,8 @@ var _villa_outline: Node2D
 var _building_states := {}
 ## Scaffolding stood against the storehouse while it is being enlarged.
 var _store_scaffold: Node2D
+## The fenced pasture with its hens and goats.
+var _pasture: Node2D
 ## The Roman road paved over the dirt one, as far as it has been laid.
 var _road: Sprite2D
 var _road_works: Node2D
@@ -199,6 +201,9 @@ func _ready() -> void:
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
 	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(HOME + 198, 0), true, 236)
 	_build_buildings()
+	_scatter_meadow.call_deferred()
+	_root_in_ground.call_deferred(_villa_rect().grow_individual(-12, 0, -12, 0), 851, _villa)
+	_root_in_ground.call_deferred(Rect2(_storehouse.position, _storehouse.region_rect.size), 678, _storehouse)
 	_sync_overgrowth.call_deferred()
 	var decor := DecorView.new()
 	decor.glow_layer = _glow_layer
@@ -210,8 +215,8 @@ func _ready() -> void:
 	_road_works.draw.connect(_draw_road_works)
 	world.add_child(_road_works)
 	_pave_road()
-	var pasture := Pasture.new()
-	world.add_child(pasture)
+	_pasture = Pasture.new()
+	world.add_child(_pasture)
 	var ground_fx := WeatherFx.new()
 	ground_fx.plant_tops = _plant_tops
 	world.add_child(ground_fx)
@@ -363,7 +368,7 @@ func _ride_to_market() -> void:
 		go_to_town()
 		return
 	_riding = true
-	Sfx.play("cart")
+	Sfx.play("cart_stone" if _paving_front > _cart.position.x + 60.0 else "cart_dirt")
 	_face_rig(false)
 	_donkey.play("walk")
 	_move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
@@ -735,6 +740,73 @@ func _demo_maxed() -> void:
 	Game.quiet = false
 
 
+## Tufts, weeds and wildflowers across the estate's grass, with a band of long uncut grass along its back edge where
+## it meets the walls and buildings; the ground picture says where the grass is, and the planting beds are kept clear.
+func _scatter_meadow() -> void:
+	var ground: Image = (load(BG + "ground.png") as Texture2D).get_image()
+	var grassy := func(x: float, y: float) -> bool:
+		var c := ground.get_pixel(clampi(int(x) + 40, 0, ground.get_width() - 1), clampi(int(y), 0, ground.get_height() - 1))
+		return c.a > 0.0 and c.g > c.r + 0.06
+	var clear_of_beds := func(x: float, y: float) -> bool:
+		return not plot_views.any(func(p): return absf(x - p.position.x - 15.0) < 20.0 and absf(y - p.position.y) < 12.0)
+	var node := Node2D.new()
+	world.add_child(node)
+	world.move_child(node, plot_views[0].get_index())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1234
+	var plants := []
+	var x := 0.0
+	while x < estate_width:
+		if grassy.call(x, 240.0) and clear_of_beds.call(x, 238.0):
+			var tall: Array[Texture2D] = GroundPlants.tall_textures()
+			plants.append([tall[rng.randi() % tall.size()], Vector2(x, 238 + rng.randi_range(0, 2))])
+		x += rng.randf_range(3.0, 9.0)
+	for i in int(estate_width / 9.0):
+		var at := Vector2(rng.randf_range(0.0, estate_width), rng.randf_range(244.0, 267.0))
+		if grassy.call(at.x, at.y) and clear_of_beds.call(at.x, at.y):
+			var tufts: Array[Texture2D] = GroundPlants.textures()
+			plants.append([tufts[rng.randi() % tufts.size()], at])
+	plants.sort_custom(func(a, b): return a[1].y < b[1].y)
+	for entry in plants:
+		var plant := Sprite2D.new()
+		plant.texture = entry[0]
+		plant.centered = false
+		plant.flip_h = rng.randf() < 0.5
+		plant.position = (entry[1] - Vector2(roundf(entry[0].get_width() / 2.0), entry[0].get_height())).round()
+		node.add_child(plant)
+		_sway(plant)
+
+
+## A fringe of grass and a few strands of vine along a building's foot, so it sits in the ground rather than on it.
+func _root_in_ground(rect: Rect2, seed: int, after: Node) -> void:
+	var node := Node2D.new()
+	world.add_child(node)
+	world.move_child(node, after.get_index() + 1)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var tufts := GroundPlants.textures()
+	var x := rect.position.x + rng.randf_range(0.0, 6.0)
+	while x < rect.end.x - 4.0:
+		var tex: Texture2D = tufts[rng.randi() % tufts.size()]
+		var plant := Sprite2D.new()
+		plant.texture = tex
+		plant.centered = false
+		plant.flip_h = rng.randf() < 0.5
+		plant.position = Vector2(roundf(x), rect.end.y + rng.randi_range(0, 2) - tex.get_height())
+		node.add_child(plant)
+		x += rng.randf_range(6.0, 16.0)
+	var vines := []
+	for i in rng.randi_range(2, 4):
+		vines.append([roundf(rng.randf_range(rect.position.x + 4.0, rect.end.x - 4.0)), rng.randi_range(4, 10), rng.randi_range(0, 1000)])
+	node.draw.connect(func() -> void:
+		for v in vines:
+			for k in int(v[1]):
+				var vx: float = v[0] + (1.0 if (int(v[2]) + k) % 5 == 0 else 0.0)
+				node.draw_rect(Rect2(vx, rect.end.y - 1 - k, 1, 1), Color8(70, 98, 46))
+				if (k + int(v[2])) % 3 == 0:
+					node.draw_rect(Rect2(vx + (1 if k % 2 else -1), rect.end.y - 1 - k, 1, 1), Color8(104, 132, 60)))
+
+
 func _build_plots() -> void:
 	var spots: Array = []
 	# The back row sits half a plot to the right of the front row, so every plant shows between the ones in front.
@@ -772,6 +844,7 @@ func _build_buildings() -> void:
 		world.add_child(v)
 		building_views.append(v)
 		_building_states[id] = String(Game.buildings[id]["state"])
+		_root_in_ground.call_deferred(v.world_rect(), hash(id), v)
 
 
 ## A building nobody has started to repair stands in weeds, long grass and brambles; they are cleared when work begins.
@@ -1013,6 +1086,25 @@ func _world_input(event: InputEvent) -> void:
 		_update_hover(world.get_global_mouse_position())
 
 
+## A farm animal under the pointer that answers a click: a hen or goat in the pasture, the stork on its nest, or the
+## donkey at the cart. Returns which, or "".
+func _animal_at(point: Vector2) -> String:
+	var grazing: Node2D = _pasture.animal_at(point)
+	if grazing:
+		return String(grazing.get_meta("kind"))
+	if _stork.visible and Rect2(_stork.position, _stork.texture.get_size()).has_point(point):
+		return "stork"
+	if _donkey.visible and Hit.frame_rect(_donkey, _donkey).has_point(point):
+		return "donkey"
+	return ""
+
+
+func _call_out(animal: String, point: Vector2) -> void:
+	var sound: String = {"hen": "cluck", "goat": "goat", "stork": "stork", "donkey": "donkey"}.get(animal, "")
+	Sfx.play(sound, -4.0, 0.1)
+	_hearts(point + Vector2(0, -6))
+
+
 ## The dog or cat under the pointer, if it stands in front of the plant there (or there is no plant).
 func _pet_at(point: Vector2, plant: Node2D) -> Node2D:
 	for pet in [cat, dog]:
@@ -1030,6 +1122,10 @@ func _click(point: Vector2) -> void:
 		return
 	if view:
 		_click_plot(view.index)
+		return
+	var animal := _animal_at(point)
+	if animal != "":
+		_call_out(animal, point)
 		return
 	for s in signs:
 		if s.contains(point):
@@ -1164,10 +1260,11 @@ func _update_hover(point: Vector2) -> void:
 		for v in plot_views:
 			v.hovered = false
 	var pet: bool = pet_hit != null
-	var building: Node2D = null if view or sign_hit or pet else _building_at(point)
+	var animal: String = "" if view or sign_hit or pet else _animal_at(point)
+	var building: Node2D = null if view or sign_hit or pet or animal != "" else _building_at(point)
 	for b in building_views:
 		b.hovered = b == building
-	var on_villa := not view and not sign_hit and not pet and not building and not _cart_rect().has_point(point) and _villa_rect().has_point(point)
+	var on_villa := not view and not sign_hit and not pet and animal == "" and not building and not _cart_rect().has_point(point) and _villa_rect().has_point(point)
 	if on_villa != _villa_hovered:
 		_villa_hovered = on_villa
 		_villa_outline.queue_redraw()
@@ -1179,6 +1276,8 @@ func _update_hover(point: Vector2) -> void:
 		hud.set_info(tr(block) if block != "" else tr("Buy the %s deed: %d sestertii") % [tr(String(z.get("name", ""))).to_lower(), int(z.get("deed", 0))])
 	elif pet:
 		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat"))
+	elif animal != "":
+		hud.set_info(tr({"hen": "A hen", "goat": "A goat", "stork": "The stork on its nest", "donkey": "The donkey"}.get(animal, "")))
 	elif building:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.building_info(building.id).get("name", ""))))
 	elif _villa_hovered:
@@ -1865,7 +1964,7 @@ func _spawn_pets() -> void:
 	cat.min_x = HOME + 385
 	cat.max_x = HOME + 452
 	cat.position = Vector2(HOME + 420, 246)
-	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Sfx.play("purr", -6.0, 0.03); Game.add_stat("pets", 1))
+	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Sfx.play("cat", -4.0, 0.08); Game.add_stat("pets", 1))
 	world.add_child(cat)
 	dog = Dog.new()
 	dog.coat = String(Game.pets.get("dog", {}).get("coat", ""))

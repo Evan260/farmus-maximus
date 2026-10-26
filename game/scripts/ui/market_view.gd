@@ -68,6 +68,9 @@ var _sun: Sprite2D
 var _cloud_look: ShaderMaterial
 var _light: CanvasModulate
 var _sky_time := 0.0
+## The young woman of the town, who in time is expecting a child and then carries her baby about the square.
+var _woman: Node2D
+var _woman_look := ""
 var _water: Node2D
 var _water_time := 0.0
 ## The pixels of the painting that show water in the fountain.
@@ -117,6 +120,8 @@ func _ready() -> void:
 		w.rests_at_night = true
 		w.home_x = [120.0, 360.0][randi() % 2]
 		_scene.add_child(w)
+		if who == "townswoman":
+			_woman = w
 	_bunting = Node2D.new()
 	_bunting.draw.connect(_draw_bunting)
 	_scene.add_child(_bunting)
@@ -202,6 +207,20 @@ func _build_sky() -> void:
 		cloud.set_meta("speed", 1.6 if float(c["y"]) < 40.0 else 1.0)
 		_sky.add_child(cloud)
 		_clouds.append(cloud)
+
+
+func _dress_woman() -> void:
+	if _woman == null or _woman.sprite == null:
+		return
+	var story := Game.baby_story()
+	var bump := int(roundf(float(story.get("share", 0.0)) * 4.0)) if story["stage"] == "expecting" else 0
+	var look := "%s%d" % [story["stage"], bump]
+	if look == _woman_look:
+		return
+	_woman_look = look
+	_woman.walk_folder = "baby" if story["stage"] == "baby" else "walk"
+	_woman.dress = (func(tex: Texture2D) -> Texture2D: return Belly.round_out(tex, bump)) if bump > 0 else Callable()
+	_woman.refresh_frames()
 
 
 func _light_town(delta: float) -> void:
@@ -292,6 +311,7 @@ func _process(delta: float) -> void:
 	_water.queue_redraw()
 	_drift_clouds(delta)
 	_light_town(delta)
+	_dress_woman()
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = 0.3
