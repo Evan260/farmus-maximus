@@ -39,11 +39,11 @@ func tick() -> void:
 		if id == "cart_speed":
 			var trips: Array = info.get("values", [])
 			var next_trip := int(trips[mini(int(Game.levels.get(id, 0)) + 1, trips.size() - 1)])
-			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("pave the next stretch; the trader's trips take %d s") % next_trip]
+			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("pave the next stretch in %s; the trader's trips take %d s") % [UiKit.duration(Game.upgrade_seconds(id) / Game.build_speed), next_trip]]
 			b.disabled = Game.coins < cost
 			continue
 		if id == "channels":
-			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("waters the home farm, so it grows faster")]
+			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("built in %s; waters the home farm, so it grows faster") % UiKit.duration(Game.upgrade_seconds(id) / Game.build_speed)]
 		else:
 			var values: Array = info.get("values", [])
 			var next_value := float(values[mini(int(Game.levels.get(id, 0)) + 1, values.size() - 1)])

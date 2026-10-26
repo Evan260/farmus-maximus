@@ -349,6 +349,14 @@ func is_night() -> bool:
 	return Lighting.night_amount(day_time) > 0.5
 
 
+## How long until night ends, in seconds as they pass on the clock.
+func seconds_until_day() -> float:
+	var hours := 0.0
+	while hours < 24.0 and Lighting.night_amount(fposmod(day_time + hours, 24.0)) > 0.5:
+		hours += 0.05
+	return hours / 24.0 * day_seconds() / maxf(speed, 1.0)
+
+
 func growth_rate(i: int) -> float:
 	var p: Dictionary = plots[i]
 	var info := crop_info(p["crop"])

@@ -822,7 +822,12 @@ func _update_view() -> void:
 ## Sizes the estate's viewport to the window at the current pixel scale, so the picture always fills the window.
 func _apply_scale() -> void:
 	_container.stretch_shrink = Windowing.scale
-	_update_view.call_deferred()
+	# The estate's picture is resized in the same frame as the window, rather than when the container next lays out,
+	# so dragging the window's edge never shows a stretched or lagging frame.
+	var window := get_viewport().get_visible_rect().size
+	_container.size = window
+	_viewport.size = Vector2i((window / Windowing.scale).ceil())
+	_update_view()
 
 
 ## The estate's view in its own pixels: the window divided by the pixel scale, which the viewport takes on a moment later.

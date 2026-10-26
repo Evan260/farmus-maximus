@@ -24,6 +24,8 @@ var _leaving := false
 ## True through the night, when the builder has gone home and the work waits for morning.
 var _resting := false
 var _pace := 0.0
+## Which clothes this builder wears, chosen at random so a team looks like different people.
+var outfit := randi() % Outfits.OUTFITS.size()
 
 
 func _ready() -> void:
@@ -174,7 +176,7 @@ func _frames() -> SpriteFrames:
 		f.set_animation_speed(anim[0], 9.0)
 		var i := 0
 		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
-			f.add_frame(anim[0], load("%sframe_%02d.png" % [folder, i]))
+			f.add_frame(anim[0], Outfits.dress(load("%sframe_%02d.png" % [folder, i]), outfit))
 			i += 1
 		var tex := f.get_frame_texture(anim[0], 0)
 		var used := tex.get_image().get_used_rect()

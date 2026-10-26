@@ -66,6 +66,7 @@ func build() -> void:
 			if not act.is_empty():
 				UiKit.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
 				UiKit.para(body, _upgrade_text(levels[int(b["level"])]), WIDTH)
+				UiKit.para(body, tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 				_next_step(act["cost"], tr("Upgrade"))
 			if Game.building_kind(id) == "workshop":
 				UiKit.button(body, tr("Resume work") if b["paused"] else tr("Pause work"), func(): Game.set_building_paused(id, not b["paused"]))
@@ -279,7 +280,7 @@ func _build_villa() -> void:
 	var next: Dictionary = stages[Game.villa_stage]
 	UiKit.section(body, tr("Next improvement: %s") % tr(String(next["name"])))
 	UiKit.para(body, tr("Brings: %s.") % tr(String(next.get("unlocks", ""))), WIDTH)
-	UiKit.para(body, tr("Builders work on it for %s.") % UiKit.duration(float(next.get("build_seconds", 0))), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(body, tr("Builders work on it for %s.") % UiKit.duration(float(next.get("build_seconds", 0)) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 	_costs = UiKit.cost_list(body, Game.villa_next_price())
 	_action = UiKit.button(body, tr("Build the %s") % tr(String(next["name"])).to_lower(), func(): Game.upgrade_villa())
 	_note = UiKit.label(body)
@@ -293,7 +294,7 @@ func _work_text(day_text: String, left: float) -> String:
 	# Times are shown as they will pass on the clock, which a faster build speed shortens.
 	var real := left / Game.build_speed
 	if Game.is_night():
-		return tr("Work stops for the night and goes on at dawn: %s left") % UiKit.duration(real)
+		return tr("The builders have gone home for the night and come back in %s. %s of work left.") % [UiKit.duration(Game.seconds_until_day()), UiKit.duration(real)]
 	return day_text % UiKit.duration(real)
 
 

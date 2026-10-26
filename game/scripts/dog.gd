@@ -62,7 +62,7 @@ func is_asleep() -> bool:
 
 
 func contains(point: Vector2) -> bool:
-	return Rect2(position + Vector2(-15, -30), Vector2(30, 30)).has_point(point)
+	return Hit.frame_rect(self, sprite).has_point(point)
 
 
 func _choose_next() -> void:

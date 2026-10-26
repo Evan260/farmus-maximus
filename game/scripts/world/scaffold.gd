@@ -71,12 +71,12 @@ func _draw() -> void:
 		_rect(Rect2(left - 2, l + 1, right - left + 6, 1), PLANK, drop, ground)
 		_rect(Rect2(left - 2, l + 2, right - left + 6, 1), PLANK_UNDER, drop, ground)
 	for at in ladders:
-		var lx := rect.position.x + float(at) - 3.0
+		var lx := rect.position.x + float(at) - 5.0
 		_rect(Rect2(lx, top - 4, 1, height + 4), RAIL, drop, ground)
-		_rect(Rect2(lx + 6, top - 4, 1, height + 4), RAIL, drop, ground)
+		_rect(Rect2(lx + 9, top - 4, 1, height + 4), RAIL, drop, ground)
 		var rung := top - 2.0
 		while rung < ground:
-			_rect(Rect2(lx + 1, rung, 5, 1), POLE, drop, ground)
+			_rect(Rect2(lx + 1, rung, 8, 1), POLE, drop, ground)
 			rung += 4.0
 
 
