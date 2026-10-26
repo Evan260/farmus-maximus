@@ -31,6 +31,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `tools/art/make_cart_levels.py` | Draw the trader's cart at each upgrade: stakes, a wicker rail, then a four-wheeled wagon |
 | `tools/art/scale_breeds.py` | Size freshly generated dog and cat breeds to one another, and make the half-size cats |
 | `tools/audio/cut_recordings.py` | Cut the animal calls and other recorded sounds out of their Freesound recordings; sources and licences are in `design/Sound-list.md` |
+| `tools/steam/publish.py` | Build the game and upload it to Steam, live on the test branch; ids in `tools/steam/steam.json`, setup in `design/Steam-publishing.md` |
 | `.env` | `PIXELLAB_TOKEN` (git-ignored) |
 
 Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe`
