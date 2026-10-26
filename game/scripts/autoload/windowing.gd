@@ -5,6 +5,8 @@ signal view_changed
 
 const SETTINGS_PATH := "user://window.json"
 const BASE := Vector2i(480, 270)
+## The narrowest stretch of the estate a tall window shows, in estate pixels: a little over half a zone.
+const NARROWEST := 300
 ## How many rows of the scene the strip shows, counted up from the bottom: enough for the field, the villa and the storehouse.
 const STRIP_ROWS := 166
 const SIZES := ["Small", "Medium", "Large"]
@@ -53,8 +55,10 @@ func _rescale() -> void:
 	var size := get_window().size
 	if not strip:
 		scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
-	# The interface needs room for its windows, so it never grows past what fits about 400 by 225 interface pixels.
-	var most := maxi(1, mini(size.x / 400, size.y / 225))
+		# A tall narrow window crops a little off each side rather than shrinking the estate under a sea of sky.
+		scale = maxi(scale, mini(size.x / NARROWEST, size.y / BASE.y))
+	# The money panel and the zone buttons need about 560 interface pixels side by side, and the windows about 225 down.
+	var most := maxi(1, mini(size.x / 560, size.y / 225))
 	# One step under what fits the window itself, rather than the estate's scale, so a tall narrow window stays readable.
 	var fit := maxi(1, mini(size.x / 400, size.y / BASE.y))
 	ui_scale = clampi(fit - 1 + Settings.ui_scale_step, 1, maxi(1, most))
