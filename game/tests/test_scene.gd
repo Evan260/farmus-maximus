@@ -97,6 +97,14 @@ func _run() -> void:
 	main.hud._start_sleep()
 	await create_timer(8.0).timeout
 	_check(game.day_time > 6.0 and game.day_time < 7.5 and game.speed == 1.0, "sleeping runs the night by and wakes at dawn (woke at %.2f)" % game.day_time)
+	var rain: Node2D = load("res://scripts/world/rain_fx.gd").new()
+	main.add_child(rain)
+	await process_frame
+	rain._process(5.0)
+	var rows := {}
+	for d in rain._drops:
+		rows[roundi(d.y)] = true
+	_check(rows.size() > 40, "rain stays spread out after one very long frame (%d rows)" % rows.size())
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
 

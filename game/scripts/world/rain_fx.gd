@@ -39,8 +39,9 @@ func _process(delta: float) -> void:
 	var fall := Vector2(-18, 150) * (0.3 if Settings.reduced_motion else 1.0)
 	for i in _drops.size():
 		var d: Vector2 = _drops[i] + fall * delta
+		# Carrying on from the top by the overshoot keeps the drops spread out even after one very long frame.
 		if d.y > size.y:
-			d = Vector2(randf_range(0, size.x + 40), -4)
+			d = Vector2(randf_range(0, size.x + 40), fposmod(d.y + 4.0, size.y + 4.0) - 4.0)
 		_drops[i] = d
 	queue_redraw()
 
