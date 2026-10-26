@@ -40,13 +40,12 @@ func _next() -> void:
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	_card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	add_child(_card)
-	# A little snugger than a window's frame, since the card is a passing note.
 	var frame := _card.get_theme_stylebox("panel").duplicate() as StyleBox
 	for side in [SIDE_LEFT, SIDE_RIGHT]:
-		frame.set_content_margin(side, 4)
+		frame.set_content_margin(side, 6)
 	# The font leaves room above its letters but none below, so the bottom gets the extra pixel.
-	frame.set_content_margin(SIDE_TOP, 3)
-	frame.set_content_margin(SIDE_BOTTOM, 5)
+	frame.set_content_margin(SIDE_TOP, 5)
+	frame.set_content_margin(SIDE_BOTTOM, 7)
 	_card.add_theme_stylebox_override("panel", frame)
 	var r := UiKit.row(_card)
 	r.add_theme_constant_override("separation", 4)
