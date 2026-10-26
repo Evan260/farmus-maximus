@@ -27,17 +27,17 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `salve_man` | A man greeting the player when clicked: a friendly "Salve!" | No |
 | `hammer` | Repairs and villa building | Yes |
 | `villa_complete` | A building or villa stage finished, a deed bought, an achievement | Yes |
-| `triumph` | Earning the Triumph, the achievement for all the others: a brass fanfare | Placeholder |
+| `triumph` | Earning the Triumph, the achievement for all the others: a brass fanfare | Yes |
 | `nope` | Something cannot be done (not enough coins, no room) | Yes |
-| `made` | A workshop finishes a batch | No |
-| `oven` | The bakery takes out bread | No |
-| `cork` | Wine drawn from the cellar | No |
-| `rain_start` | Rain begins | No |
+| `made` | A workshop finishes a batch | Yes |
+| `oven` | The bakery takes out bread | Yes |
+| `cork` | Wine drawn from the cellar | Yes |
+| `rain_start` | Rain begins | Yes |
 | `rooster` | Dawn, once there are hens (2 takes) | Yes |
 | `goat` | Now and then once there are goats, and clicking a goat (3 takes) | Yes |
-| `market_bell` | Arriving in the market town | No |
-| `page_turn` | Opening the journal | No |
-| `shrine_bell` | A blessing at the lararium | No |
+| `market_bell` | Arriving in the market town | Yes |
+| `page_turn` | Opening the journal | Yes |
+| `shrine_bell` | A blessing at the lararium | Yes |
 
 ## Ambience (`game/assets/audio/ambience/`)
 
@@ -51,7 +51,7 @@ Each loops without a gap, so the end must join the start smoothly.
 
 ## Recordings
 
-The animal calls come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork, which is CC BY 4.0 and must be credited in the game's credits as shown.
+The animal calls and the other recorded effects come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork, which is CC BY 4.0 and must be credited in the game's credits as shown.
 
 Every recording below is also named on the game's Credits screen, which reads `game/data/credits.json`; add a line there whenever a recording is added. A CC BY recording must be credited there in the form its licence asks.
 
@@ -65,6 +65,14 @@ Every recording below is also named on the game's Credits screen, which reads `g
 | `rooster` | [Chickens clucking and rooster](https://freesound.org/people/evsecrets/sounds/346961/) by evsecrets | CC0 |
 | `dog` | [Single Dog Bark](https://freesound.org/people/kwahmah_02/sounds/277058/) by kwahmah_02 | CC0 |
 | `rustle` | [Foley: Cotton clothes rustling](https://freesound.org/people/khenshom/sounds/481075/) by khenshom | CC0 |
+| `made` | [Wooden mallet on a stump](https://freesound.org/people/ldezem/sounds/386228/) by ldezem | CC0 |
+| `oven` | [Stove door closing](https://freesound.org/people/fkurz/sounds/209460/) by fkurz | CC0 |
+| `cork` | [Wine cork pop](https://freesound.org/people/ahill86/sounds/206152/) by ahill86 | CC0 |
+| `rain_start` | [Distant thunder](https://freesound.org/people/xUMR/sounds/486557/) by xUMR | CC0 |
+| `market_bell` | [Church bell strike](https://freesound.org/people/kgeshev/sounds/378799/) by kgeshev | CC0 |
+| `page_turn` | [Turning a book page](https://freesound.org/people/SpaceJoe/sounds/484968/) by SpaceJoe | CC0 |
+| `shrine_bell` | [Small metal bell](https://freesound.org/people/steffcaffrey/sounds/452379/) by steffcaffrey | CC0 |
+| `triumph` | [Trumpet fanfare](https://freesound.org/people/joepayne/sounds/413201/) by joepayne | CC0 |
 
 ## Music (`game/assets/audio/music/`)
 
