@@ -10,7 +10,7 @@ const GOAT := ["patched", "white", "dark_patched", "grey_patched", "black"]
 
 ## Breeds, each its own shape and build; the first of each is the one the coat colours were made for.
 const BREEDS := {
-	"dog": {"hound": "Farm hound", "molossian": "Molossian mastiff", "sighthound": "Sighthound", "lapdog": "Melitan lapdog", "sheepdog": "Sheepdog"},
+	"dog": {"hound": "Farm hound", "molossian": "Mastiff", "sighthound": "Sighthound", "lapdog": "Lapdog", "sheepdog": "Sheepdog"},
 	"cat": {"tabby": "Tabby", "longhair": "Long-haired", "spotted": "Spotted", "stocky": "Stocky"},
 }
 

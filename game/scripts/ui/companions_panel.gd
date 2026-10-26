@@ -6,12 +6,13 @@ var _choice := {}
 var _pictures := {}
 var _coat_labels := {}
 var _breed_labels := {}
+## Each pet's column is this wide, so the two sit side by side and the window fits them.
+const COLUMN := 118
 var _names := {}
 
 
 func _init() -> void:
 	super("Your companions")
-	fixed_size = Vector2(250, 214)
 
 
 func open() -> void:
@@ -27,12 +28,13 @@ func build() -> void:
 	UiKit.para(body, tr("Every farm needs a dog and a cat. Choose their breeds and coats and give them names."), 240)
 	var pair := UiKit.row(body)
 	pair.add_theme_constant_override("separation", 12)
+	pair.alignment = BoxContainer.ALIGNMENT_CENTER
 	for kind in ["dog", "cat"]:
 		var col := UiKit.column(pair)
-		col.custom_minimum_size = Vector2(115, 0)
+		col.custom_minimum_size = Vector2(COLUMN, 0)
 		UiKit.section(col, tr("Your dog") if kind == "dog" else tr("Your cat"))
 		var pic := TextureRect.new()
-		pic.custom_minimum_size = Vector2(110, 52)
+		pic.custom_minimum_size = Vector2(COLUMN, 52)
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		col.add_child(pic)
 		_pictures[kind] = pic
@@ -42,7 +44,7 @@ func build() -> void:
 		name.text = String(_choice[kind]["name"])
 		name.max_length = 14
 		name.placeholder_text = tr("Name")
-		name.custom_minimum_size = Vector2(110, 0)
+		name.custom_minimum_size = Vector2(COLUMN, 0)
 		name.text_changed.connect(func(t): _choice[kind]["name"] = t.strip_edges())
 		col.add_child(name)
 		_names[kind] = name
@@ -55,7 +57,9 @@ func _chooser(parent: Node, step: Callable) -> Label:
 	var r := UiKit.row(parent)
 	UiKit.button(r, "<", func(): step.call(-1))
 	var label := UiKit.label(r)
-	label.custom_minimum_size = Vector2(80, 0)
+	# The label takes the room between the arrows, so both rows are the same width and their arrows line up.
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.clip_text = true
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UiKit.button(r, ">", func(): step.call(1))
 	return label
