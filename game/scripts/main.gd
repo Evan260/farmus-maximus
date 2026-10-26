@@ -149,6 +149,8 @@ var _stone_night := ""
 var _rig_tween: Tween
 var _storehouse: Sprite2D
 var _glow_layer: CanvasLayer
+## Which way the view drifts behind the title screen.
+var _title_drift := 1.0
 ## Rabbits, the fox and other wild visitors.
 var _wildlife: Node2D
 ## Shepherds and travellers on the road, while they are on the estate.
@@ -470,6 +472,12 @@ func _process(delta: float) -> void:
 	var keys := 0.0 if typing else Input.get_axis("pan_left", "pan_right") + Input.get_joy_axis(0, JOY_AXIS_RIGHT_X) * float(absf(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)) > 0.2)
 	if keys != 0.0 and not market.visible:
 		_pan_by(keys * PAN_SPEED * delta)
+	# Behind the title screen the view drifts slowly along the estate and back.
+	if hud.title_open() and not Settings.reduced_motion:
+		var edge := maxf(0.0, estate_width - _view_size().x)
+		if cam_x >= edge - 1.0 or cam_x <= 1.0:
+			_title_drift = -1.0 if cam_x >= edge - 1.0 else 1.0
+		_pan_by(_title_drift * 9.0 * delta)
 	_stable_donkey()
 	_idle_stork(delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
@@ -688,9 +696,10 @@ func _ready_plot_x(info: Dictionary) -> float:
 func _load_demo_state() -> void:
 	Saves.enabled = false
 	Saves.pending_summary = {}
-	Settings.intro_seen = true
 	Settings.show_tutorial = false
 	Game.new_game()
+	Game.intro_seen = true
+	Game.farm_name = "Villa Aurelia"
 	# Enough of everything to buy and build anything straight away.
 	Game.coins = 10000000
 	Game.aureus = 1000

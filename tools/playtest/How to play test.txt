@@ -11,6 +11,8 @@ STARTING THE GAME
    because the game is new and not yet signed. Click "More info", then
    "Run anyway".
 
+When the game opens, choose "New farm" and give your farm a name.
+
 Nothing needs installing. The game saves by itself every minute and when
 you close it, and carries on growing while it is closed.
 

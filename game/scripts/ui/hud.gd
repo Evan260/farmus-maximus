@@ -5,6 +5,7 @@ signal zone_chosen(zone_id: String)
 signal town_requested
 
 const WindowPanel := preload("res://scripts/ui/window_panel.gd")
+const TitleScreen := preload("res://scripts/ui/title_screen.gd")
 const BuildingPanel := preload("res://scripts/ui/building_panel.gd")
 const StorePanel := preload("res://scripts/ui/store_panel.gd")
 const HelpersPanel := preload("res://scripts/ui/helpers_panel.gd")
@@ -30,6 +31,8 @@ var _calendar: Label
 ## The tool in hand: "harvest", "seed" (the seed is Game.selected_seed) or "dig".
 var tool := "harvest"
 var _toolbar: PanelContainer
+## The title screen while it is showing.
+var _title: Control
 var _tool_row: HBoxContainer
 var _tool_buttons := {}
 var _tool_signature := ""
@@ -123,10 +126,42 @@ func _ready() -> void:
 	Game.blessing_started.connect(func(god): Sfx.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % Game.helper_info(id).get("name", "")))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
+	if _wants_title():
+		_show_title()
+	else:
+		_after_title()
+
+
+## The title screen opens once when the game starts normally; runs started with development flags, the desktop strip
+## and players who turned it off go straight to the farm.
+func _wants_title() -> bool:
+	if Saves.title_done or Windowing.strip:
+		return false
+	var args := OS.get_cmdline_user_args()
+	return "--title" in args or (args.is_empty() and Settings.show_title)
+
+
+func _show_title() -> void:
+	_title = TitleScreen.new()
+	_title.open_window = open_window
+	_root.add_child(_title)
+	# Behind the windows, so the settings open over it.
+	_root.move_child(_title, 0)
+	_title.closed.connect(func():
+		_title = null
+		_after_title())
+
+
+func title_open() -> bool:
+	return _title != null
+
+
+## Once the farm is on screen: the uncle's letter on a new farm, or what happened while the player was away.
+func _after_title() -> void:
 	# A farmer who already has harvests behind them has read the letter long ago.
-	if not Settings.intro_seen and int(Game.stats.get("harvested", 0)) > 0:
-		Settings.set_value("intro_seen", true)
-	if not Settings.intro_seen:
+	if not Game.intro_seen and int(Game.stats.get("harvested", 0)) > 0:
+		Game.intro_seen = true
+	if not Game.intro_seen:
 		_show_intro()
 	elif not Saves.pending_summary.is_empty():
 		_show_away(Saves.pending_summary)
@@ -137,10 +172,12 @@ func _process(delta: float) -> void:
 	_update_sleep(delta)
 	_place_info()
 	var in_strip := Windowing.strip
-	_stats_panel.visible = not in_strip
-	_buttons.visible = not in_strip
-	_zone_bar.visible = not in_strip
-	_compact.visible = in_strip
+	# The title screen stands alone over the estate, without the farm's own panels.
+	var titled := _title != null
+	_stats_panel.visible = not in_strip and not titled
+	_buttons.visible = not in_strip and not titled
+	_zone_bar.visible = not in_strip and not titled
+	_compact.visible = in_strip and not titled
 	if in_strip:
 		for w in _windows:
 			w.visible = false
@@ -238,6 +275,9 @@ func _place_info() -> void:
 
 
 func toast(text: String) -> void:
+	# Messages from the farm loading behind the title screen are not news to the player yet.
+	if _title != null:
+		return
 	# Messages that arrive together are shown one after another rather than overwriting each other.
 	if _toast_tween and _toast_tween.is_running() and _toast.text != text:
 		if not text in _toast_queue and _toast_queue.size() < 4:
@@ -297,7 +337,7 @@ func _apply_text_size() -> void:
 
 func _update_tip() -> void:
 	var step: Dictionary = Game.journal.tutorial_step() if Settings.show_tutorial else {}
-	_tip.visible = not step.is_empty() and not Windowing.strip and not _info.visible
+	_tip.visible = not step.is_empty() and not Windowing.strip and not _info.visible and _title == null
 	if _tip.visible:
 		_tip.text = tr("Tip: %s") % tr(String(step["text"]))
 		_tip.position = Vector2(4, _above_toolbar() - _tip.get_minimum_size().y - 2)
@@ -348,7 +388,10 @@ func _show_intro() -> void:
 	date.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	date.add_theme_color_override("font_color", ink.lerp(LetterPaper.PARCH, 0.35))
 	UiKit.label(col, tr("My dear heir,")).add_theme_color_override("font_color", ink)
-	for line in [tr("The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."),
+	var opening := tr("The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.")
+	if Game.farm_name != "":
+		opening = tr("The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.") % Game.farm_name
+	for line in [opening,
 			tr("Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.")]:
 		UiKit.para(col, line, 222).add_theme_color_override("font_color", ink)
 	var sign := UiKit.row(col)
@@ -364,7 +407,7 @@ func _show_intro() -> void:
 	wax.custom_minimum_size = Vector2(18, 18)
 	wax.size_flags_vertical = Control.SIZE_SHRINK_END
 	sign.add_child(wax)
-	var begin := UiKit.button(holder, tr("Begin"), func(): Settings.set_value("intro_seen", true); holder.queue_free(); _open(_companions))
+	var begin := UiKit.button(holder, tr("Begin"), func(): Game.intro_seen = true; Saves.save_game(); holder.queue_free(); _open(_companions))
 	begin.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	begin.custom_minimum_size = Vector2(90, 0)
 	holder.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -547,7 +590,7 @@ func _build_toolbar() -> void:
 
 
 func _update_toolbar() -> void:
-	_toolbar.visible = not Windowing.strip
+	_toolbar.visible = not Windowing.strip and _title == null
 	var sig := JSON.stringify(Game.crops_unlocked)
 	if sig != _tool_signature:
 		_tool_signature = sig

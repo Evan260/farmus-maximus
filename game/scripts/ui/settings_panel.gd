@@ -13,7 +13,7 @@ func _init() -> void:
 func signature() -> String:
 	return "%s|%s|%s|%s|%d|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.size_index, Windowing.height_index,
 		Windowing.dock, str(Windowing.focus_mode) + str(Windowing.follow), Settings.offline_progress, Settings.notifications, Settings.large_text, Settings.reduced_motion,
-		Settings.strong_cues, Settings.low_power, str(Settings.show_tutorial) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
+		Settings.strong_cues, Settings.low_power, str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
 
 
 func build() -> void:
@@ -54,6 +54,7 @@ func build() -> void:
 			_toggle("Progress while the game is closed", Settings.offline_progress, func(v): Settings.set_value("offline_progress", v))
 			_toggle("Flash the taskbar when something needs you", Settings.notifications, func(v): Settings.set_value("notifications", v))
 			_toggle("Show tips", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
+			_toggle("Open on the title screen", Settings.show_title, func(v): Settings.set_value("show_title", v))
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
 			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))
 			_toggle("Clear marker on ready plants", Settings.strong_cues, func(v): Settings.set_value("strong_cues", v))

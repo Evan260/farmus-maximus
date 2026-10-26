@@ -26,7 +26,8 @@ var reduced_motion := false
 var strong_cues := false
 var low_power := false
 var language := "en"
-var intro_seen := false
+## Whether the game opens on the title screen; players who want straight in can turn it off.
+var show_title := true
 ## How much bigger or smaller than the estate the interface is drawn, in whole steps.
 var ui_scale_step := 0
 ## Minutes in one in-game day.
@@ -41,7 +42,6 @@ func _ready() -> void:
 	_load()
 	if "--new-farm" in OS.get_cmdline_user_args():
 		persist = false
-		intro_seen = false
 		show_tutorial = true
 	for action in ACTIONS:
 		if not InputMap.has_action(action):
@@ -88,7 +88,7 @@ func _load() -> void:
 	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	if typeof(d) != TYPE_DICTIONARY:
 		return
-	for name in ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "low_power", "intro_seen", "show_tutorial"]:
+	for name in ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "low_power", "show_title", "show_tutorial"]:
 		if d.has(name):
 			set(name, bool(d[name]))
 	language = String(d.get("language", language))
@@ -109,5 +109,5 @@ func save() -> void:
 		f.store_string(JSON.stringify({
 			"offline_progress": offline_progress, "notifications": notifications, "large_text": large_text,
 			"reduced_motion": reduced_motion, "strong_cues": strong_cues, "low_power": low_power, "language": language,
-			"intro_seen": intro_seen, "show_tutorial": show_tutorial, "keys": keys, "ui_scale_step": ui_scale_step, "ui_sizes": 2, "day_minutes": day_minutes,
+			"show_title": show_title, "show_tutorial": show_tutorial, "keys": keys, "ui_scale_step": ui_scale_step, "ui_sizes": 2, "day_minutes": day_minutes,
 		}))

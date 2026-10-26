@@ -9,7 +9,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var game: Node = root.get_node("Game")
 	root.get_node("Saves").enabled = false
-	var path := OS.get_user_data_dir().path_join("save.json")
+	var path := ProjectSettings.globalize_path(root.get_node("Saves").path_for(root.get_node("Saves").slot))
 	if not FileAccess.file_exists(path):
 		print("no save at ", path)
 		quit()

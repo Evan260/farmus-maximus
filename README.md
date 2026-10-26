@@ -12,7 +12,7 @@ The game is made with Godot 4.7.2. With Godot installed through winget (the path
 
 | Launcher | What it opens |
 |---|---|
-| `Play Farmus Maximus.bat` | Your own farm, saved as you play |
+| `Play Farmus Maximus.bat` | The title screen, then your farms (up to three), saved as you play |
 | `Play Farmus Maximus (new farm).bat` | A fresh farm from the first day, which is never saved |
 | `Play Farmus Maximus (demo farm).bat` | A farm with plenty planted and lots of coins, for trying things out; never saved |
 | `Play Farmus Maximus (maxed farm).bat` | Everything finished and at its top level; never saved |

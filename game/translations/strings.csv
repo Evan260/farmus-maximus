@@ -19,6 +19,7 @@ keys,en
 (level %d),(level %d)
 ", then again every %s.",", then again every %s."
 ", then needs replanting.",", then needs replanting."
+"A Roman farm, slowly brought back to life","A Roman farm, slowly brought back to life"
 A drop of lavender oil and even a senator smiles.,A drop of lavender oil and even a senator smiles.
 "A farmhand to hire, and land deeds on sale","A farmhand to hire, and land deeds on sale"
 A fine portico,A fine portico
@@ -56,6 +57,7 @@ An old coin,An old coin
 "An old ruin, waiting for someone to bring it back.","An old ruin, waiting for someone to bring it back."
 An old ruin. %s.,An old ruin. %s.
 Animals,Animals
+Another,Another
 Aqueduct channels,Aqueduct channels
 At work,At work
 At your service,At your service
@@ -64,6 +66,7 @@ Aurei  %d,Aurei  %d
 Autumn,Autumn
 Ave!,Ave!
 Bacchus,Bacchus
+Back,Back
 Back to the estate,Back to the estate
 Back to work,Back to work
 Baker,Baker
@@ -140,6 +143,7 @@ Click the cart to send your goods to market,Click the cart to send your goods to
 "Click the farmhouse, then gather what it needs to be restored","Click the farmhouse, then gather what it needs to be restored"
 Comes out to cross the paths after rain.,Comes out to cross the paths after rain.
 Common,Common
+Continue,Continue
 Cornelia,Cornelia
 DEED,DEED
 Dairy,Dairy
@@ -147,6 +151,7 @@ Darts low over the fields in summer and after rain.,Darts low over the fields in
 Decimus,Decimus
 Deep violet lavender,Deep violet lavender
 Deep violet lavender cuttings,Deep violet lavender cuttings
+Delete,Delete
 Deliver,Deliver
 Desktop strip  (%s),Desktop strip  (%s)
 Desktop strip (%s),Desktop strip (%s)
@@ -195,6 +200,7 @@ Expand,Expand
 Falernian quality,Falernian quality
 Farmer's journal,Farmer's journal
 Farmhand,Farmhand
+Farms,Farms
 Farmus Maximus,Farmus Maximus
 Faster donkey,Faster donkey
 Feed,Feed
@@ -340,8 +346,10 @@ With love, Marcus"
 "My remedies want {n} {item}, dear. No hurry.","My remedies want {n} {item}, dear. No hurry."
 My ship sails for Ostia soon. I need {n} {item}.,My ship sails for Ostia soon. I need {n} {item}.
 Name,Name
+Name your farm,Name your farm
 Naturalist,Naturalist
 Nests on the roof of a well-kept villa.,Nests on the roof of a well-kept villa.
+New farm,New farm
 New in the journal: %s,New in the journal: %s
 Next eggs and milk in %s,Next eggs and milk in %s
 Next improvement: %s,Next improvement: %s
@@ -397,11 +405,13 @@ Pet the dog 50 times,Pet the dog 50 times
 Pious,Pious
 Plant %s: %d sestertii,Plant %s: %d sestertii
 "Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.","Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping."
+Play,Play
 Pomona,Pomona
 Press a key...,Press a key...
 Presser,Presser
 Prosperous,Prosperous
 "Pulls the cart to market and back, rain or shine.","Pulls the cart to market and back, rain or shine."
+Quit,Quit
 Rabbits,Rabbits
 Rain is falling: the fields are watered,Rain is falling: the fields are watered
 Ready as %s wine: %d,Ready as %s wine: %d
@@ -487,8 +497,10 @@ Strip scale,Strip scale
 Strip scale: %s,Strip scale: %s
 Strip: painted sky,Strip: painted sky
 Strip: transparent,Strip: transparent
+Suggest another name,Suggest another name
 Summer,Summer
 Sundial,Sundial
+Sure?,Sure?
 Swallows,Swallows
 Swallows sweep low over the fields in the evening.,Swallows sweep low over the fields in the evening.
 Takes the cart to market whenever it is worth the trip,Takes the cart to market whenever it is worth the trip
@@ -535,6 +547,7 @@ The household gods watch over the estate.,The household gods watch over the esta
 "The lararium, the pasture deed and decorations","The lararium, the pasture deed and decorations"
 The northern lights,The northern lights
 "The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
+"The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
 The ovens are hungry! Could you bring {n} {item}?,The ovens are hungry! Could you bring {n} {item}?
 The peristyle,The peristyle
 The rest of the villa's story is in the full game. Thank you for playing the demo!,The rest of the villa's story is in the full game. Thank you for playing the demo!

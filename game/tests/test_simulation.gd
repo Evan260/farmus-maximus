@@ -287,6 +287,15 @@ func _run() -> void:
 	game.day_time = 8.0
 	game.from_dict(data)
 	_check(game.coins == coins and game.stored_total() == stored and game.villa_stage == stage and is_equal_approx(game.day_time, hour), "save data round-trips")
+	game.farm_name = "Villa Probe"
+	game.intro_seen = false
+	var named: Dictionary = JSON.parse_string(JSON.stringify(game.to_dict()))
+	game.new_game()
+	game.from_dict(named)
+	_check(game.farm_name == "Villa Probe" and not game.intro_seen, "a farm keeps its name and whether its letter was read")
+	named.erase("intro_seen")
+	game.from_dict(named)
+	_check(game.intro_seen, "a farm saved before letters were kept per farm counts its letter as read")
 	_check(game.calendar.day == 9 and game.helpers.has("miller") and game.decorations.has("statue"), "calendar, helpers and decorations round-trip")
 	_check(game.buildings["cellar"]["casks"].size() == 1 and game.journal.has("find:" + find), "casks and the journal round-trip")
 	var old := {"levels": {"farmhand": 2}, "coins": 5}

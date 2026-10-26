@@ -62,6 +62,10 @@ var live_helpers := {}
 var decorations := {}
 ## The farm's dog and cat: the names and coats the player chose for them.
 var pets := {}
+## What the player named their farm.
+var farm_name := ""
+## Whether this farm's player has read the uncle's letter that opens it.
+var intro_seen := false
 ## The lararium's blessing in effect, if any.
 var blessing := {}
 ## When on, every planting and regrowth uses one manure from the storehouse.
@@ -102,6 +106,8 @@ func _process(delta: float) -> void:
 
 func new_game() -> void:
 	rng.randomize()
+	farm_name = ""
+	intro_seen = false
 	coins = int(Balance.get_value("start.coins", 20))
 	aureus = 0
 	storage = {}
@@ -1486,7 +1492,7 @@ func _empty_cart() -> Dictionary:
 
 func to_dict() -> Dictionary:
 	return {
-		"keep_goods": keep_goods, "projects": projects,
+		"keep_goods": keep_goods, "projects": projects, "farm_name": farm_name, "intro_seen": intro_seen,
 		"coins": coins, "aureus": aureus, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
 		"crops_unlocked": crops_unlocked, "villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time,
 		"cart": cart, "zones_owned": zones_owned, "buildings": buildings, "helpers": helpers, "helper_timers": helper_timers,
@@ -1497,6 +1503,9 @@ func to_dict() -> Dictionary:
 
 func from_dict(d: Dictionary) -> void:
 	new_game()
+	farm_name = String(d.get("farm_name", ""))
+	# Farms saved before the letter was kept per farm had already been opened, letter and all.
+	intro_seen = bool(d.get("intro_seen", true))
 	coins = int(d.get("coins", coins))
 	aureus = int(d.get("aureus", 0))
 	keep_goods = {}
