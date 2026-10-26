@@ -38,3 +38,17 @@ static func frame_has_pixel(owner: Node2D, s: AnimatedSprite2D, point: Vector2) 
 	if local.x < 0 or local.y < 0 or local.x >= size.x or local.y >= size.y:
 		return false
 	return img.get_pixelv(Vector2i(local)).a > 0.1
+
+
+## Of the figures whose pictures cover a point, the one drawn in front: someone whose own pixels are under the pointer
+## beats someone whose picture merely has an empty corner there, and among those the one drawn last is on top.
+static func front_most(figures: Array, point: Vector2) -> Node2D:
+	if figures.is_empty():
+		return null
+	var solid := figures.filter(func(f): return frame_has_pixel(f, f.sprite, point))
+	var pool := solid if not solid.is_empty() else figures
+	var front: Node2D = pool[0]
+	for f in pool:
+		if f.is_greater_than(front):
+			front = f
+	return front

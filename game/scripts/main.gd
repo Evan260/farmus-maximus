@@ -760,10 +760,11 @@ func _load_demo_state() -> void:
 			get_tree().create_timer(1.6).timeout.connect(func():
 				for w in _people() + market._folk:
 					w.greet())
-		elif arg == "--achievement":
-			# The next two achievements not yet earned, to see their cards slide in one after the other.
-			var fresh: Array = Balance.get_value("achievements", []).filter(func(a): return not a.get("special", false) and not Game.journal.achievements.has(a["id"]))
-			for a in fresh.slice(0, 2):
+		elif arg.begins_with("--achievement"):
+			# The named achievements, or the next two not yet earned, to see their cards slide in one after the other.
+			var named := arg.trim_prefix("--achievement=").split(",") if "=" in arg else PackedStringArray()
+			var fresh: Array = Balance.get_value("achievements", []).filter(func(a): return not a.get("special", false) and (a["id"] in named if not named.is_empty() else not Game.journal.achievements.has(a["id"])))
+			for a in fresh.slice(0, 2 if named.is_empty() else named.size()):
 				Game.achievement_unlocked.emit.call_deferred(a)
 		elif arg == "--triumph":
 			for a in Balance.get_value("achievements", []):
@@ -1261,10 +1262,8 @@ func _call_out(animal: String, point: Vector2) -> void:
 
 ## The dog or cat under the pointer, if it stands in front of the plant there (or there is no plant).
 func _pet_at(point: Vector2, plant: Node2D) -> Node2D:
-	for pet in [cat, dog] + _people():
-		if pet and pet.contains(point) and (plant == null or pet.position.y >= plant.position.y):
-			return pet
-	return null
+	var under := ([cat, dog] + _people()).filter(func(p): return p and p.contains(point) and (plant == null or p.position.y >= plant.position.y))
+	return Hit.front_most(under, point)
 
 
 ## The helpers, the trader and anyone passing along the road, who wave back when clicked.

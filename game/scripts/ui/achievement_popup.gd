@@ -63,7 +63,10 @@ func _next() -> void:
 	words.add_theme_constant_override("separation", -1)
 	UiKit.label(words, tr("Achievement")).add_theme_color_override("font_color", UiKit.HEADING)
 	UiKit.label(words, tr(String(a["name"])))
-	UiKit.para(words, tr(String(a.get("desc", ""))), 140).add_theme_color_override("font_color", UiKit.FADED)
+	var desc := UiKit.para(words, tr(String(a.get("desc", ""))), 140)
+	desc.add_theme_color_override("font_color", UiKit.FADED)
+	# A description that wraps keeps the same tight line spacing as the lines above it.
+	desc.add_theme_constant_override("line_spacing", -1)
 	var card := _card
 	card.position = Vector2(size.x, size.y)
 	# A wrapped description only knows its height once laid out, so the card is measured a frame later, still out of sight.
@@ -71,6 +74,8 @@ func _next() -> void:
 	card.reset_size()
 	var w := card.size.x
 	card.position.y = roundf(size.y - card.size.y - MARGIN)
+	# Wrapped text can settle its height a little later, so the card stays standing on its bottom edge as it does.
+	card.resized.connect(func(): card.position.y = roundf(size.y - card.size.y - MARGIN))
 	card.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and card == _card:
 			_leave())

@@ -97,6 +97,19 @@ func _run() -> void:
 	main.hud._start_sleep()
 	await create_timer(8.0).timeout
 	_check(game.day_time > 6.0 and game.day_time < 7.5 and game.speed == 1.0, "sleeping runs the night by and wakes at dawn (woke at %.2f)" % game.day_time)
+	var pair := []
+	for who in ["traveller", "shepherd"]:
+		var w: Node2D = load("res://scripts/world/walker.gd").new()
+		w.dir = "res://assets/sprites/people/%s/" % who
+		w.position = Vector2(300, 250)
+		w.leave_at = 9999.0
+		w.speed = 0.0
+		main.world.add_child(w)
+		main._passers.append(w)
+		pair.append(w)
+	# People fade in when they arrive and cannot be clicked until they are there.
+	await create_timer(1.5).timeout
+	_check(main._pet_at(Vector2(300, 234), null) == pair[1], "of two people standing on each other, the one drawn in front takes the click")
 	var rain: Node2D = load("res://scripts/world/rain_fx.gd").new()
 	main.add_child(rain)
 	await process_frame

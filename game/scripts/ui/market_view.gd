@@ -365,10 +365,7 @@ func _spot_at(ui_point: Vector2) -> String:
 ## The townsperson under the pointer, if any.
 func _folk_at(ui_point: Vector2) -> Node2D:
 	var picture := (ui_point * Windowing.ui_scale - _scene.position) / _scene.scale.x
-	for w in _folk:
-		if w.contains(picture):
-			return w
-	return null
+	return Hit.front_most(_folk.filter(func(w): return w.contains(picture)), picture)
 
 
 func _on_picture_input(event: InputEvent) -> void:
