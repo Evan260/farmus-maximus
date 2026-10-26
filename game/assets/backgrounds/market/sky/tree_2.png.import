@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cokdmgm31msh5"
-path="res://.godot/imported/sway_mask.png-65bbffc42bc7ce32846b973de89a9c74.ctex"
+uid="uid://u4ynlhwm064b"
+path="res://.godot/imported/tree_2.png-3b7c60b63a6b2af72f6f09fe7c06880d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/backgrounds/market/sky/sway_mask.png"
-dest_files=["res://.godot/imported/sway_mask.png-65bbffc42bc7ce32846b973de89a9c74.ctex"]
+source_file="res://assets/backgrounds/market/sky/tree_2.png"
+dest_files=["res://.godot/imported/tree_2.png-3b7c60b63a6b2af72f6f09fe7c06880d.ctex"]
 
 [params]
 

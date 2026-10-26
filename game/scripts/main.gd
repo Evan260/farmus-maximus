@@ -41,6 +41,8 @@ const BOTTOM := 286.0
 ## The helpers who are women, so their greeting uses a woman's voice.
 const WOMEN := ["miller", "perfumer", "stablehand"]
 const RIG_BASE := 282
+## Where milestones stand along the road, in estate pixels.
+const MILESTONES := [330, 930, 1530, 2130]
 ## The right edge and the bottom row of the cart's bed in its pictures; a bigger cart repeats only what lies within.
 const BED_RIGHT := 37
 const BED_BOTTOM := 28
@@ -86,8 +88,14 @@ var _pasture: Node2D
 ## The Roman road paved over the dirt one, as far as it has been laid.
 var _road: Sprite2D
 var _road_works: Node2D
+## The raised kerbstones along the road's far edge, laid by the third road improvement.
+var _kerb: Sprite2D
+## How far along the road the milestones have been set.
+var _milestone_reach := -40.0
 ## Where the paving has reached while a stretch is being laid.
 var _paving_front := -40.0
+## How far the paving itself reaches along the road.
+var _paved_reach := -40.0
 ## The water channel along the front of the home farm.
 var _channels: Node2D
 ## The cart that brings paving stones up to the work, with its donkey and its load.
@@ -233,6 +241,8 @@ func _ready() -> void:
 	_add_texture(load(BG + "ground.png"), Vector2(-40, 0))
 	_road = _add_texture(load(BG + "road_paved.png"), Vector2(-40, 270))
 	_road.region_enabled = true
+	_kerb = _add_texture(_road.texture, Vector2(-40, 270))
+	_kerb.region_enabled = true
 	_road_works = Node2D.new()
 	_road_works.draw.connect(_draw_road_works)
 	world.add_child(_road_works)
@@ -394,7 +404,7 @@ func _ride_to_market() -> void:
 		go_to_town()
 		return
 	_riding = true
-	var wheels := Sfx.play("cart_stone" if _paving_front > _cart.position.x + 60.0 else "cart_dirt")
+	var wheels := Sfx.play("cart_stone" if _paved_reach > _cart.position.x + 60.0 else "cart_dirt")
 	_face_rig(false)
 	_donkey.play("walk")
 	_move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
@@ -576,6 +586,7 @@ func _sync_builders() -> void:
 			b.site = sites[id]["rect"]
 			b.ladders = sites[id]["ladders"]
 			b.planks = sites[id].get("planks", [])
+			b.follows = id in ["project_cart_speed", "project_channels"]
 			b.time_left = sites[id]["left"]
 			b.town_x = estate_width
 			world.add_child(b)
@@ -1756,24 +1767,39 @@ func _size_cart() -> void:
 
 ## The paved road is laid from the farm towards the town, stretch by stretch; while a stretch is being laid it grows
 ## with the work, so the paving creeps along the road.
+## Each improvement to the road is worked along its whole length: first the paving, then milestones set beside it,
+## then a kerb of raised stones along its far edge. While one is under way it reaches as far as the work has come.
 func _pave_road() -> void:
 	var level := int(Game.levels.get("cart_speed", 0))
-	# The first paving covers the whole of the estate's road; later ones pave the road beyond it towards town.
-	var ends := [-40.0, 2440.0, 2440.0, 2440.0]
-	var reach: float = ends[clampi(level, 0, ends.size() - 1)]
-	if Game.projects.has("cart_speed") and level + 1 < ends.size():
+	var front := 2440.0
+	if Game.projects.has("cart_speed"):
 		var done := clampf(1.0 - float(Game.projects["cart_speed"]) / maxf(1.0, Game.upgrade_seconds("cart_speed")), 0.0, 1.0)
-		reach = roundf(lerpf(reach, ends[level + 1], done))
-	_paving_front = reach
-	_road.visible = reach > -40.0
-	_road.region_rect = Rect2(0, 0, reach + 40.0, 20)
-	_road.position.x = -40.0
+		front = roundf(lerpf(-40.0, 2440.0, done))
+	var reach := func(stage: int) -> float:
+		if level > stage:
+			return 2440.0
+		return front if level == stage and Game.projects.has("cart_speed") else -40.0
+	_paving_front = front
+	var paved: float = reach.call(0)
+	_paved_reach = paved
+	_road.visible = paved > -40.0
+	# The paving's own far kerb is only shown once the kerbstones have been laid.
+	_road.region_rect = Rect2(0, 3, paved + 40.0, 17)
+	_road.position = Vector2(-40.0, 273.0)
+	_kerb.visible = float(reach.call(2)) > -40.0
+	_kerb.region_rect = Rect2(0, 0, float(reach.call(2)) + 40.0, 3)
+	_kerb.position = Vector2(-40.0, 270.0)
+	_milestone_reach = reach.call(1)
 	_road_works.queue_redraw()
 
 
-## Ahead of the paving, a strip of levelled gravel waits for the stones, with a heap of them at the working edge.
+## Ahead of the paving, a strip of levelled gravel waits for the stones, with a heap of them at the working edge; the
+## milestones stand at the road's far side as far as they have been set.
 func _draw_road_works() -> void:
-	if not Game.projects.has("cart_speed"):
+	for at in MILESTONES:
+		if at <= _milestone_reach:
+			_draw_milestone(float(at))
+	if not Game.projects.has("cart_speed") or int(Game.levels.get("cart_speed", 0)) > 0:
 		return
 	var x := _paving_front
 	var gravel := Color8(150, 138, 118)
@@ -1790,6 +1816,23 @@ func _draw_road_works() -> void:
 		_road_works.draw_rect(Rect2(x + 2 + row, 271 - row * 2, w, 1), stone.darkened(0.2))
 	for k in 5:
 		_road_works.draw_rect(Rect2(x + 12 + k * 5, 278 + (k % 2) * 5, 3, 2), stone)
+
+
+## A Roman milestone: a short round column on a square foot, lit on its left, with its lettering as a dark band.
+func _draw_milestone(x: float) -> void:
+	var stone := Color8(196, 188, 170)
+	var shade := Color8(150, 142, 128)
+	_road_works.draw_rect(Rect2(x - 3, 266, 7, 3), shade)
+	_road_works.draw_rect(Rect2(x - 3, 266, 7, 1), stone)
+	for row in 12:
+		var y := 254 + row
+		_road_works.draw_rect(Rect2(x - 2, y, 2, 1), stone.lightened(0.08) if row < 2 else stone)
+		_road_works.draw_rect(Rect2(x, y, 2, 1), shade)
+		_road_works.draw_rect(Rect2(x + 2, y, 1, 1), shade.darkened(0.2))
+	_road_works.draw_rect(Rect2(x - 2, 253, 4, 1), stone.lightened(0.12))
+	_road_works.draw_rect(Rect2(x - 2, 258, 4, 1), shade.darkened(0.35))
+	_road_works.draw_rect(Rect2(x - 1, 260, 3, 1), shade.darkened(0.3))
+	_road_works.draw_rect(Rect2(x - 4, 269, 9, 1), Color(0.18, 0.14, 0.08, 0.3))
 
 
 ## A donkey cart heaped with paving stones stands on the new road just behind the work and moves up as the paving

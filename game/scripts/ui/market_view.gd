@@ -68,9 +68,8 @@ var _sun: Sprite2D
 var _cloud_look: ShaderMaterial
 var _light: CanvasModulate
 var _sky_time := 0.0
-## The banners in the temple and the shader that sways the cypresses.
+## The banners in the temple, redrawn as they stir.
 var _banners: Node2D
-var _trees: ShaderMaterial
 ## While a banner is drawn, the row its pole hangs from and where it hangs, so its cloth can sway; -1 otherwise.
 var _cloth_top := -1
 var _cloth_x := 0
@@ -101,12 +100,21 @@ func _ready() -> void:
 	var front := Sprite2D.new()
 	front.centered = false
 	front.texture = load(SKY_DIR + "front.png")
-	if ResourceLoader.exists(SKY_DIR + "sway_mask.png"):
-		_trees = ShaderMaterial.new()
-		_trees.shader = preload("res://assets/shaders/town_sway.gdshader")
-		_trees.set_shader_parameter("mask", load(SKY_DIR + "sway_mask.png"))
-		front.material = _trees
 	_scene.add_child(front)
+	# The cypresses stand apart from the town picture, so they can lean in the wind like the trees on the estate.
+	if FileAccess.file_exists(SKY_DIR + "trees.json"):
+		front.texture = load(SKY_DIR + "front_still.png")
+		for t in JSON.parse_string(FileAccess.get_file_as_string(SKY_DIR + "trees.json")):
+			var tree := Sprite2D.new()
+			tree.centered = false
+			tree.texture = load(SKY_DIR + String(t["file"]))
+			tree.position = Vector2(float(t["x"]), float(t["y"]))
+			var sway := ShaderMaterial.new()
+			sway.shader = preload("res://assets/shaders/sway.gdshader")
+			sway.set_shader_parameter("height", float(tree.texture.get_height()))
+			sway.set_shader_parameter("strength", 0.0 if Settings.reduced_motion else 1.0)
+			tree.material = sway
+			_scene.add_child(tree)
 	_water = Node2D.new()
 	_water.draw.connect(_draw_water)
 	_scene.add_child(_water)
@@ -268,9 +276,6 @@ func _light_town(delta: float) -> void:
 	paint.set_shader_parameter("time", _sky_time)
 	if _banners:
 		_banners.queue_redraw()
-	if _trees:
-		_trees.set_shader_parameter("clock", _sky_time)
-		_trees.set_shader_parameter("strength", 0.0 if Settings.reduced_motion else 1.0)
 	_cloud_look.set_shader_parameter("light", look["light"])
 	_cloud_look.set_shader_parameter("shade", look["shade"])
 	var light := Lighting.color_at(hour)

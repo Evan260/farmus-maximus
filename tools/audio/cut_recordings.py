@@ -20,8 +20,9 @@ CUTS = [
     ("goat_3", "722658_3200333", 17.6, 19.4),
     ("donkey_1", "170483_1661766", 27.2, 29.8),
     ("stork_1", "525217_8043", 4.6, 7.0),
-    ("cat_1", "436541_1196472", 0.0, 0.63),
-    ("cat_2", "110011_1537422", 0.0, 1.55),
+    ("cat_1", "260881", 5.0, 7.2),
+    ("cat_2", "260881", 20.0, 22.2),
+    ("cat_3", "451250", 0.25, 0.9),
     ("rooster_1", "346961_2367065", 32.9, 34.9),
     ("rooster_2", "346961_2367065", 21.5, 23.6),
     ("dog_1", "181767_3153523", 3.0, 4.6),
@@ -40,7 +41,9 @@ def main():
             data = data.mean(axis=1)
         clip = data[int(a * rate):int(b * rate)].copy()
         clip -= clip.mean()
-        fade_in, fade_out = int(0.01 * rate), int(0.12 * rate)
+        # A purr swells in and dies away; everything else starts on its first sound.
+        soft = name.startswith("cat") and b - a > 1.0
+        fade_in, fade_out = int((0.2 if soft else 0.01) * rate), int((0.5 if soft else 0.12) * rate)
         clip[:fade_in] *= np.linspace(0, 1, fade_in)
         clip[-fade_out:] *= np.linspace(1, 0, fade_out)
         clip *= 0.7 / (np.abs(clip).max() or 1.0)

@@ -11,6 +11,8 @@ var site := Rect2()
 var ladders: Array = []
 ## The rows of the scaffold's plank floors in estate pixels, where builders step off the ladder to work.
 var planks: Array = []
+## For work that moves along, such as paving: the builder keeps up with it rather than finishing a job far behind.
+var follows := false
 ## The ladder a builder up on the scaffold came up by, to go back down the same way.
 var _ladder_x := 0.0
 ## Returns the seconds the work still has to run, so the builder is down off the ladder before it ends.
@@ -109,6 +111,8 @@ func _process(delta: float) -> void:
 	match step["kind"]:
 		"wait":
 			_timer -= delta
+			if follows and site.get_center().x - position.x > 14.0:
+				_timer = 0.0
 			if _timer <= 0.0:
 				_plan.pop_front()
 				_begin()
@@ -138,7 +142,7 @@ func _next() -> void:
 		_plan.append({"kind": "walk", "to": Vector2(x, floor_y), "speed": 10.0})
 		_plan.append({"kind": "climb", "to": Vector2(x, ground)})
 	else:
-		var x := site.position.x + randf_range(0.1, 0.9) * site.size.x
+		var x := site.get_center().x + randf_range(-4.0, 6.0) if follows else site.position.x + randf_range(0.1, 0.9) * site.size.x
 		# A builder left behind by work that moves along, like a road being paved, hurries to catch up.
 		_plan.append({"kind": "walk", "to": Vector2(x, ground), "speed": clampf(absf(x - position.x) / 2.0, 14.0, 70.0)})
 		_plan.append({"kind": "wait", "anim": "work", "seconds": randf_range(2.5, 5.0)})
