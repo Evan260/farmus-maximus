@@ -184,7 +184,7 @@ func react() -> bool:
 
 
 func contains(point: Vector2) -> bool:
-	return sprite != null and visible and modulate.a > 0.5 and Hit.frame_rect(self, sprite).has_point(point)
+	return sprite != null and visible and modulate.a > 0.5 and Hit.frame_has_pixel(self, sprite, point)
 
 
 ## A person answers a click with their greeting, the rustle of their clothes and, if there is one, their voice.

@@ -155,12 +155,9 @@ func _animal(kind: String, pace: float, row: Vector2) -> Node2D:
 	return a
 
 
-## The hen or goat under the pointer, if any, for a click to make it call out.
+## The hen or goat under the pointer, if any, for a click to make it call out; of two overlapping, the one in front.
 func animal_at(point: Vector2) -> Node2D:
-	for a in _hens + _goats:
-		if a.visible and a.modulate.a > 0.5 and Hit.frame_rect(a, a.sprite).has_point(point):
-			return a
-	return null
+	return Hit.front_most((_hens + _goats).filter(func(a): return a.contains(point)), point)
 
 
 func _draw() -> void:

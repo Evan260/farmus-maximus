@@ -198,8 +198,12 @@ func _update_white(delta: float, view: Rect2) -> void:
 ## Creatures that appear in view fade in over their first moments and out over their last, rather than popping.
 ## The rabbit under the pointer, if any, while it is still in plain sight.
 func rabbit_at(point: Vector2) -> Dictionary:
+	if _rabbit_sit == null:
+		return {}
 	for r in _rabbits:
-		if float(r.get("flee", 0.0)) <= 0.0 and float(r["life"]) > 0.6 and Rect2(r["pos"] + Vector2(-8, -18), Vector2(16, 18)).has_point(point):
+		var flipped := float(r["dir"]) < 0.0
+		var corner: Vector2 = r["pos"].round() + Vector2(-12 if not flipped else -(_rabbit_sit.get_width() - 12), -22)
+		if float(r.get("flee", 0.0)) <= 0.0 and float(r["life"]) > 0.6 and Hit.texture_has_pixel(_rabbit_hop if float(r["hop"]) > 0.0 else _rabbit_sit, corner, point, flipped):
 			return r
 	return {}
 

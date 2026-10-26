@@ -1227,10 +1227,11 @@ func _animal_at(point: Vector2) -> String:
 	var grazing: Node2D = _pasture.animal_at(point)
 	if grazing:
 		return String(grazing.get_meta("kind"))
-	if _stork.visible and Rect2(_stork.position, _stork.texture.get_size()).has_point(point):
+	if _stork.visible and Hit.texture_has_pixel(_stork.texture, _stork.position, point):
 		return "stork"
-	if _donkey.visible and Hit.frame_rect(_donkey, _donkey).has_point(point):
-		return "donkey"
+	for d in [_donkey, _stone_donkey]:
+		if d and d.visible and Hit.frame_has_pixel(d, d, point):
+			return "donkey"
 	if not _wildlife.rabbit_at(point).is_empty():
 		return "rabbit"
 	return ""

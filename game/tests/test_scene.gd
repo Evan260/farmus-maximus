@@ -110,6 +110,19 @@ func _run() -> void:
 	# People fade in when they arrive and cannot be clicked until they are there.
 	await create_timer(1.5).timeout
 	_check(main._pet_at(Vector2(300, 234), null) == pair[1], "of two people standing on each other, the one drawn in front takes the click")
+	var donkey: AnimatedSprite2D = main._donkey
+	var box: Rect2 = Hit.frame_rect(donkey, donkey)
+	var solid := Vector2.INF
+	var empty_corner := Vector2.INF
+	for y in range(int(box.position.y), int(box.end.y)):
+		for x in range(int(box.position.x), int(box.end.x)):
+			var at := Vector2(x, y) + Vector2(0.5, 0.5)
+			if Hit.frame_has_pixel(donkey, donkey, at):
+				solid = at if solid == Vector2.INF else solid
+			elif main._pasture.animal_at(at) == null and main._wildlife.rabbit_at(at).is_empty():
+				empty_corner = at if empty_corner == Vector2.INF else empty_corner
+	_check(solid != Vector2.INF and main._animal_at(solid) == "donkey", "the donkey answers a click on itself")
+	_check(empty_corner != Vector2.INF and main._animal_at(empty_corner) != "donkey", "the donkey ignores a click on the empty corner of its picture")
 	var rain: Node2D = load("res://scripts/world/rain_fx.gd").new()
 	main.add_child(rain)
 	await process_frame
