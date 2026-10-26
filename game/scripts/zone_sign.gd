@@ -46,7 +46,7 @@ func _draw() -> void:
 		var at := Vector2(roundf(-w / 2), _board.position.y + PAD.y + i * LINE + roundf(ascent) - 2)
 		draw_string(FONT, at, _lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, Color(0.99, 0.95, 0.86))
 	if hovered:
-		draw_rect(_board.grow(1), Color(1, 0.96, 0.85, 0.8), false, 1.0)
+		UiKit.outline(self, _board, Color(1, 0.96, 0.85, 0.8))
 
 
 func contains(point: Vector2) -> bool:

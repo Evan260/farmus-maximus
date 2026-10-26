@@ -14,7 +14,7 @@ func signature() -> String:
 	var parts := []
 	for id in Balance.get_value("helpers", {}):
 		parts.append("%s%d%s" % [id, int(Game.helpers.get(id, 0)), Game.helper_block(id)])
-	return ",".join(parts)
+	return ",".join(parts) + JSON.stringify(Game.pets)
 
 
 func build() -> void:
@@ -51,6 +51,10 @@ func build() -> void:
 		else:
 			var verb := tr("Train") if level > 0 else tr("Hire")
 			_buttons[id] = UiKit.button(col, "%s: %s" % [verb, UiKit.cost_text({"coins": cost})], func(): Game.hire_helper(id))
+	var pets := UiKit.column(list)
+	UiKit.section(pets, tr("The animals of the house"))
+	UiKit.para(pets, tr("%s the dog and %s the cat keep the farm company.") % [Game.pet_name("dog"), Game.pet_name("cat")], 240)
+	UiKit.button(pets, tr("Change their names and coats"), func(): get_tree().call_group("hud", "open_window", "companions"))
 
 
 func tick() -> void:

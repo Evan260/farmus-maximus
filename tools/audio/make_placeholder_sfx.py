@@ -94,6 +94,17 @@ def pet():
     return np.sin(2 * np.pi * np.cumsum(f) / RATE) * env(len(x), attack=0.01, decay=10) * 0.5
 
 
+def purr():
+    # A purr is a low rumble pulsing about 26 times a second, louder breathing out than breathing in.
+    out = silence(1.3)
+    for at, seconds, level in [(0.0, 0.55, 1.0), (0.62, 0.6, 0.7)]:
+        x = t(seconds)
+        rumble = lowpass(rng.standard_normal(len(x)), 60)
+        pulse = 0.5 + 0.5 * np.sin(2 * np.pi * 26 * x) ** 2
+        place(out, rumble * pulse * np.sin(np.pi * x / seconds) * level, at)
+    return out
+
+
 def hammer():
     out = knock() * 1.2
     return np.concatenate([out, silence(0.05)])
@@ -131,7 +142,7 @@ def main():
     out = Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
     for name, fn in [("plant", plant), ("harvest", harvest), ("coins", coins), ("cart", cart), ("unlock", unlock),
-                     ("pet", pet), ("hammer", hammer), ("villa_complete", villa_complete), ("click", click), ("nope", nope)]:
+                     ("pet", pet), ("hammer", hammer), ("villa_complete", villa_complete), ("click", click), ("nope", nope), ("purr", purr)]:
         write(out / f"{name}.wav", fn())
         print("wrote", name)
 

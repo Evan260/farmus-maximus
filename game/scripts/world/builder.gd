@@ -8,6 +8,12 @@ const DIRS := ["res://assets/sprites/people/builder_small/", "res://assets/sprit
 var site := Rect2()
 ## Where the scaffold's ladders stand, in estate pixels; with none the builder keeps to the ground.
 var ladders: Array = []
+## Returns the seconds the work still has to run, so the builder is down off the ladder before it ends.
+var time_left: Callable
+## Where the road leaves the estate for the town, which is where the builder goes home to.
+var town_x := 2400.0
+## The row the road runs along.
+var road_y := 283.0
 var sprite: AnimatedSprite2D
 var _plan: Array = []
 var _timer := 0.0
@@ -26,21 +32,34 @@ func _ready() -> void:
 	sprite.sprite_frames = _frames()
 	add_child(sprite)
 	position = Vector2(site.position.x + randf() * site.size.x, site.end.y + 2)
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.8)
 	_next()
 
 
-## The work is done: the builder climbs down if need be, packs up and walks off, fading away down the road.
+## The work is done: the builder climbs down if need be, then walks down to the road and along it home to the town.
 func leave() -> void:
 	if _leaving:
 		return
 	_leaving = true
-	var ground := site.end.y + 2
 	_plan = []
-	if position.y < ground - 0.5:
-		_plan.append({"kind": "climb", "to": Vector2(position.x, ground)})
-	_plan.append({"kind": "walk", "to": Vector2(position.x + (160.0 if randf() < 0.5 else -160.0), ground)})
+	_climb_down()
+	_plan.append({"kind": "walk", "to": Vector2(position.x + 6.0, road_y), "speed": 20.0})
+	_plan.append({"kind": "walk", "to": Vector2(town_x + 30.0, road_y), "speed": 26.0})
 	_begin()
-	create_tween().tween_property(self, "modulate:a", 0.0, 2.0).set_delay(7.0)
+
+
+func _on_ladder() -> bool:
+	return position.y < site.end.y + 1.5
+
+
+func _climb_down() -> void:
+	if _on_ladder():
+		_plan.append({"kind": "climb", "to": Vector2(position.x, site.end.y + 2)})
+
+
+func _seconds_left() -> float:
+	return float(time_left.call()) if time_left.is_valid() else INF
 
 
 func _process(delta: float) -> void:
@@ -50,6 +69,10 @@ func _process(delta: float) -> void:
 			return
 		_next()
 		return
+	if not _leaving and _on_ladder() and _seconds_left() < 10.0 and String(_plan[0]["kind"]) != "climb":
+		_plan = []
+		_climb_down()
+		_begin()
 	var step: Dictionary = _plan[0]
 	match step["kind"]:
 		"wait":
@@ -59,7 +82,7 @@ func _process(delta: float) -> void:
 				_begin()
 		_:
 			var target: Vector2 = step["to"]
-			position = position.move_toward(target, (10.0 if step["kind"] == "climb" else 14.0) * delta)
+			position = position.move_toward(target, float(step.get("speed", 10.0 if step["kind"] == "climb" else 14.0)) * delta)
 			if position.distance_to(target) < 0.5:
 				position = target
 				_plan.pop_front()
@@ -70,7 +93,7 @@ func _process(delta: float) -> void:
 func _next() -> void:
 	var ground := site.end.y + 2
 	_plan = []
-	if not ladders.is_empty() and randf() < 0.45:
+	if not ladders.is_empty() and randf() < 0.45 and _seconds_left() > 20.0:
 		var x: float = ladders[randi() % ladders.size()]
 		var height := ground - site.size.y * randf_range(0.3, 0.55)
 		_plan.append({"kind": "walk", "to": Vector2(x, ground)})

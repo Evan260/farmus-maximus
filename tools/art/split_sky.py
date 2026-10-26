@@ -100,6 +100,10 @@ def main():
             left = np.abs(base[y].astype(int) - bg).sum(axis=1) > 10
             base[y][left & ~taken[y]] = bg
         if a.stars:
+            # A night sky is painted with dithered haze that looks like a checkerboard when enlarged; each row keeps its stars
+            # on a plain colour instead.
+            dim = base[y].astype(int).sum(axis=1) < 330
+            base[y][dim] = bg
             # Clouds hid part of the starfield; the gaps get stars at the same density as the open sky.
             star_px = [tuple(c) for c in rgb[y][(rgb[y].astype(int).sum(axis=1) > 450)]]
             for x in np.nonzero(taken[y])[0]:

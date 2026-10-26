@@ -56,8 +56,10 @@ func _process(delta: float) -> void:
 		_shadow.visible = _crop.visible
 		if _crop.visible:
 			_crop.texture = texture_for(crop, visual, index)
-			# Plants of any size stand centred on the soil patch, so 48-pixel olive trees line up like 32-pixel lavender.
-			_crop.position = Vector2(15 - _crop.texture.get_width() / 2, 3 - _crop.texture.get_height())
+			# Plants of any size stand on the middle of the soil patch, measured from their lowest visible pixel,
+			# so 48-pixel olive trees are planted in the bed just like 32-pixel lavender.
+			var used := _crop.texture.get_image().get_used_rect()
+			_crop.position = Vector2(15 - _crop.texture.get_width() / 2, 0 - used.end.y)
 		_hit = _hit_rect()
 	queue_redraw()
 
@@ -102,7 +104,7 @@ static func _recolor(tex: Texture2D, how: String) -> Texture2D:
 
 func _draw() -> void:
 	if hovered:
-		draw_rect(_hit.grow(1), Color(1, 0.96, 0.85, 0.7), false, 1.0)
+		UiKit.outline(self, _hit, Color(1, 0.96, 0.85, 0.7))
 	match _visual:
 		"bloom":
 			var top := _crop.position.y - 2
@@ -125,7 +127,7 @@ func _draw() -> void:
 		"locked":
 			var c := Color(0.15, 0.12, 0.1, 0.55)
 			draw_rect(Rect2(Vector2(12, -8), Vector2(5, 4)), c)
-			draw_rect(Rect2(Vector2(13, -11), Vector2(3, 3)), c, false, 1.0)
+			UiKit.outline(self, Rect2(14, -10, 1, 1), c)
 
 
 ## A small hop of the plant, so planting and harvesting feel like they did something.

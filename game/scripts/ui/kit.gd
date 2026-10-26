@@ -300,3 +300,11 @@ static func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> Sty
 		s.set_content_margin(side, pad + 1)
 	s.modulate_color = tint
 	return s
+
+
+## A 1px frame just outside a shape; drawn as four filled strips because an unfilled rect straddles pixel edges.
+static func outline(item: CanvasItem, r: Rect2, colour: Color) -> void:
+	item.draw_rect(Rect2(r.position.x - 1, r.position.y - 1, r.size.x + 2, 1), colour)
+	item.draw_rect(Rect2(r.position.x - 1, r.end.y, r.size.x + 2, 1), colour)
+	item.draw_rect(Rect2(r.position.x - 1, r.position.y, 1, r.size.y), colour)
+	item.draw_rect(Rect2(r.end.x, r.position.y, 1, r.size.y), colour)

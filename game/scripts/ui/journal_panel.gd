@@ -182,8 +182,8 @@ func _describe(id: String) -> String:
 	match kind:
 		"crop":
 			var c := Game.crop_info(key)
-			var zone := String(Game.zone_info(String(c.get("zone", "home"))).get("name", ""))
-			var text := tr("Grows on the %s. Ready after %s") % [tr(zone).to_lower(), UiKit.duration(float(c.get("grow_seconds", 60)))]
+			var zone := tr(" and the ").join(Game.crop_zones(key).map(func(z): return tr(String(Game.zone_info(z).get("name", ""))).to_lower()))
+			var text := tr("Grows on the %s. Ready after %s") % [zone, UiKit.duration(float(c.get("grow_seconds", 60)))]
 			text += (tr(", then again every %s.") % UiKit.duration(float(c["regrow_seconds"]))) if c.get("perennial", false) else tr(", then needs replanting.")
 			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), tr(String(Balance.get_value("items.%s.name" % c.get("item", key), key))).to_lower()]
 		"item":

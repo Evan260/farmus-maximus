@@ -371,13 +371,19 @@ func unlock_cost() -> int:
 	return int(round(base * pow(float(Balance.get_value("plots.unlock_cost_growth", 1.3)), maxi(extra, 0))))
 
 
+## The parts of the estate a crop can be planted in: lavender grows on the farm and in the grove, olives only in the grove.
+func crop_zones(crop_id: String) -> Array:
+	var info := crop_info(crop_id)
+	return info.get("zones", [info.get("zone", "home")])
+
+
 ## The crop an empty plot gets: the chosen seed when it grows in that zone, otherwise the zone's own crop.
 func seed_for_plot(i: int) -> String:
 	var zone := String(plots[i]["zone"])
-	if String(crop_info(selected_seed).get("zone", "home")) == zone and crop_unlocked(selected_seed):
+	if zone in crop_zones(selected_seed) and crop_unlocked(selected_seed):
 		return selected_seed
 	for crop in Balance.get_value("crops", {}):
-		if String(crop_info(crop).get("zone", "home")) == zone and crop_unlocked(crop):
+		if crop_zones(crop)[0] == zone and crop_unlocked(crop):
 			return crop
 	return ""
 

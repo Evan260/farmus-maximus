@@ -76,6 +76,8 @@ var _stork: Sprite2D
 var _cart: Sprite2D
 var _cart_shadow: Sprite2D
 var _wheel: Sprite2D
+## The cart's back rim and the inside of its bed, drawn behind the goods; the cart itself is the front wall and wheels.
+var _cart_back: Sprite2D
 ## The goods heaped in the cart, drawn behind its side boards so they sit inside it.
 var _cart_load: Node2D
 var _cart_x := 0.0
@@ -110,6 +112,7 @@ var _dragging := false
 var _pressed := false
 var _pan_tween: Tween
 var _last_view_width := 480.0
+var _centre := HOME + 240.0
 
 
 func _ready() -> void:
@@ -161,7 +164,7 @@ func _ready() -> void:
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
 	_villa_outline = Node2D.new()
-	_villa_outline.draw.connect(func(): if _villa_hovered: _villa_outline.draw_rect(_villa_rect().grow(1), Color(1, 0.96, 0.85, 0.7), false, 1.0))
+	_villa_outline.draw.connect(func(): if _villa_hovered: UiKit.outline(_villa_outline, _villa_rect(), Color(1, 0.96, 0.85, 0.7)))
 	world.add_child(_villa_outline)
 	_place_villa()
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
@@ -192,12 +195,14 @@ func _ready() -> void:
 	_spawn_pets()
 
 	_cart_shadow = _add_texture(Lighting.ellipse_texture(96, 6, SHADOW), Vector2.ZERO)
-	# The load is drawn just before the cart, so the cart's side boards hide its bottom and it sits inside.
+	# The goods sit between the cart's back rim and its front wall, so they look loaded inside it.
+	_cart_back = _add_trimmed(load("res://assets/sprites/farm/cart.png"), Vector2(CART_HOME_X, 0), true, RIG_BASE)
+	_cart_back.texture = load("res://assets/sprites/farm/cart_back.png")
 	_cart_load = Node2D.new()
 	world.add_child(_cart_load)
 	_cart = _add_trimmed(load("res://assets/sprites/farm/cart.png"), Vector2(CART_HOME_X, 0), true, RIG_BASE)
 	# The wheel is a separate sprite so it can turn; the body keeps the full cart's outline for placement.
-	_cart.texture = load("res://assets/sprites/farm/cart_body.png")
+	_cart.texture = load("res://assets/sprites/farm/cart_front.png")
 	_wheel = Sprite2D.new()
 	_wheel.texture = load("res://assets/sprites/farm/cart_wheel.png")
 	_wheel.centered = false
@@ -253,12 +258,14 @@ func _ready() -> void:
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
 		_donkey.position.x = _harness_x(_cart.position.x, false)
-	cam_x = HOME + 240.0 - _last_view_width / 2.0
+	_centre = HOME + 240.0
+	cam_x = _centre - _last_view_width / 2.0
 	_update_view()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--zone="):
 			var z := Game.zone_info(arg.trim_prefix("--zone="))
-			cam_x = float(z.get("x", 0)) + 240.0 - _last_view_width / 2.0
+			_centre = float(z.get("x", 0)) + 240.0
+			cam_x = _centre - _last_view_width / 2.0
 			_update_view()
 		elif arg == "--town":
 			go_to_town.call_deferred()
@@ -333,6 +340,8 @@ func _process(delta: float) -> void:
 		_pan_by(keys * PAN_SPEED * delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	_cart_load.position = _cart.position
+	_cart_back.position = _cart.position
+	_cart_back.flip_h = _cart.flip_h
 	_harness.queue_redraw()
 	# The wheel turns by the distance travelled over its radius, in steps fine enough to look smooth at this size.
 	var rolled := _cart.position.x - _cart_x
@@ -429,12 +438,15 @@ func _sync_builders() -> void:
 	for v in building_views:
 		if Game.buildings[v.id]["state"] == "repairing":
 			var r: Rect2 = v.world_rect()
-			sites[v.id] = {"rect": r, "ladders": Game.building_info(v.id).get("ladders", []).map(func(x): return r.position.x + float(x))}
+			var id := String(v.id)
+			sites[id] = {"rect": r, "ladders": Game.building_info(id).get("ladders", []).map(func(x): return r.position.x + float(x)),
+				"left": func() -> float: return float(Game.buildings[id].get("time_left", 0.0))}
 	if Game.villa_build["active"]:
 		var r := _villa_rect()
 		var ladders: Array = Balance.get_value("villa.ladders", []).map(func(x): return r.position.x + float(x))
-		sites["villa_a"] = {"rect": r, "ladders": ladders}
-		sites["villa_b"] = {"rect": r, "ladders": ladders}
+		var left := func() -> float: return float(Game.villa_build["time_left"])
+		sites["villa_a"] = {"rect": r, "ladders": ladders, "left": left}
+		sites["villa_b"] = {"rect": r, "ladders": ladders, "left": left}
 	for id in _builders.keys():
 		if not sites.has(id):
 			_builders[id].leave()
@@ -444,6 +456,8 @@ func _sync_builders() -> void:
 			var b := Builder.new()
 			b.site = sites[id]["rect"]
 			b.ladders = sites[id]["ladders"]
+			b.time_left = sites[id]["left"]
+			b.town_x = estate_width
 			world.add_child(b)
 			_builders[id] = b
 
@@ -622,9 +636,13 @@ func _draw_zone_shade() -> void:
 func _update_view() -> void:
 	var view := _view_size()
 	# When the window changes size the view keeps its centre, so resizing never jumps to another part of the estate.
-	if view.x != _last_view_width:
-		cam_x += (_last_view_width - view.x) / 2.0
+	var resized := view.x != _last_view_width
+	if resized:
+		cam_x = _centre - view.x / 2.0
 		_last_view_width = view.x
+	# The centre is noted before the edges of the estate hold the camera back, so it survives a passing window size.
+	if not resized:
+		_centre = cam_x + view.x / 2.0
 	cam_x = clampf(cam_x, 0.0, maxf(0.0, estate_width - view.x))
 	_camera.position = Vector2(round(cam_x), BOTTOM - view.y)
 	var left := roundf(cam_x)
@@ -651,8 +669,9 @@ func _apply_scale() -> void:
 	_update_view.call_deferred()
 
 
+## The estate's view in its own pixels: the window divided by the pixel scale, which the viewport takes on a moment later.
 func _view_size() -> Vector2:
-	return Vector2(_viewport.size) if _viewport else Vector2(480, 270)
+	return (get_viewport().get_visible_rect().size / Windowing.scale).floor()
 
 
 func _pan_by(dx: float) -> void:
@@ -740,10 +759,12 @@ func _world_input(event: InputEvent) -> void:
 	if _handle_pad(event):
 		return
 	if event is InputEventMouseButton:
+		# A trackpad sends many small scroll steps, each with a fraction of a wheel notch in its factor.
+		var notch: float = 24.0 * (event.factor if event.factor > 0.0 else 1.0)
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_LEFT:
-			_pan_by(-32.0)
+			_pan_by(-notch)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN or event.button_index == MOUSE_BUTTON_WHEEL_RIGHT:
-			_pan_by(32.0)
+			_pan_by(notch)
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not Windowing.strip:
 			var under := _plot_at(world.get_global_mouse_position())
 			if under:
@@ -761,6 +782,9 @@ func _world_input(event: InputEvent) -> void:
 					_click(world.get_global_mouse_position())
 				_pressed = false
 				_dragging = false
+	elif event is InputEventPanGesture:
+		# Two fingers sliding on a trackpad pan the estate directly, sideways or up and down alike.
+		_pan_by((event.delta.x + event.delta.y) * 6.0)
 	elif event is InputEventMouseMotion:
 		if _pressed:
 			if not _dragging and event.position.distance_to(_drag_from) > 4.0:

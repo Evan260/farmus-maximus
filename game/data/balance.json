@@ -12,13 +12,16 @@
 			"yield": 1,
 			"item": "lavender",
 			"perennial": true,
-			"zone": "home",
 			"seasons": {
 				"spring": 1,
 				"summer": 1.3,
 				"autumn": 1,
 				"winter": 0.6
-			}
+			},
+			"zones": [
+				"home",
+				"grove"
+			]
 		},
 		"lavender_violet": {
 			"name": "Deep violet lavender",
@@ -30,14 +33,17 @@
 			"yield": 1,
 			"item": "lavender",
 			"perennial": true,
-			"zone": "home",
 			"locked": true,
 			"seasons": {
 				"spring": 1,
 				"summer": 1.3,
 				"autumn": 1,
 				"winter": 0.6
-			}
+			},
+			"zones": [
+				"home",
+				"grove"
+			]
 		},
 		"lavender_bluegrey": {
 			"name": "Blue-grey lavender",
@@ -49,14 +55,17 @@
 			"yield": 1,
 			"item": "lavender",
 			"perennial": true,
-			"zone": "home",
 			"locked": true,
 			"seasons": {
 				"spring": 1,
 				"summer": 1.3,
 				"autumn": 1,
 				"winter": 0.6
-			}
+			},
+			"zones": [
+				"home",
+				"grove"
+			]
 		},
 		"lavender_white": {
 			"name": "White lavender",
@@ -68,14 +77,17 @@
 			"yield": 1,
 			"item": "white_lavender",
 			"perennial": true,
-			"zone": "home",
 			"locked": true,
 			"seasons": {
 				"spring": 1,
 				"summer": 1.3,
 				"autumn": 1,
 				"winter": 0.6
-			}
+			},
+			"zones": [
+				"home",
+				"grove"
+			]
 		},
 		"wheat": {
 			"name": "Wheat",
@@ -427,7 +439,7 @@
 					"provisions": 6
 				},
 				"build_seconds": 1800,
-				"unlocks": "Rosemary for the grove, and the fountain"
+				"unlocks": "The fountain, and a garden for the household"
 			},
 			{
 				"name": "Bathhouse wing",
@@ -1238,7 +1250,7 @@
 		"beekeeper": {
 			"name": "Aulus",
 			"role": "Beekeeper",
-			"does": "Tends the hives and picks the rosemary",
+			"does": "Tends the hives and picks the flowers in the grove",
 			"unlock": {
 				"building": "beehives"
 			},
@@ -1246,7 +1258,11 @@
 				500
 			],
 			"crops": [
-				"herbs"
+				"herbs",
+				"lavender",
+				"lavender_violet",
+				"lavender_bluegrey",
+				"lavender_white"
 			],
 			"intervals": [
 				5
@@ -1383,7 +1399,7 @@
 				"name": "Rosemary seedlings",
 				"price": 40,
 				"unlock_crop": "herbs",
-				"requires_villa": 5,
+				"requires_villa": 2,
 				"group": "seeds"
 			},
 			{

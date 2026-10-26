@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ekd8cx6jkbyt"
-path="res://.godot/imported/frame_08.png-72221b8b8220bc1d136179ee094a63e2.ctex"
+uid="uid://bsr50tjmt5snt"
+path="res://.godot/imported/cloud_38.png-a1a60095df76d6a4f4b4cf653aa263f8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/people/builder_small/climb_north/frame_08.png"
-dest_files=["res://.godot/imported/frame_08.png-72221b8b8220bc1d136179ee094a63e2.ctex"]
+source_file="res://assets/backgrounds/estate/sky_night/cloud_38.png"
+dest_files=["res://.godot/imported/cloud_38.png-a1a60095df76d6a4f4b4cf653aa263f8.ctex"]
 
 [params]
 

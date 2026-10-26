@@ -102,7 +102,11 @@ func _run() -> void:
 	_check(not game.buy_zone("grove"), "the grove deed waits for the restored farmhouse")
 	game.villa_stage = 2
 	_check(game.buy_zone("grove") and game.plots[grove_plot]["unlocked"], "buying the grove deed opens its plots")
+	game.selected_seed = "olives"
 	_check(game.try_plant(grove_plot) and game.plots[grove_plot]["crop"] == "olives", "grove plots grow olive trees")
+	game.selected_seed = "lavender"
+	game.plots[grove_plot + 1]["unlocked"] = true
+	_check(game.try_plant(grove_plot + 1) and game.plots[grove_plot + 1]["crop"] == "lavender", "lavender can be planted in the grove for the bees")
 	game.villa_stage = 3
 	game.buy_zone("yard")
 	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "owned", "buying a ruin")

@@ -7,6 +7,28 @@ signal left_town
 const Walker := preload("res://scripts/world/walker.gd")
 const BG := "res://assets/backgrounds/market/painting.png"
 ## The places in the painting that can be clicked, in the painting's pixels.
+const INK := Color8(42, 29, 41)
+const WOOD_DARK := Color8(66, 40, 45)
+const WOOD := Color8(104, 60, 46)
+const WOOD_MID := Color8(125, 72, 47)
+const WOOD_LIGHT := Color8(142, 83, 48)
+const ROOF := Color8(170, 100, 53)
+const ROOF_LIGHT := Color8(205, 118, 57)
+const ROOF_DARK := Color8(125, 72, 47)
+const SHADOW := Color(0.29, 0.16, 0.12, 0.35)
+const PAPER := Color8(240, 222, 182)
+const PAPER_SHADE := Color8(205, 178, 134)
+const PAPER_INK := Color8(150, 118, 92)
+const PIN := Color8(176, 52, 42)
+const SLATE := Color8(47, 52, 52)
+const SLATE_LIGHT := Color8(58, 64, 62)
+const CHALK := Color8(222, 220, 206)
+const CHALK_GOLD := Color8(230, 200, 112)
+const CORD := Color8(96, 65, 62)
+const FALL := Color(0.66, 0.78, 0.88, 0.85)
+const FALL_SOFT := Color(0.66, 0.78, 0.88, 0.35)
+const FOAM := Color8(232, 242, 248)
+const GLINT := Color8(214, 230, 240)
 const SPOTS := [
 	{"id": "Stalls", "name": "Market stalls", "hint": "Sell your goods at full price", "rect": Rect2(105, 135, 110, 82)},
 	{"id": "Shop", "name": "The shop", "hint": "Cuttings, materials and animals", "rect": Rect2(398, 118, 82, 145)},
@@ -28,7 +50,10 @@ var _panel: PanelContainer
 var _pad_bar: HBoxContainer
 var _signature := ""
 var _timer := 0.0
-var _fountain: CPUParticles2D
+var _water: Node2D
+var _water_time := 0.0
+## The pixels of the painting that show water in the fountain.
+var _water_mask := {}
 var _bunting: Node2D
 ## The town's windows are drawn on their own layer at the interface's scale, over the town picture at the estate's.
 var _ui_layer: CanvasLayer
@@ -45,6 +70,16 @@ func _ready() -> void:
 	if ResourceLoader.exists(BG):
 		bg.texture = load(BG)
 	_scene.add_child(bg)
+	_water = Node2D.new()
+	_water.draw.connect(_draw_water)
+	_scene.add_child(_water)
+	if bg.texture:
+		var img := bg.texture.get_image()
+		for y in range(150, 210):
+			for x in range(225, 320):
+				var c := img.get_pixel(x, y)
+				if c.b > c.r + 0.15 and c.b > 0.6:
+					_water_mask[Vector2i(x, y)] = true
 	_props = Node2D.new()
 	_props.draw.connect(_draw_props)
 	_scene.add_child(_props)
@@ -58,17 +93,6 @@ func _ready() -> void:
 		w.max_x = 460
 		w.position = Vector2(randf_range(40, 440), 262 + randi() % 6)
 		_scene.add_child(w)
-	_fountain = CPUParticles2D.new()
-	_fountain.position = Vector2(268, 170)
-	_fountain.amount = 24
-	_fountain.lifetime = 0.9
-	_fountain.direction = Vector2.UP
-	_fountain.spread = 18.0
-	_fountain.initial_velocity_min = 20.0
-	_fountain.initial_velocity_max = 28.0
-	_fountain.gravity = Vector2(0, 60)
-	_fountain.color = Color(0.75, 0.88, 1.0, 0.8)
-	_scene.add_child(_fountain)
 	_bunting = Node2D.new()
 	_bunting.draw.connect(_draw_bunting)
 	_scene.add_child(_bunting)
@@ -132,7 +156,6 @@ func enter() -> void:
 	_props.queue_redraw()
 	Game.add_stat("market_visits", 1)
 	Sfx.play("market_bell")
-	_fountain.emitting = not Settings.reduced_motion
 	_signature = ""
 	_refresh()
 
@@ -160,6 +183,8 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	_pad_bar.visible = not Input.get_connected_joypads().is_empty()
+	_water_time += delta
+	_water.queue_redraw()
 	_timer -= delta
 	if _timer <= 0.0:
 		_timer = 0.3
@@ -208,42 +233,130 @@ func _on_picture_input(event: InputEvent) -> void:
 
 ## The notice board and the price slate stand in the square, and the place under the pointer is outlined.
 func _draw_props() -> void:
-	var wood := Color(0.45, 0.3, 0.19)
-	var light := Color(0.6, 0.42, 0.27)
-	# Notice board: a plank board on two posts, with a paper for each request waiting.
-	_props.draw_rect(Rect2(86, 186, 2, 24), wood)
-	_props.draw_rect(Rect2(106, 186, 2, 24), wood)
-	_props.draw_rect(Rect2(84, 166, 26, 22), wood)
-	_props.draw_rect(Rect2(85, 167, 24, 20), light)
-	for i in Game.market.orders.size():
-		var at := Vector2(87 + (i % 3) * 7, 169 + (i / 3) * 9)
-		_props.draw_rect(Rect2(at, Vector2(6, 7)), Color(0.95, 0.91, 0.8))
-		_props.draw_rect(Rect2(at + Vector2(2, 0), Vector2(2, 1)), Color(0.75, 0.2, 0.18))
-		_props.draw_rect(Rect2(at + Vector2(1, 3), Vector2(4, 1)), Color(0.55, 0.45, 0.4))
-	# Price slate: a dark board on a little easel, with chalk lines.
-	_props.draw_rect(Rect2(382, 190, 1, 22), wood)
-	_props.draw_rect(Rect2(395, 190, 1, 22), wood)
-	_props.draw_rect(Rect2(380, 186, 18, 16), wood)
-	_props.draw_rect(Rect2(381, 187, 16, 14), Color(0.2, 0.22, 0.2))
-	for row in 4:
-		_props.draw_rect(Rect2(383, 189 + row * 3, 7 + (row * 3) % 5, 1), Color(0.85, 0.85, 0.8))
+	_draw_notice_board()
+	_draw_slate()
 	for spot in SPOTS:
 		if spot["id"] == _hovered:
-			_props.draw_rect(Rect2(spot["rect"]).grow(1), Color(1, 0.95, 0.75, 0.9), false, 1.0)
+			UiKit.outline(_props, Rect2(spot["rect"]), Color(1, 0.95, 0.75, 0.9))
 
 
-## During a festival the market is strung with flags across the square.
+func _px(x: float, y: float, w: float, h: float, c: Color) -> void:
+	_props.draw_rect(Rect2(x, y, w, h), c)
+
+
+## A plank board on two posts under a little tiled roof, with a paper pinned up for each request waiting.
+func _draw_notice_board() -> void:
+	_px(84, 209, 28, 1, SHADOW)
+	_px(82, 210, 32, 1, SHADOW)
+	for x in [87, 104]:
+		_px(x, 186, 1, 24, WOOD_LIGHT)
+		_px(x + 1, 186, 1, 24, WOOD)
+		_px(x + 2, 186, 1, 24, WOOD_DARK)
+		_px(x, 209, 3, 1, INK)
+	_px(84, 166, 26, 21, INK)
+	_px(85, 167, 24, 19, WOOD)
+	for y in [167, 173, 179]:
+		_px(85, y, 24, 1, WOOD_MID)
+	for y in [172, 178]:
+		_px(85, y, 24, 1, WOOD_DARK)
+	for g in [[88, 169, 3], [97, 170, 2], [103, 175, 3], [90, 176, 2], [92, 182, 2], [100, 183, 3]]:
+		_px(g[0], g[1], g[2], 1, WOOD_DARK)
+	_px(82, 164, 30, 2, ROOF_DARK)
+	_px(83, 163, 28, 1, ROOF_LIGHT)
+	for x in range(84, 111, 3):
+		_px(x, 164, 1, 1, ROOF)
+	_px(82, 166, 30, 1, INK)
+	for i in Game.market.orders.size():
+		var at := Vector2(87 + (i % 3) * 7, 168 + (i / 3) * 9)
+		_px(at.x, at.y, 6, 7, PAPER)
+		_px(at.x + 5, at.y + 1, 1, 6, PAPER_SHADE)
+		_px(at.x, at.y + 6, 5, 1, PAPER_SHADE)
+		_px(at.x + 1, at.y + 2, 4, 1, PAPER_INK)
+		_px(at.x + 1, at.y + 4, 3, 1, PAPER_INK)
+		_px(at.x + 2, at.y, 2, 1, PIN)
+
+
+## A framed slate on an easel, chalked with the day's prices.
+func _draw_slate() -> void:
+	_px(379, 211, 21, 1, SHADOW)
+	for i in 21:
+		_px(382 - i / 8, 191 + i, 2, 1, WOOD_LIGHT if i % 2 == 0 else WOOD_MID)
+		_px(395 + i / 8, 191 + i, 2, 1, WOOD_MID if i % 2 == 0 else WOOD_DARK)
+	_px(389, 200, 1, 11, WOOD_DARK)
+	_px(380, 187, 18, 15, INK)
+	_px(381, 188, 16, 13, WOOD_MID)
+	_px(381, 188, 16, 1, WOOD_LIGHT)
+	_px(382, 189, 14, 11, SLATE)
+	for d in [[384, 192], [391, 195], [386, 198], [394, 190]]:
+		_px(d[0], d[1], 1, 1, SLATE_LIGHT)
+	for row in [[191, 4, 2], [194, 3, 4], [197, 5, 2]]:
+		_px(383, row[0], row[1], 1, CHALK)
+		_px(384 + row[1], row[0], row[2], 1, CHALK.darkened(0.15))
+		_px(393, row[0], 2, 1, CHALK_GOLD)
+	_px(380, 201, 18, 1, WOOD_DARK)
+
+
+## During a festival flags are strung between the rooftops across the square.
 func _draw_bunting() -> void:
 	if Game.calendar.festival().is_empty():
 		return
-	var colours := [Color(0.78, 0.25, 0.22), Color(0.95, 0.8, 0.35), Color(0.35, 0.55, 0.32), Color(0.55, 0.35, 0.65)]
-	for line in 2:
-		var y0 := 60.0 + line * 30.0
-		for i in 40:
-			var x := i * 12.0 + line * 6.0
-			var sag := sin(x / 480.0 * PI) * 14.0
-			_bunting.draw_line(Vector2(x, y0 + sag), Vector2(x + 12, y0 + sin((x + 12) / 480.0 * PI) * 14.0), Color(0.3, 0.22, 0.18), 1.0)
-			_bunting.draw_colored_polygon(PackedVector2Array([Vector2(x + 2, y0 + sag), Vector2(x + 9, y0 + sag), Vector2(x + 5.5, y0 + sag + 7)]), colours[(i + line) % colours.size()])
+	var colours := [Color8(176, 58, 46), Color8(222, 178, 82), Color8(92, 128, 70), Color8(122, 82, 140)]
+	var strings := [[Vector2(106, 103), Vector2(410, 101), 9.0], [Vector2(150, 119), Vector2(378, 121), 12.0]]
+	for line in strings.size():
+		var from: Vector2 = strings[line][0]
+		var to: Vector2 = strings[line][1]
+		for x in range(int(from.x), int(to.x) + 1):
+			var k := (x - from.x) / (to.x - from.x)
+			var y := roundf(lerpf(from.y, to.y, k) + sin(k * PI) * float(strings[line][2]))
+			_bunting.draw_rect(Rect2(x, y, 1, 1), CORD)
+			var flag := x - int(from.x)
+			if flag % 8 != 3 or x + 5 > int(to.x):
+				continue
+			var c: Color = colours[(flag / 8 + line) % colours.size()]
+			for r in 6:
+				var w := 5 - int(r * 0.85)
+				var left := x + (5 - w) / 2
+				_bunting.draw_rect(Rect2(left, y + 1 + r, w, 1), c)
+				_bunting.draw_rect(Rect2(left, y + 1 + r, 1, 1), c.lightened(0.22))
+				if w > 2:
+					_bunting.draw_rect(Rect2(left + w - 1, y + 1 + r, 1, 1), c.darkened(0.28))
+
+
+## The fountain's water: a little jet on top falling into the bowl, streams spilling from the bowl's lip into the basin,
+## splashes and spreading ripples where they land, and glints drifting across both pools.
+func _draw_water() -> void:
+	var t := 0.0 if Settings.reduced_motion else floorf(_water_time * 10.0)
+	for k in 4:
+		var s := fposmod(k * 0.25 + t * 0.07, 1.0)
+		for side in [-1.0, 1.0]:
+			var at := Vector2(roundf(272 + side * 8.0 * s), roundf(159 - 4.0 * s + 15.0 * s * s))
+			_water.draw_rect(Rect2(at, Vector2.ONE), FOAM if k % 2 == 0 else FALL)
+	_water.draw_rect(Rect2(271, 158 - int(t) % 2, 2, 1), FOAM)
+	for side in [-1, 1]:
+		var top_x: int = 252 if side < 0 else 291
+		var land := 0
+		for y in range(174, 197):
+			var x: int = top_x + side * int(pow(y - 174, 2) / 150.0)
+			land = x
+			_water.draw_rect(Rect2(x, y, 1, 1), FOAM if posmod(y - int(t), 5) == 0 else FALL)
+			_water.draw_rect(Rect2(x - side, y, 1, 1), FALL_SOFT)
+		_water.draw_rect(Rect2(land - 1 + 2 * (int(t) % 2), 195, 1, 1), FOAM)
+		_water.draw_rect(Rect2(land, 194 - int(t) % 2, 1, 1), FALL)
+		for ring in 2:
+			var r: int = posmod(int(t / 2.0) + ring * 4, 8) + 1
+			var fade := 1.0 - r / 9.0
+			for dx in [-r, r]:
+				_water_pixel(land + dx, 197 + ring, Color(FOAM, 0.75 * fade))
+	for k in 3:
+		_water_pixel(258 + posmod(int(t * 0.3) + k * 10, 29), 171, GLINT)
+	for k in 5:
+		_water_pixel(238 + posmod(int(t * 0.4) + k * 14, 70), 199 + k % 2 * 2, GLINT)
+
+
+## Draws on the water only, so ripples and glints never spill onto the stone around it.
+func _water_pixel(x: int, y: int, c: Color) -> void:
+	if _water_mask.has(Vector2i(x, y)):
+		_water.draw_rect(Rect2(x, y, 1, 1), c)
 
 
 func _refresh() -> void:
@@ -256,6 +369,7 @@ func _refresh() -> void:
 		return
 	var sig := "%s|%s|%s|%d|%d|%s|%s|%s|%s" % [tab, JSON.stringify(Game.storage), JSON.stringify(Game.market.orders), Game.coins, Game.aureus,
 		JSON.stringify(Game.zones_owned), JSON.stringify(Game.decorations), JSON.stringify(Game.market.sold_today), Game.villa_stage]
+	sig += JSON.stringify(Game.buildings["barn"]["animals"]) if Game.buildings.has("barn") else ""
 	if sig == _signature:
 		return
 	_signature = sig
@@ -347,6 +461,11 @@ func _build_shop() -> void:
 		var price := {"coins": int(entry.get("price", 0)), "aureus": int(entry.get("aureus", 0))}
 		var l := UiKit.para(r, "%s  -  %s" % [tr(String(entry["name"])), UiKit.cost_text(price)], 170)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var owned := _owned_text(entry)
+		if owned != "":
+			var have := UiKit.label(r, owned)
+			have.custom_minimum_size = Vector2(62, 0)
+			have.add_theme_color_override("font_color", UiKit.FADED)
 		if block != "":
 			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.FADED)
 			continue
@@ -355,6 +474,18 @@ func _build_shop() -> void:
 		if entry.has("item"):
 			var five := UiKit.button(r, tr("Buy 5"), func(): if Game.market.buy(String(entry["id"]), 5): Sfx.play("coins"))
 			five.disabled = Game.missing({"coins": int(entry["price"]) * 5}) != ""
+
+
+## How much of a shop entry the farm already has, so the player knows before buying more.
+func _owned_text(entry: Dictionary) -> String:
+	if entry.has("item"):
+		return tr("You have %d") % Game.count_item(String(entry["item"]))
+	if entry.has("animal") and Game.buildings.has("barn"):
+		var kind := String(entry["animal"])
+		return tr("You have %d / %d") % [int(Game.buildings["barn"]["animals"].get(kind, 0)), Game.animal_capacity(kind)]
+	if entry.has("gives_coins"):
+		return tr("You have %d") % Game.aureus
+	return ""
 
 
 func _build_land() -> void:
