@@ -72,7 +72,19 @@ func _paint_fence() -> Texture2D:
 		for i in posts.size():
 			var gate: bool = (i == posts.size() - 1 and int(run[1]) == int(BARN_LEFT)) or (i == 0 and int(run[0]) == int(BARN_RIGHT))
 			_post(put, posts[i], top - rng.randi_range(0, 2) - (3 if gate else 0), 14 + (3 if gate else 0) + rng.randi_range(0, 1), 3 if gate else 2, rng)
-	# The side fence, seen end on: from the back of the field down to its front edge, posts larger as they near.
+	# Long grass the scythe never reaches, along the foot of the fence.
+	for x in range(0, w):
+		if x > int(BARN_LEFT - FENCE_LEFT) and x < int(BARN_RIGHT - FENCE_LEFT):
+			continue
+		if rng.randf() < 0.55:
+			var tall := rng.randi_range(3, 8)
+			var lean := rng.randi_range(-1, 1)
+			for k in tall:
+				var c: Color = GRASS[0] if k < 2 else (GRASS[2] if k == tall - 1 else GRASS[1])
+				put.call(x + (lean * k) / 3, top + 14 - k, c)
+			if rng.randf() < 0.08:
+				put.call(x + lean, top + 14 - tall, Color8(214, 196, 120))
+	# The side fence runs towards the viewer, posts larger as they near, so it is painted over the long grass.
 	var steps := 4
 	var prev := Vector2.ZERO
 	for i in steps + 1:
@@ -90,18 +102,6 @@ func _paint_fence() -> Texture2D:
 					put.call(int(q.x), int(q.y), WOOD[1])
 					put.call(int(q.x), int(q.y) + 1, WOOD[0].darkened(0.2))
 		prev = foot
-	# Long grass the scythe never reaches, along the foot of the fence.
-	for x in range(0, w):
-		if x > int(BARN_LEFT - FENCE_LEFT) and x < int(BARN_RIGHT - FENCE_LEFT):
-			continue
-		if rng.randf() < 0.55:
-			var tall := rng.randi_range(3, 8)
-			var lean := rng.randi_range(-1, 1)
-			for k in tall:
-				var c: Color = GRASS[0] if k < 2 else (GRASS[2] if k == tall - 1 else GRASS[1])
-				put.call(x + (lean * k) / 3, top + 14 - k, c)
-			if rng.randf() < 0.08:
-				put.call(x + lean, top + 14 - tall, Color8(214, 196, 120))
 	return ImageTexture.create_from_image(img)
 
 

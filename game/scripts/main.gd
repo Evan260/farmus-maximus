@@ -1165,7 +1165,7 @@ func _click_area() -> PackedVector2Array:
 
 func _world_input(event: InputEvent) -> void:
 	# Letters typed into a name field are not commands for the estate.
-	if market.visible or (event is InputEventKey and get_viewport().gui_get_focus_owner() is LineEdit):
+	if market.visible or hud.modal_open() or (event is InputEventKey and get_viewport().gui_get_focus_owner() is LineEdit):
 		return
 	if event.is_action_pressed("prev_zone"):
 		_step_zone(-1)

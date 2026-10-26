@@ -33,7 +33,9 @@ WHEAT = np.array([(220, 190, 96), (206, 174, 82), (230, 202, 112)], float)
 GREEN = np.array([(118, 140, 58), (104, 126, 52)], float)
 PLOUGH = np.array([(150, 112, 72), (128, 94, 62)], float)
 HEDGE = (70, 88, 46)
-WALL, WALL_SHADE, ROOF, ROOF_SHADE, DOOR = (232, 214, 172), (196, 172, 132), (184, 88, 56), (146, 64, 42), (92, 64, 48)
+# Taken from the village houses, so the farmhouses look built from the same stone and tile.
+WALL, WALL_SHADE, ROOF, ROOF_SHADE, DOOR = (249, 210, 141), (137, 99, 73), (198, 109, 54), (108, 55, 38), (74, 52, 48)
+SHRUBS = [(46, 63, 37), (66, 81, 45), (91, 96, 46)]
 
 
 def grassy(px):
@@ -107,6 +109,12 @@ def main():
         for y in range(6, 9):
             px[hx + 2, hy + y] = DOOR + (255,)
         px[hx + 5, hy + 5] = DOOR + (255,)
+        # A shadow along the foot and a few shrubs at the corners settle the house into the hillside.
+        for x in range(0, 10):
+            r, g, b, al = px[hx + x, hy + 9]
+            px[hx + x, hy + 9] = (int(r * 0.82), int(g * 0.82), int(b * 0.82), al)
+        for i, (x, y) in enumerate([(-2, 8), (-1, 8), (-1, 7), (0, 8), (8, 8), (9, 8), (10, 8), (10, 7), (11, 9), (-2, 9)]):
+            px[hx + x, hy + y] = SHRUBS[i % len(SHRUBS)] + (255,)
     img.save(dst)
     print("fields painted")
 

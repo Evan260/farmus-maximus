@@ -33,6 +33,8 @@ var tool := "harvest"
 var _toolbar: PanelContainer
 ## The title screen while it is showing.
 var _title: Control
+## The uncle's letter while it is showing; nothing else on screen answers until it is closed.
+var _letter: Control
 var _tool_row: HBoxContainer
 var _tool_buttons := {}
 var _tool_signature := ""
@@ -154,6 +156,11 @@ func _show_title() -> void:
 
 func title_open() -> bool:
 	return _title != null
+
+
+## True while the title screen or the letter covers the estate, so clicks and keys leave the farm alone.
+func modal_open() -> bool:
+	return _title != null or _letter != null
 
 
 ## Once the farm is on screen: the uncle's letter on a new farm, or what happened while the player was away.
@@ -373,7 +380,12 @@ func _build_zone_bar() -> void:
 
 
 func _show_intro() -> void:
-	var holder := UiKit.column(_root)
+	_letter = ColorRect.new()
+	_letter.color = Color(0, 0, 0, 0.35)
+	_letter.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.add_child(_letter)
+	_letter.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var holder := UiKit.column(_letter)
 	holder.alignment = BoxContainer.ALIGNMENT_CENTER
 	var letter := PanelContainer.new()
 	var paper := StyleBoxTexture.new()
@@ -407,13 +419,13 @@ func _show_intro() -> void:
 	wax.custom_minimum_size = Vector2(18, 18)
 	wax.size_flags_vertical = Control.SIZE_SHRINK_END
 	sign.add_child(wax)
-	var begin := UiKit.button(holder, tr("Begin"), func(): Game.intro_seen = true; Saves.save_game(); holder.queue_free(); _open(_companions))
+	var begin := UiKit.button(holder, tr("Begin"), func(): Game.intro_seen = true; Saves.save_game(); _letter.queue_free(); _letter = null; _open(_companions))
 	begin.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	begin.custom_minimum_size = Vector2(90, 0)
 	holder.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	holder.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	holder.grow_vertical = Control.GROW_DIRECTION_BOTH
-	UiKit.fade_in(holder, 0.6)
+	UiKit.fade_in(_letter, 0.6)
 
 
 func _on_achievement(a: Dictionary) -> void:
@@ -537,6 +549,8 @@ func _build_debug() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if modal_open():
+		return
 	# The debug panel, with its free coins and farm reset, only opens in development builds, never for players.
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F1 and OS.is_debug_build():
 		_debug.visible = not _debug.visible
