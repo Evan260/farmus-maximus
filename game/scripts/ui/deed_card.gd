@@ -45,16 +45,16 @@ func _draw() -> void:
 		for side in [0.0, w - 3.0]:
 			for r in ROD.size():
 				_rect(Rect2(side, end_y + 1 + r, 3, 1), ROD[r])
-	var font := UiKit.FONT
+	var font := UiKit.ui_font()
 	var header := tr("DEED")
-	var hw := font.get_string_size(header, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
-	_centred(font, header, 18, 8, RUBRIC)
+	var hw := font.get_string_size(header, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.text_size()).x
+	_centred(font, header, 18, UiKit.text_size(), RUBRIC)
 	var mid := roundf(w / 2.0)
 	for side in [-1, 1]:
 		var inner: float = mid + side * (roundf(hw / 2.0) + 3)
 		_rect(Rect2(minf(inner, inner + side * 10), 15, 10, 1), RUBRIC.lerp(PARCH, 0.4))
 		_rect(Rect2(inner + side * 12 - 1, 14, 2, 2), RUBRIC.lerp(PARCH, 0.4))
-	_centred(font, title.to_upper(), 29, 8, INK)
+	_centred(font, title.to_upper(), 29, UiKit.text_size(), INK)
 	for line in 3:
 		var lw := 50.0 - line * 12.0
 		_rect(Rect2(roundf((w - lw) / 2.0), 34 + line * 4, lw, 1), INK.lerp(PARCH, 0.72))

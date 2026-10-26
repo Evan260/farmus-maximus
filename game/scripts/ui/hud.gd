@@ -348,7 +348,7 @@ func _add_window(w: WindowPanel) -> WindowPanel:
 
 func _apply_text_size() -> void:
 	for l in [_info, _toast, _tip]:
-		l.add_theme_font_size_override("font_size", 16 if Settings.large_text else 8)
+		l.add_theme_font_size_override("font_size", UiKit.text_size() * (2 if Settings.large_text else 1))
 
 
 func _update_tip() -> void:

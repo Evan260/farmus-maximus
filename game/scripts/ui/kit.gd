@@ -2,6 +2,9 @@ class_name UiKit
 ## Shared building blocks for the interface: the parchment theme, labels, buttons, item icons and price text.
 
 const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
+const FUSION := "res://assets/fonts/fusion-pixel/"
+## Languages written in Cyrillic, which the 8-pixel fonts lack, so their whole interface uses a 10-pixel font instead.
+const CYRILLIC := ["ru", "uk", "be", "bg"]
 const PANEL_TEX := preload("res://assets/ui/panel.png")
 const BUTTON_TEX := preload("res://assets/ui/button.png")
 const ICONS := "res://assets/sprites/icons/"
@@ -261,13 +264,8 @@ static func duration(seconds: float) -> String:
 
 static func make_theme() -> Theme:
 	var t := Theme.new()
-	var font: FontFile = FONT.duplicate()
-	# The pixel font is drawn without smoothing so it stays crisp at the game's low resolution.
-	font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-	font.hinting = TextServer.HINTING_NONE
-	font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-	t.default_font = font
-	t.default_font_size = 8
+	t.default_font = ui_font()
+	t.default_font_size = text_size()
 	t.set_color("font_color", "Label", INK)
 	t.set_constant("separation", "VBoxContainer", 2)
 	t.set_constant("separation", "HBoxContainer", 2)
@@ -313,6 +311,45 @@ static func make_theme() -> Theme:
 	t.set_stylebox("background", "ProgressBar", _flat(Color(0.29, 0.18, 0.14, 0.3), 0))
 	t.set_stylebox("fill", "ProgressBar", _flat(Color(0.7, 0.38, 0.25), 0))
 	return t
+
+
+## The interface font for the current language: the Silkscreen pixel font, falling back to a pixel font with the
+## accented letters and the Chinese, Japanese and Korean characters it lacks, in the forms the language uses.
+static func ui_font() -> Font:
+	var locale := TranslationServer.get_locale()
+	var cyrillic := cyrillic_font()
+	if locale.get_slice("_", 0) in CYRILLIC:
+		return cyrillic
+	var han := "zh_hans"
+	if locale.begins_with("zh_TW") or locale.begins_with("zh_HK") or locale.begins_with("zh_Hant"):
+		han = "zh_tw"
+	elif locale.begins_with("ja"):
+		han = "ja"
+	elif locale.begins_with("ko"):
+		han = "ko"
+	var font := _crisp(FONT)
+	# Cyrillic comes last, so a language list can still name Russian in its own letters.
+	font.fallbacks = [_crisp(load(FUSION + "fusion-pixel-8px-proportional-%s.ttf.woff2" % han)), cyrillic]
+	return font
+
+
+## The 10-pixel font with Cyrillic letters, drawn at size 10.
+static func cyrillic_font() -> FontFile:
+	return _crisp(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
+
+
+## The interface's text size in pixels, which is the size its pixel font is drawn for.
+static func text_size() -> int:
+	return 10 if TranslationServer.get_locale().get_slice("_", 0) in CYRILLIC else 8
+
+
+## A copy of a pixel font drawn without smoothing, so it stays crisp at the game's low resolution.
+static func _crisp(source: FontFile) -> FontFile:
+	var font: FontFile = source.duplicate()
+	font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+	font.hinting = TextServer.HINTING_NONE
+	font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	return font
 
 
 static func _flat(c: Color, width: int, height := 0) -> StyleBoxFlat:

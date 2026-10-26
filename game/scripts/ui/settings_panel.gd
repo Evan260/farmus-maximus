@@ -1,6 +1,10 @@
 extends "res://scripts/ui/window_panel.gd"
 ## Settings: sound, the window and desktop strip, how the game plays, accessibility and key bindings.
 
+## Each language's name in that language, for the language list.
+const NATIVE_NAMES := {"en": "English", "fr": "Français", "de": "Deutsch", "es": "Español", "it": "Italiano", "pt_BR": "Português (BR)",
+	"pl": "Polski", "tr": "Türkçe", "ru": "Русский", "uk": "Українська", "ja": "日本語", "ko": "한국어", "zh_CN": "简体中文", "zh_TW": "繁體中文"}
+
 var tab := "Sound"
 var _waiting_for := ""
 
@@ -49,6 +53,23 @@ func build() -> void:
 			_toggle("Low power", Settings.low_power, func(v): Settings.set_value("low_power", v); Windowing._update_fps())
 			UiKit.para(body, tr("Drag the strip with the right mouse button. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Play":
+			var locales := TranslationServer.get_loaded_locales()
+			if locales.size() > 1:
+				UiKit.section(body, tr("Language"))
+				var grid := GridContainer.new()
+				grid.columns = 3
+				body.add_child(grid)
+				locales.sort()
+				for loc in locales:
+					# Each language is named in its own words, so a player can find theirs whatever is showing now.
+					var b := UiKit.button(grid, NATIVE_NAMES.get(loc, TranslationServer.get_locale_name(loc)), func(): Settings.set_value("language", loc))
+					b.toggle_mode = true
+					b.button_pressed = TranslationServer.get_locale() == loc
+					b.custom_minimum_size = Vector2(76, 0)
+					# A Cyrillic name is drawn at its own font's size, so it stays crisp in any language.
+					if loc.get_slice("_", 0) in UiKit.CYRILLIC:
+						b.add_theme_font_override("font", UiKit.cyrillic_font())
+						b.add_theme_font_size_override("font_size", 10)
 			UiKit.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
 			UiKit.setting(body, tr("Length of a day"), tr("%d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
 			_toggle("Progress while the game is closed", Settings.offline_progress, func(v): Settings.set_value("offline_progress", v))
@@ -59,14 +80,6 @@ func build() -> void:
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
 			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))
 			_toggle("Clear marker on ready plants", Settings.strong_cues, func(v): Settings.set_value("strong_cues", v))
-			var locales := TranslationServer.get_loaded_locales()
-			if locales.size() > 1:
-				var r := UiKit.row(body)
-				UiKit.label(r, tr("Language"))
-				for loc in locales:
-					var b := UiKit.button(r, TranslationServer.get_locale_name(loc), func(): Settings.set_value("language", loc))
-					b.toggle_mode = true
-					b.button_pressed = Settings.language == loc
 		"Keys":
 			for action in Settings.ACTIONS:
 				var r := UiKit.row(body)

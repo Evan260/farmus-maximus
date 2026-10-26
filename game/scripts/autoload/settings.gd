@@ -25,7 +25,8 @@ var reduced_motion := false
 ## Ready plants get a clear marker above them, not just a twinkle, for players who find the twinkle hard to see.
 var strong_cues := false
 var low_power := false
-var language := "en"
+## A language code such as "fr" or "zh_CN"; empty until chosen, when the computer's own language is used if the game has it.
+var language := ""
 ## Whether the game opens on the title screen; players who want straight in can turn it off.
 var show_title := true
 ## How much bigger or smaller than the estate the interface is drawn, in whole steps.
@@ -52,7 +53,39 @@ func _ready() -> void:
 			ev.button_index = pad
 			InputMap.action_add_event(action, ev)
 		_bind(action, int(keys.get(action, ACTIONS[action]["key"])))
-	TranslationServer.set_locale(language)
+	_load_translations()
+	TranslationServer.set_locale(language if language != "" else _system_language())
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--locale="):
+			TranslationServer.set_locale(arg.trim_prefix("--locale="))
+
+
+## Every language column of the strings sheet becomes a translation file when imported; all of them are loaded.
+func _load_translations() -> void:
+	for file in ResourceLoader.list_directory("res://translations/"):
+		if file.get_extension() == "translation":
+			var t: Translation = load("res://translations/" + file)
+			# A language column still waiting for its translations is not offered yet; the compressed translation files
+			# cannot count their lines, so it is judged by whether the word for the language list itself is there.
+			if t.locale == "en" or t.get_message("Language") != "":
+				TranslationServer.add_translation(t)
+
+
+## The computer's own language if the game has it, matching "fr_CA" to "fr" and "zh_Hans_CN" to "zh_CN"; otherwise English.
+func _system_language() -> String:
+	var have := TranslationServer.get_loaded_locales()
+	var os := OS.get_locale()
+	if os in have:
+		return os
+	if os.begins_with("zh"):
+		var traditional := os.contains("Hant") or os.ends_with("TW") or os.ends_with("HK") or os.ends_with("MO")
+		var zh := "zh_TW" if traditional else "zh_CN"
+		return zh if zh in have else "en"
+	var lang := OS.get_locale_language()
+	for loc in have:
+		if loc.get_slice("_", 0) == lang:
+			return loc
+	return "en"
 
 
 func key_for(action: String) -> int:
@@ -67,9 +100,13 @@ func rebind(action: String, keycode: int) -> void:
 
 func set_value(name: String, value: Variant) -> void:
 	set(name, value)
+	save()
 	if name == "language":
 		TranslationServer.set_locale(String(value))
-	save()
+		# The interface's font depends on the language, so the scene is rebuilt around the new one.
+		Saves.save_game()
+		get_tree().reload_current_scene()
+		return
 	changed.emit()
 
 

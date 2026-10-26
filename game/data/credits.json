@@ -1,6 +1,11 @@
 {
-	"made_by": ["Evan"],
-	"font": ["Silkscreen by Jason Kottke, SIL Open Font Licence 1.1"],
+	"made_by": [
+		"Evan"
+	],
+	"font": [
+		"Silkscreen by Jason Kottke, SIL Open Font Licence 1.1",
+		"Fusion Pixel Font by TakWolf, SIL Open Font Licence 1.1, with glyphs from Ark Pixel Font, Misaki, Galmuri, Boutique Bitmap and Miseki Bitmap"
+	],
 	"sounds": [
 		"Stork bill clattering by dobroide (freesound.org), CC BY 4.0",
 		"Chicken clucking by Breviceps (freesound.org), CC0",

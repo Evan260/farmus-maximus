@@ -12,6 +12,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `game/scripts/world/` | Scene life: walkers (people and animals), weather, wildlife, the pasture, decorations |
 | `game/data/balance.json` | Every number and name: crops, goods, buildings, helpers, market, calendar, achievements, tutorial |
 | `game/translations/strings.csv` | Every player-facing string, one column per language; regenerate with `python tools/extract_strings.py` |
+| `tools/translate_strings.py` | Fills the empty language columns of `strings.csv` with Azure AI Translator (key `AZURE_TRANSLATOR_KEY` in `.env`); `--dry-run` shows what is missing. The game loads every column that has translations and offers it under Settings > Play; Cyrillic languages switch the interface to a 10 px font, Chinese, Japanese and Korean fall back to Fusion Pixel 8 px. `--locale=ja` tries a language without saving it |
 | `design/` | Design docs: `Game-design.md` (the whole game), `Game-plan.md` (build phases), `Asset-list.md`, `Business-plan.md`, competitor research in `reports/` |
 | `design/Art tests/` | Early art experiments and the reference scene |
 | `tools/art/pixellab.py` | Art pipeline: generate with PixelLab, slice sheets, clean stray pixels; every paid call is logged in `tools/art/ledger.csv` |
