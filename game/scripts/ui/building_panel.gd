@@ -17,6 +17,8 @@ var _casks: Label
 var _feed: Label
 var _offer_buttons := {}
 var _blessing: Label
+## How much of each ingredient and product the storehouse holds, by item, kept up to date while the window is open.
+var _stock := {}
 
 
 func signature() -> String:
@@ -30,6 +32,7 @@ func signature() -> String:
 func build() -> void:
 	_offer_buttons = {}
 	_costs = []
+	_stock = {}
 	for field in ["_bar", "_action", "_note", "_queue", "_load", "_casks", "_feed", "_blessing"]:
 		set(field, null)
 	if id == VILLA:
@@ -118,6 +121,8 @@ func tick() -> void:
 	_tick_action(Game.building_action(id).get("cost", {}), Game.building_block(id))
 	if _queue:
 		_queue.text = tr("Batches waiting: %d of %d") % [b["queue"].size(), Game.building_queue_max(id)]
+	if not _stock.is_empty():
+		_tick_stock()
 	if _load:
 		_load.disabled = b["queue"].size() >= Game.building_queue_max(id)
 	if _casks:
@@ -190,6 +195,7 @@ func _build_workshop() -> void:
 	_bar = UiKit.progress(body)
 	if recipe.get("lavender_honey", false):
 		UiKit.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), WIDTH)
+	_build_stock(ins, recipe.get("out", {}))
 	if ins.is_empty():
 		return
 	UiKit.section(body, tr("Loading"))
@@ -201,6 +207,39 @@ func _build_workshop() -> void:
 		_load = UiKit.button(body, tr("Load from the storehouse"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
 		if helper != "":
 			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), tr(String(Game.helper_info(helper).get("role", ""))).to_lower()], WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+
+
+## What the storehouse holds of everything this workshop uses and makes, so the player can see at a glance how many
+## batches are left before it runs dry.
+func _build_stock(ins: Dictionary, outs: Dictionary) -> void:
+	UiKit.section(body, tr("In the storehouse"))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	body.add_child(grid)
+	for item in ins.keys() + outs.keys():
+		if _stock.has(item):
+			continue
+		var r := UiKit.row(grid)
+		UiKit.icon(r, item)
+		var l := UiKit.label(r)
+		l.set_meta("per_batch", int(ins.get(item, 0)) * Game.building_batch(id))
+		_stock[item] = l
+	_tick_stock()
+
+
+func _tick_stock() -> void:
+	for item in _stock:
+		var l: Label = _stock[item]
+		var have := Game.count_item(item)
+		var per := int(l.get_meta("per_batch"))
+		var name := tr(Game.item_name(item))
+		if per > 0:
+			var batches := floori(float(have) / per)
+			l.text = "%s  %d  (%s)" % [name, have, UiKit.plural(batches, "batch", "batches")]
+			l.add_theme_color_override("font_color", UiKit.INK if have >= per else UiKit.SHORT)
+		else:
+			l.text = "%s  %d" % [name, have]
 
 
 func _scaled(goods: Dictionary) -> Dictionary:
