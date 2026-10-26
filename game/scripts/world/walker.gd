@@ -26,6 +26,12 @@ var dress: Callable
 ## The folder of walking frames to use instead of walk_east, such as a woman carrying her baby; its first frame is
 ## also how she stands.
 var walk_folder := "walk"
+## The folder of a one-off animation played when the walker is clicked, such as a hen flapping its wings.
+var react_folder := ""
+## Shown when the pointer is over them, such as "Gaius, farmhand"; empty for creatures that are not named.
+var display_name := ""
+## The sound of their greeting when clicked, such as "salve_woman"; silent if the game has no such sound.
+var voice := ""
 var home_x := NAN
 var _homeward := false
 var sprite: AnimatedSprite2D
@@ -166,6 +172,29 @@ func _fade_out() -> void:
 	fade.tween_callback(queue_free)
 
 
+## Answers a click: stops where it is and plays its reaction once, then carries on. False when it is busy or has none.
+func react() -> bool:
+	if not has_animation("react") or _state not in ["idle", "walk", "work"] or _homeward or _delivering:
+		return false
+	_state = "react"
+	_working_next = false
+	_play("react")
+	_timer = sprite.sprite_frames.get_frame_count("react") / sprite.sprite_frames.get_animation_speed("react")
+	return true
+
+
+func contains(point: Vector2) -> bool:
+	return sprite != null and visible and modulate.a > 0.5 and Hit.frame_rect(self, sprite).has_point(point)
+
+
+## A person answers a click with their greeting, the rustle of their clothes and, if there is one, their voice.
+func greet() -> void:
+	if react():
+		Sfx.play("rustle", -10.0, 0.1)
+		if voice != "":
+			Sfx.play(voice, -4.0, 0.05)
+
+
 func has_animation(anim: String) -> bool:
 	return sprite and sprite.sprite_frames.has_animation(anim)
 
@@ -226,17 +255,24 @@ func _frames() -> SpriteFrames:
 		f.clear("stand")
 		f.add_frame("stand", _dressed(load("%s%s_east/frame_00.png" % [dir, walk_folder])))
 		_offsets["stand"] = _anchor(f.get_frame_texture("stand", 0))
-	for anim in ["walk", "carry", "work", "place", "graze", "sleep"]:
-		var folder := "%s%s_east/" % [dir, walk_folder if anim == "walk" else anim]
-		if not ResourceLoader.exists(folder + "frame_00.png"):
+	for anim in ["walk", "carry", "work", "place", "graze", "sleep", "react"]:
+		var folder := "%s%s_east/" % [dir, {"walk": walk_folder, "react": react_folder}.get(anim, anim)]
+		# The greeting is drawn with empty or ordinary hands, so someone carrying a baby does not use it.
+		if not ResourceLoader.exists(folder + "frame_00.png") or (anim == "react" and walk_folder != "walk"):
 			continue
 		f.add_animation(anim)
 		f.set_animation_speed(anim, 9.0 if anim in ["walk", "carry"] else 6.0)
-		f.set_animation_loop(anim, anim != "place")
+		f.set_animation_loop(anim, anim not in ["place", "react"])
+		if anim == "react":
+			f.set_animation_speed(anim, 10.0)
 		var i := 0
 		while ResourceLoader.exists("%sframe_%02d.png" % [folder, i]):
 			f.add_frame(anim, _dressed(load("%sframe_%02d.png" % [folder, i])))
 			i += 1
+		# A greeting plays forward and back, so a raised hand or a bow comes down again before they walk on.
+		if anim == "react" and dir.contains("/people/"):
+			for k in range(i - 2, 0, -1):
+				f.add_frame(anim, f.get_frame_texture(anim, k))
 		_offsets[anim] = _anchor(f.get_frame_texture(anim, 0))
 		if anim in ["walk", "carry"]:
 			var pace := natural_pace(f, anim)

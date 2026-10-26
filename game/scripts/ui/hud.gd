@@ -115,7 +115,7 @@ func _ready() -> void:
 	_apply_text_size()
 	Game.message.connect(func(text): toast(tr(text)); Sfx.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast(tr("The storehouse is full: send the cart to market")))
-	Game.achievement_unlocked.connect(func(a): toast(tr("Achievement: %s") % tr(String(a["name"]))); Sfx.play("villa_complete", -6.0))
+	Game.achievement_unlocked.connect(_on_achievement)
 	Game.discovered.connect(_on_discovered)
 	Game.festival_started.connect(_on_festival)
 	Game.season_changed.connect(func(_s): toast(tr("%s has come to the estate") % tr(Game.calendar.season_name())))
@@ -332,6 +332,70 @@ func _show_intro() -> void:
 	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+
+func _on_achievement(a: Dictionary) -> void:
+	if a.get("special", false):
+		_triumph()
+		return
+	toast(tr("Achievement: %s") % tr(String(a["name"])))
+	Sfx.play("villa_complete", -6.0)
+
+
+## Earning every achievement is celebrated like a Roman triumph: a fanfare, rose petals thrown over the whole view, and
+## a word of honour, while a golden laurel wreath is hung above the villa door.
+func _triumph() -> void:
+	Sfx.play("triumph")
+	var petals := CPUParticles2D.new()
+	var view := _root.size
+	petals.position = Vector2(view.x / 2.0, -6)
+	petals.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	petals.emission_rect_extents = Vector2(view.x / 2.0, 2)
+	petals.amount = 26 if Settings.reduced_motion else 90
+	petals.lifetime = 9.0
+	petals.one_shot = true
+	petals.explosiveness = 0.0
+	petals.direction = Vector2.DOWN
+	petals.spread = 25.0
+	petals.initial_velocity_min = 26.0
+	petals.initial_velocity_max = 44.0
+	petals.gravity = Vector2(5, 16)
+	petals.texture = _petal_texture()
+	petals.angular_velocity_min = -160.0
+	petals.angular_velocity_max = 160.0
+	petals.scale_amount_min = 2.0
+	petals.scale_amount_max = 3.0
+	var colours := Gradient.new()
+	colours.colors = PackedColorArray([Color(0.86, 0.22, 0.3), Color(0.95, 0.55, 0.62), Color(0.98, 0.84, 0.4)])
+	petals.color_initial_ramp = colours
+	_root.add_child(petals)
+	petals.emitting = true
+	get_tree().create_timer(12.0).timeout.connect(petals.queue_free)
+	var p := PanelContainer.new()
+	_root.add_child(p)
+	var col := UiKit.column(p)
+	var head := UiKit.label(col, tr("Triumph!"))
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.add_theme_color_override("font_color", Color(0.62, 0.2, 0.14))
+	var wreath := TextureRect.new()
+	wreath.texture = load("res://assets/sprites/icons32/laurel.png")
+	wreath.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	wreath.custom_minimum_size = Vector2(32, 32)
+	col.add_child(wreath)
+	UiKit.para(col, tr("Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door."), 200)
+	UiKit.button(col, tr("Ave!"), p.queue_free)
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+	UiKit.fade_in(p, 0.6)
+
+
+## A rose petal a few pixels across, white so the particles can colour it.
+func _petal_texture() -> Texture2D:
+	var img := Image.create(4, 3, false, Image.FORMAT_RGBA8)
+	for p in [Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(1, 2), Vector2i(2, 2)]:
+		img.set_pixelv(p, Color(1, 1, 1, 1) if p.y < 2 else Color(0.8, 0.8, 0.8, 1))
+	return ImageTexture.create_from_image(img)
 
 
 func _show_away(summary: Dictionary) -> void:

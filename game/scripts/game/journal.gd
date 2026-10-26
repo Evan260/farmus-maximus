@@ -95,7 +95,15 @@ func met(cond: Dictionary) -> bool:
 		return _game.decorations.size() >= int(cond["decorations"])
 	if cond.has("journal_share"):
 		return share() >= float(cond["journal_share"]) - 0.0001
+	if cond.has("achievements"):
+		var others := _other_achievements()
+		return others.all(func(id): return achievements.has(id))
 	return false
+
+
+## Every achievement except the ones that are earned by earning the rest.
+func _other_achievements() -> Array:
+	return Balance.get_value("achievements", []).filter(func(a): return not a["when"].has("achievements")).map(func(a): return a["id"])
 
 
 ## How far along a countable condition is, as how many of how many, or an empty array for one that is simply met or not.
@@ -114,6 +122,9 @@ func progress(cond: Dictionary) -> Array:
 		return [_game.decorations.size(), int(cond["decorations"])]
 	if cond.has("journal_share"):
 		return [int(round(share() * 100.0)), int(round(float(cond["journal_share"]) * 100.0))]
+	if cond.has("achievements"):
+		var others := _other_achievements()
+		return [others.filter(func(id): return achievements.has(id)).size(), others.size()]
 	return []
 
 

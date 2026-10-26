@@ -38,6 +38,8 @@ const PARALLAX := {"sky": 0.04, "mountains": 0.08, "land": 0.15}
 const CART_HOME_X := HOME + 505.0
 ## The lowest row the view shows: the road to town runs along the bottom, below the fields.
 const BOTTOM := 286.0
+## The helpers who are women, so their greeting uses a woman's voice.
+const WOMEN := ["miller", "perfumer", "stablehand"]
 const RIG_BASE := 282
 const PAN_SPEED := 260.0
 ## Where each helper spends their day, in estate pixels.
@@ -115,6 +117,10 @@ var _donkey: AnimatedSprite2D
 var _rig_tween: Tween
 var _storehouse: Sprite2D
 var _glow_layer: CanvasLayer
+## Shepherds and travellers on the road, while they are on the estate.
+var _passers: Array = []
+## The golden laurel wreath over the villa door, hung for the Triumph.
+var _wreath: Sprite2D
 ## One light per villa window, each with its own evening: when it is lit, when it goes out, and its flicker.
 var _windows: Array = []
 var _windows_night := -1
@@ -372,11 +378,12 @@ func _ride_to_market() -> void:
 		go_to_town()
 		return
 	_riding = true
-	Sfx.play("cart_stone" if _paving_front > _cart.position.x + 60.0 else "cart_dirt")
+	var wheels := Sfx.play("cart_stone" if _paving_front > _cart.position.x + 60.0 else "cart_dirt")
 	_face_rig(false)
 	_donkey.play("walk")
 	_move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
 	await get_tree().create_timer(2.1).timeout
+	Sfx.fade_out(wheels, 1.2)
 	go_to_town()
 	_riding = false
 
@@ -499,7 +506,11 @@ func _update_life(delta: float) -> void:
 			w.position = Vector2(estate_width + 20 if from_right else 1430.0, 283)
 			w.leave_at = 1430.0 if from_right else estate_width + 20
 			w.speed = 16.0
+			w.react_folder = "greet"
+			w.display_name = tr("A shepherd") if who == "shepherd" else tr("A traveller")
+			w.voice = "salve_man"
 			world.add_child(w)
+			_passers.append(w)
 	if cat and dog and dog.is_asleep() and cat.is_asleep() and absf(cat.position.x - dog.position.x) < 60.0:
 		var view := Rect2(_camera.position, _view_size())
 		if view.has_point(cat.position):
@@ -565,6 +576,9 @@ func _spawn_helper(id: String) -> void:
 	w.rests_at_night = true
 	w.home_x = clampf(VILLA_BASE.x, w.min_x, w.max_x)
 	var info := Game.helper_info(id)
+	w.react_folder = "greet"
+	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), tr(String(info.get("role", ""))).to_lower()]
+	w.voice = "salve_woman" if id in WOMEN else "salve_man"
 	if info.has("zones") or info.has("crops"):
 		w.find_work = func() -> float: return _ready_plot_x(info)
 		w.work_done = func(x: float) -> String: return Game.helper_harvest(id, _plot_near(x))
@@ -672,6 +686,15 @@ func _load_demo_state() -> void:
 		elif arg == "--maxed":
 			_demo_estate()
 			_demo_maxed()
+		elif arg == "--greet":
+			get_tree().create_timer(1.6).timeout.connect(func():
+				for w in _people() + market._folk:
+					w.greet())
+		elif arg == "--triumph":
+			for a in Balance.get_value("achievements", []):
+				if not a.get("special", false):
+					Game.journal.achievements[a["id"]] = true
+			Game.check_achievements.call_deferred()
 
 
 ## Shows the whole estate in use: every zone owned, a mix of building states, helpers at work, animals and decorations.
@@ -756,6 +779,10 @@ func _scatter_meadow() -> void:
 	var node := Node2D.new()
 	world.add_child(node)
 	world.move_child(node, plot_views[0].get_index())
+	# Grass in the pasture grows behind the fence and the animals rather than over them.
+	var pasture_grass := Node2D.new()
+	world.add_child(pasture_grass)
+	world.move_child(pasture_grass, _pasture.get_index())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1234
 	var plants := []
@@ -777,7 +804,8 @@ func _scatter_meadow() -> void:
 		plant.centered = false
 		plant.flip_h = rng.randf() < 0.5
 		plant.position = (entry[1] - Vector2(roundf(entry[0].get_width() / 2.0), entry[0].get_height())).round()
-		node.add_child(plant)
+		var in_pasture: bool = entry[1].x > Pasture.FENCE_LEFT - 16.0 and entry[1].x < Pasture.FENCE_RIGHT + 10.0
+		(pasture_grass if in_pasture else node).add_child(plant)
 		_sway(plant)
 
 
@@ -1104,6 +1132,21 @@ func _animal_at(point: Vector2) -> String:
 
 
 func _call_out(animal: String, point: Vector2) -> void:
+	var grazing: Node2D = _pasture.animal_at(point)
+	if grazing:
+		grazing.react()
+	elif animal == "donkey" and _donkey.animation == "stand" and not _riding:
+		_donkey.play("bray")
+		_donkey.animation_finished.connect(func(): _donkey.play("stand"), CONNECT_ONE_SHOT)
+	elif animal == "stork" and not _stork.has_meta("bobbing"):
+		# A stork greets by throwing its head back and clattering its bill, which reads as a quick bob at this size.
+		_stork.set_meta("bobbing", true)
+		var home := _stork.position
+		var bob := create_tween()
+		for k in 4:
+			bob.tween_property(_stork, "position", home + Vector2(0, -1), 0.09)
+			bob.tween_property(_stork, "position", home, 0.09)
+		bob.tween_callback(func(): _stork.remove_meta("bobbing"))
 	var sound: String = {"hen": "cluck", "goat": "goat", "stork": "stork", "donkey": "donkey"}.get(animal, "")
 	Sfx.play(sound, -4.0, 0.1)
 	_hearts(point + Vector2(0, -6))
@@ -1111,10 +1154,16 @@ func _call_out(animal: String, point: Vector2) -> void:
 
 ## The dog or cat under the pointer, if it stands in front of the plant there (or there is no plant).
 func _pet_at(point: Vector2, plant: Node2D) -> Node2D:
-	for pet in [cat, dog]:
+	for pet in [cat, dog] + _people():
 		if pet and pet.contains(point) and (plant == null or pet.position.y >= plant.position.y):
 			return pet
 	return null
+
+
+## The helpers, the trader and anyone passing along the road, who wave back when clicked.
+func _people() -> Array:
+	_passers = _passers.filter(func(w): return is_instance_valid(w))
+	return _helpers.values() + _passers
 
 
 ## A click goes to whatever the pointer shows as hovered: a dog or cat in front, plants and signs, then buildings.
@@ -1122,7 +1171,10 @@ func _click(point: Vector2) -> void:
 	var view := _plot_at(point)
 	var pet := _pet_at(point, view)
 	if pet:
-		pet.pet()
+		if pet in [cat, dog]:
+			pet.pet()
+		else:
+			pet.greet()
 		return
 	if view:
 		_click_plot(view.index)
@@ -1279,7 +1331,7 @@ func _update_hover(point: Vector2) -> void:
 		var block := Game.zone_block(sign_hit.zone_id)
 		hud.set_info(tr(block) if block != "" else tr("Buy the %s deed: %d sestertii") % [tr(String(z.get("name", ""))).to_lower(), int(z.get("deed", 0))])
 	elif pet:
-		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat"))
+		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat") if pet_hit in [cat, dog] else pet_hit.display_name)
 	elif animal != "":
 		hud.set_info(tr({"hen": "A hen", "goat": "A goat", "stork": "The stork on its nest", "donkey": "The donkey"}.get(animal, "")))
 	elif building:
@@ -1471,7 +1523,7 @@ func _on_cart_returned(coins: int) -> void:
 
 
 func _on_dog_petted() -> void:
-	Sfx.play("pet", -2.0, 0.12)
+	Sfx.play("dog", -4.0, 0.05)
 	Game.add_stat("pets", 1)
 	_hearts(dog.position + Vector2(0, -32))
 
@@ -1776,6 +1828,11 @@ func _donkey_frames() -> SpriteFrames:
 		f.add_frame("walk", load("res://assets/sprites/donkey/walk_east/frame_%02d.png" % i))
 	f.add_animation("stand")
 	f.add_frame("stand", load("res://assets/sprites/donkey/walk_east/frame_00.png"))
+	f.add_animation("bray")
+	f.set_animation_speed("bray", 8.0)
+	f.set_animation_loop("bray", false)
+	for i in 9:
+		f.add_frame("bray", load("res://assets/sprites/donkey/bray_east/frame_%02d.png" % i))
 	return f
 
 
@@ -1825,6 +1882,7 @@ func _place_villa() -> void:
 	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 7, SHADOW)
 	_villa_shadow.position = Vector2(_villa.position.x - 6, VILLA_BASE.y - 5)
 	_make_windows(tex, used)
+	_hang_wreath(tex, used)
 	if _villa_scaffold:
 		_villa_scaffold.rect = _villa_rect()
 		_villa_scaffold.ladders = _villa_ladders()
@@ -1836,10 +1894,37 @@ func _place_villa() -> void:
 		_stork.position = Vector2(_villa.position.x + used.size.x * 0.68, _villa.position.y - _stork.texture.get_height() + 12)
 
 
-## Finds the villa's windows (its glass-blue pixels, grouped into panes) and gives each its own lamp light.
+## Once the Triumph is earned, a golden laurel wreath hangs over the villa's front door, found as the top of the
+## door's dark wood in the middle of the house.
+func _hang_wreath(tex: Texture2D, used: Rect2i) -> void:
+	if _wreath == null:
+		_wreath = _add_texture(load("res://assets/sprites/decorations/laurel_wreath.png"), Vector2.ZERO)
+		world.move_child(_wreath, _villa.get_index() + 1)
+		Game.achievement_unlocked.connect(func(a): if a["id"] == "triumph": _place_villa())
+	_wreath.visible = Game.journal.achievements.has("triumph") and Game.villa_stage > 1
+	if not _wreath.visible:
+		return
+	var img := tex.get_image()
+	var mid := used.position.x + used.size.x / 2
+	var door := func(y: int) -> bool:
+		var c := img.get_pixel(mid, y)
+		return c.a > 0.5 and c.v < 0.42 and c.s > 0.3
+	var top := used.end.y - 1
+	while top > used.position.y and not door.call(top):
+		top -= 1
+	while top > used.position.y and door.call(top - 1):
+		top -= 1
+	var size := _wreath.texture.get_size()
+	_wreath.position = _villa.position + Vector2(mid - used.position.x, top - used.position.y) - Vector2(roundf(size.x / 2.0), size.y + 1)
+
+
+## Finds the villa's windows (its glass-blue pixels, grouped into panes, and panes close together into one window) and
+## gives each window a lamp inside that lights all its panes and spills out onto the wall and the ground.
 func _make_windows(tex: Texture2D, used: Rect2i) -> void:
 	for w in _windows:
-		w["sprite"].queue_free()
+		for pane in w["panes"]:
+			pane.queue_free()
+		w["lamp"].queue_free()
 	_windows = []
 	_windows_night = -1
 	# The ruin has no glass, only dark holes, so it stays dark.
@@ -1848,6 +1933,8 @@ func _make_windows(tex: Texture2D, used: Rect2i) -> void:
 	var img := tex.get_image()
 	img.convert(Image.FORMAT_RGBA8)
 	var glass := {}
+	var boxes: Array[Rect2i] = []
+	var panes: Array[Sprite2D] = []
 	for x in range(used.position.x, used.end.x):
 		for y in range(used.position.y, used.end.y):
 			var c := img.get_pixel(x, y)
@@ -1874,7 +1961,35 @@ func _make_windows(tex: Texture2D, used: Rect2i) -> void:
 			light.set_pixelv(p - box.position, Color(1.0, 0.8, 0.42, 0.95))
 		var sprite := _add_texture(ImageTexture.create_from_image(light), _villa.position + Vector2(box.position - used.position), _glow_layer)
 		sprite.modulate.a = 0.0
-		_windows.append({"sprite": sprite, "phase": randf() * TAU, "speed": randf_range(0.8, 1.3)})
+		boxes.append(box)
+		panes.append(sprite)
+	# Panes a few pixels apart, split only by glazing bars or a frame, belong to the same window.
+	var group := range(boxes.size())
+	var changed := true
+	while changed:
+		changed = false
+		for i in boxes.size():
+			for j in boxes.size():
+				if group[i] != group[j] and boxes[i].grow(3).intersects(boxes[j]):
+					var keep := mini(group[i], group[j])
+					var drop := maxi(group[i], group[j])
+					for k in group.size():
+						if group[k] == drop:
+							group[k] = keep
+					changed = true
+	for g in range(boxes.size()):
+		var members := range(boxes.size()).filter(func(k): return group[k] == g)
+		if members.is_empty():
+			continue
+		var outline := boxes[members[0]]
+		for k in members:
+			outline = outline.merge(boxes[k])
+		var lamp := Lamp.new()
+		lamp.position = _villa.position + Vector2(outline.position - used.position) + Vector2(outline.size) / 2.0 + Vector2(0, 3)
+		lamp.radius = clampf(outline.size.x * 2.2, 18.0, 34.0)
+		lamp.power = 0.9
+		world.add_child(lamp)
+		_windows.append({"panes": members.map(func(k): return panes[k]), "lamp": lamp, "phase": randf() * TAU, "speed": randf_range(0.8, 1.3)})
 
 
 ## Each evening some windows are lit, one after another as dusk falls, and go out at different hours; a few light again before dawn.
@@ -1899,7 +2014,10 @@ func _light_windows(night: float) -> void:
 		var morning := (smoothstep(5.0, 5.3, hour) * (1.0 - smoothstep(6.8, 7.2, hour))) if w["dawn"] else 0.0
 		var on := maxf(evening if w["lit"] else 0.0, morning)
 		var flicker := 1.0 if Settings.reduced_motion else 0.84 + 0.09 * sin(t * 5.1 * float(w["speed"]) + float(w["phase"])) + 0.07 * sin(t * 11.7 * float(w["speed"]) + float(w["phase"]) * 1.7)
-		w["sprite"].modulate.a = clampf(on * flicker * maxf(night, 0.35), 0.0, 1.0)
+		var glow := clampf(on * flicker * maxf(night, 0.35), 0.0, 1.0)
+		for pane in w["panes"]:
+			pane.modulate.a = glow
+		w["lamp"].shine(glow * night)
 
 
 func _sway(s: Sprite2D) -> void:

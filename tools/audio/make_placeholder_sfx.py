@@ -230,6 +230,24 @@ def villa_complete():
     return out
 
 
+def triumph():
+    """A short brass fanfare: two rising calls and a held chord, for the Triumph achievement."""
+    out = silence(3.2)
+    brass = (1.0, 0.7, 0.55, 0.4, 0.28, 0.18, 0.1)
+    notes = [(392, 0.0, 0.18), (392, 0.2, 0.18), (523, 0.4, 0.5), (523, 1.0, 0.18), (659, 1.2, 0.18), (784, 1.4, 1.6)]
+    for f, at, length in notes:
+        x = t(length + 0.3)
+        wobble = 1 + 0.004 * np.sin(2 * np.pi * 5.5 * x)
+        s = sum(h * np.sin(2 * np.pi * f * (i + 1) * x * wobble) for i, h in enumerate(brass))
+        shape = np.clip(x / 0.03, 0, 1) * np.where(x < length, 1.0, np.exp(-(x - length) * 12))
+        place(out, s * shape * 0.25, at)
+    for f in (523, 659):
+        x = t(1.8)
+        s = sum(h * np.sin(2 * np.pi * f * (i + 1) * x) for i, h in enumerate(brass[:4]))
+        place(out, s * np.clip(x / 0.05, 0, 1) * np.exp(-x * 1.4) * 0.14, 1.4)
+    return lowpass(out, 3)
+
+
 def click():
     return tone(1800, 0.03, decay=120) * 0.25
 
@@ -262,6 +280,12 @@ def main():
 
 if __name__ == "__main__" and len(sys.argv) == 2:
     main()
+
+# Named sounds only, so placeholders can be added without overwriting real recordings already in the folder.
+if __name__ == "__main__" and len(sys.argv) > 2 and sys.argv[2] != "--ambience":
+    for name in sys.argv[2:]:
+        write(Path(sys.argv[1]) / f"{name}.wav", globals()[name]())
+        print("wrote", name)
 
 
 def ambience_day(seconds=24.0):

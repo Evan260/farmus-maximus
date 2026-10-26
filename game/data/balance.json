@@ -2201,6 +2201,15 @@
 			"when": {
 				"journal_share": 1.0
 			}
+		},
+		{
+			"id": "triumph",
+			"name": "Triumph",
+			"desc": "Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door",
+			"when": {
+				"achievements": "all"
+			},
+			"special": true
 		}
 	],
 	"tutorial": [

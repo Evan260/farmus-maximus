@@ -5,7 +5,7 @@ class_name Coats
 const DOG := {"golden": "Golden", "black": "Black", "chocolate": "Chocolate", "cream": "Cream", "grey": "Grey", "red": "Red"}
 const CAT := {"ginger": "Ginger tabby", "grey": "Grey tabby", "black": "Black", "white": "White", "brown": "Brown tabby"}
 ## Hens and goats come in a few looks too, chosen at random so a flock is not all alike.
-const HEN := ["brown", "white", "black", "speckled", "ginger"]
+const HEN := ["brown", "white", "black", "blue", "ginger"]
 const GOAT := ["patched", "white", "dark_patched", "grey_patched", "black"]
 
 static var _cache := {}
@@ -56,7 +56,7 @@ static func _recolour_livestock(tex: Texture2D, animal: String, coat: String) ->
 				match coat:
 					"white": out = Color.from_hsv(0.11, c.s * 0.12, 0.78 + c.v * 0.2, c.a)
 					"black": out = Color.from_hsv(0.62, 0.18, c.v * 0.3 + 0.06, c.a)
-					"speckled": out = Color.from_hsv(0.6, 0.06, c.v * (0.95 if (x + y) % 3 else 0.6), c.a)
+					"blue": out = Color.from_hsv(0.6, 0.14, c.v * 0.62 + 0.08, c.a)
 					"ginger": out = Color.from_hsv(0.055, minf(1.0, c.s * 1.1), minf(1.0, c.v * 1.08), c.a)
 			elif animal == "goat":
 				var patch := c.h > 0.05 and c.h < 0.1 and c.s > 0.45

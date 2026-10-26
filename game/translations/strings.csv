@@ -35,9 +35,11 @@ A roof again,A roof again
 "A ruin, for sale.","A ruin, for sale."
 A ruin. %s.,A ruin. %s.
 A second cart and a trader,A second cart and a trader
+A shepherd,A shepherd
 A shooting star,A shooting star
 A shy visitor that slips past on summer nights.,A shy visitor that slips past on summer nights.
 A tidy sum,A tidy sum
+A traveller,A traveller
 A truffle,A truffle
 A wall lizard,A wall lizard
 "A white butterfly, rare and lucky, on a fine day.","A white butterfly, rare and lucky, on a fine day."
@@ -60,6 +62,7 @@ At your service,At your service
 Aulus,Aulus
 Aurei  %d,Aurei  %d
 Autumn,Autumn
+Ave!,Ave!
 Bacchus,Bacchus
 Back to the estate,Back to the estate
 Back to work,Back to work
@@ -168,6 +171,7 @@ Early mornings sometimes bring mist over the fields.,Early mornings sometimes br
 "Earn 10,000 sestertii","Earn 10,000 sestertii"
 "Earn 100,000 sestertii","Earn 100,000 sestertii"
 Earn an aureus,Earn an aureus
+Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door,Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door
 Earned  %d sestertii,Earned  %d sestertii
 Eggs,Eggs
 Empty,Empty
@@ -175,6 +179,7 @@ Empty. Buy hens and goats at the market.,Empty. Buy hens and goats at the market
 Enlarge it to hold %d,Enlarge it to hold %d
 Equestrian fortune,Equestrian fortune
 Essence of summer,Essence of summer
+"Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door.","Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door."
 Every building restored,Every building restored
 Every farm needs a dog and a cat. Choose their coats and give them names.,Every farm needs a dog and a cat. Choose their coats and give them names.
 Every festival celebrated,Every festival celebrated
@@ -545,6 +550,8 @@ Trader back in  %s,Trader back in  %s
 Trader ready  (carries %d),Trader ready  (carries %d)
 Train,Train
 "Travellers drink my inn dry. {n} {item}, please!","Travellers drink my inn dry. {n} {item}, please!"
+Triumph,Triumph
+Triumph!,Triumph!
 Truffle,Truffle
 Trusted supplier,Trusted supplier
 Unguent workshop,Unguent workshop

@@ -236,3 +236,17 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-25T22:10:53,animate,game/assets/sprites/animals/hen/peck_east,0.0199,0,0.5066
 2026-10-25T22:11:51,animate,game/assets/sprites/animals/hen/walk_east,0.0131,0,0.4934
 2026-10-25T22:12:27,animate,game/assets/sprites/people/townswoman/baby_east,0.0238,0,0.4828
+2026-10-25T22:45:08,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/animals/hen/flap_east,0.0172,0,0.4656
+2026-10-25T22:45:19,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/animals/goat/bleat_east,0.0537,0,0.4291
+2026-10-25T22:45:19,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/donkey/bray_east,0.0537,0,0.4291
+2026-10-25T23:07:04,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/townswoman/greet_east,0.0124,0,0.4168
+2026-10-25T23:07:25,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/shepherd/greet_east,0.0453,0,0.3838
+2026-10-25T23:07:25,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/traveller/greet_east,0.0453,0,0.3838
+2026-10-25T23:07:35,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/townsman/greet_east,0.0636,0,0.3655
+2026-10-25T23:09:12,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/beekeeper/greet_east,0.0333,0,0.3322
+2026-10-25T23:09:12,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/farmhand/greet_east,0.0333,0,0.3322
+2026-10-25T23:09:12,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/perfumer/greet_east,0.0333,0,0.3322
+2026-10-25T23:09:23,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/miller/greet_east,0.0701,0,0.2954
+2026-10-25T23:10:31,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/stablehand/greet_east,0.0154,0,0.2800
+2026-10-25T23:10:43,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/trader/greet_east,0.0154,0,0.2800
+2026-10-25T23:10:52,animate,C:/Users/evand/Desktop/Farmus Maximus/game/assets/sprites/people/presser/greet_east,0.0324,0,0.2629

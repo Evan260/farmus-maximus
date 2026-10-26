@@ -70,6 +70,8 @@ var _light: CanvasModulate
 var _sky_time := 0.0
 ## The young woman of the town, who in time is expecting a child and then carries her baby about the square.
 var _woman: Node2D
+## The townsfolk walking the square, who greet the player when clicked.
+var _folk: Array = []
 var _woman_look := ""
 var _water: Node2D
 var _water_time := 0.0
@@ -108,7 +110,7 @@ func _ready() -> void:
 	_props.draw.connect(_draw_props)
 	_scene.add_child(_props)
 	for who in ["townsman", "townswoman", "traveller", "shepherd"]:
-		var dir := "res://assets/sprites/people/%s/" % who
+		var dir := "res://assets/sprites/people/town/%s/" % who
 		if not ResourceLoader.exists(dir + "east.png"):
 			continue
 		var w := Walker.new()
@@ -119,7 +121,11 @@ func _ready() -> void:
 		# Townsfolk go indoors for the night through one of the doorways on the square.
 		w.rests_at_night = true
 		w.home_x = [120.0, 360.0][randi() % 2]
+		w.react_folder = "greet"
+		w.display_name = tr({"townsman": "A townsman", "townswoman": "A townswoman", "traveller": "A traveller", "shepherd": "A shepherd"}[who])
+		w.voice = "salve_woman" if who == "townswoman" else "salve_man"
 		_scene.add_child(w)
+		_folk.append(w)
 		if who == "townswoman":
 			_woman = w
 	_bunting = Node2D.new()
@@ -224,7 +230,7 @@ func _dress_woman() -> void:
 		return
 	_woman_look = look
 	_woman.walk_folder = "baby" if story["stage"] == "baby" else "walk"
-	_woman.dress = (func(tex: Texture2D) -> Texture2D: return Belly.round_out(tex, bump)) if bump > 0 else Callable()
+	_woman.dress = (func(tex: Texture2D) -> Texture2D: return Belly.round_out(tex, roundi(bump * 4.0 / 3.0))) if bump > 0 else Callable()
 	_woman.refresh_frames()
 
 
@@ -345,7 +351,28 @@ func _spot_at(ui_point: Vector2) -> String:
 	return ""
 
 
+## The townsperson under the pointer, if any.
+func _folk_at(ui_point: Vector2) -> Node2D:
+	var picture := (ui_point * Windowing.ui_scale - _scene.position) / _scene.scale.x
+	for w in _folk:
+		if w.contains(picture):
+			return w
+	return null
+
+
 func _on_picture_input(event: InputEvent) -> void:
+	var person := _folk_at(event.position) if event is InputEventMouse else null
+	if person and event is InputEventMouseMotion:
+		_hovered = ""
+		_props.queue_redraw()
+		_hover_label.visible = true
+		_hover_label.text = person.display_name
+		_hover_label.position = (event.position + Vector2(8, 10)).min(_ui_root.size - _hover_label.get_minimum_size() - Vector2(2, 2))
+		_ui_root.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		return
+	if person and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		person.greet()
+		return
 	if event is InputEventMouseMotion:
 		var spot := _spot_at(event.position)
 		if spot != _hovered:

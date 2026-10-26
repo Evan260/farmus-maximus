@@ -146,6 +146,7 @@ func _animal(kind: String, pace: float, row: Vector2) -> Node2D:
 	a.max_x = right - 20
 	a.speed = pace
 	a.idle_anim = "graze"
+	a.react_folder = "flap" if kind == "hen" else "bleat"
 	a.rests_at_night = true
 	a.home_x = (BARN_LEFT + BARN_RIGHT) / 2.0
 	a.position = Vector2(randf_range(left + 30, right - 30), row.x)

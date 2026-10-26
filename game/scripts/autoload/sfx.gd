@@ -2,6 +2,7 @@ extends Node
 ## All game audio: sound effects from a small player pool, ambience that follows the time of day, and the volume settings.
 
 ## Sound effects are found by file name, so a new sound is added by dropping a file named after it into this folder.
+## Files named like cluck_1, cluck_2 are takes of one sound, "cluck", and one is picked at random each time.
 const SFX_DIR := "res://assets/audio/sfx/"
 const MUSIC_DIR := "res://assets/audio/music/"
 const BUSES := ["Music", "Ambience", "Effects"]
@@ -10,6 +11,7 @@ const SETTINGS_PATH := "user://settings.json"
 ## Volume per bus, 0 to 1.
 var volumes := {"Music": 0.7, "Ambience": 0.45, "Effects": 0.8}
 var _sounds := {}
+var _takes := {}
 var _players: Array[AudioStreamPlayer] = []
 var _music: AudioStreamPlayer
 var _tracks: Array = []
@@ -32,6 +34,12 @@ func _ready() -> void:
 		add_child(p)
 		_players.append(p)
 	_sounds = _scan(SFX_DIR)
+	for file in _sounds.keys():
+		var base := String(file).rsplit("_", true, 1)
+		if base.size() == 2 and base[1].is_valid_int():
+			if not _takes.has(base[0]):
+				_takes[base[0]] = []
+			_takes[base[0]].append(_sounds[file])
 	_day = _ambience("res://assets/audio/ambience/day.wav")
 	_night = _ambience("res://assets/audio/ambience/night.wav")
 	_rain = _ambience("res://assets/audio/ambience/rain.wav")
@@ -60,15 +68,31 @@ func _process(delta: float) -> void:
 			_music.play()
 
 
-func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> void:
-	if not _sounds.has(sound):
-		return
+func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamPlayer:
+	var stream: AudioStream = null
+	if _takes.has(sound):
+		stream = _takes[sound][randi() % _takes[sound].size()]
+	elif _sounds.has(sound):
+		stream = _sounds[sound]
+	if stream == null:
+		return null
 	var p := _players[_next]
 	_next = (_next + 1) % _players.size()
-	p.stream = _sounds[sound]
+	p.stream = stream
 	p.volume_db = volume_db
 	p.pitch_scale = 1.0 + randf_range(-pitch_jitter, pitch_jitter)
 	p.play()
+	return p
+
+
+## Lets a sound that is still playing die away, such as the cart's wheels as the scene changes.
+func fade_out(p: AudioStreamPlayer, seconds := 1.0) -> void:
+	if p == null or not p.playing:
+		return
+	var stream := p.stream
+	var fade := p.create_tween()
+	fade.tween_property(p, "volume_db", -40.0, seconds).set_ease(Tween.EASE_IN)
+	fade.tween_callback(func(): if p.stream == stream: p.stop())
 
 
 func set_volume(bus: String, value: float) -> void:

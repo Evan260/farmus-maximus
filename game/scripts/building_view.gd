@@ -10,6 +10,10 @@ var _sprite: Sprite2D
 var _shadow: Sprite2D
 var _look := ""
 var _scaffold: Node2D
+## The working picture's loop, for buildings whose machinery moves while they make something.
+var _frames: Array[Texture2D] = []
+var _still: Texture2D
+var _clock := 0.0
 
 
 func _ready() -> void:
@@ -28,7 +32,8 @@ func _ready() -> void:
 	_refresh()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_animate(delta)
 	var zone := String(Game.building_info(id).get("zone", "home"))
 	modulate = Color.WHITE if Game.zone_owned(zone) else Color(0.62, 0.6, 0.58)
 	if _look != _look_for_state():
@@ -52,6 +57,18 @@ func _draw() -> void:
 	if fill >= 0.0:
 		draw_rect(bar, Color(0.2, 0.14, 0.12, 0.8))
 		draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(roundf(22 * clampf(fill, 0, 1)), 1)), Color(0.98, 0.84, 0.4))
+
+
+## Turns the millstone or the press screw while the building is making something, and rests it otherwise.
+func _animate(delta: float) -> void:
+	if _frames.is_empty() or _look != "working":
+		return
+	var b: Dictionary = Game.buildings[id]
+	if b["busy"] and not b.get("paused", false) and not Settings.reduced_motion:
+		_clock += delta
+		_sprite.texture = _frames[int(_clock * 6.0) % _frames.size()]
+	elif _sprite.texture != _still:
+		_sprite.texture = _still
 
 
 ## The building's visible area relative to its base point, used for hover, clicks and the strip's click-through outline.
@@ -85,6 +102,11 @@ func _refresh() -> void:
 	var path := "%s%s_%s.png" % [DIR, id, picture]
 	var tex: Texture2D = load(path if ResourceLoader.exists(path) else "%s%s_working.png" % [DIR, id])
 	_sprite.texture = tex
+	_still = tex
+	_frames.clear()
+	var folder := "%s%s_working_anim/" % [DIR, id]
+	while picture == "working" and ResourceLoader.exists("%sframe_%02d.png" % [folder, _frames.size()]):
+		_frames.append(load("%sframe_%02d.png" % [folder, _frames.size()]))
 	var used := tex.get_image().get_used_rect()
 	_sprite.region_rect = used
 	# The node sits at the middle of the building's base, so every look stands on the same spot.

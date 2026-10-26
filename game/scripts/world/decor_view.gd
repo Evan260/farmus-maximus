@@ -16,9 +16,24 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var night := Lighting.night_amount(Game.day_time)
 	for id in _shown:
-		var glow: Node2D = _shown[id].get("glow")
-		if glow:
-			glow.modulate.a = night
+		var lamp: Lamp = _shown[id].get("glow")
+		if lamp:
+			lamp.shine(night)
+
+
+## The middle of the lamp's flame: the bright yellow pixels of the picture, relative to its used rectangle.
+func _flame(img: Image, used: Rect2i) -> Vector2:
+	var sum := Vector2.ZERO
+	var count := 0
+	for y in range(used.position.y, used.end.y):
+		for x in range(used.position.x, used.end.x):
+			var c := img.get_pixel(x, y)
+			if c.a > 0.5 and c.r > 0.85 and c.g > 0.62 and c.b < c.g:
+				sum += Vector2(x, y)
+				count += 1
+	if count == 0:
+		return Vector2(used.size.x / 2.0, 6)
+	return sum / count - Vector2(used.position) + Vector2(0.5, 0.5)
 
 
 func _sync() -> void:
@@ -48,11 +63,14 @@ func _sync() -> void:
 		add_child(s)
 		var entry := {"sprite": s}
 		if d.get("glow", false) and glow_layer:
-			var g := Sprite2D.new()
-			g.texture = Lighting.ellipse_texture(18, 18, Color(1.0, 0.8, 0.45, 0.35))
-			g.position = s.position + Vector2(used.size.x / 2.0, 6)
-			glow_layer.add_child(g)
-			entry["glow"] = g
+			var lamp := Lamp.new()
+			lamp.position = s.position + _flame(tex.get_image(), used)
+			lamp.radius = 46.0
+			lamp.power = 1.1
+			lamp.halo_layer = glow_layer
+			lamp.halo_size = 9.0
+			add_child(lamp)
+			entry["glow"] = lamp
 		if d.get("water", false):
 			var p := CPUParticles2D.new()
 			p.position = base + Vector2(0, -used.size.y + 4)

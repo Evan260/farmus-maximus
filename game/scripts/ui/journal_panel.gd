@@ -342,7 +342,7 @@ func _find_picture(id: String) -> Texture2D:
 		"crop": [], "item": ["res://assets/sprites/icons32/%s.png" % key],
 		"building": ["res://assets/sprites/buildings/%s_working.png" % key],
 		"helper": ["res://assets/sprites/people/%s/east.png" % key],
-		"achievement": ["res://assets/sprites/icons32/aureus.png"],
+		"achievement": ["res://assets/sprites/icons32/%s.png" % ("laurel" if key == "triumph" else "aureus")],
 	}
 	var named := {
 		"animal:dog": "dog/east", "animal:donkey": "donkey/east", "animal:cat": "animals/cat_small/east", "animal:chicken": "animals/chicken/stand",
