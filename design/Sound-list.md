@@ -68,4 +68,4 @@ The animal calls come from these Freesound recordings. All are CC0 (free for any
 
 Any number of tracks, any names. The game plays one, then leaves two to five minutes of plain ambience before the next, so the music never wears thin. Aim for 30 to 60 minutes in total: calm, acoustic, Roman flavoured (lyre, flute, strings).
 
-Players can add their own music too: Settings > Sound > Your own music opens a `music` folder beside the saves (`%APPDATA%\Godotpp_userdata\Farmus Maximus\music`), and any `.ogg`, `.mp3` or `.wav` in it joins the game's tracks. The folder is looked at afresh before each track, so new files are picked up without restarting.
+Players can add their own music too: Settings > Sound > Your own music opens a `music` folder beside the saves (`%APPDATA%\Godot\app_userdata\Farmus Maximus\music`), and any `.ogg`, `.mp3` or `.wav` in it joins the game's tracks. The folder is looked at afresh before each track, so new files are picked up without restarting.
