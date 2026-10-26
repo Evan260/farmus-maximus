@@ -641,6 +641,9 @@ func _load_demo_state() -> void:
 			Game.send_cart.call_deferred()
 		elif arg == "--estate":
 			_demo_estate()
+		elif arg == "--maxed":
+			_demo_estate()
+			_demo_maxed()
 
 
 ## Shows the whole estate in use: every zone owned, a mix of building states, helpers at work, animals and decorations.
@@ -677,6 +680,40 @@ func _demo_estate() -> void:
 			counts[zone] += 1
 	Game.market.add_order()
 	Game.market.add_order()
+
+
+## Everything at its best: the grand estate, every building working at its top level, every helper fully trained, every
+## upgrade bought, every bed planted and every page of the journal found.
+func _demo_maxed() -> void:
+	Game.quiet = true
+	Game.villa_stage = Game.villa_stages().size()
+	for id in Game.buildings:
+		var b: Dictionary = Game.buildings[id]
+		b["state"] = "working"
+		b["level"] = Game.building_info(id).get("levels", []).size()
+	var barn: Dictionary = Game.buildings["barn"]
+	for kind in ["chicken", "goat"]:
+		barn["animals"][kind] = Game.animal_capacity(kind)
+	barn["feed"] = 40
+	for h in Balance.get_value("helpers", {}):
+		Game.helpers[h] = Game.helper_info(h).get("costs", [0]).size()
+	for u in Game.levels:
+		Game.levels[u] = Balance.get_value("upgrades.%s.values" % u, [0]).size() - 1
+	for d in Balance.get_value("decorations", {}):
+		Game.decorations[d] = true
+	var home_crops := ["lavender", "lavender_violet", "lavender_bluegrey", "lavender_white", "wheat", "lavender"]
+	for i in Game.plots.size():
+		var p: Dictionary = Game.plots[i]
+		p["unlocked"] = true
+		if p["zone"] == "home":
+			p["crop"] = home_crops[i % home_crops.size()]
+			p["growth"] = (1.0 if i % 3 != 1 else 0.6) * Game.time_to_ready(p)
+	for entry in Game.journal.catalogue():
+		Game.discover(String(entry["id"]))
+	# The trader would carry the full storehouse off at once, so every good starts marked to keep.
+	for item in Balance.get_value("items", {}):
+		Game.keep_goods[item] = true
+	Game.quiet = false
 
 
 func _build_plots() -> void:
