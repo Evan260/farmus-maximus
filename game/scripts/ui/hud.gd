@@ -494,7 +494,8 @@ func _build_debug() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F1:
+	# The debug panel, with its free coins and farm reset, only opens in development builds, never for players.
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F1 and OS.is_debug_build():
 		_debug.visible = not _debug.visible
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode >= KEY_1 and event.keycode <= KEY_9:
 		var slots := _tool_buttons.keys()

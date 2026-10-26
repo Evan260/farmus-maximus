@@ -1,0 +1,56 @@
+FARMUS MAXIMUS - PLAY TEST
+
+Thanks for trying the game! It is still being made, so expect rough edges.
+
+
+STARTING THE GAME
+
+1. Unzip this folder anywhere, for example on your Desktop.
+2. Double-click "Farmus Maximus.exe".
+3. Windows may show a blue box saying "Windows protected your PC". That is
+   because the game is new and not yet signed. Click "More info", then
+   "Run anyway".
+
+Nothing needs installing. The game saves by itself every minute and when
+you close it, and carries on growing while it is closed.
+
+
+CONTROLS
+
+Mouse          Click plants, buildings, animals and people
+A / D          Scroll along the estate (or drag with the mouse)
+Q / E          Jump to the previous / next part of the estate
+1 - 9          Pick a tool or seed from the bar at the bottom
+J              Farmer's journal
+M              Ride to the market town
+Esc            Close a window
+F10            Shrink the game to a strip along the edge of your desktop
+               (press again to go back)
+
+Keys can be changed in Settings > Keys.
+
+
+WHAT TO TELL ME
+
+Anything at all is useful, especially:
+
+- Anything confusing: when you did not know what to do next, or what
+  something meant.
+- Anything that felt slow, boring or too fast.
+- Anything that looked wrong or broken. A screenshot helps a lot:
+  press Windows key + Shift + S, drag over the problem, then paste it
+  into a message.
+- What you liked.
+- Roughly how long you had played when you noticed each thing.
+
+If the game ever closes by itself or will not start, tell me what you were
+doing just before.
+
+
+YOUR SAVE
+
+Your farm is saved in:
+  %APPDATA%\Godot\app_userdata\Farmus Maximus\
+(paste that into the address bar of File Explorer to open it)
+
+If I ask for your save, zip up that folder and send it to me.
