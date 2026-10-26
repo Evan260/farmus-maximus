@@ -22,7 +22,7 @@ func build() -> void:
 	var list := UiKit.scroll(body, Vector2(270, 170))
 	for id in Balance.get_value("helpers", {}):
 		var info := Game.helper_info(id)
-		var r := UiKit.row(list)
+		var r := UiKit.row(UiKit.card(list))
 		var face := TextureRect.new()
 		var path: String = PEOPLE + id + "/east.png"
 		face.texture = _portrait(path)
@@ -38,7 +38,7 @@ func build() -> void:
 		var title := "%s, %s" % [info.get("name", id), tr(String(info.get("role", ""))).to_lower()]
 		if level > 0 and levels.size() > 1:
 			title += "  " + tr("(level %d)") % level
-		UiKit.label(col, title)
+		UiKit.label(col, title).add_theme_color_override("font_color", UiKit.HEADING)
 		UiKit.para(col, tr(String(info.get("does", ""))), 190)
 		if level > 0:
 			UiKit.para(col, "\"%s\"" % tr(String(info.get("quote", ""))), 190).add_theme_color_override("font_color", UiKit.FADED)

@@ -8,7 +8,8 @@ uniform float amount = 0.0;
 // The sprite's size and top left corner in sky pixels.
 uniform vec2 area = vec2(1536.0, 400.0);
 uniform vec2 origin = vec2(0.0, -120.0);
-uniform float motion = 1.0;
+// Seconds the lights have been moving; the sky runs it faster while the night is fast-forwarded.
+uniform float clock = 0.0;
 
 float hash(float n) {
 	return fract(sin(n * 91.3458) * 47453.5453);
@@ -35,9 +36,24 @@ float curtain(vec2 p, float seed, float hem, float height, float t) {
 	return (ribbon * 0.9 + body * 0.55) * rays * patch;
 }
 
+// A streamer: a narrow ribbon rising almost straight up from the curtains, swaying as it goes, which wanders slowly
+// across the sky and comes and goes over the night.
+vec3 streamer(vec2 p, float seed, float t) {
+	float base = mod(seed * 523.0 + t * 1.2, 1700.0) - 80.0;
+	float sway = 18.0 * sin(p.y * 0.02 + t * 0.12 + seed * 3.0) + 5.0 * sin(p.y * 0.06 - t * 0.18 + seed);
+	float dx = p.x - base - sway - (110.0 - p.y) * 0.25;
+	float core = exp(-pow(dx / 9.0, 2.0)) * 0.7 + exp(-pow(dx / 24.0, 2.0)) * 0.35;
+	float span = smoothstep(-40.0, 20.0, p.y) * smoothstep(128.0, 96.0, p.y);
+	float alive = smoothstep(0.35, 0.7, noise(t * 0.015 + seed * 7.0));
+	float rays = 0.6 + 0.4 * noise(p.y * 0.3 + seed * 11.0 - t * 0.8);
+	float up = clamp((110.0 - p.y) / 130.0, 0.0, 1.0);
+	vec3 colour = mix(mix(vec3(0.32, 1.0, 0.62), vec3(0.2, 0.75, 0.85), smoothstep(0.15, 0.5, up)), vec3(0.62, 0.36, 0.92), smoothstep(0.55, 1.0, up));
+	return colour * core * span * alive * rays;
+}
+
 void fragment() {
 	vec2 p = floor(origin + UV * area);
-	float t = TIME * motion;
+	float t = clock;
 	vec3 total = vec3(0.0);
 	for (int i = 0; i < 3; i++) {
 		float seed = float(i) * 1.7 + 0.4;
@@ -51,6 +67,9 @@ void fragment() {
 		vec3 violet = vec3(0.62, 0.36, 0.92);
 		vec3 colour = mix(mix(green, teal, smoothstep(0.1, 0.45, up)), violet, smoothstep(0.45, 0.95, up));
 		total += colour * c * (1.0 - float(i) * 0.22);
+	}
+	for (int i = 0; i < 4; i++) {
+		total += streamer(p, float(i) * 2.3 + 0.7, t) * 0.8;
 	}
 	// Low down near the hills the light is lost in the haze.
 	total *= smoothstep(196.0, 150.0, p.y);

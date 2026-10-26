@@ -1528,6 +1528,10 @@ func from_dict(d: Dictionary) -> void:
 	for z in d.get("zones_owned", {}):
 		if zones_owned.has(z):
 			zones_owned[z] = bool(d["zones_owned"][z])
+	# Beds added to the estate since the save are ready to plant in land the family already owns.
+	for p in plots:
+		if p["zone"] != "home" and zones_owned.get(p["zone"], false):
+			p["unlocked"] = true
 	for id in d.get("buildings", {}):
 		if buildings.has(id):
 			var s: Dictionary = d["buildings"][id]

@@ -19,8 +19,10 @@ func build() -> void:
 	_rows = {}
 	UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 	for id in IDS:
-		var b := UiKit.setting(body, tr(String(Game.upgrade_info(id).get("name", id))), "", func(): Game.buy_upgrade(id), WIDTH)
-		var about := UiKit.para(body, "", WIDTH)
+		var card := UiKit.card(body)
+		var b := UiKit.setting(card, tr(String(Game.upgrade_info(id).get("name", id))), "", func(): Game.buy_upgrade(id), WIDTH - 10)
+		b.get_parent().get_child(0).add_theme_color_override("font_color", UiKit.HEADING)
+		var about := UiKit.para(card, "", WIDTH - 10)
 		about.add_theme_color_override("font_color", UiKit.FADED)
 		_rows[id] = {"button": b, "about": about}
 
@@ -58,6 +60,7 @@ func tick() -> void:
 			"cart_capacity":
 				about.text = tr("Carries %d goods instead of %d.") % [next, now]
 			"cart_speed":
-				about.text = tr("Paves the next stretch in %s. The trader's trips take %d s instead of %d s.") % [build_time, next, now]
+				var where := tr("Paves the estate's road in %s.") if level == 0 else tr("Paves the next stretch of road to town in %s.")
+				about.text = (where % build_time) + " " + tr("The trader's trips take %d s instead of %d s.") % [next, now]
 			"channels":
 				about.text = tr("Built in %s. Waters the home farm, so it grows faster.") % build_time

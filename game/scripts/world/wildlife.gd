@@ -129,6 +129,14 @@ func _update_rabbits(delta: float, hour: float, view: Rect2) -> void:
 		r["life"] = float(r["life"]) - delta
 		r["age"] = float(r["age"]) + delta
 		r["hop"] = maxf(0.0, float(r["hop"]) - delta)
+		# A startled rabbit bounds away in long quick hops, then slips into the grass.
+		if float(r.get("flee", 0.0)) > 0.0:
+			r["flee"] = float(r["flee"]) - delta
+			r["pos"].x = clampf(r["pos"].x + float(r["dir"]) * 80.0 * delta, float(r["min"]) - 40.0, float(r["max"]) + 40.0)
+			r["hop"] = 0.1
+			if float(r["flee"]) <= 0.0:
+				r["life"] = minf(float(r["life"]), 0.6)
+			continue
 		if float(r["hop"]) <= 0.0 and randf() < delta * 0.5:
 			r["hop"] = 0.4
 			r["dir"] = 1.0 if randf() < 0.5 else -1.0
@@ -192,6 +200,21 @@ func _update_white(delta: float, view: Rect2) -> void:
 
 
 ## Creatures that appear in view fade in over their first moments and out over their last, rather than popping.
+## The rabbit under the pointer, if any, while it is still in plain sight.
+func rabbit_at(point: Vector2) -> Dictionary:
+	for r in _rabbits:
+		if float(r.get("flee", 0.0)) <= 0.0 and float(r["life"]) > 0.6 and Rect2(r["pos"] + Vector2(-8, -18), Vector2(16, 18)).has_point(point):
+			return r
+	return {}
+
+
+## Thumps a hind foot in alarm and bounds away from the click.
+func startle(rabbit: Dictionary, from: Vector2) -> void:
+	rabbit["dir"] = 1.0 if rabbit["pos"].x >= from.x else -1.0
+	rabbit["flee"] = 1.5
+	Sfx.play("thump", -2.0, 0.08)
+
+
 func _fade(creature: Dictionary) -> float:
 	var life := float(creature.get("life", 1.0))
 	return clampf(float(creature.get("age", 1.0)) / 0.6, 0.0, 1.0) * clampf(life / 0.6, 0.0, 1.0)
@@ -232,9 +255,13 @@ func _draw() -> void:
 		draw_rect(Rect2(p + Vector2(1, 1), Vector2(1, 1)), skin)
 		draw_rect(Rect2(p + Vector2(3, -1), Vector2(1, 1)), skin)
 	for r in _rabbits:
-		var tex: Texture2D = _rabbit_hop if float(r["hop"]) > 0.0 else _rabbit_sit
+		var fleeing := float(r.get("flee", 0.0)) > 0.0
+		# While fleeing each bound is a little arc, a quarter of a second long, landing between bounds.
+		var bound := fmod(float(r.get("flee", 0.0)), 0.25) / 0.25
+		var tex: Texture2D = (_rabbit_hop if bound > 0.2 else _rabbit_sit) if fleeing else (_rabbit_hop if float(r["hop"]) > 0.0 else _rabbit_sit)
+		var lift := Vector2(0, -roundf(sin(bound * PI) * 4.0)) if fleeing else Vector2.ZERO
 		if tex:
-			draw_set_transform(r["pos"].round(), 0.0, Vector2(float(r["dir"]), 1.0))
+			draw_set_transform(r["pos"].round() + lift, 0.0, Vector2(float(r["dir"]), 1.0))
 			draw_texture(tex, Vector2(-12, -22), Color(1, 1, 1, _fade(r)))
 			draw_set_transform(Vector2.ZERO)
 	if not _white.is_empty():

@@ -377,7 +377,9 @@ Pause,Pause
 Pause work,Pause work
 Paused,Paused
 Paved road,Paved road
+Paves the estate's road in %s.,Paves the estate's road in %s.
 Paves the next stretch in %s. The trader's trips take %d s instead of %d s.,Paves the next stretch in %s. The trader's trips take %d s instead of %d s.
+Paves the next stretch of road to town in %s.,Paves the next stretch of road to town in %s.
 Pays %d sestertii,Pays %d sestertii
 Perfumer,Perfumer
 Pet %s,Pet %s
@@ -530,6 +532,7 @@ The storehouse is full,The storehouse is full
 The storehouse is full: send the cart to market,The storehouse is full: send the cart to market
 The trader is away at market,The trader is away at market
 The trader takes goods marked for sale to market. Mark the ones you want to keep.,The trader takes goods marked for sale to market. Mark the ones you want to keep.
+The trader's trips take %d s instead of %d s.,The trader's trips take %d s instead of %d s.
 The villa has been restored: %s!,The villa has been restored: %s!
 The villa is restored to its full glory.,The villa is restored to its full glory.
 The white butterfly,The white butterfly

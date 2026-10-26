@@ -41,6 +41,9 @@ const BOTTOM := 286.0
 ## The helpers who are women, so their greeting uses a woman's voice.
 const WOMEN := ["miller", "perfumer", "stablehand"]
 const RIG_BASE := 282
+## The right edge and the bottom row of the cart's bed in its pictures; a bigger cart repeats only what lies within.
+const BED_RIGHT := 37
+const BED_BOTTOM := 28
 const PAN_SPEED := 260.0
 ## Where each helper spends their day, in estate pixels.
 const HELPER_GROUNDS := {
@@ -90,8 +93,9 @@ var _channels: Node2D
 ## The cart that brings paving stones up to the work, with its donkey and its load.
 var _stone_cart: Node2D
 var _stone_donkey: AnimatedSprite2D
-var _stone_load: Array[Sprite2D] = []
-var _stone_trip := {}
+## Where the stone cart stands on the road, and its wheel.
+var _stone_x := 0.0
+var _stone_wheel: Sprite2D
 ## Scaffolding stood in front of the farmhouse while it is being restored.
 var _villa_scaffold: Node2D
 var _villa_hovered := false
@@ -122,6 +126,8 @@ var _donkey_first_look := true
 var _rig_tween: Tween
 var _storehouse: Sprite2D
 var _glow_layer: CanvasLayer
+## Rabbits, the fox and other wild visitors.
+var _wildlife: Node2D
 ## Shepherds and travellers on the road, while they are on the estate.
 var _passers: Array = []
 ## The golden laurel wreath over the villa door, hung for the Triumph.
@@ -239,9 +245,9 @@ func _ready() -> void:
 	var critters := Critters.new()
 	critters.bloom_points = _bloom_points
 	world.add_child(critters)
-	var wildlife := Wildlife.new()
-	wildlife.lizard_wall = Rect2(_storehouse.position + Vector2(6, 20), Vector2(_storehouse.region_rect.size.x - 12, 18))
-	world.add_child(wildlife)
+	_wildlife = Wildlife.new()
+	_wildlife.lizard_wall = Rect2(_storehouse.position + Vector2(6, 20), Vector2(_storehouse.region_rect.size.x - 12, 18))
+	world.add_child(_wildlife)
 	_spawn_pets()
 
 	_cart_shadow = _add_texture(Lighting.ellipse_texture(96, 6, SHADOW), Vector2.ZERO)
@@ -865,6 +871,17 @@ func _build_plots() -> void:
 		spots.append(Vector2(x, FRONT_ROW))
 	for x in [884, 920]:
 		spots.append(Vector2(x, BACK_ROW))
+	# More vines further along the slope, two flower beds in front of the beehives, and one more home bed by the walkway.
+	for i in 4:
+		spots.append(Vector2(1692 + i * 40, FRONT_ROW))
+	for x in [112, 174]:
+		spots.append(Vector2(x, BACK_ROW))
+	spots.append(Vector2(794, BACK_ROW))
+	# Each bed is nudged a few pixels by its own number, so the rows look planted by hand rather than ruled.
+	for i in spots.size():
+		var rng := RandomNumberGenerator.new()
+		rng.seed = i * 7919 + 17
+		spots[i] += Vector2(rng.randi_range(-3, 3), rng.randi_range(-1, 1))
 	var count := mini(spots.size(), Game.plots.size())
 	var order := range(count)
 	order.sort_custom(func(a, b): return spots[a].y < spots[b].y)
@@ -1136,11 +1153,16 @@ func _animal_at(point: Vector2) -> String:
 		return "stork"
 	if _donkey.visible and Hit.frame_rect(_donkey, _donkey).has_point(point):
 		return "donkey"
+	if not _wildlife.rabbit_at(point).is_empty():
+		return "rabbit"
 	return ""
 
 
 func _call_out(animal: String, point: Vector2) -> void:
 	var grazing: Node2D = _pasture.animal_at(point)
+	if animal == "rabbit":
+		_wildlife.startle(_wildlife.rabbit_at(point), point)
+		return
 	if grazing:
 		grazing.react()
 	elif animal == "donkey" and _donkey.animation == "stand" and not _riding:
@@ -1341,7 +1363,7 @@ func _update_hover(point: Vector2) -> void:
 	elif pet:
 		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat") if pet_hit in [cat, dog] else pet_hit.display_name)
 	elif animal != "":
-		hud.set_info(tr({"hen": "A hen", "goat": "A goat", "stork": "The stork on its nest", "donkey": "The donkey"}.get(animal, "")))
+		hud.set_info(tr({"hen": "A hen", "goat": "A goat", "stork": "The stork on its nest", "donkey": "The donkey", "rabbit": "A rabbit"}.get(animal, "")))
 	elif building:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.building_info(building.id).get("name", ""))))
 	elif _villa_hovered:
@@ -1583,8 +1605,14 @@ func _on_villa_finished() -> void:
 
 ## Parks the cart with the donkey standing at its handles, both facing right towards the road to market.
 func _park_rig() -> void:
+	# A donkey walking to or from the barn, or stabled for the night, keeps to what it is doing.
+	var walking_alone := _donkey_night != ""
+	var facing := _donkey.flip_h
 	_face_rig(false)
 	_cart.position.x = CART_HOME_X
+	if walking_alone:
+		_donkey.flip_h = facing
+		return
 	_donkey.position = Vector2(_harness_x(CART_HOME_X, false), RIG_BASE)
 	_donkey.play("stand")
 
@@ -1680,7 +1708,8 @@ func _size_cart() -> void:
 ## with the work, so the paving creeps along the road.
 func _pave_road() -> void:
 	var level := int(Game.levels.get("cart_speed", 0))
-	var ends := [-40.0, 1000.0, 1700.0, 2440.0]
+	# The first paving covers the whole of the estate's road; later ones pave the road beyond it towards town.
+	var ends := [-40.0, 2440.0, 2440.0, 2440.0]
 	var reach: float = ends[clampi(level, 0, ends.size() - 1)]
 	if Game.projects.has("cart_speed") and level + 1 < ends.size():
 		var done := clampf(1.0 - float(Game.projects["cart_speed"]) / maxf(1.0, Game.upgrade_seconds("cart_speed")), 0.0, 1.0)
@@ -1713,7 +1742,8 @@ func _draw_road_works() -> void:
 		_road_works.draw_rect(Rect2(x + 12 + k * 5, 278 + (k % 2) * 5, 3, 2), stone)
 
 
-## A donkey cart loaded with paving stones goes back and forth between the finished road and the working edge.
+## A donkey cart heaped with paving stones stands on the new road just behind the work and moves up as the paving
+## advances, so the builders always have stones to hand.
 func _update_road_cart(delta: float) -> void:
 	var paving := Game.projects.has("cart_speed")
 	if not paving:
@@ -1721,68 +1751,74 @@ func _update_road_cart(delta: float) -> void:
 			_stone_cart.visible = false
 		return
 	_pave_road()
+	var target := maxf(0.0, _paving_front - 96.0)
 	if not _stone_cart.visible:
 		_stone_cart.visible = true
-		_stone_trip = {"x": maxf(0.0, _paving_front - 170.0), "loaded": true, "wait": 0.0}
-	var unload := maxf(40.0, _paving_front - 66.0)
-	var reload := maxf(0.0, _paving_front - 190.0)
-	var target: float = unload if _stone_trip["loaded"] else reload
-	var x: float = _stone_trip["x"]
-	var going_right := target > x
-	if float(_stone_trip["wait"]) > 0.0:
-		_stone_trip["wait"] = float(_stone_trip["wait"]) - delta
-		_stone_donkey.play("stand")
-	else:
-		x = move_toward(x, target, 22.0 * Game.build_speed * delta)
-		_stone_trip["x"] = x
+		_stone_x = target
+	var before := _stone_x
+	# It waits until the work has moved on a few steps, then walks up to it, rather than inching along.
+	if target - _stone_x > 8.0 or (_stone_donkey.animation == "walk" and target > _stone_x):
+		var pace := 18.0 * Game.build_speed
+		_stone_x = move_toward(_stone_x, target, pace * delta)
 		_stone_donkey.play("walk")
-		if is_equal_approx(x, target):
-			_stone_trip["wait"] = 3.0
-			_stone_trip["loaded"] = not _stone_trip["loaded"]
-	var cart: Sprite2D = _stone_cart.get_child(0)
-	var right: bool = going_right if float(_stone_trip["wait"]) <= 0.0 else _stone_trip["loaded"] == false
-	cart.flip_h = not right
-	_stone_donkey.flip_h = not right
-	cart.position = Vector2(roundf(x), RIG_BASE - cart.region_rect.size.y)
-	# The donkey walks in front: on the right going out to the work, on the left coming back.
-	_stone_donkey.position = Vector2(roundf(x + (58.0 if right else 2.0)), RIG_BASE)
-	for k in _stone_load.size():
-		_stone_load[k].visible = bool(_stone_trip["loaded"])
-		_stone_load[k].position = cart.position + Vector2(8 + k * 10 if right else 36 - k * 10, 4 - (k % 2) * 2)
+		_stone_donkey.speed_scale = pace / maxf(1.0, Walker.natural_pace(_stone_donkey.sprite_frames, "walk"))
+	else:
+		_stone_donkey.play("stand")
+	_stone_wheel.rotation += (_stone_x - before) / 11.0
+	_stone_cart.position = Vector2(roundf(_stone_x), 0)
 
 
-## One grey paving stone for the cart's load: lit on top, shaded on its right, with a dark edge.
-func _paving_block() -> ImageTexture:
-	var img := Image.create(10, 6, false, Image.FORMAT_RGBA8)
-	img.fill(Color8(88, 84, 80))
-	img.fill_rect(Rect2i(1, 1, 8, 4), Color8(130, 124, 118))
-	img.fill_rect(Rect2i(1, 1, 8, 1), Color8(160, 154, 146))
-	img.fill_rect(Rect2i(8, 2, 1, 3), Color8(104, 99, 94))
-	return ImageTexture.create_from_image(img)
-
-
+## A paving cart in three layers like the trader's: the back rim, the heap of stones, and the front wall with its
+## wheel, so the stones sit down inside the bed.
 func _build_stone_cart() -> void:
 	_stone_cart = Node2D.new()
 	_stone_cart.visible = false
 	world.add_child(_stone_cart)
-	var cart := Sprite2D.new()
-	cart.texture = load("res://assets/sprites/farm/cart.png")
-	cart.centered = false
-	cart.region_enabled = true
-	cart.region_rect = Rect2(cart.texture.get_image().get_used_rect())
-	_stone_cart.add_child(cart)
-	var block := _paving_block()
-	for k in 3:
-		var stone := Sprite2D.new()
-		stone.texture = block
-		stone.centered = false
-		_stone_cart.add_child(stone)
-		_stone_load.append(stone)
+	var used := Rect2(load("res://assets/sprites/farm/cart.png").get_image().get_used_rect())
+	var top := RIG_BASE - used.size.y
+	for part in ["cart_back", "heap", "cart_front"]:
+		if part == "heap":
+			var heap := Node2D.new()
+			heap.position = Vector2(0, top)
+			heap.draw.connect(_draw_stone_heap.bind(heap))
+			_stone_cart.add_child(heap)
+			continue
+		var s := Sprite2D.new()
+		s.texture = load("res://assets/sprites/farm/%s.png" % part)
+		s.centered = false
+		s.region_enabled = true
+		s.region_rect = used
+		s.position = Vector2(0, top)
+		_stone_cart.add_child(s)
+		if part == "cart_front":
+			_stone_wheel = Sprite2D.new()
+			_stone_wheel.texture = load("res://assets/sprites/farm/cart_wheel.png")
+			_stone_wheel.position = Vector2(15, 23)
+			s.add_child(_stone_wheel)
 	_stone_donkey = AnimatedSprite2D.new()
 	_stone_donkey.sprite_frames = _donkey_frames()
 	_stone_donkey.centered = false
 	_stone_donkey.offset = Vector2(-32, -_feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
+	_stone_donkey.position = Vector2(58, RIG_BASE)
+	_stone_donkey.play("stand")
 	_stone_cart.add_child(_stone_donkey)
+
+
+## A mound of flat grey paving stones piled in the bed, highest in the middle; the front wall hides its bottom.
+func _draw_stone_heap(heap: Node2D) -> void:
+	var tones := [Color8(122, 116, 110), Color8(136, 129, 120), Color8(114, 109, 106), Color8(146, 138, 128)]
+	var k := 0
+	for layer in 3:
+		var y := 5 - layer * 2
+		var x := 5 + layer * 3
+		while x < 33 - layer * 3:
+			var w := 6 - (k % 3)
+			var c: Color = tones[(k * 3 + layer) % tones.size()]
+			heap.draw_rect(Rect2(x, y, w, 3), c)
+			heap.draw_rect(Rect2(x, y, w, 1), c.lightened(0.18))
+			heap.draw_rect(Rect2(x + w - 1, y, 1, 3), c.darkened(0.25))
+			x += w + (1 if k % 4 == 0 else 0)
+			k += 1
 
 
 ## Where builders work on a farm improvement: at the storehouse, along the water channel, or on the next stretch of road.
@@ -1826,9 +1862,14 @@ func _stretched(tex: Texture2D, grow: Vector2i, at: Vector2i) -> Texture2D:
 	src.convert(Image.FORMAT_RGBA8)
 	var out := Image.create(src.get_width() + grow.x, src.get_height() + grow.y, false, Image.FORMAT_RGBA8)
 	for y in out.get_height():
-		var sy := y if y < at.y else (at.y - 3 + (y - at.y) % 3 if y < at.y + grow.y else y - grow.y)
+		var new_row := y >= at.y and y < at.y + grow.y
+		var sy := y if y < at.y else (at.y - 3 + (y - at.y) % 3 if new_row else y - grow.y)
 		for x in out.get_width():
-			var sx := x if x < at.x else (at.x - 6 + (x - at.x) % 6 if x < at.x + grow.x else x - grow.x)
+			var new_column := x >= at.x and x < at.x + grow.x
+			var sx := x if x < at.x else (at.x - 6 + (x - at.x) % 6 if new_column else x - grow.x)
+			# Only the bed's boards are copied: the shafts beyond it and the axle bracket below it are not repeated.
+			if (new_row and sx > BED_RIGHT) or (new_column and sy > BED_BOTTOM):
+				continue
 			out.set_pixel(x, y, src.get_pixel(sx, sy))
 	return ImageTexture.create_from_image(out)
 

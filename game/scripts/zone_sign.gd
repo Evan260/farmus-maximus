@@ -1,12 +1,10 @@
 extends Node2D
 ## A wooden "for sale" sign standing in land the player does not own yet; clicking it buys the deed.
 
-const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
-const FONT_SIZE := 8
-const LINE := 9
-const PAD := Vector2(5, 4)
+const LINE := 7
+const PAD := Vector2(4, 3)
 ## How tall the posts stand between the ground and the board.
-const POST := 10
+const POST := 8
 ## How deep the posts sink into the grass, so the sign is planted rather than resting on the ground line.
 const SINK := 3
 const INK := Color8(42, 29, 41)
@@ -31,7 +29,7 @@ func _process(_delta: float) -> void:
 		_lines = lines
 		var width := 0.0
 		for line in _lines:
-			width = maxf(width, FONT.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x)
+			width = maxf(width, TinyFont.width(line))
 		# The board is sized to its text, so a longer name or price never spills over the edge.
 		var size := Vector2(ceilf(width) + PAD.x * 2, LINE * _lines.size() + PAD.y * 2 - 2)
 		_board = Rect2(Vector2(-roundf(size.x / 2), SINK - POST - size.y), size)
@@ -66,12 +64,10 @@ func _draw() -> void:
 	for x in [inner.position.x + 1, inner.end.x - 2]:
 		draw_rect(Rect2(x, inner.position.y + 1, 1, 1), NAIL)
 		draw_rect(Rect2(x, inner.end.y - 2, 1, 1), NAIL)
-	var ascent := FONT.get_ascent(FONT_SIZE)
 	for i in _lines.size():
-		var w := FONT.get_string_size(_lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
-		var at := Vector2(roundf(-w / 2), b.position.y + PAD.y + i * LINE + roundf(ascent) - 2)
-		draw_string(FONT, at + Vector2(0, 1), _lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, INK)
-		draw_string(FONT, at, _lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, Color(0.99, 0.95, 0.86))
+		var at := Vector2(roundf(-TinyFont.width(_lines[i]) / 2.0), b.position.y + PAD.y + i * LINE)
+		TinyFont.draw(self, at + Vector2(0, 1), _lines[i], INK)
+		TinyFont.draw(self, at, _lines[i], Color(0.99, 0.95, 0.86))
 	if hovered:
 		UiKit.outline(self, b, Color(1, 0.96, 0.85, 0.8))
 

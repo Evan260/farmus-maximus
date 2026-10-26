@@ -328,6 +328,18 @@
 			{
 				"zone": "home",
 				"count": 5
+			},
+			{
+				"zone": "vineyard",
+				"count": 4
+			},
+			{
+				"zone": "grove",
+				"count": 2
+			},
+			{
+				"zone": "home",
+				"count": 1
 			}
 		]
 	},

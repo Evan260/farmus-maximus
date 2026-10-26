@@ -230,6 +230,14 @@ def villa_complete():
     return out
 
 
+def thump():
+    """A rabbit's alarm: a hind foot stamped once on the earth, a dull low thud with a little soil in it."""
+    x = t(0.35)
+    body = np.sin(2 * np.pi * (70 + 60 * np.exp(-x * 40)) * x) * np.exp(-x * 22)
+    grit = lowpass(rng.normal(0, 1, len(x)), 6) * np.exp(-x * 60) * 0.25
+    return lowpass(body + grit, 4)
+
+
 def triumph():
     """A short brass fanfare: two rising calls and a held chord, for the Triumph achievement."""
     out = silence(3.2)

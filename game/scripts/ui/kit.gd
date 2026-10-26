@@ -45,6 +45,19 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
+## A framed panel of slightly darker parchment, for one item in a list, so each item reads as its own block.
+static func card(parent: Node) -> VBoxContainer:
+	var frame := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.9, 0.82, 0.64)
+	box.border_color = Color(0.66, 0.5, 0.34)
+	box.set_border_width_all(1)
+	box.set_content_margin_all(4)
+	frame.add_theme_stylebox_override("panel", box)
+	parent.add_child(frame)
+	return column(frame)
+
+
 ## A line of a window naming something on the left, wrapped if long, with a short button for it on the right.
 static func setting(parent: Node, text: String, value: String, action: Callable, width := 250) -> Button:
 	var r := row(parent)

@@ -44,5 +44,5 @@ void fragment() {
 	float hills = exp(-pow((y - 200.0) / 16.0, 2.0)) * 0.8;
 	float fields = smoothstep(232.0, 262.0, y) * 0.45;
 	float density = (valley + hills + fields) * (0.3 + 0.9 * wisps);
-	COLOR = vec4(tint.rgb, clamp(density * amount * 0.62, 0.0, 0.72));
+	COLOR = vec4(tint.rgb, clamp(density * amount * 0.53, 0.0, 0.62));
 }
