@@ -44,8 +44,9 @@ func _ready() -> void:
 	_gradient = Sprite2D.new()
 	_gradient.texture = _solid(Color.WHITE)
 	_gradient.centered = false
-	_gradient.position = Vector2(0, -400)
-	_gradient.scale = Vector2(WIDTH * 2, 400 + HORIZON + 80)
+	# The sky reaches far above the hills, so a tall window shows more sky rather than an empty band.
+	_gradient.position = Vector2(0, -1600)
+	_gradient.scale = Vector2(WIDTH * 2, 1600 + HORIZON + 80)
 	var paint := ShaderMaterial.new()
 	paint.shader = GRADIENT
 	paint.set_shader_parameter("area", _gradient.scale)
