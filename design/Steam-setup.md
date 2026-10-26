@@ -58,6 +58,7 @@ Enter each of these in Steamworks under Stats and Achievements, with exactly thi
 | `decorations_5` | House proud | Own 5 decorations |
 | `journal_half` | Keen observer | Fill half of the farmer's journal |
 | `journal_full` | Naturalist | Fill the whole farmer's journal |
+| `triumph` | Triumph | Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door |
 
 ## 3. Steam Cloud
 
