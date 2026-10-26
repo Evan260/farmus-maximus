@@ -13,6 +13,7 @@ const JournalPanel := preload("res://scripts/ui/journal_panel.gd")
 const SettingsPanel := preload("res://scripts/ui/settings_panel.gd")
 const UpgradesPanel := preload("res://scripts/ui/upgrades_panel.gd")
 const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
+const AchievementPopup := preload("res://scripts/ui/achievement_popup.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
 ## Lavender varieties share one icon, so each seed slot is tinted towards its flower colour.
@@ -45,6 +46,7 @@ var _info: Label
 var _toast: Label
 var _toast_tween: Tween
 var _toast_queue: Array = []
+var _achievements: Control
 var _tip: Label
 var _debug: PanelContainer
 var _stats_panel: PanelContainer
@@ -116,6 +118,8 @@ func _ready() -> void:
 	_build_compact()
 	_build_toolbar()
 	_build_debug()
+	_achievements = AchievementPopup.new()
+	_root.add_child(_achievements)
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
 	Game.message.connect(func(text): toast(tr(text)); Sfx.play("nope", -6.0))
@@ -149,8 +153,10 @@ func _show_title() -> void:
 	_root.add_child(_title)
 	# Behind the windows, so the settings open over it.
 	_root.move_child(_title, 0)
+	_achievements.hold = true
 	_title.closed.connect(func():
 		_title = null
+		_achievements.hold = false
 		_after_title())
 
 
@@ -432,7 +438,7 @@ func _on_achievement(a: Dictionary) -> void:
 	if a.get("special", false):
 		_triumph()
 		return
-	toast(tr("Achievement: %s") % tr(String(a["name"])))
+	_achievements.add(a)
 	Sfx.play("villa_complete", -6.0)
 
 

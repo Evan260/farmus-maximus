@@ -760,6 +760,11 @@ func _load_demo_state() -> void:
 			get_tree().create_timer(1.6).timeout.connect(func():
 				for w in _people() + market._folk:
 					w.greet())
+		elif arg == "--achievement":
+			# The next two achievements not yet earned, to see their cards slide in one after the other.
+			var fresh: Array = Balance.get_value("achievements", []).filter(func(a): return not a.get("special", false) and not Game.journal.achievements.has(a["id"]))
+			for a in fresh.slice(0, 2):
+				Game.achievement_unlocked.emit.call_deferred(a)
 		elif arg == "--triumph":
 			for a in Balance.get_value("achievements", []):
 				if not a.get("special", false):
