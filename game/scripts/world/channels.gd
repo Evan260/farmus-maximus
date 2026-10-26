@@ -12,6 +12,9 @@ const WATER := Color(0.33, 0.47, 0.6)
 const FALL := Color(0.62, 0.76, 0.88, 0.9)
 const FOAM := Color(0.86, 0.93, 1.0, 0.95)
 const CASTELLUM := preload("res://assets/sprites/farm/castellum.png")
+const Scaffold := preload("res://scripts/world/scaffold.gd")
+const SOIL := Color8(92, 64, 44)
+const SOIL_DARK := Color8(66, 44, 32)
 ## Where the castellum's arched outlet sits in its picture, and where the picture's walls meet the ground.
 const OUTLET_X := 28
 const BASE_Y := 41
@@ -23,6 +26,7 @@ var bridge_from := 815.0
 var bridge_to := 859.0
 var _t := 0.0
 var _house: Sprite2D
+var _house_scaffold: Node2D
 
 
 func _ready() -> void:
@@ -31,16 +35,48 @@ func _ready() -> void:
 	_house.centered = false
 	_house.position = Vector2(from_x - OUTLET_X, 267 - BASE_Y)
 	add_child(_house)
+	_house_scaffold = Scaffold.new()
+	_house_scaffold.rect = Rect2(_house.position + Vector2(4, 4), Vector2(38, BASE_Y - 4))
+	_house_scaffold.visible = false
+	add_child(_house_scaffold)
 
 
 func _process(delta: float) -> void:
-	visible = Game.upgrade_value("channels") > 0.0
+	visible = Game.upgrade_value("channels") > 0.0 or Game.projects.has("channels")
 	if visible:
 		_t += delta * (0.0 if Settings.reduced_motion else 1.0)
 		queue_redraw()
+	# The castellum is built first, inside its own scaffolding, which comes down once the channel is being dug.
+	var building := _building()
+	var housed := building and _progress() < 0.3
+	if housed != _house_scaffold.visible:
+		if housed:
+			_house_scaffold.visible = true
+			_house_scaffold.rise()
+		else:
+			_house_scaffold.sink().tween_callback(func(): _house_scaffold.visible = _building() and _progress() < 0.3)
+
+
+func _building() -> bool:
+	return Game.projects.has("channels")
+
+
+## How far the work has come, from 0 when it starts to 1 when the water can flow.
+func _progress() -> float:
+	if not _building():
+		return 1.0
+	return clampf(1.0 - float(Game.projects["channels"]) / maxf(1.0, Game.upgrade_seconds("channels")), 0.0, 1.0)
+
+
+## Where the lining of the channel has reached: it is dug from the castellum outwards after the house is up.
+func front() -> float:
+	return lerpf(from_x, to_x, clampf((_progress() - 0.3) / 0.7, 0.0, 1.0))
 
 
 func _draw() -> void:
+	if _building():
+		_draw_works()
+		return
 	var stone := Color(0.62, 0.55, 0.47)
 	var dark := Color(0.45, 0.39, 0.34)
 	draw_rect(Rect2(from_x, 267, to_x - from_x, 1), stone)
@@ -53,6 +89,29 @@ func _draw() -> void:
 	_draw_outflow()
 	_draw_bridge()
 	_draw_culvert()
+
+
+## The channel while it is built: stone lining up to where the diggers have reached, still dry, and a heap of dug
+## earth and stones at the front; the footbridge and the culvert go in as the work passes them.
+func _draw_works() -> void:
+	var reach := front()
+	var stone := Color(0.62, 0.55, 0.47)
+	if reach > from_x:
+		draw_rect(Rect2(from_x, 267, reach - from_x, 1), stone)
+		draw_rect(Rect2(from_x, 268, reach - from_x, 2), DARK)
+		draw_rect(Rect2(from_x, 270, reach - from_x, 1), Color(0.45, 0.39, 0.34))
+	if _progress() >= 0.3 and reach < to_x:
+		var x := int(reach)
+		for i in 9:
+			var w := 9 - i
+			draw_rect(Rect2(x + i / 2, 266 - i / 2, w, 1), SOIL if i % 3 else SOIL_DARK)
+		draw_rect(Rect2(x - 3, 265, 2, 2), STONE)
+		draw_rect(Rect2(x + 8, 266, 3, 2), STONE_SHADE)
+		draw_rect(Rect2(x - 7, 267, 2, 1), STONE_LIGHT)
+	if reach >= bridge_to:
+		_draw_bridge()
+	if reach >= to_x - 1.0:
+		_draw_culvert()
 
 
 ## Water tumbling out of the castellum's arch into the head of the channel.

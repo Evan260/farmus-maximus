@@ -78,6 +78,16 @@ var _building_states := {}
 var _store_scaffold: Node2D
 ## The Roman road paved over the dirt one, as far as it has been laid.
 var _road: Sprite2D
+var _road_works: Node2D
+## Where the paving has reached while a stretch is being laid.
+var _paving_front := -40.0
+## The water channel along the front of the home farm.
+var _channels: Node2D
+## The cart that brings paving stones up to the work, with its donkey and its load.
+var _stone_cart: Node2D
+var _stone_donkey: AnimatedSprite2D
+var _stone_load: Array[Sprite2D] = []
+var _stone_trip := {}
 ## Scaffolding stood in front of the farmhouse while it is being restored.
 var _villa_scaffold: Node2D
 var _villa_hovered := false
@@ -196,13 +206,17 @@ func _ready() -> void:
 	_add_texture(load(BG + "ground.png"), Vector2(-40, 0))
 	_road = _add_texture(load(BG + "road_paved.png"), Vector2(-40, 270))
 	_road.region_enabled = true
+	_road_works = Node2D.new()
+	_road_works.draw.connect(_draw_road_works)
+	world.add_child(_road_works)
 	_pave_road()
 	var pasture := Pasture.new()
 	world.add_child(pasture)
 	var ground_fx := WeatherFx.new()
 	ground_fx.plant_tops = _plant_tops
 	world.add_child(ground_fx)
-	world.add_child(Channels.new())
+	_channels = Channels.new()
+	world.add_child(_channels)
 	_build_plots()
 	_build_signs()
 
@@ -246,6 +260,7 @@ func _ready() -> void:
 	_store_scaffold.visible = Game.projects.has("storage")
 	world.add_child(_store_scaffold)
 	_park_rig()
+	_build_stone_cart()
 	for id in Game.helpers:
 		_spawn_helper(id)
 
@@ -448,6 +463,7 @@ func _busiest_zone() -> String:
 
 ## The people and animals that come and go: the dog's digging, the trader by the cart, travellers on the road, the cat and dog napping.
 func _update_life(delta: float) -> void:
+	_update_road_cart(delta)
 	if Engine.get_process_frames() % 30 == 0:
 		_sync_builders()
 		_sync_overgrowth()
@@ -514,6 +530,9 @@ func _sync_builders() -> void:
 			_builders[id].leave()
 			_builders.erase(id)
 	for id in sites:
+		# Builders on the water channel and the road move along with the work.
+		if _builders.has(id):
+			_builders[id].site = sites[id]["rect"]
 		if not _builders.has(id):
 			var b := Builder.new()
 			b.site = sites[id]["rect"]
@@ -1419,14 +1438,113 @@ func _size_cart() -> void:
 		_park_rig()
 
 
-## The paved road is laid stretch by stretch: first past the farm and the yard, then most of the estate, then all of it.
+## The paved road is laid from the farm towards the town, stretch by stretch; while a stretch is being laid it grows
+## with the work, so the paving creeps along the road.
 func _pave_road() -> void:
 	var level := int(Game.levels.get("cart_speed", 0))
-	var spans := [Vector2.ZERO, Vector2(380, 1420), Vector2(0, 2000), Vector2(-40, 2440)]
-	var span: Vector2 = spans[clampi(level, 0, spans.size() - 1)]
-	_road.visible = span.y > span.x
-	_road.region_rect = Rect2(span.x + 40, 0, span.y - span.x, 20)
-	_road.position.x = span.x
+	var ends := [-40.0, 1000.0, 1700.0, 2440.0]
+	var reach: float = ends[clampi(level, 0, ends.size() - 1)]
+	if Game.projects.has("cart_speed") and level + 1 < ends.size():
+		var done := clampf(1.0 - float(Game.projects["cart_speed"]) / maxf(1.0, Game.upgrade_seconds("cart_speed")), 0.0, 1.0)
+		reach = roundf(lerpf(reach, ends[level + 1], done))
+	_paving_front = reach
+	_road.visible = reach > -40.0
+	_road.region_rect = Rect2(0, 0, reach + 40.0, 20)
+	_road.position.x = -40.0
+	_road_works.queue_redraw()
+
+
+## Ahead of the paving, a strip of levelled gravel waits for the stones, with a heap of them at the working edge.
+func _draw_road_works() -> void:
+	if not Game.projects.has("cart_speed"):
+		return
+	var x := _paving_front
+	var gravel := Color8(150, 138, 118)
+	for i in 40:
+		var shade := gravel.darkened(0.08 * ((i * 7) % 3))
+		_road_works.draw_rect(Rect2(x + i, 272, 1, 18), shade)
+	for k in 14:
+		var at := Vector2(x + (k * 13) % 38, 273 + (k * 5) % 15)
+		_road_works.draw_rect(Rect2(at, Vector2(1, 1)), gravel.darkened(0.25))
+	var stone := Color8(128, 122, 116)
+	for row in 4:
+		var w := 8 - row * 2
+		_road_works.draw_rect(Rect2(x + 2 + row, 270 - row * 2, w, 2), stone.lightened(0.08 * row))
+		_road_works.draw_rect(Rect2(x + 2 + row, 271 - row * 2, w, 1), stone.darkened(0.2))
+	for k in 5:
+		_road_works.draw_rect(Rect2(x + 12 + k * 5, 278 + (k % 2) * 5, 3, 2), stone)
+
+
+## A donkey cart loaded with paving stones goes back and forth between the finished road and the working edge.
+func _update_road_cart(delta: float) -> void:
+	var paving := Game.projects.has("cart_speed")
+	if not paving:
+		if _stone_cart.visible:
+			_stone_cart.visible = false
+		return
+	_pave_road()
+	if not _stone_cart.visible:
+		_stone_cart.visible = true
+		_stone_trip = {"x": maxf(0.0, _paving_front - 170.0), "loaded": true, "wait": 0.0}
+	var unload := maxf(40.0, _paving_front - 66.0)
+	var reload := maxf(0.0, _paving_front - 190.0)
+	var target: float = unload if _stone_trip["loaded"] else reload
+	var x: float = _stone_trip["x"]
+	var going_right := target > x
+	if float(_stone_trip["wait"]) > 0.0:
+		_stone_trip["wait"] = float(_stone_trip["wait"]) - delta
+		_stone_donkey.play("stand")
+	else:
+		x = move_toward(x, target, 22.0 * Game.build_speed * delta)
+		_stone_trip["x"] = x
+		_stone_donkey.play("walk")
+		if is_equal_approx(x, target):
+			_stone_trip["wait"] = 3.0
+			_stone_trip["loaded"] = not _stone_trip["loaded"]
+	var cart: Sprite2D = _stone_cart.get_child(0)
+	var right: bool = going_right if float(_stone_trip["wait"]) <= 0.0 else _stone_trip["loaded"] == false
+	cart.flip_h = not right
+	_stone_donkey.flip_h = not right
+	cart.position = Vector2(roundf(x), RIG_BASE - cart.region_rect.size.y)
+	# The donkey walks in front: on the right going out to the work, on the left coming back.
+	_stone_donkey.position = Vector2(roundf(x + (58.0 if right else 2.0)), RIG_BASE)
+	for k in _stone_load.size():
+		_stone_load[k].visible = bool(_stone_trip["loaded"])
+		_stone_load[k].position = cart.position + Vector2(8 + k * 10 if right else 36 - k * 10, 4 - (k % 2) * 2)
+
+
+## One grey paving stone for the cart's load: lit on top, shaded on its right, with a dark edge.
+func _paving_block() -> ImageTexture:
+	var img := Image.create(10, 6, false, Image.FORMAT_RGBA8)
+	img.fill(Color8(88, 84, 80))
+	img.fill_rect(Rect2i(1, 1, 8, 4), Color8(130, 124, 118))
+	img.fill_rect(Rect2i(1, 1, 8, 1), Color8(160, 154, 146))
+	img.fill_rect(Rect2i(8, 2, 1, 3), Color8(104, 99, 94))
+	return ImageTexture.create_from_image(img)
+
+
+func _build_stone_cart() -> void:
+	_stone_cart = Node2D.new()
+	_stone_cart.visible = false
+	world.add_child(_stone_cart)
+	var cart := Sprite2D.new()
+	cart.texture = load("res://assets/sprites/farm/cart.png")
+	cart.centered = false
+	cart.region_enabled = true
+	cart.region_rect = Rect2(cart.texture.get_image().get_used_rect())
+	_stone_cart.add_child(cart)
+	var block := _paving_block()
+	for k in 3:
+		var stone := Sprite2D.new()
+		stone.texture = block
+		stone.centered = false
+		_stone_cart.add_child(stone)
+		_stone_load.append(stone)
+	_stone_donkey = AnimatedSprite2D.new()
+	_stone_donkey.sprite_frames = _donkey_frames()
+	_stone_donkey.centered = false
+	_stone_donkey.offset = Vector2(-32, -_feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
+	_stone_cart.add_child(_stone_donkey)
 
 
 ## Where builders work on a farm improvement: at the storehouse, along the water channel, or on the next stretch of road.
@@ -1435,10 +1553,8 @@ func _project_site(id: String) -> Rect2:
 		"storage":
 			return Rect2(_storehouse.position, _storehouse.region_rect.size)
 		"channels":
-			return Rect2(446, 236, 160, 31)
-	var level := int(Game.levels.get("cart_speed", 0))
-	var start: float = [430.0, 1300.0, 1950.0][mini(level, 2)]
-	return Rect2(start, 250, 140, 31)
+			return Rect2(_channels.front() - 30.0, 236, 50, 31)
+	return Rect2(_paving_front - 30.0, 250, 50, 31)
 
 
 func _on_upgrade_started(id: String) -> void:

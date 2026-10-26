@@ -126,7 +126,8 @@ func _next() -> void:
 		_plan.append({"kind": "climb", "to": Vector2(x, ground)})
 	else:
 		var x := site.position.x + randf_range(0.1, 0.9) * site.size.x
-		_plan.append({"kind": "walk", "to": Vector2(x, ground)})
+		# A builder left behind by work that moves along, like a road being paved, hurries to catch up.
+		_plan.append({"kind": "walk", "to": Vector2(x, ground), "speed": clampf(absf(x - position.x) / 2.0, 14.0, 70.0)})
 		_plan.append({"kind": "wait", "anim": "work", "seconds": randf_range(2.5, 5.0)})
 	_begin()
 
