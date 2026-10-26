@@ -37,7 +37,11 @@ func _ready() -> void:
 		_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		_col.remove_child(body)
 		_col.add_child(_scroll)
-		_scroll.add_child(body)
+		var gap := MarginContainer.new()
+		gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gap.add_theme_constant_override("margin_right", 8)
+		_scroll.add_child(gap)
+		gap.add_child(body)
 		body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -49,7 +53,8 @@ func set_title(text: String) -> void:
 
 
 func open() -> void:
-	visible = true
+	if not visible:
+		UiKit.fade_in(self)
 	_signature = ""
 	_reset_scroll = true
 	refresh()

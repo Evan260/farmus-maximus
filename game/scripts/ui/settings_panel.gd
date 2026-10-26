@@ -38,19 +38,19 @@ func build() -> void:
 			UiKit.para(body, tr("Music and sound files dropped into the game's audio folders are picked up by name."), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Display":
 			var sizes := {-1: "Smaller", 0: "Normal", 1: "Larger", 2: "Largest"}
-			UiKit.button(body, tr("Interface size: %s") % tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))
-			UiKit.button(body, tr("Full window  (%s)") % _key_name("toggle_strip") if Windowing.strip else tr("Desktop strip  (%s)") % _key_name("toggle_strip"), func(): Windowing.toggle_strip())
-			UiKit.button(body, tr("Strip: transparent") if Windowing.transparent else tr("Strip: painted sky"), func(): Windowing.set_transparent(not Windowing.transparent))
-			UiKit.button(body, tr("Strip scale: %s") % tr(Windowing.SIZES[Windowing.size_index]), func(): Windowing.cycle_size())
-			UiKit.button(body, tr("Strip height: %s") % tr(Windowing.HEIGHT_NAMES[Windowing.height_index]), func(): Windowing.cycle_height())
-			UiKit.button(body, tr("Strip at the top of the screen") if Windowing.dock == "top" else tr("Strip at the bottom of the screen"), func(): Windowing.toggle_dock())
-			_toggle("Focus mode: quieter and slower strip", Windowing.focus_mode, func(v): Windowing.set_focus_mode(v))
+			UiKit.setting(body, tr("Interface size"), tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))
+			_toggle(tr("Desktop strip (%s)") % _key_name("toggle_strip"), Windowing.strip, func(_v): Windowing.toggle_strip())
+			UiKit.setting(body, tr("Strip background"), tr("Clear") if Windowing.transparent else tr("Painted sky"), func(): Windowing.set_transparent(not Windowing.transparent))
+			UiKit.setting(body, tr("Strip scale"), tr(Windowing.SIZES[Windowing.size_index]), func(): Windowing.cycle_size())
+			UiKit.setting(body, tr("Strip height"), tr(Windowing.HEIGHT_NAMES[Windowing.height_index]), func(): Windowing.cycle_height())
+			UiKit.setting(body, tr("Where the strip sits"), tr("Top") if Windowing.dock == "top" else tr("Bottom"), func(): Windowing.toggle_dock())
+			_toggle("Focus mode: a quieter, slower strip", Windowing.focus_mode, func(v): Windowing.set_focus_mode(v))
 			_toggle("Strip follows the busiest zone", Windowing.follow, func(v): Windowing.set_follow(v))
 			_toggle("Low power", Settings.low_power, func(v): Settings.set_value("low_power", v); Windowing._update_fps())
 			UiKit.para(body, tr("Drag the strip with the right mouse button. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Play":
-			UiKit.button(body, tr("Your dog and cat: names and coats"), func(): get_tree().call_group("hud", "open_window", "companions"))
-			UiKit.button(body, tr("Length of a day: %d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
+			UiKit.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
+			UiKit.setting(body, tr("Length of a day"), tr("%d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
 			_toggle("Progress while the game is closed", Settings.offline_progress, func(v): Settings.set_value("offline_progress", v))
 			_toggle("Flash the taskbar when something needs you", Settings.notifications, func(v): Settings.set_value("notifications", v))
 			_toggle("Show tips", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
@@ -74,7 +74,7 @@ func build() -> void:
 
 
 func _toggle(text: String, on: bool, action: Callable) -> void:
-	UiKit.button(body, "%s: %s" % [tr(text), tr("on") if on else tr("off")], func(): action.call(not on))
+	UiKit.setting(body, tr(text), tr("On") if on else tr("Off"), func(): action.call(not on))
 
 
 func _key_name(action: String) -> String:

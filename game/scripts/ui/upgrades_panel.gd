@@ -2,8 +2,9 @@ extends "res://scripts/ui/window_panel.gd"
 ## Farm upgrades: a bigger cart, a paved road and the aqueduct channels. The storehouse grows from its own window.
 
 const IDS := ["cart_capacity", "cart_speed", "channels"]
+const WIDTH := 250
 
-var _buttons := {}
+var _rows := {}
 
 
 func _init() -> void:
@@ -15,38 +16,48 @@ func signature() -> String:
 
 
 func build() -> void:
-	_buttons = {}
+	_rows = {}
+	UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 	for id in IDS:
-		if id == "cart_capacity":
-			UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), 230).add_theme_color_override("font_color", UiKit.FADED)
-		_buttons[id] = UiKit.button(body, "", func(): Game.buy_upgrade(id))
+		var b := UiKit.setting(body, tr(String(Game.upgrade_info(id).get("name", id))), "", func(): Game.buy_upgrade(id), WIDTH)
+		var about := UiKit.para(body, "", WIDTH)
+		about.add_theme_color_override("font_color", UiKit.FADED)
+		_rows[id] = {"button": b, "about": about}
 
 
 func tick() -> void:
-	for id in _buttons:
+	for id in _rows:
 		var info := Game.upgrade_info(id)
 		var cost := Game.upgrade_cost(id)
-		var b: Button = _buttons[id]
-		var name := tr(String(info.get("name", id)))
+		var b: Button = _rows[id]["button"]
+		var about: Label = _rows[id]["about"]
+		var level := int(Game.levels.get(id, 0))
+		var values: Array = info.get("values", [0])
+		var now := int(values[mini(level, values.size() - 1)])
+		var next := int(values[mini(level + 1, values.size() - 1)])
+		var build_time := UiKit.duration(Game.upgrade_seconds(id) / Game.build_speed)
 		if Game.projects.has(id):
-			b.text = tr("%s: builders at work, %s left") % [name, UiKit.duration(float(Game.projects[id]) / Game.build_speed)]
+			b.text = tr("Building")
 			b.disabled = true
+			about.text = tr("Builders at work: %s left") % UiKit.duration(float(Game.projects[id]) / Game.build_speed)
 			continue
 		if cost < 0:
-			b.text = tr("%s: done") % name
+			b.text = tr("Done")
 			b.disabled = true
+			match id:
+				"cart_capacity":
+					about.text = tr("The cart carries %d goods.") % now
+				"cart_speed":
+					about.text = tr("The whole road is paved. The trader's trips take %d s.") % now
+				"channels":
+					about.text = tr("Water runs to the home farm, so it grows faster.")
 			continue
-		if id == "cart_speed":
-			var trips: Array = info.get("values", [])
-			var next_trip := int(trips[mini(int(Game.levels.get(id, 0)) + 1, trips.size() - 1)])
-			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("pave the next stretch in %s; the trader's trips take %d s") % [UiKit.duration(Game.upgrade_seconds(id) / Game.build_speed), next_trip]]
-			b.disabled = Game.coins < cost
-			continue
-		if id == "channels":
-			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("built in %s; waters the home farm, so it grows faster") % UiKit.duration(Game.upgrade_seconds(id) / Game.build_speed)]
-		else:
-			var values: Array = info.get("values", [])
-			var next_value := float(values[mini(int(Game.levels.get(id, 0)) + 1, values.size() - 1)])
-			var shown := str(int(next_value)) if next_value == floor(next_value) else str(next_value)
-			b.text = "%s  %s %s  -  %s" % [name, tr(String(info.get("label", ""))), shown, UiKit.cost_text({"coins": cost})]
+		b.text = UiKit.cost_text({"coins": cost})
 		b.disabled = Game.coins < cost
+		match id:
+			"cart_capacity":
+				about.text = tr("Carries %d goods instead of %d.") % [next, now]
+			"cart_speed":
+				about.text = tr("Paves the next stretch in %s. The trader's trips take %d s instead of %d s.") % [build_time, next, now]
+			"channels":
+				about.text = tr("Built in %s. Waters the home farm, so it grows faster.") % build_time

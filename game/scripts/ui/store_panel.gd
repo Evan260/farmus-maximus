@@ -3,6 +3,7 @@ extends "res://scripts/ui/window_panel.gd"
 
 var _capacity: Label
 var _grow: Button
+var _grow_label: Label
 
 
 func _init() -> void:
@@ -41,9 +42,10 @@ func build() -> void:
 		var values: Array = Game.upgrade_info("storage").get("values", [])
 		var bigger := int(values[mini(int(Game.levels.get("storage", 0)) + 1, values.size() - 1)])
 		UiKit.section(body, tr("Make room"))
-		_grow = UiKit.button(body, tr("Enlarge the storehouse to hold %d: %s") % [bigger, UiKit.cost_text({"coins": cost})], func(): Game.buy_upgrade("storage"))
-	var manure := UiKit.button(body, tr("Spread manure when planting: on") if Game.use_manure else tr("Spread manure when planting: off"), func(): Game.use_manure = not Game.use_manure)
-	manure.visible = Game.journal.has("item:manure")
+		_grow = UiKit.setting(body, tr("Enlarge it to hold %d") % bigger, UiKit.cost_text({"coins": cost}), func(): Game.buy_upgrade("storage"))
+		_grow_label = _grow.get_parent().get_child(0)
+	var manure := UiKit.setting(body, tr("Spread manure when planting"), tr("On") if Game.use_manure else tr("Off"), func(): Game.use_manure = not Game.use_manure)
+	manure.get_parent().visible = Game.journal.has("item:manure")
 
 
 func tick() -> void:
@@ -51,4 +53,5 @@ func tick() -> void:
 	if _grow:
 		_grow.disabled = Game.coins < Game.upgrade_cost("storage") or Game.projects.has("storage")
 		if Game.projects.has("storage"):
-			_grow.text = tr("Builders are enlarging the storehouse: %s left") % UiKit.duration(float(Game.projects["storage"]) / Game.build_speed)
+			_grow.text = tr("Building")
+			_grow_label.text = tr("Builders are enlarging it: %s left") % UiKit.duration(float(Game.projects["storage"]) / Game.build_speed)

@@ -12,7 +12,6 @@ const WATER := Color(0.33, 0.47, 0.6)
 const FALL := Color(0.62, 0.76, 0.88, 0.9)
 const FOAM := Color(0.86, 0.93, 1.0, 0.95)
 const CASTELLUM := preload("res://assets/sprites/farm/castellum.png")
-const Scaffold := preload("res://scripts/world/scaffold.gd")
 const SOIL := Color8(92, 64, 44)
 const SOIL_DARK := Color8(66, 44, 32)
 ## Where the castellum's arched outlet sits in its picture, and where the picture's walls meet the ground.
@@ -26,7 +25,8 @@ var bridge_from := 815.0
 var bridge_to := 859.0
 var _t := 0.0
 var _house: Sprite2D
-var _house_scaffold: Node2D
+## The castellum part built: footings, half-built walls, and walls waiting for their roof.
+var _stages: Array[Texture2D] = []
 
 
 func _ready() -> void:
@@ -35,10 +35,7 @@ func _ready() -> void:
 	_house.centered = false
 	_house.position = Vector2(from_x - OUTLET_X, 267 - BASE_Y)
 	add_child(_house)
-	_house_scaffold = Scaffold.new()
-	_house_scaffold.rect = Rect2(_house.position + Vector2(4, 4), Vector2(38, BASE_Y - 4))
-	_house_scaffold.visible = false
-	add_child(_house_scaffold)
+	_stages = _building_stages()
 
 
 func _process(delta: float) -> void:
@@ -46,15 +43,42 @@ func _process(delta: float) -> void:
 	if visible:
 		_t += delta * (0.0 if Settings.reduced_motion else 1.0)
 		queue_redraw()
-	# The castellum is built first, inside its own scaffolding, which comes down once the channel is being dug.
-	var building := _building()
-	var housed := building and _progress() < 0.3
-	if housed != _house_scaffold.visible:
-		if housed:
-			_house_scaffold.visible = true
-			_house_scaffold.rise()
-		else:
-			_house_scaffold.sink().tween_callback(func(): _house_scaffold.visible = _building() and _progress() < 0.3)
+	# The castellum goes up first, course by course, before the channel is dug from it.
+	var p := _progress()
+	_house.texture = _stages[mini(int(p / 0.1), _stages.size() - 1)] if _building() and p < 0.3 else CASTELLUM
+
+
+## The castellum at three points in its building, cut from the finished picture: its footings, its walls half up,
+## and its walls finished but not yet roofed. Each top course is left ragged, as stone is laid unevenly.
+func _building_stages() -> Array[Texture2D]:
+	var src := CASTELLUM.get_image()
+	src.convert(Image.FORMAT_RGBA8)
+	var used := src.get_used_rect()
+	# The walls start below the last row that is mostly roof tile.
+	var wall_top := used.position.y
+	for y in range(used.position.y, used.end.y):
+		var tiles := 0
+		var solid := 0
+		for x in range(used.position.x, used.end.x):
+			var c := src.get_pixel(x, y)
+			if c.a > 0.0:
+				solid += 1
+				if (c.h < 0.06 or c.h > 0.95) and c.s > 0.45:
+					tiles += 1
+		if solid > 0 and tiles * 2 > solid:
+			wall_top = y + 1
+	var out: Array[Texture2D] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for share in [0.22, 0.55, 1.0]:
+		var img := src.duplicate() as Image
+		var height := float(used.end.y - wall_top)
+		for x in range(used.position.x, used.end.x):
+			var cut := used.end.y - int(roundf(height * share)) + (rng.randi_range(0, 2) if share < 1.0 else 0)
+			for y in range(0, cut):
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+		out.append(ImageTexture.create_from_image(img))
+	return out
 
 
 func _building() -> bool:
@@ -124,27 +148,27 @@ func _draw_outflow() -> void:
 	draw_rect(Rect2(x + 4 - (step % 2), 268, 1, 1), FOAM)
 
 
-## A low stone footbridge carrying the walkway over the water, with a small arch the channel runs through.
+## Where the walkway crosses, the water runs under it through a little culvert: the path's own sandy surface carries
+## on over the top, and a dark mouth with a stone lip shows on each side.
 func _draw_bridge() -> void:
 	var a := int(bridge_from)
-	var w := int(bridge_to - bridge_from)
-	draw_rect(Rect2(a, 265, w, 6), STONE)
-	draw_rect(Rect2(a, 265, w, 1), STONE_LIGHT)
-	draw_rect(Rect2(a, 266, w, 1), Color8(192, 160, 114))
-	draw_rect(Rect2(a, 270, w, 1), MORTAR)
-	for x in [a, a + w - 1]:
-		draw_rect(Rect2(x, 264, 1, 7), STONE_SHADE)
-	var mid := a + w / 2
-	draw_rect(Rect2(mid - 6, 268, 12, 2), DARK)
-	draw_rect(Rect2(mid - 5, 267, 10, 1), DARK)
-	draw_rect(Rect2(mid - 4, 269, 8, 1), WATER)
+	var b := int(bridge_to)
+	var sand := [Color8(176, 142, 98), Color8(192, 160, 114), Color8(154, 122, 82)]
+	for x in range(a, b):
+		for y in range(266, 272):
+			draw_rect(Rect2(x, y, 1, 1), sand[(x * 7 + y * 3) % 5 % 3])
+	for side in [a - 1, b - 2]:
+		draw_rect(Rect2(side, 268, 3, 2), DARK)
+		draw_rect(Rect2(side, 267, 3, 1), STONE_LIGHT.darkened(0.1))
+		draw_rect(Rect2(side, 270, 3, 1), STONE_SHADE)
 
 
-## Where the channel ends it runs into a stone culvert and away under the road.
+## Where the channel ends the water soaks away into a patch of dark, wet earth beyond a rounded stone end.
 func _draw_culvert() -> void:
 	var x := int(to_x)
-	draw_rect(Rect2(x, 265, 7, 7), STONE)
-	draw_rect(Rect2(x, 265, 7, 1), STONE_LIGHT)
-	draw_rect(Rect2(x + 6, 266, 1, 6), STONE_SHADE)
-	draw_rect(Rect2(x, 267, 4, 4), DARK)
-	draw_rect(Rect2(x, 268, 1, 2), WATER)
+	draw_rect(Rect2(x, 267, 2, 1), STONE_LIGHT.darkened(0.1))
+	draw_rect(Rect2(x + 1, 268, 1, 2), STONE)
+	draw_rect(Rect2(x, 270, 2, 1), STONE_SHADE)
+	var wet := Color8(74, 54, 40)
+	for k in 9:
+		draw_rect(Rect2(x + 2 + k, 268 + (k % 2), 1, 2 if k < 6 else 1), wet.lightened(0.04 * k))

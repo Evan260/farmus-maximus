@@ -238,6 +238,12 @@ func _detail(page: VBoxContainer, id: String) -> void:
 	if not got:
 		pic.modulate = SILHOUETTE
 	frame.add_child(pic)
+	# An achievement still to earn shows its name and what it asks for, so the player knows what to aim at.
+	if not got and id.begins_with("achievement:"):
+		_heading(page, tr(_name(id)))
+		UiKit.para(page, _describe(id), TEXT_W)
+		_achievement_progress(page, id.get_slice(":", 1))
+		return
 	if not got:
 		_heading(page, "? ? ?")
 		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
@@ -251,6 +257,19 @@ func _detail(page: VBoxContainer, id: String) -> void:
 			var has: bool = q == 0 or Game.journal.has("quality:%s:%d" % [id.get_slice(":", 1), q])
 			var l := UiKit.label(badges, tr(String(names[q])))
 			l.add_theme_color_override("font_color", UiKit.INK if has else Color(0.62, 0.55, 0.45))
+
+
+func _achievement_progress(page: VBoxContainer, key: String) -> void:
+	for a in Balance.get_value("achievements", []):
+		if a["id"] != key:
+			continue
+		var done: Array = Game.journal.progress(a["when"])
+		var text := tr("Not earned yet.")
+		if a["when"].has("journal_share"):
+			text = tr("Not earned yet: the journal is %d%% full so far.") % done[0]
+		elif not done.is_empty():
+			text = tr("Not earned yet: %d of %d so far.") % [mini(done[0], done[1]), done[1]]
+		UiKit.para(page, text, TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
 
 
 func _name(id: String) -> String:

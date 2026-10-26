@@ -203,8 +203,13 @@ func _build_sky() -> void:
 		cloud.position = Vector2(float(c["x"]), float(c["y"]))
 		cloud.material = _cloud_look
 		cloud.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		# High clouds drift a little faster than low ones, and pieces of one cloud share a band so they keep together.
-		cloud.set_meta("speed", 1.6 if float(c["y"]) < 40.0 else 1.0)
+		# High clouds drift faster than low ones, and pieces in the same stretch of sky move alike so one cloud keeps together.
+		var high := float(c["y"]) < 40.0
+		var group := RandomNumberGenerator.new()
+		group.seed = int(c["x"]) / 150 * 2 + (1 if high else 0)
+		cloud.set_meta("speed", (1.6 if high else 1.0) * group.randf_range(0.8, 1.25))
+		cloud.set_meta("base_y", float(c["y"]))
+		cloud.set_meta("phase", group.randf() * TAU)
 		_sky.add_child(cloud)
 		_clouds.append(cloud)
 
@@ -252,6 +257,8 @@ func _drift_clouds(delta: float) -> void:
 		return
 	for cloud in _clouds:
 		cloud.position.x += float(cloud.get_meta("speed")) * delta
+		# Clouds rise and sink a few pixels over a couple of minutes while they drift.
+		cloud.position.y = float(cloud.get_meta("base_y")) + 3.0 * sin(_sky_time * TAU / 140.0 + float(cloud.get_meta("phase")))
 		if cloud.position.x > 480.0:
 			cloud.position.x = -cloud.texture.get_width()
 
@@ -292,7 +299,8 @@ func leave() -> void:
 
 func _open(id: String) -> void:
 	tab = id
-	_panel.visible = true
+	if not _panel.visible:
+		UiKit.fade_in(_panel)
 	_signature = ""
 	Sfx.play("click", -8.0)
 	_refresh()
@@ -648,8 +656,11 @@ func _owned_text(entry: Dictionary) -> String:
 func _build_land() -> void:
 	var owned := Game.zones().filter(func(z): return Game.zone_owned(String(z["id"]))).size()
 	UiKit.label(_list, tr("Your land: %d of %d") % [owned, Game.zones().size()])
-	var grid := GridContainer.new()
-	grid.columns = 3
+	# Three deeds to a row, with a shorter last row centred under the others.
+	var grid := HFlowContainer.new()
+	grid.alignment = FlowContainer.ALIGNMENT_CENTER
+	grid.custom_minimum_size.x = DeedCard.SIZE.x * 3 + 12
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 	_list.add_child(grid)

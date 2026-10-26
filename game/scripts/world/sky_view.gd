@@ -113,7 +113,9 @@ func _scatter_clouds() -> void:
 			s.position = Vector2((k + rng.randf_range(0.0, 0.8)) * WIDTH * 2 / int(layer["count"]), rng.randf_range(layer["y"].x, layer["y"].y))
 			add_child(s)
 			# Every third cloud only shows on grey days, so a fine day has open sky between its clouds.
-			_clouds.append({"sprite": s, "speed": float(layer["speed"]) * rng.randf_range(0.85, 1.15), "alpha": float(layer["alpha"]), "grey_only": _clouds.size() % 3 == 2})
+			# Each cloud also rises and sinks a little over a few minutes, as real ones seem to while they drift.
+			_clouds.append({"sprite": s, "speed": float(layer["speed"]) * rng.randf_range(0.7, 1.35), "alpha": float(layer["alpha"]), "grey_only": _clouds.size() % 3 == 2,
+				"base_y": s.position.y, "lift": rng.randf_range(2.0, 10.0), "period": rng.randf_range(80.0, 220.0), "phase": rng.randf() * TAU})
 			var grey_only: bool = _clouds[-1]["grey_only"]
 			s.modulate.a = float(layer["alpha"]) if Game.calendar.weather in ["cloudy", "rain"] or not grey_only else 0.0
 
@@ -145,6 +147,7 @@ func _process(delta: float) -> void:
 	for c in _clouds:
 		var s: Sprite2D = c["sprite"]
 		s.position.x += float(c["speed"]) * wind * delta
+		s.position.y = float(c["base_y"]) + float(c["lift"]) * sin(_t * TAU / float(c["period"]) + float(c["phase"])) * (0.3 if Settings.reduced_motion else 1.0)
 		if s.position.x > WIDTH * 2:
 			s.position.x = -s.texture.get_width()
 		var shown := float(c["alpha"]) if overcast or not c["grey_only"] else 0.0

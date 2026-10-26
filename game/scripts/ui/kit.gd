@@ -45,6 +45,18 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
+## A line of a window naming something on the left, wrapped if long, with a short button for it on the right.
+static func setting(parent: Node, text: String, value: String, action: Callable, width := 250) -> Button:
+	var r := row(parent)
+	var l := para(r, text, width - 74)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var b := button(r, value, action)
+	b.custom_minimum_size = Vector2(70, 0)
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return b
+
+
 ## A tab along the top of a window: it sounds like turning a page rather than pressing a button.
 static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 	var b := Button.new()
@@ -74,6 +86,13 @@ static func close_button(parent: Node, action: Callable) -> Button:
 
 
 ## A heading that opens a section of a window, with a thin rule under it.
+## Shows a window by fading it in, so it does not pop up all at once.
+static func fade_in(item: CanvasItem, seconds := 0.18) -> void:
+	item.visible = true
+	item.modulate.a = 0.0
+	item.create_tween().tween_property(item, "modulate:a", 1.0, seconds).set_ease(Tween.EASE_OUT)
+
+
 static func section(parent: Node, text: String) -> Label:
 	var l := label(parent, text)
 	l.add_theme_color_override("font_color", HEADING)
@@ -160,9 +179,14 @@ static func scroll(parent: Node, size: Vector2) -> VBoxContainer:
 	s.custom_minimum_size = size
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	parent.add_child(s)
+	# The list keeps clear of the scroll bar, so buttons at the end of a line are not drawn under it.
+	var gap := MarginContainer.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gap.add_theme_constant_override("margin_right", 8)
+	s.add_child(gap)
 	var c := VBoxContainer.new()
 	c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	s.add_child(c)
+	gap.add_child(c)
 	return c
 
 

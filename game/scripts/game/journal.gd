@@ -98,6 +98,25 @@ func met(cond: Dictionary) -> bool:
 	return false
 
 
+## How far along a countable condition is, as how many of how many, or an empty array for one that is simply met or not.
+func progress(cond: Dictionary) -> Array:
+	if cond.has("stat"):
+		return [int(_game.stats.get(cond["stat"], 0)), int(cond.get("at", 1))]
+	if cond.has("villa"):
+		return [_game.villa_stage, int(cond["villa"])]
+	if cond.has("zones"):
+		return [_game.zones_owned.values().count(true), int(cond["zones"])]
+	if cond.has("buildings"):
+		return [_game.working_buildings(), int(cond["buildings"])]
+	if cond.has("helpers"):
+		return [_game.helpers.size(), int(cond["helpers"])]
+	if cond.has("decorations"):
+		return [_game.decorations.size(), int(cond["decorations"])]
+	if cond.has("journal_share"):
+		return [int(round(share() * 100.0)), int(round(float(cond["journal_share"]) * 100.0))]
+	return []
+
+
 ## Unlocks every achievement whose condition now holds and returns the new ones.
 func check_achievements() -> Array:
 	var fresh := []

@@ -354,6 +354,10 @@ func _open_panel(which: String) -> void:
 	if which.begins_with("journal:"):
 		hud.open_window("journal")
 		hud.show_journal_entry(which.trim_prefix("journal:"))
+	elif which.begins_with("settings:"):
+		hud.open_window("settings")
+		hud._settings.tab = which.trim_prefix("settings:")
+		hud._settings.show_page()
 	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions"]:
 		hud.open_window(which)
 	else:
@@ -763,7 +767,7 @@ func _scatter_meadow() -> void:
 		x += rng.randf_range(3.0, 9.0)
 	for i in int(estate_width / 9.0):
 		var at := Vector2(rng.randf_range(0.0, estate_width), rng.randf_range(244.0, 267.0))
-		if grassy.call(at.x, at.y) and clear_of_beds.call(at.x, at.y):
+		if grassy.call(at.x, at.y) and clear_of_beds.call(at.x, at.y) and absf(at.x - 470.0) > 30.0:
 			var tufts: Array[Texture2D] = GroundPlants.textures()
 			plants.append([tufts[rng.randi() % tufts.size()], at])
 	plants.sort_custom(func(a, b): return a[1].y < b[1].y)
