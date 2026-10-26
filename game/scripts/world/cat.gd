@@ -58,7 +58,7 @@ func pet() -> void:
 
 
 func contains(point: Vector2) -> bool:
-	return Hit.frame_rect(self, sprite).has_point(point)
+	return Hit.frame_has_pixel(self, sprite, point)
 
 
 func _choose_next() -> void:
