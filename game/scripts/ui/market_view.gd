@@ -179,7 +179,7 @@ func _build_sky() -> void:
 	paint.set_shader_parameter("origin", Vector2.ZERO)
 	paint.set_shader_parameter("top", -20.0)
 	paint.set_shader_parameter("horizon", TOWN_HORIZON)
-	paint.set_shader_parameter("bands", 7.0)
+	paint.set_shader_parameter("bands", 14.0)
 	_gradient.material = paint
 	_sky.add_child(_gradient)
 	_sun = Sprite2D.new()
@@ -261,10 +261,11 @@ func enter() -> void:
 
 
 func leave() -> void:
-	visible = false
-	_ui_layer.visible = false
-	_sky_layer.visible = false
-	left_town.emit()
+	Dissolve.play(self, func() -> void:
+		visible = false
+		_ui_layer.visible = false
+		_sky_layer.visible = false
+		left_town.emit())
 
 
 func _open(id: String) -> void:

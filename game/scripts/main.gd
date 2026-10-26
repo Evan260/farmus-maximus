@@ -35,7 +35,7 @@ const SHADOW := Color(0.16, 0.11, 0.12, 0.28)
 ## The painting is 768 pixels wide, so the land layer's rate is as high as it can be while still covering the whole pan.
 const PARALLAX := {"sky": 0.04, "mountains": 0.08, "land": 0.15}
 ## Where the cart parks, on the soil just right of the path, with the donkey at its handles.
-const CART_HOME_X := HOME + 380.0
+const CART_HOME_X := HOME + 505.0
 ## The lowest row the view shows: the road to town runs along the bottom, below the fields.
 const BOTTOM := 286.0
 const RIG_BASE := 282
@@ -43,7 +43,7 @@ const PAN_SPEED := 260.0
 ## Where each helper spends their day, in estate pixels.
 const HELPER_GROUNDS := {
 	"farmhand": [490.0, 930.0], "miller": [1130.0, 1400.0], "beekeeper": [150.0, 300.0], "perfumer": [990.0, 1610.0],
-	"presser": [360.0, 1900.0], "stablehand": [1940.0, 2380.0], "trader": [900.0, 950.0],
+	"presser": [360.0, 1900.0], "stablehand": [1940.0, 2380.0], "trader": [1080.0, 1120.0],
 }
 ## Seasons tint the whole scene a little: fresh in spring, golden in autumn, cool and pale in winter.
 const SEASON_TINT := {"spring": Color(0.98, 1.02, 0.98), "summer": Color(1.03, 1.0, 0.94), "autumn": Color(1.04, 0.95, 0.86), "winter": Color(0.9, 0.94, 1.02)}
@@ -355,9 +355,10 @@ func _back_from_market() -> void:
 func go_to_town() -> void:
 	if Windowing.strip:
 		return
-	hud.close_windows()
-	hud.visible = false
-	market.enter()
+	Dissolve.play(self, func() -> void:
+		hud.close_windows()
+		hud.visible = false
+		market.enter())
 
 
 func _process(delta: float) -> void:

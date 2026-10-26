@@ -17,7 +17,7 @@ const OUTLET_X := 28
 const BASE_Y := 41
 
 var from_x := 476.0
-var to_x := 980.0
+var to_x := 972.0
 ## The walkway to the farmhouse, which crosses the channel on a footbridge.
 var bridge_from := 815.0
 var bridge_to := 859.0

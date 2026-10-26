@@ -431,9 +431,15 @@ func _update_sleep(delta: float) -> void:
 ## The toolbar along the bottom: harvest, a seed for every crop the estate has, and the spade for digging plants up.
 func _build_toolbar() -> void:
 	_toolbar = PanelContainer.new()
+	var frame := StyleBoxFlat.new()
+	frame.bg_color = Color(0.33, 0.2, 0.13)
+	frame.border_color = Color(0.22, 0.13, 0.09)
+	frame.set_border_width_all(1)
+	frame.set_content_margin_all(2)
+	_toolbar.add_theme_stylebox_override("panel", frame)
 	_root.add_child(_toolbar)
 	_tool_row = UiKit.row(_toolbar)
-	_tool_row.add_theme_constant_override("separation", 2)
+	_tool_row.add_theme_constant_override("separation", 1)
 
 
 func _update_toolbar() -> void:
@@ -465,8 +471,16 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 	b.icon = icon
 	b.toggle_mode = true
 	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(22, 22)
+	b.custom_minimum_size = Vector2(18, 18)
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+		var box := StyleBoxFlat.new()
+		var chosen: bool = state.contains("pressed")
+		box.bg_color = Color(0.98, 0.92, 0.78) if chosen else (Color(0.9, 0.8, 0.62) if state == "hover" else Color(0.83, 0.71, 0.52))
+		box.border_color = Color(0.7, 0.38, 0.25) if chosen else Color(0.55, 0.4, 0.28)
+		box.set_border_width_all(1)
+		box.set_content_margin_all(0)
+		b.add_theme_stylebox_override(state, box)
 	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
 		b.add_theme_color_override(state, tint)
 	b.pressed.connect(func(): select_tool(id))
