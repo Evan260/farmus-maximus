@@ -72,6 +72,10 @@ var _land_far: Sprite2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
 var _villa_outline: Node2D
+## Each building's state as last seen, by building.
+var _building_states := {}
+## Scaffolding stood against the storehouse while it is being enlarged.
+var _store_scaffold: Node2D
 ## The Roman road paved over the dirt one, as far as it has been laid.
 var _road: Sprite2D
 ## Scaffolding stood in front of the farmhouse while it is being restored.
@@ -237,6 +241,11 @@ func _ready() -> void:
 	world.add_child(_harness)
 	_size_cart()
 	Game.upgrade_bought.connect(_on_upgrade_bought)
+	Game.upgrade_started.connect(_on_upgrade_started)
+	_store_scaffold = Scaffold.new()
+	_store_scaffold.rect = Rect2(_storehouse.position, _storehouse.region_rect.size)
+	_store_scaffold.visible = Game.projects.has("storage")
+	world.add_child(_store_scaffold)
 	_park_rig()
 	for id in Game.helpers:
 		_spawn_helper(id)
@@ -403,14 +412,14 @@ func _process(delta: float) -> void:
 		if _click_area_timer <= 0.0:
 			_click_area_timer = 0.5
 			Windowing.set_click_area(_click_area())
-	if Game.villa_build["active"]:
+	if Game.villa_build["active"] and not Game.is_night():
 		_hammer_timer -= delta
 		if _hammer_timer <= 0.0:
 			_hammer_timer = randf_range(1.2, 2.6)
 			Sfx.play("hammer", -10.0, 0.15)
 			_dust(_villa.position + Vector2(randf_range(10, _villa.region_rect.size.x - 10), _villa.region_rect.size.y - 4), 6)
 	for v in building_views:
-		if Game.buildings[v.id]["state"] == "repairing" and randf() < delta * 0.5:
+		if Game.buildings[v.id]["state"] in ["repairing", "upgrading"] and not Game.is_night() and randf() < delta * 0.5:
 			Sfx.play("hammer", -14.0, 0.2)
 			_dust(v.position + Vector2(randf_range(-20, 20), -2), 4)
 	_update_life(delta)
@@ -487,11 +496,14 @@ func _update_life(delta: float) -> void:
 func _sync_builders() -> void:
 	var sites := {}
 	for v in building_views:
-		if Game.buildings[v.id]["state"] == "repairing":
+		if Game.buildings[v.id]["state"] in ["repairing", "upgrading"]:
 			var r: Rect2 = v.world_rect()
 			var id := String(v.id)
 			sites[id] = {"rect": r, "ladders": Game.building_info(id).get("ladders", []).map(func(x): return r.position.x + float(x)),
 				"left": func() -> float: return float(Game.buildings[id].get("time_left", 0.0))}
+	for id in Game.projects:
+		var left := func() -> float: return float(Game.projects.get(id, 0.0))
+		sites["project_" + id] = {"rect": _project_site(String(id)), "ladders": [], "left": left}
 	if Game.villa_build["active"]:
 		var r := _villa_rect()
 		var ladders: Array = Balance.get_value("villa.ladders", []).map(func(x): return r.position.x + float(x))
@@ -620,6 +632,8 @@ func _load_demo_state() -> void:
 			Game.levels["cart_capacity"] = int(arg.trim_prefix("--cart="))
 		elif arg.begins_with("--road="):
 			Game.levels["cart_speed"] = int(arg.trim_prefix("--road="))
+		elif arg.begins_with("--start="):
+			Game.buy_upgrade.call_deferred(arg.trim_prefix("--start="))
 		elif arg == "--build-villa":
 			Game.upgrade_villa.call_deferred()
 		elif arg == "--send-cart":
@@ -700,6 +714,7 @@ func _build_buildings() -> void:
 		v.position = Vector2(float(Game.building_info(id).get("x", 0)), 236)
 		world.add_child(v)
 		building_views.append(v)
+		_building_states[id] = String(Game.buildings[id]["state"])
 
 
 ## A building nobody has started to repair stands in weeds, long grass and brambles; they are cleared when work begins.
@@ -1214,6 +1229,7 @@ func _on_building_made(id: String, item: String, amount: int) -> void:
 
 func _on_building_changed(id: String) -> void:
 	var state := String(Game.buildings[id]["state"])
+	call_deferred("_note_state", id, state)
 	var name := tr(String(Game.building_info(id).get("name", ""))).to_lower()
 	for v in building_views:
 		if v.id != id:
@@ -1226,11 +1242,24 @@ func _on_building_changed(id: String) -> void:
 				Sfx.play("hammer")
 				_dust(v.position, 14)
 				hud.toast(tr("Repairs have begun"))
+			"upgrading":
+				Sfx.play("hammer")
+				_dust(v.position, 14)
+				hud.toast(tr("Builders are improving the %s") % name)
 			"working":
-				if int(Game.buildings[id]["level"]) == 0 and not Game.buildings[id]["busy"] and Game.buildings[id]["queue"].is_empty():
+				if _building_states.get(id, "") == "upgrading":
+					Sfx.play("villa_complete")
+					_dust(v.position, 24)
+					hud.toast(tr("The %s is now level %d") % [name, int(Game.buildings[id]["level"]) + 1])
+				elif int(Game.buildings[id]["level"]) == 0 and not Game.buildings[id]["busy"] and Game.buildings[id]["queue"].is_empty():
 					Sfx.play("villa_complete")
 					_dust(v.position, 24)
 					hud.toast(tr("The %s is working again!") % name)
+
+
+## Remembers each building's state, so a building coming back to work can tell an upgrade from a repair.
+func _note_state(id: String, state: String) -> void:
+	_building_states[id] = state
 
 
 func _on_zone_bought(zone_id: String) -> void:
@@ -1357,7 +1386,34 @@ func _pave_road() -> void:
 	_road.position.x = span.x
 
 
+## Where builders work on a farm improvement: at the storehouse, along the water channel, or on the next stretch of road.
+func _project_site(id: String) -> Rect2:
+	match id:
+		"storage":
+			return Rect2(_storehouse.position, _storehouse.region_rect.size)
+		"channels":
+			return Rect2(446, 236, 160, 31)
+	var level := int(Game.levels.get("cart_speed", 0))
+	var start: float = [430.0, 1300.0, 1950.0][mini(level, 2)]
+	return Rect2(start, 250, 140, 31)
+
+
+func _on_upgrade_started(id: String) -> void:
+	Sfx.play("hammer")
+	var site := _project_site(id)
+	_dust(Vector2(site.position.x + site.size.x / 2.0, site.end.y), 14)
+	hud.toast(tr("The builders have started work"))
+	if id == "storage":
+		_store_scaffold.visible = true
+		_store_scaffold.rise()
+
+
 func _on_upgrade_bought(id: String) -> void:
+	if id == "storage" and _store_scaffold.visible:
+		_store_scaffold.sink().tween_callback(func(): _store_scaffold.visible = Game.projects.has("storage"))
+	if id in Game.BUILT_UPGRADES:
+		Sfx.play("villa_complete")
+		hud.toast(tr("The work is finished"))
 	if id == "cart_speed":
 		_pave_road()
 		_dust(Vector2(cam_x + _view_size().x / 2.0, 280), 24)

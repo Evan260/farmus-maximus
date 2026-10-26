@@ -347,6 +347,12 @@
 				200,
 				900,
 				3500
+			],
+			"seconds": [
+				45,
+				90,
+				150,
+				240
 			]
 		},
 		"cart_capacity": {
@@ -377,6 +383,11 @@
 				300,
 				1200,
 				4000
+			],
+			"seconds": [
+				90,
+				150,
+				240
 			]
 		},
 		"channels": {
@@ -388,6 +399,9 @@
 			],
 			"costs": [
 				500
+			],
+			"seconds": [
+				120
 			]
 		}
 	},
@@ -782,7 +796,8 @@
 					"quality": 1
 				}
 			],
-			"helper": "beekeeper"
+			"helper": "beekeeper",
+			"day_only": true
 		},
 		"olive_press": {
 			"name": "Olive press",

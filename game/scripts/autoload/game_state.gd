@@ -31,6 +31,7 @@ signal decoration_bought(decoration_id: String)
 signal animal_added(kind: String)
 signal pets_changed
 signal upgrade_bought(upgrade_id: String)
+signal upgrade_started(upgrade_id: String)
 
 var coins := 0
 ## Gold coins from special orders and festivals, spent on rare decorations.
@@ -50,7 +51,8 @@ var day_time := 16.0
 var cart := {}
 ## Which parts of the estate are owned; the rest are bought with a land deed.
 var zones_owned := {}
-## Each building's state: "ruin" (not yet bought), "owned" (bought, still a ruin), "repairing" or "working".
+## Each building's state: "ruin" (not yet bought), "owned" (bought, still a ruin), "repairing", "working", or
+## "upgrading" (builders at work on the next level, with the workshop closed meanwhile).
 var buildings := {}
 ## Hired helpers and their level.
 var helpers := {}
@@ -77,6 +79,10 @@ var _achievement_timer := 0.0
 var speed := 1.0
 ## How fast repairs and restoration go; the demo farm builds faster for testing. Not saved.
 var build_speed := 1.0
+## Farm improvements the builders are working on, by upgrade id, with the seconds of work left.
+var projects := {}
+## Upgrades that are built rather than bought, so they take builders and time.
+const BUILT_UPGRADES := ["storage", "channels", "cart_speed"]
 ## True during offline catch-up, so hundreds of harvests do not each spawn an effect.
 var quiet := false
 
@@ -116,6 +122,7 @@ func new_game() -> void:
 	for id in Balance.get_value("buildings", {}):
 		buildings[id] = _new_building()
 	levels = {"storage": 0, "cart_capacity": 0, "cart_speed": 0, "channels": 0}
+	projects = {}
 	selected_seed = "lavender"
 	crops_unlocked = {}
 	for c in Balance.get_value("crops", {}):
@@ -559,11 +566,35 @@ func buy_upgrade(id: String) -> bool:
 	if coins < cost:
 		message.emit("Not enough sestertii")
 		return false
+	if projects.has(id):
+		message.emit("The builders are already at work on it")
+		return false
 	coins -= cost
+	if id in BUILT_UPGRADES:
+		projects[id] = upgrade_seconds(id)
+		if not quiet:
+			upgrade_started.emit(id)
+		if float(projects[id]) <= 0.0:
+			_finish_project(id)
+		return true
 	levels[id] = int(levels.get(id, 0)) + 1
 	if not quiet:
 		upgrade_bought.emit(id)
 	return true
+
+
+## How long builders take over the next level of a built upgrade.
+func upgrade_seconds(id: String) -> float:
+	var times: Array = upgrade_info(id).get("seconds", [])
+	var level := int(levels.get(id, 0))
+	return float(times[mini(level, times.size() - 1)]) if not times.is_empty() else 60.0 * (level + 1)
+
+
+func _finish_project(id: String) -> void:
+	projects.erase(id)
+	levels[id] = int(levels.get(id, 0)) + 1
+	if not quiet:
+		upgrade_bought.emit(id)
 
 
 func villa_stages() -> Array:
@@ -649,6 +680,11 @@ func advance(dt: float) -> Dictionary:
 	if day_time < before:
 		calendar.next_day()
 		market.new_day()
+	if not is_night():
+		for id in projects.keys():
+			projects[id] = float(projects[id]) - dt * build_speed
+			if float(projects[id]) <= 0.0:
+				_finish_project(id)
 	if villa_build["active"] and not is_night():
 		villa_build["time_left"] = float(villa_build["time_left"]) - dt * build_speed
 		if villa_build["time_left"] <= 0.0:
@@ -863,9 +899,21 @@ func do_building_action(id: String) -> bool:
 			b["state"] = "repairing"
 			b["time_left"] = float(building_info(id).get("repair_seconds", 30))
 		"upgrade":
-			b["level"] = int(b["level"]) + 1
+			b["state"] = "upgrading"
+			b["time_left"] = building_upgrade_seconds(id)
 	building_changed.emit(id)
 	return true
+
+
+## How long builders take over a building's next level: a set time from the data, or half its repair time for each
+## level it already has.
+func building_upgrade_seconds(id: String) -> float:
+	var info := building_info(id)
+	var levels_info: Array = info.get("levels", [])
+	var level := int(buildings[id]["level"])
+	if level < levels_info.size() and levels_info[level].has("seconds"):
+		return float(levels_info[level]["seconds"])
+	return float(info.get("repair_seconds", 30)) * 0.5 * (level + 1)
 
 
 func set_building_paused(id: String, paused: bool) -> void:
@@ -959,17 +1007,22 @@ func _advance_buildings(dt: float) -> int:
 	var made := 0
 	for id in buildings:
 		var b: Dictionary = buildings[id]
-		if b["state"] == "repairing":
+		if b["state"] in ["repairing", "upgrading"]:
 			if is_night():
 				continue
 			b["time_left"] = float(b["time_left"]) - dt * build_speed
 			if b["time_left"] <= 0.0:
+				if b["state"] == "upgrading":
+					b["level"] = int(b["level"]) + 1
 				b["state"] = "working"
 				discover("building:" + id)
 				if not quiet:
 					building_changed.emit(id)
 			continue
 		if b["state"] != "working" or b["paused"]:
+			continue
+		# Bees only fly by day, so the hives make nothing at night.
+		if building_info(id).get("day_only", false) and is_night():
 			continue
 		match building_kind(id):
 			"cellar":
@@ -1395,7 +1448,7 @@ func _empty_cart() -> Dictionary:
 
 func to_dict() -> Dictionary:
 	return {
-		"keep_goods": keep_goods,
+		"keep_goods": keep_goods, "projects": projects,
 		"coins": coins, "aureus": aureus, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
 		"crops_unlocked": crops_unlocked, "villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time,
 		"cart": cart, "zones_owned": zones_owned, "buildings": buildings, "helpers": helpers, "helper_timers": helper_timers,
@@ -1411,6 +1464,9 @@ func from_dict(d: Dictionary) -> void:
 	keep_goods = {}
 	for base in d.get("keep_goods", {}):
 		keep_goods[base] = true
+	projects = {}
+	for id in d.get("projects", {}):
+		projects[id] = float(d["projects"][id])
 	selected_seed = String(d.get("selected_seed", selected_seed))
 	storage = {}
 	for key in d.get("storage", {}):

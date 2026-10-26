@@ -48,9 +48,9 @@ func build() -> void:
 			_next_step(Game.building_action(id)["cost"], tr("Buy this ruin"))
 		"owned":
 			UiKit.section(body, tr("Repairs"))
-			UiKit.para(body, tr("Builders work on it for %s once the repairs begin.") % UiKit.duration(float(info.get("repair_seconds", 30))), WIDTH)
+			UiKit.para(body, tr("Builders work on it for %s once the repairs begin.") % UiKit.duration(float(info.get("repair_seconds", 30)) / Game.build_speed), WIDTH)
 			_next_step(Game.building_action(id)["cost"], tr("Start the repairs"))
-		"repairing":
+		"repairing", "upgrading":
 			_bar = UiKit.progress(body)
 		"working":
 			match Game.building_kind(id):
@@ -106,6 +106,10 @@ func tick() -> void:
 			_status.text = _work_text(tr("Builders at work: %s left"), float(b["time_left"]))
 			if _bar:
 				_bar.value = 1.0 - float(b["time_left"]) / float(info.get("repair_seconds", 30))
+		"upgrading":
+			_status.text = _work_text(tr("Builders are taking it to level %d: %%s left") % (int(b["level"]) + 2), float(b["time_left"]))
+			if _bar:
+				_bar.value = 1.0 - float(b["time_left"]) / Game.building_upgrade_seconds(id)
 		"working":
 			_status.text = _working_status()
 			if _bar:
@@ -286,9 +290,11 @@ func _build_villa() -> void:
 
 ## Building work stops at night, so then the time left stands still and the window says why.
 func _work_text(day_text: String, left: float) -> String:
+	# Times are shown as they will pass on the clock, which a faster build speed shortens.
+	var real := left / Game.build_speed
 	if Game.is_night():
-		return tr("Work stops for the night and goes on at dawn: %s left") % UiKit.duration(left)
-	return day_text % UiKit.duration(left)
+		return tr("Work stops for the night and goes on at dawn: %s left") % UiKit.duration(real)
+	return day_text % UiKit.duration(real)
 
 
 func _tick_villa() -> void:

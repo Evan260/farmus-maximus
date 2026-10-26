@@ -134,7 +134,24 @@ func _run() -> void:
 	game.send_cart()
 	_check(game.count_item("lavender") == 2 and game.count_item("wheat") == 0, "the cart leaves reserved ingredients and sells the rest")
 	game.cart = game._empty_cart()
-	_check(game.do_building_action("drying_shed") and int(game.buildings["drying_shed"]["level"]) == 1, "upgrading a working building")
+	_check(game.do_building_action("drying_shed") and game.buildings["drying_shed"]["state"] == "upgrading", "upgrading a working building brings the builders")
+	_check(int(game.buildings["drying_shed"]["level"]) == 0, "an upgrade is not finished straight away")
+	game.day_time = 8.0
+	game.advance(game.building_upgrade_seconds("drying_shed") + 1.0)
+	_check(int(game.buildings["drying_shed"]["level"]) == 1 and game.buildings["drying_shed"]["state"] == "working", "the builders finish the upgrade")
+	var holds: int = game.storage_capacity()
+	game.coins += 1000
+	_check(game.buy_upgrade("storage") and game.projects.has("storage") and game.storage_capacity() == holds, "enlarging the storehouse takes builders and time")
+	game.day_time = 8.0
+	game.advance(game.upgrade_seconds("storage") + 1.0)
+	_check(not game.projects.has("storage") and game.storage_capacity() > holds, "the bigger storehouse is ready once the work is done")
+	game.buildings["beehives"]["state"] = "working"
+	game.buildings["beehives"]["busy"] = true
+	game.buildings["beehives"]["progress"] = 1.0
+	game.day_time = 23.0
+	game.advance(30.0)
+	_check(is_equal_approx(float(game.buildings["beehives"]["progress"]), 1.0), "the bees rest at night")
+	game.day_time = 8.0
 	_check(game.building_queue_max("drying_shed") == 3, "an upgrade lets a building queue more")
 
 	# Mills make two goods; bakeries can switch recipes; bees need nobody.

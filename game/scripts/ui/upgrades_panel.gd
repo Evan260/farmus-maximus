@@ -28,6 +28,10 @@ func tick() -> void:
 		var cost := Game.upgrade_cost(id)
 		var b: Button = _buttons[id]
 		var name := tr(String(info.get("name", id)))
+		if Game.projects.has(id):
+			b.text = tr("%s: builders at work, %s left") % [name, UiKit.duration(float(Game.projects[id]) / Game.build_speed)]
+			b.disabled = true
+			continue
 		if cost < 0:
 			b.text = tr("%s: done") % name
 			b.disabled = true

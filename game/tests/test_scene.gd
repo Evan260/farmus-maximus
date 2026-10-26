@@ -80,6 +80,12 @@ func _run() -> void:
 	lists = journal.find_children("*", "ScrollContainer", true, false)
 	_check(lists[lists.size() - 1].scroll_vertical == 40, "choosing a journal entry keeps the list where it was")
 	journal.close()
+	game.coins += 1000
+	game.day_time = 9.0
+	game.buy_upgrade("storage")
+	for f in 40:
+		await process_frame
+	_check(main._store_scaffold.visible and main._builders.has("project_storage"), "enlarging the storehouse puts up scaffolding and brings a builder")
 	var pets: Control = main.hud._companions
 	pets.open()
 	await process_frame

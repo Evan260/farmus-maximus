@@ -45,6 +45,8 @@ func _draw() -> void:
 	var fill := -1.0
 	if b["state"] == "repairing":
 		fill = 1.0 - float(b["time_left"]) / float(Game.building_info(id).get("repair_seconds", 30))
+	elif b["state"] == "upgrading":
+		fill = 1.0 - float(b["time_left"]) / Game.building_upgrade_seconds(id)
 	elif b["state"] == "working" and b["busy"]:
 		fill = float(b["progress"]) / float(Game.building_info(id).get("seconds", 30))
 	if fill >= 0.0:
@@ -65,6 +67,8 @@ func _look_for_state() -> String:
 	match Game.buildings[id]["state"]:
 		"repairing":
 			return "scaffold"
+		"upgrading":
+			return "upgrade"
 		"working":
 			return "working"
 	return "ruin"
@@ -73,8 +77,11 @@ func _look_for_state() -> String:
 func _refresh() -> void:
 	var was := _look
 	_look = _look_for_state()
-	# Under repair the ruin stays as it is, with scaffolding stood in front of it.
-	var picture := "ruin" if _look == "scaffold" else _look
+	# Under repair the ruin stays as it is, and while being enlarged the working building does, with scaffolding stood
+	# in front of it either way.
+	var picture := "ruin" if _look == "scaffold" else ("working" if _look == "upgrade" else _look)
+	var built := _look in ["scaffold", "upgrade"]
+	var was_built := was in ["scaffold", "upgrade"]
 	var path := "%s%s_%s.png" % [DIR, id, picture]
 	var tex: Texture2D = load(path if ResourceLoader.exists(path) else "%s%s_working.png" % [DIR, id])
 	_sprite.texture = tex
@@ -83,14 +90,14 @@ func _refresh() -> void:
 	# The node sits at the middle of the building's base, so every look stands on the same spot.
 	_sprite.position = Vector2(round(-used.size.x / 2.0), -used.size.y)
 	_scaffold.rect = local_rect()
-	if _look == "scaffold":
+	if built:
 		_scaffold.visible = true
-		if was == "ruin" and not Settings.reduced_motion:
+		if was != "" and not was_built and not Settings.reduced_motion:
 			_scaffold.rise()
 		else:
 			_scaffold.share = 1.0
-	elif was == "scaffold" and not Settings.reduced_motion:
-		_scaffold.sink().tween_callback(func(): _scaffold.visible = _look == "scaffold")
+	elif was_built and not Settings.reduced_motion:
+		_scaffold.sink().tween_callback(func(): _scaffold.visible = _look in ["scaffold", "upgrade"])
 	else:
 		_scaffold.visible = false
 	_shadow.texture = Lighting.ellipse_texture(used.size.x + 8, 7, Color(0.16, 0.11, 0.12, 0.28))
