@@ -75,6 +75,8 @@ var dog_timer := 0.0
 var _achievement_timer := 0.0
 ## Debug-only multiplier for live time; offline catch-up always uses real elapsed time.
 var speed := 1.0
+## How fast repairs and restoration go; the demo farm builds faster for testing. Not saved.
+var build_speed := 1.0
 ## True during offline catch-up, so hundreds of harvests do not each spawn an effect.
 var quiet := false
 
@@ -648,7 +650,7 @@ func advance(dt: float) -> Dictionary:
 		calendar.next_day()
 		market.new_day()
 	if villa_build["active"] and not is_night():
-		villa_build["time_left"] = float(villa_build["time_left"]) - dt
+		villa_build["time_left"] = float(villa_build["time_left"]) - dt * build_speed
 		if villa_build["time_left"] <= 0.0:
 			_finish_villa()
 	if not blessing.is_empty():
@@ -960,7 +962,7 @@ func _advance_buildings(dt: float) -> int:
 		if b["state"] == "repairing":
 			if is_night():
 				continue
-			b["time_left"] = float(b["time_left"]) - dt
+			b["time_left"] = float(b["time_left"]) - dt * build_speed
 			if b["time_left"] <= 0.0:
 				b["state"] = "working"
 				discover("building:" + id)

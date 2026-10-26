@@ -1,5 +1,5 @@
 extends "res://scripts/ui/window_panel.gd"
-## Farm upgrades: a bigger cart, a faster donkey and the aqueduct channels. The storehouse grows from its own window.
+## Farm upgrades: a bigger cart, a paved road and the aqueduct channels. The storehouse grows from its own window.
 
 const IDS := ["cart_capacity", "cart_speed", "channels"]
 
@@ -31,6 +31,12 @@ func tick() -> void:
 		if cost < 0:
 			b.text = tr("%s: done") % name
 			b.disabled = true
+			continue
+		if id == "cart_speed":
+			var trips: Array = info.get("values", [])
+			var next_trip := int(trips[mini(int(Game.levels.get(id, 0)) + 1, trips.size() - 1)])
+			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("pave the next stretch; the trader's trips take %d s") % next_trip]
+			b.disabled = Game.coins < cost
 			continue
 		if id == "channels":
 			b.text = "%s: %s  (%s)" % [name, UiKit.cost_text({"coins": cost}), tr("waters the home farm, so it grows faster")]

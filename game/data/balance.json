@@ -365,8 +365,8 @@
 			]
 		},
 		"cart_speed": {
-			"name": "Faster donkey",
-			"label": "Trip seconds",
+			"name": "Paved road",
+			"label": "Trader's trip, seconds",
 			"values": [
 				30,
 				22,
@@ -374,9 +374,9 @@
 				10
 			],
 			"costs": [
-				60,
-				350,
-				1600
+				300,
+				1200,
+				4000
 			]
 		},
 		"channels": {

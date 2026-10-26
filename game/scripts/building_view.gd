@@ -2,12 +2,14 @@ extends Node2D
 ## One estate building on screen: its ruin, scaffolding or working look, a shadow, and a progress bar while it works.
 
 const DIR := "res://assets/sprites/buildings/"
+const Scaffold := preload("res://scripts/world/scaffold.gd")
 
 var id := ""
 var hovered := false
 var _sprite: Sprite2D
 var _shadow: Sprite2D
 var _look := ""
+var _scaffold: Node2D
 
 
 func _ready() -> void:
@@ -18,6 +20,10 @@ func _ready() -> void:
 	_sprite.centered = false
 	_sprite.region_enabled = true
 	add_child(_sprite)
+	_scaffold = Scaffold.new()
+	_scaffold.ladders = Game.building_info(id).get("ladders", [])
+	_scaffold.visible = false
+	add_child(_scaffold)
 	Game.building_changed.connect(func(changed): if changed == id: _refresh())
 	_refresh()
 
@@ -66,19 +72,26 @@ func _look_for_state() -> String:
 
 func _refresh() -> void:
 	var was := _look
-	var old := [_sprite.texture, _sprite.region_rect, _sprite.position]
 	_look = _look_for_state()
-	var path := "%s%s_%s.png" % [DIR, id, _look]
+	# Under repair the ruin stays as it is, with scaffolding stood in front of it.
+	var picture := "ruin" if _look == "scaffold" else _look
+	var path := "%s%s_%s.png" % [DIR, id, picture]
 	var tex: Texture2D = load(path if ResourceLoader.exists(path) else "%s%s_working.png" % [DIR, id])
 	_sprite.texture = tex
 	var used := tex.get_image().get_used_rect()
 	_sprite.region_rect = used
 	# The node sits at the middle of the building's base, so every look stands on the same spot.
 	_sprite.position = Vector2(round(-used.size.x / 2.0), -used.size.y)
-	if old[0] != null and not Settings.reduced_motion:
-		if was == "ruin" and _look == "scaffold":
-			Rise.rise(_sprite, old[0], old[1], old[2])
-		elif was == "scaffold" and _look == "working":
-			Rise.sink(_sprite, old[0], old[1], old[2])
+	_scaffold.rect = local_rect()
+	if _look == "scaffold":
+		_scaffold.visible = true
+		if was == "ruin" and not Settings.reduced_motion:
+			_scaffold.rise()
+		else:
+			_scaffold.share = 1.0
+	elif was == "scaffold" and not Settings.reduced_motion:
+		_scaffold.sink().tween_callback(func(): _scaffold.visible = _look == "scaffold")
+	else:
+		_scaffold.visible = false
 	_shadow.texture = Lighting.ellipse_texture(used.size.x + 8, 7, Color(0.16, 0.11, 0.12, 0.28))
 	_shadow.position = Vector2(round(-used.size.x / 2.0) - 4, -5)

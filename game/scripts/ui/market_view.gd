@@ -32,6 +32,9 @@ const SLATE_LIGHT := Color8(58, 64, 62)
 const CHALK := Color8(222, 220, 206)
 const CHALK_GOLD := Color8(230, 200, 112)
 const CORD := Color8(96, 65, 62)
+const BANNER := Color8(160, 36, 32)
+## Three-by-five letters for the banners.
+const LETTERS := {"S": ["###", "#..", "###", "..#", "###"], "P": ["###", "#.#", "###", "#..", "#.."], "Q": ["###", "#.#", "#.#", "###", "..#"], "R": ["##.", "#.#", "##.", "#.#", "#.#"]}
 const FALL := Color(0.66, 0.78, 0.88, 0.85)
 const FALL_SOFT := Color(0.66, 0.78, 0.88, 0.35)
 const FOAM := Color8(232, 242, 248)
@@ -339,6 +342,8 @@ func _on_picture_input(event: InputEvent) -> void:
 func _draw_props() -> void:
 	_draw_notice_board()
 	_draw_slate()
+	for x in [244, 295]:
+		_draw_banner(x, 92)
 	for spot in SPOTS:
 		if spot["id"] == _hovered:
 			UiKit.outline(_props, Rect2(spot["rect"]), Color(1, 0.95, 0.75, 0.9))
@@ -379,6 +384,31 @@ func _draw_notice_board() -> void:
 		_px(at.x + 1, at.y + 2, 4, 1, PAPER_INK)
 		_px(at.x + 1, at.y + 4, 3, 1, PAPER_INK)
 		_px(at.x + 2, at.y, 2, 1, PIN)
+
+
+## A red banner of the Senate and People of Rome hung between the temple's columns, lettered in gold.
+func _draw_banner(x: int, y: int) -> void:
+	_px(x - 1, y, 11, 1, CHALK_GOLD.darkened(0.25))
+	_px(x - 2, y, 1, 1, CHALK_GOLD)
+	_px(x + 10, y, 1, 1, CHALK_GOLD)
+	_px(x, y + 1, 9, 18, BANNER)
+	_px(x + 8, y + 1, 1, 18, BANNER.darkened(0.25))
+	_px(x, y + 1, 9, 1, BANNER.lightened(0.15))
+	# The bottom is cut in a notch, so it hangs in two points.
+	for i in 4:
+		_px(x + i, y + 19 + i / 2, 1, 1, BANNER)
+		_px(x + 8 - i, y + 19 + i / 2, 1, 1, BANNER.darkened(0.25))
+	for row in [["SP", 4], ["QR", 10]]:
+		for k in 2:
+			_letter(String(row[0])[k], x + 1 + k * 4, y + int(row[1]))
+
+
+func _letter(ch: String, x: int, y: int) -> void:
+	var rows: Array = LETTERS[ch]
+	for r in rows.size():
+		for c in 3:
+			if String(rows[r])[c] == "#":
+				_px(x + c, y + r, 1, 1, CHALK_GOLD)
 
 
 ## A framed slate on an easel, chalked with the day's prices.

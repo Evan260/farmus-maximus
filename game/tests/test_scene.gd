@@ -26,11 +26,13 @@ func _run() -> void:
 	_check(main._plot_at(empty.position + Vector2(14, -20)) != empty, "an empty plot does not respond above its soil")
 	main.hud.select_tool("seed:lavender")
 	var spot: Node2D = main._view(1)
-	main.dog.position = spot.position + Vector2(20, 0)
+	main.dog.position = spot.position + Vector2(20, -6)
 	var pick: Vector2 = spot.position + Vector2(14, -1)
 	if main.dog.contains(pick):
 		main._click(pick)
-		_check(game.plots[1]["crop"] != "", "a plot under the pointer takes the click, even with the dog standing over it")
+		_check(game.plots[1]["crop"] != "", "a plot takes the click when the dog stands behind it")
+	main.dog.position = spot.position + Vector2(20, 4)
+	_check(main._pet_at(pick, main._plot_at(pick)) == main.dog, "a dog standing in front of a plant takes the click")
 	var i := 0
 	main._click_plot(i)
 	_check(game.plots[i]["crop"] == "lavender", "clicking an empty plot plants lavender")

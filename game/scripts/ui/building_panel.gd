@@ -103,7 +103,7 @@ func tick() -> void:
 		"owned":
 			_status.text = tr("Yours, but still in ruins.")
 		"repairing":
-			_status.text = tr("Builders at work: %s left") % UiKit.duration(float(b["time_left"]))
+			_status.text = _work_text(tr("Builders at work: %s left"), float(b["time_left"]))
 			if _bar:
 				_bar.value = 1.0 - float(b["time_left"]) / float(info.get("repair_seconds", 30))
 		"working":
@@ -284,11 +284,18 @@ func _build_villa() -> void:
 		UiKit.para(body, tr("Stone, timber and roof tiles are sold at the market town."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 
 
+## Building work stops at night, so then the time left stands still and the window says why.
+func _work_text(day_text: String, left: float) -> String:
+	if Game.is_night():
+		return tr("Work stops for the night and goes on at dawn: %s left") % UiKit.duration(left)
+	return day_text % UiKit.duration(left)
+
+
 func _tick_villa() -> void:
 	var stages := Game.villa_stages()
 	if Game.villa_build["active"]:
 		var next: Dictionary = stages[mini(Game.villa_stage, stages.size() - 1)]
-		_status.text = tr("Builders at work on the %s: %s left") % [tr(String(next["name"])).to_lower(), UiKit.duration(float(Game.villa_build["time_left"]))]
+		_status.text = _work_text(tr("Builders at work on the %s: %%s left") % tr(String(next["name"])).to_lower(), float(Game.villa_build["time_left"]))
 		if _bar:
 			_bar.value = 1.0 - float(Game.villa_build["time_left"]) / maxf(1.0, float(next.get("build_seconds", 1)))
 	elif Game.villa_stage >= stages.size():

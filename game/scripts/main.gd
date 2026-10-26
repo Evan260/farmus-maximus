@@ -72,6 +72,8 @@ var _land_far: Sprite2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
 var _villa_outline: Node2D
+## The Roman road paved over the dirt one, as far as it has been laid.
+var _road: Sprite2D
 ## Scaffolding stood in front of the farmhouse while it is being restored.
 var _villa_scaffold: Node2D
 var _villa_hovered := false
@@ -189,6 +191,9 @@ func _ready() -> void:
 	decor.glow_layer = _glow_layer
 	world.add_child(decor)
 	_add_texture(load(BG + "ground.png"), Vector2(-40, 0))
+	_road = _add_texture(load(BG + "road_paved.png"), Vector2(-40, 270))
+	_road.region_enabled = true
+	_pave_road()
 	var pasture := Pasture.new()
 	world.add_child(pasture)
 	var ground_fx := WeatherFx.new()
@@ -585,7 +590,13 @@ func _load_demo_state() -> void:
 	# Enough of everything to buy and build anything straight away.
 	Game.coins = 10000000
 	Game.aureus = 1000
-	Game.storage = {"lavender": 7, "stone": 999, "timber": 999, "tiles": 999}
+	Game.build_speed = 5.0
+	Game.levels["storage"] = Balance.get_value("upgrades.storage.values", [12]).size() - 1
+	Game.storage = {"stone": 999, "timber": 999, "tiles": 999}
+	for item in Balance.get_value("items", {}):
+		if String(Balance.get_value("items.%s.kind" % item, "good")) == "good":
+			Game.storage[item] = 4
+	Game.storage["bread"] = 15
 	var stages := [1.0, 1.0, 0.7, 1.0, 0.4, 1.0, 1.0, 0.1, 1.0, 1.0, 0.8, 1.0, 1.0, 0.3, 1.0, 1.0, 0.0]
 	for i in Game.plots.size():
 		var p: Dictionary = Game.plots[i]
@@ -607,6 +618,8 @@ func _load_demo_state() -> void:
 			Game.calendar.day = int(arg.trim_prefix("--day="))
 		elif arg.begins_with("--cart="):
 			Game.levels["cart_capacity"] = int(arg.trim_prefix("--cart="))
+		elif arg.begins_with("--road="):
+			Game.levels["cart_speed"] = int(arg.trim_prefix("--road="))
 		elif arg == "--build-villa":
 			Game.upgrade_villa.call_deferred()
 		elif arg == "--send-cart":
@@ -637,7 +650,7 @@ func _demo_estate() -> void:
 	for d in ["statue", "lanterns", "planters", "fountain", "bench", "dovecote", "column", "sundial", "birdbath", "pergola"]:
 		Game.decorations[d] = true
 	Game.levels["channels"] = 1
-	Game.storage = {"lavender": 3, "lavender@1": 2, "olive_oil": 2, "bread@2": 1, "honey": 2, "stone": 999, "timber": 999, "tiles": 999}
+	Game.storage.merge({"lavender@1": 2, "bread@2": 1}, true)
 	var fills := {"grove": [1.0, 0.5, 1.0, 0.2, 1.0, 0.8], "vineyard": [1.0, 0.7, 1.0, 0.3, 1.0, 0.6]}
 	var counts := {"grove": 0, "vineyard": 0}
 	for i in Game.plots.size():
@@ -923,9 +936,21 @@ func _world_input(event: InputEvent) -> void:
 		_update_hover(world.get_global_mouse_position())
 
 
-## A click goes to whatever the pointer shows as hovered: plants and signs first, then the dog and cat, then buildings.
+## The dog or cat under the pointer, if it stands in front of the plant there (or there is no plant).
+func _pet_at(point: Vector2, plant: Node2D) -> Node2D:
+	for pet in [cat, dog]:
+		if pet and pet.contains(point) and (plant == null or pet.position.y >= plant.position.y):
+			return pet
+	return null
+
+
+## A click goes to whatever the pointer shows as hovered: a dog or cat in front, plants and signs, then buildings.
 func _click(point: Vector2) -> void:
 	var view := _plot_at(point)
+	var pet := _pet_at(point, view)
+	if pet:
+		pet.pet()
+		return
 	if view:
 		_click_plot(view.index)
 		return
@@ -933,12 +958,6 @@ func _click(point: Vector2) -> void:
 		if s.contains(point):
 			Game.buy_zone(s.zone_id)
 			return
-	if dog.contains(point):
-		dog.pet()
-		return
-	if cat.contains(point):
-		cat.pet()
-		return
 	var b := _building_at(point)
 	if b:
 		hud.show_building(b.id)
@@ -1062,7 +1081,12 @@ func _update_hover(point: Vector2) -> void:
 		s.hovered = s.contains(point)
 		if s.hovered:
 			sign_hit = s
-	var pet: bool = not view and not sign_hit and (dog.contains(point) or cat.contains(point))
+	var pet_hit: Node2D = _pet_at(point, view) if not sign_hit else null
+	if pet_hit:
+		view = null
+		for v in plot_views:
+			v.hovered = false
+	var pet: bool = pet_hit != null
 	var building: Node2D = null if view or sign_hit or pet else _building_at(point)
 	for b in building_views:
 		b.hovered = b == building
@@ -1077,7 +1101,7 @@ func _update_hover(point: Vector2) -> void:
 		var block := Game.zone_block(sign_hit.zone_id)
 		hud.set_info(tr(block) if block != "" else tr("Buy the %s deed: %d sestertii") % [tr(String(z.get("name", ""))).to_lower(), int(z.get("deed", 0))])
 	elif pet:
-		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if dog.contains(point) else "cat"))
+		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat"))
 	elif building:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.building_info(building.id).get("name", ""))))
 	elif _villa_hovered:
@@ -1323,7 +1347,20 @@ func _size_cart() -> void:
 		_park_rig()
 
 
+## The paved road is laid stretch by stretch: first past the farm and the yard, then most of the estate, then all of it.
+func _pave_road() -> void:
+	var level := int(Game.levels.get("cart_speed", 0))
+	var spans := [Vector2.ZERO, Vector2(380, 1420), Vector2(0, 2000), Vector2(-40, 2440)]
+	var span: Vector2 = spans[clampi(level, 0, spans.size() - 1)]
+	_road.visible = span.y > span.x
+	_road.region_rect = Rect2(span.x + 40, 0, span.y - span.x, 20)
+	_road.position.x = span.x
+
+
 func _on_upgrade_bought(id: String) -> void:
+	if id == "cart_speed":
+		_pave_road()
+		_dust(Vector2(cam_x + _view_size().x / 2.0, 280), 24)
 	if id == "cart_capacity":
 		_size_cart()
 		_dust(Vector2(_cart.position.x + 30, RIG_BASE), 14)
