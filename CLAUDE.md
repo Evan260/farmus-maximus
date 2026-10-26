@@ -22,6 +22,9 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `tools/art/make_paved_road.py` | Paint the Roman road laid over the dirt road by the paved road upgrade |
 | `tools/art/make_working_frames.py` | Make the loops that play while the mill and the presses work, from their working pictures |
 | `tools/art/make_laurel.py` | Draw the golden laurel wreath given for the Triumph achievement |
+| `tools/art/make_town_sway_mask.py` | Mark the market town's cypresses so a shader can sway their tops; rerun after `split_town_sky.py` |
+| `tools/art/make_stork_poses.py` | Make the stork's look-back, blink and nod poses from its picture on the nest |
+| `tools/art/paint_land_fields.py` | Paint the vineyard, farmhouse and wheat fields onto the distant hills; rerun after `split_layers.py` |
 | `tools/audio/cut_recordings.py` | Cut the animal calls and other recorded sounds out of their Freesound recordings; sources and licences are in `design/Sound-list.md` |
 | `.env` | `PIXELLAB_TOKEN` (git-ignored) |
 

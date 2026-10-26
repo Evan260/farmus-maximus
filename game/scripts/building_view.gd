@@ -14,6 +14,8 @@ var _scaffold: Node2D
 var _frames: Array[Texture2D] = []
 var _still: Texture2D
 var _clock := 0.0
+## The fire's light, for a building such as the bakery whose oven glows while it bakes.
+var _lamp: Lamp
 
 
 func _ready() -> void:
@@ -64,11 +66,17 @@ func _animate(delta: float) -> void:
 	if _frames.is_empty() or _look != "working":
 		return
 	var b: Dictionary = Game.buildings[id]
-	if b["busy"] and not b.get("paused", false) and not Settings.reduced_motion:
+	var running: bool = b["busy"] and not b.get("paused", false)
+	if running and not Settings.reduced_motion:
 		_clock += delta
 		_sprite.texture = _frames[int(_clock * 6.0) % _frames.size()]
 	elif _sprite.texture != _still:
 		_sprite.texture = _still
+	if _lamp:
+		# Firelight shows most at night, and wavers a little with the flames.
+		var night := Lighting.night_amount(Game.day_time)
+		var flicker := 0.85 + 0.1 * sin(_clock * 9.0) + 0.05 * sin(_clock * 23.0)
+		_lamp.shine((0.2 + 0.8 * night) * flicker if running else 0.0)
 
 
 ## The building's visible area relative to its base point, used for hover, clicks and the strip's click-through outline.
@@ -109,6 +117,15 @@ func _refresh() -> void:
 		_frames.append(load("%sframe_%02d.png" % [folder, _frames.size()]))
 	var used := tex.get_image().get_used_rect()
 	_sprite.region_rect = used
+	var light: Array = Game.building_info(id).get("light", [])
+	if _lamp:
+		_lamp.queue_free()
+		_lamp = null
+	if picture == "working" and light.size() == 3:
+		_lamp = Lamp.new()
+		_lamp.position = Vector2(round(-used.size.x / 2.0), -used.size.y) + Vector2(float(light[0]), float(light[1])) - Vector2(used.position)
+		_lamp.radius = float(light[2])
+		add_child(_lamp)
 	# The node sits at the middle of the building's base, so every look stands on the same spot.
 	_sprite.position = Vector2(round(-used.size.x / 2.0), -used.size.y)
 	_scaffold.rect = local_rect()

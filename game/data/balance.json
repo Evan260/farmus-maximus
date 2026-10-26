@@ -690,6 +690,7 @@
 			"name": "Bakery oven",
 			"zone": "yard",
 			"x": 1340,
+			"light": [62, 54, 46],
 			"buy": 160,
 			"repair": {
 				"coins": 440,

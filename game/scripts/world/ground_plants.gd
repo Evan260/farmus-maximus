@@ -8,6 +8,9 @@ const FLOWERS := [Color8(232, 200, 84), Color8(236, 230, 212), Color8(196, 150, 
 
 static var _cache: Array[Texture2D] = []
 static var _tall: Array[Texture2D] = []
+static var _flowers: Array[Texture2D] = []
+## Blossoms bees visit: borage blue, chamomile white with a yellow eye, and poppy red.
+const BLOSSOMS := [[Color8(96, 128, 214), Color8(150, 176, 236)], [Color8(240, 238, 226), Color8(232, 200, 84)], [Color8(206, 58, 48), Color8(236, 104, 80)]]
 
 
 ## A dozen different tufts, the same every time the game runs.
@@ -28,6 +31,35 @@ static func tall_textures() -> Array[Texture2D]:
 		for i in 10:
 			_tall.append(_tuft(rng, i % 3 == 2, i % 4 == 1, Vector2i(8, 13)))
 	return _tall
+
+
+## Small clumps of wild flowers, a few blossoms on thin stems above a little leafy base.
+static func flower_textures() -> Array[Texture2D]:
+	if _flowers.is_empty():
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 311
+		for i in 6:
+			var w := rng.randi_range(6, 9)
+			var h := rng.randi_range(6, 9)
+			var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+			var bloom: Array = BLOSSOMS[i % BLOSSOMS.size()]
+			for x in w:
+				if rng.randf() < 0.7:
+					img.set_pixel(x, h - 1, GREENS[0])
+				if rng.randf() < 0.4:
+					img.set_pixel(x, h - 2, GREENS[1])
+			for k in rng.randi_range(2, 4):
+				var x := rng.randi_range(1, w - 2)
+				var top := rng.randi_range(0, h - 4)
+				for y in range(top + 1, h - 1):
+					img.set_pixel(x, y, GREENS[1] if y > top + 1 else GREENS[2])
+				img.set_pixel(x, top, bloom[0])
+				if x + 1 < w:
+					img.set_pixel(x + 1, top, bloom[1] if i % 3 != 1 else bloom[0])
+				if i % 3 == 1:
+					img.set_pixel(x, top + 1, bloom[1])
+			_flowers.append(ImageTexture.create_from_image(img))
+	return _flowers
 
 
 static func _tuft(rng: RandomNumberGenerator, dry: bool, flowering: bool, heights := Vector2i(4, 8)) -> Texture2D:

@@ -1,5 +1,6 @@
 """Make the short loops that play while a building works, from its working picture: the mill's upper stone turns,
-its furrows sliding past, with the sweep beam swinging round the shaft; the olive and wine presses turn their screws.
+its furrows sliding past, with the sweep beam swinging round the shaft; the olive and wine presses turn their screws;
+flames lick along the floor of the bakery oven.
 
 Usage: python tools/art/make_working_frames.py
 Writes game/assets/sprites/buildings/<id>_working_anim/frame_00.png and on, eight frames each.
@@ -91,7 +92,36 @@ def screw(name, box, period):
     save(name, frames)
 
 
+def oven():
+    """Flames along the oven floor, a different height at each place in each frame, and a warm glow on the dark
+    inside of the mouth that rises and falls with them."""
+    base = load("bakery")
+    rng = np.random.default_rng(5)
+    fire = [(110, 30, 20), (176, 62, 24), (226, 118, 36), (250, 186, 76), (255, 230, 150)]
+    heights = rng.integers(1, 5, size=(FRAMES, 16))
+    frames = []
+    for k in range(FRAMES):
+        f = base.copy()
+        glow = 0.15 + 0.1 * math.sin(k / FRAMES * 2 * math.pi * 2)
+        for y in range(46, 61):
+            for x in range(53, 71):
+                r, g, b, a = (int(v) for v in base[y, x])
+                if a and r + g + b < 200:
+                    warm = glow * (y - 44) / 16
+                    f[y, x, :3] = (min(255, r + int(150 * warm)), min(255, g + int(60 * warm)), b)
+        for i, x in enumerate(range(55, 70)):
+            h = int(heights[k, i] + heights[(k + 1) % FRAMES, (i + 1) % 16]) // 2 + 1
+            for d in range(h):
+                y = 59 - d
+                r, g, b, a = (int(v) for v in base[y, x])
+                if a and r + g + b < 260:
+                    f[y, x, :3] = fire[min(len(fire) - 1, h - d)]
+        frames.append(f)
+    save("bakery", frames)
+
+
 if __name__ == "__main__":
     mill()
     screw("olive_press", (39, 20, 46, 33), 4)
     screw("wine_press", (29, 17, 36, 30), 4)
+    oven()

@@ -71,7 +71,7 @@ func _ready() -> void:
 	_night = Node2D.new()
 	add_child(_night)
 	_moon_glow = Sprite2D.new()
-	_moon_glow.texture = Lighting.ellipse_texture(64, 64, Color(0.85, 0.85, 1.0, 0.07))
+	_moon_glow.texture = _moon_rings()
 	_night.add_child(_moon_glow)
 	_moon = Sprite2D.new()
 	for phase in MOON_CYCLE:
@@ -88,6 +88,31 @@ func _ready() -> void:
 func _solid(c: Color) -> ImageTexture:
 	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
 	img.set_pixel(0, 0, c)
+	return ImageTexture.create_from_image(img)
+
+
+## The moon's light in the night air: a bright glow close round it, a wider soft halo, and a faint ring further out,
+## in steps like the sky's bands.
+func _moon_rings() -> ImageTexture:
+	var size := 140
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var c := Vector2(size / 2.0 - 0.5, size / 2.0 - 0.5)
+	for y in size:
+		for x in size:
+			var d := Vector2(x, y).distance_to(c)
+			var a := 0.0
+			if d < 30.0:
+				a = 0.11
+			elif d < 40.0:
+				a = 0.07
+			elif d < 52.0:
+				a = 0.04
+			if d >= 60.0 and d < 63.0:
+				a = 0.06
+			elif d >= 52.0 and d < 69.0:
+				a = maxf(a, 0.02)
+			if a > 0.0:
+				img.set_pixel(x, y, Color(0.85, 0.87, 1.0, a))
 	return ImageTexture.create_from_image(img)
 
 

@@ -15,6 +15,8 @@ const RAIL := Color8(126, 88, 52)
 var rect := Rect2()
 ## Where ladders stand, in pixels from the building's left edge.
 var ladders: Array = []
+## How many plank floors it has; 0 puts one every storey's height up the building.
+var storeys := 0
 ## How much of the scaffold has come up out of the ground, from 0 to 1.
 var share := 1.0:
 	set(value):
@@ -53,11 +55,7 @@ func _draw() -> void:
 		poles.append(x)
 		x += 30.0
 	poles.append(right)
-	var levels: Array[float] = []
-	var y := ground - 14.0
-	while y > top + 4.0:
-		levels.append(y)
-		y -= 17.0
+	var levels := plank_rows(rect, storeys)
 	for k in poles.size() - 1:
 		for l in levels.size():
 			var low := levels[l] + 3.0
@@ -78,6 +76,22 @@ func _draw() -> void:
 		while rung < ground:
 			_rect(Rect2(lx + 1, rung, 8, 1), POLE, drop, ground)
 			rung += 4.0
+
+
+## The rows of the plank floors, from the lowest up: the tops of the planks, where a builder's feet stand.
+static func plank_rows(r: Rect2, floors := 0) -> Array[float]:
+	var ground := r.end.y
+	var top := ground - roundf(r.size.y * 0.8)
+	var rows: Array[float] = []
+	if floors > 0:
+		for k in floors:
+			rows.append(roundf(ground - (ground - top) * float(k + 1) / float(floors + 1)))
+		return rows
+	var y := ground - 14.0
+	while y > top + 4.0:
+		rows.append(y)
+		y -= 17.0
+	return rows
 
 
 ## A diagonal brace from one pole to the next across one storey, one pixel at a time.

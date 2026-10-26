@@ -9,6 +9,10 @@ const Walker := preload("res://scripts/world/walker.gd")
 var site := Rect2()
 ## Where the scaffold's ladders stand, in estate pixels; with none the builder keeps to the ground.
 var ladders: Array = []
+## The rows of the scaffold's plank floors in estate pixels, where builders step off the ladder to work.
+var planks: Array = []
+## The ladder a builder up on the scaffold came up by, to go back down the same way.
+var _ladder_x := 0.0
 ## Returns the seconds the work still has to run, so the builder is down off the ladder before it ends.
 var time_left: Callable
 ## Where the road leaves the estate for the town, which is where the builder goes home to.
@@ -63,11 +67,15 @@ func _on_ladder() -> bool:
 
 func _climb_down() -> void:
 	if _on_ladder():
-		_plan.append({"kind": "climb", "to": Vector2(position.x, site.end.y + 2)})
+		# From out along a plank, the builder first walks back to the ladder.
+		if absf(position.x - _ladder_x) > 0.5:
+			_plan.append({"kind": "walk", "to": Vector2(_ladder_x, position.y)})
+		_plan.append({"kind": "climb", "to": Vector2(_ladder_x, site.end.y + 2)})
 
 
+## Real seconds until the work is done; a faster build speed makes the work's own seconds pass quicker.
 func _seconds_left() -> float:
-	return float(time_left.call()) if time_left.is_valid() else INF
+	return float(time_left.call()) / maxf(1.0, Game.build_speed) if time_left.is_valid() else INF
 
 
 func _process(delta: float) -> void:
@@ -93,7 +101,7 @@ func _process(delta: float) -> void:
 			return
 		_next()
 		return
-	if not _leaving and _on_ladder() and _seconds_left() < 10.0 and String(_plan[0]["kind"]) != "climb":
+	if not _leaving and _on_ladder() and _seconds_left() < 12.0 and String(_plan[0]["kind"]) not in ["climb", "walk"]:
 		_plan = []
 		_climb_down()
 		_begin()
@@ -117,12 +125,17 @@ func _process(delta: float) -> void:
 func _next() -> void:
 	var ground := site.end.y + 2
 	_plan = []
-	if not ladders.is_empty() and randf() < 0.45 and _seconds_left() > 20.0:
+	if not ladders.is_empty() and not planks.is_empty() and randf() < 0.45 and _seconds_left() > 25.0:
+		# Up a ladder to one of the scaffold's floors, off along the planks to work there, then back and down.
 		var x: float = ladders[randi() % ladders.size()]
-		var height := ground - site.size.y * randf_range(0.3, 0.55)
+		_ladder_x = x
+		var floor_y: float = planks[randi() % planks.size()]
+		var along := clampf(x + randf_range(12.0, 34.0) * (1.0 if randf() < 0.5 else -1.0), site.position.x + 8.0, site.end.x - 10.0)
 		_plan.append({"kind": "walk", "to": Vector2(x, ground)})
-		_plan.append({"kind": "climb", "to": Vector2(x, height)})
-		_plan.append({"kind": "wait", "anim": "climb_still", "seconds": randf_range(3.0, 6.0)})
+		_plan.append({"kind": "climb", "to": Vector2(x, floor_y)})
+		_plan.append({"kind": "walk", "to": Vector2(along, floor_y), "speed": 10.0})
+		_plan.append({"kind": "wait", "anim": "work", "seconds": randf_range(3.0, 6.0)})
+		_plan.append({"kind": "walk", "to": Vector2(x, floor_y), "speed": 10.0})
 		_plan.append({"kind": "climb", "to": Vector2(x, ground)})
 	else:
 		var x := site.position.x + randf_range(0.1, 0.9) * site.size.x

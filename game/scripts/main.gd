@@ -100,6 +100,9 @@ var _stone_wheel: Sprite2D
 var _villa_scaffold: Node2D
 var _villa_hovered := false
 var _stork: Sprite2D
+## The stork's poses by name, and how long until it changes pose.
+var _stork_poses := {}
+var _stork_timer := 4.0
 var _cart: Sprite2D
 var _cart_shadow: Sprite2D
 var _wheel: Sprite2D
@@ -208,6 +211,7 @@ func _ready() -> void:
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
 	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
 	_villa_scaffold = Scaffold.new()
+	_villa_scaffold.storeys = 2
 	_villa_scaffold.visible = false
 	world.add_child(_villa_scaffold)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
@@ -219,6 +223,7 @@ func _ready() -> void:
 	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(HOME + 198, 0), true, 236)
 	_build_buildings()
 	_scatter_meadow.call_deferred()
+	_flowers_by_hives.call_deferred()
 	_root_in_ground.call_deferred(_villa_rect().grow_individual(-12, 0, -12, 0), 851, _villa)
 	_root_in_ground.call_deferred(Rect2(_storehouse.position, _storehouse.region_rect.size), 678, _storehouse)
 	_sync_overgrowth.call_deferred()
@@ -437,6 +442,7 @@ func _process(delta: float) -> void:
 	if keys != 0.0 and not market.visible:
 		_pan_by(keys * PAN_SPEED * delta)
 	_stable_donkey()
+	_idle_stork(delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	_cart_load.position = _cart.position
 	_cart_back.position = _cart.position
@@ -546,7 +552,7 @@ func _sync_builders() -> void:
 		if Game.buildings[v.id]["state"] in ["repairing", "upgrading"]:
 			var r: Rect2 = v.world_rect()
 			var id := String(v.id)
-			sites[id] = {"rect": r, "ladders": Game.building_info(id).get("ladders", []).map(func(x): return r.position.x + float(x)),
+			sites[id] = {"rect": r, "planks": Scaffold.plank_rows(r), "ladders": Game.building_info(id).get("ladders", []).map(func(x): return r.position.x + float(x)),
 				"left": func() -> float: return float(Game.buildings[id].get("time_left", 0.0))}
 	for id in Game.projects:
 		var left := func() -> float: return float(Game.projects.get(id, 0.0))
@@ -555,8 +561,8 @@ func _sync_builders() -> void:
 		var r := _villa_rect()
 		var ladders: Array = _villa_ladders().map(func(x): return r.position.x + x)
 		var left := func() -> float: return float(Game.villa_build["time_left"])
-		sites["villa_a"] = {"rect": r, "ladders": ladders, "left": left}
-		sites["villa_b"] = {"rect": r, "ladders": ladders, "left": left}
+		sites["villa_a"] = {"rect": r, "planks": Scaffold.plank_rows(r, 2), "ladders": ladders, "left": left}
+		sites["villa_b"] = {"rect": r, "planks": Scaffold.plank_rows(r, 2), "ladders": ladders, "left": left}
 	for id in _builders.keys():
 		if not sites.has(id):
 			_builders[id].leave()
@@ -569,6 +575,7 @@ func _sync_builders() -> void:
 			var b := Builder.new()
 			b.site = sites[id]["rect"]
 			b.ladders = sites[id]["ladders"]
+			b.planks = sites[id].get("planks", [])
 			b.time_left = sites[id]["left"]
 			b.town_x = estate_width
 			world.add_child(b)
@@ -740,8 +747,9 @@ func _demo_estate() -> void:
 		var zone := String(Game.plots[i]["zone"])
 		if fills.has(zone):
 			Game.plots[i]["unlocked"] = true
-			Game.plots[i]["crop"] = ("herbs" if counts[zone] % 3 == 1 else "olives") if zone == "grove" else "grapes"
-			Game.plots[i]["growth"] = fills[zone][counts[zone]] * Game.time_to_ready(Game.plots[i])
+			var olive: bool = counts[zone] % 3 != 1 and counts[zone] < 6
+			Game.plots[i]["crop"] = ("olives" if olive else "herbs") if zone == "grove" else "grapes"
+			Game.plots[i]["growth"] = fills[zone][counts[zone] % fills[zone].size()] * Game.time_to_ready(Game.plots[i])
 			counts[zone] += 1
 	Game.market.add_order()
 	Game.market.add_order()
@@ -820,6 +828,20 @@ func _scatter_meadow() -> void:
 		plant.position = (entry[1] - Vector2(roundf(entry[0].get_width() / 2.0), entry[0].get_height())).round()
 		var in_pasture: bool = entry[1].x > Pasture.FENCE_LEFT - 16.0 and entry[1].x < Pasture.FENCE_RIGHT + 10.0
 		(pasture_grass if in_pasture else node).add_child(plant)
+		_sway(plant)
+
+
+## Wild flowers at the foot of the beehives, where the bees have the least way to go.
+func _flowers_by_hives() -> void:
+	var hives: Rect2 = building_views.filter(func(v): return v.id == "beehives")[0].world_rect()
+	var node := Node2D.new()
+	world.add_child(node)
+	world.move_child(node, plot_views[0].get_index())
+	var flowers := GroundPlants.flower_textures()
+	for k in 5:
+		var tex: Texture2D = flowers[(k * 2 + 1) % flowers.size()]
+		var at := Vector2(hives.position.x - 6 + k * (hives.size.x + 12) / 4.0, hives.end.y + 2 + (k % 2) * 2).round()
+		var plant := _add_texture(tex, at - Vector2(roundf(tex.get_width() / 2.0), tex.get_height()), node)
 		_sway(plant)
 
 
@@ -1617,6 +1639,34 @@ func _park_rig() -> void:
 	_donkey.play("stand")
 
 
+## Now and then the stork blinks, bobs its head or turns to look back over its shoulder, then settles again.
+func _idle_stork(delta: float) -> void:
+	if not _stork.visible or _stork.has_meta("bobbing"):
+		return
+	if _stork_poses.is_empty():
+		for pose in ["nest", "nest_look", "nest_blink", "nest_nod"]:
+			var path := "res://assets/sprites/animals/stork/%s.png" % pose
+			if ResourceLoader.exists(path):
+				_stork_poses[pose] = load(path)
+	_stork_timer -= delta
+	if _stork_timer > 0.0 or _stork_poses.size() < 4:
+		return
+	if _stork.texture != _stork_poses["nest"]:
+		_stork.texture = _stork_poses["nest"]
+		_stork_timer = randf_range(3.0, 8.0)
+		return
+	var pick := randf()
+	if pick < 0.45:
+		_stork.texture = _stork_poses["nest_blink"]
+		_stork_timer = 0.15
+	elif pick < 0.75:
+		_stork.texture = _stork_poses["nest_nod"]
+		_stork_timer = 0.5
+	else:
+		_stork.texture = _stork_poses["nest_look"]
+		_stork_timer = randf_range(2.0, 4.0)
+
+
 ## At nightfall, once the cart is home, the donkey is unhitched and walks down the road to the barn in the pasture,
 ## turns in at its door and goes inside; at daybreak it comes out, walks back and is put in the shafts again.
 func _stable_donkey() -> void:
@@ -1950,8 +2000,11 @@ func _donkey_frames() -> SpriteFrames:
 	f.set_animation_speed("walk", 9.0)
 	for i in range(1, 9):
 		f.add_frame("walk", load("res://assets/sprites/donkey/walk_east/frame_%02d.png" % i))
+	# Standing, the donkey breathes, flicks an ear and swishes its tail, slowly, rather than freezing.
 	f.add_animation("stand")
-	f.add_frame("stand", load("res://assets/sprites/donkey/walk_east/frame_00.png"))
+	f.set_animation_speed("stand", 4.0)
+	for i in 9:
+		f.add_frame("stand", load("res://assets/sprites/donkey/idle_east/frame_%02d.png" % i))
 	f.add_animation("bray")
 	f.set_animation_speed("bray", 8.0)
 	f.set_animation_loop("bray", false)

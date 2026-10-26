@@ -68,6 +68,12 @@ var _sun: Sprite2D
 var _cloud_look: ShaderMaterial
 var _light: CanvasModulate
 var _sky_time := 0.0
+## The banners in the temple and the shader that sways the cypresses.
+var _banners: Node2D
+var _trees: ShaderMaterial
+## While a banner is drawn, the row its pole hangs from and where it hangs, so its cloth can sway; -1 otherwise.
+var _cloth_top := -1
+var _cloth_x := 0
 ## The young woman of the town, who in time is expecting a child and then carries her baby about the square.
 var _woman: Node2D
 ## The townsfolk walking the square, who greet the player when clicked.
@@ -95,6 +101,11 @@ func _ready() -> void:
 	var front := Sprite2D.new()
 	front.centered = false
 	front.texture = load(SKY_DIR + "front.png")
+	if ResourceLoader.exists(SKY_DIR + "sway_mask.png"):
+		_trees = ShaderMaterial.new()
+		_trees.shader = preload("res://assets/shaders/town_sway.gdshader")
+		_trees.set_shader_parameter("mask", load(SKY_DIR + "sway_mask.png"))
+		front.material = _trees
 	_scene.add_child(front)
 	_water = Node2D.new()
 	_water.draw.connect(_draw_water)
@@ -109,6 +120,9 @@ func _ready() -> void:
 	_props = Node2D.new()
 	_props.draw.connect(_draw_props)
 	_scene.add_child(_props)
+	_banners = Node2D.new()
+	_banners.draw.connect(_draw_banners)
+	_scene.add_child(_banners)
 	for who in ["townsman", "townswoman", "traveller", "shepherd"]:
 		var dir := "res://assets/sprites/people/town/%s/" % who
 		if not ResourceLoader.exists(dir + "east.png"):
@@ -252,6 +266,11 @@ func _light_town(delta: float) -> void:
 	paint.set_shader_parameter("stars", Lighting.night_amount(hour))
 	_sky_time += delta
 	paint.set_shader_parameter("time", _sky_time)
+	if _banners:
+		_banners.queue_redraw()
+	if _trees:
+		_trees.set_shader_parameter("clock", _sky_time)
+		_trees.set_shader_parameter("strength", 0.0 if Settings.reduced_motion else 1.0)
 	_cloud_look.set_shader_parameter("light", look["light"])
 	_cloud_look.set_shader_parameter("shade", look["shade"])
 	var light := Lighting.color_at(hour)
@@ -397,15 +416,29 @@ func _on_picture_input(event: InputEvent) -> void:
 func _draw_props() -> void:
 	_draw_notice_board()
 	_draw_slate()
-	for x in [244, 295]:
-		_draw_banner(x, 92)
 	for spot in SPOTS:
 		if spot["id"] == _hovered:
 			UiKit.outline(_props, Rect2(spot["rect"]), Color(1, 0.95, 0.75, 0.9))
 
 
 func _px(x: float, y: float, w: float, h: float, c: Color) -> void:
-	_props.draw_rect(Rect2(x, y, w, h), c)
+	if _cloth_top < 0:
+		_props.draw_rect(Rect2(x, y, w, h), c)
+		return
+	# Cloth hanging from the pole sways more the further down it hangs, a pixel at most, row by row.
+	for yy in range(int(y), int(y + h)):
+		var down := float(yy - _cloth_top) / 22.0
+		var dx := roundf(sin(_sky_time * 1.4 + yy * 0.25 + _cloth_x * 0.1) * down * 1.3) if not Settings.reduced_motion else 0.0
+		_banners.draw_rect(Rect2(x + dx, yy, w, 1), c)
+
+
+## The two banners on the temple, redrawn as they stir in the breeze.
+func _draw_banners() -> void:
+	for x in [244, 295]:
+		_cloth_top = 92
+		_cloth_x = x
+		_draw_banner(x, 92)
+	_cloth_top = -1
 
 
 ## A plank board on two posts under a little tiled roof, with a paper pinned up for each request waiting.
