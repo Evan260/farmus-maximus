@@ -5,15 +5,13 @@ signal view_changed
 
 const SETTINGS_PATH := "user://window.json"
 const BASE := Vector2i(480, 270)
-## How many rows of the scene the strip can show, counted up from the bottom: the middle one fits the field, the villa and the storehouse.
-const HEIGHTS := [136, 166, 206]
-const HEIGHT_NAMES := ["Short", "Medium", "Tall"]
+## How many rows of the scene the strip shows, counted up from the bottom: enough for the field, the villa and the storehouse.
+const STRIP_ROWS := 166
 const SIZES := ["Small", "Medium", "Large"]
 
 var strip := false
 var transparent := true
 var size_index := 0
-var height_index := 1
 ## Where the strip sits on the screen: "bottom" or "top".
 var dock := "bottom"
 ## Focus mode makes the strip quieter and slower, for long stretches of work.
@@ -113,12 +111,6 @@ func cycle_size() -> void:
 	_save()
 
 
-func cycle_height() -> void:
-	height_index = (height_index + 1) % HEIGHTS.size()
-	_apply()
-	_save()
-
-
 func toggle_dock() -> void:
 	dock = "top" if dock == "bottom" else "bottom"
 	_apply()
@@ -134,10 +126,6 @@ func set_focus_mode(on: bool) -> void:
 func set_follow(on: bool) -> void:
 	follow = on
 	_save()
-
-
-func strip_rows() -> int:
-	return int(HEIGHTS[height_index])
 
 
 ## The strip window's polygon of clickable area, in game pixels of the visible view; everything outside lets clicks through to the desktop.
@@ -193,12 +181,12 @@ func _place_strip() -> void:
 	var win := get_window()
 	var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
 	# The strip may take at most 40% of the screen's height; larger sizes shrink to fit smaller screens.
-	var max_scale := maxi(1, int(usable.size.y * 0.4) / strip_rows())
+	var max_scale := maxi(1, int(usable.size.y * 0.4) / STRIP_ROWS)
 	scale = clampi([2, 3, 4][size_index], 1, max_scale)
 	scale = mini(scale, maxi(1, usable.size.x / BASE.x))
 	# As wide as the painted background, which extends 16 pixels past each side of the main view.
 	var width := mini(usable.size.x, (BASE.x + 32) * scale)
-	win.size = Vector2i(width, strip_rows() * scale)
+	win.size = Vector2i(width, STRIP_ROWS * scale)
 	var x := usable.position.x + (usable.size.x - width) / 2 + offset_x
 	x = clampi(x, usable.position.x, usable.position.x + usable.size.x - width)
 	# The usable rect already leaves out the taskbar, wherever it sits, so the strip never covers it.
@@ -226,7 +214,6 @@ func _load() -> void:
 	transparent = bool(d.get("transparent", true))
 	size_index = clampi(int(d.get("size_index", 0)), 0, SIZES.size() - 1)
 	offset_x = int(d.get("offset_x", 0))
-	height_index = clampi(int(d.get("height_index", 1)), 0, HEIGHTS.size() - 1)
 	dock = String(d.get("dock", "bottom"))
 	focus_mode = bool(d.get("focus_mode", false))
 	follow = bool(d.get("follow", false))
@@ -237,4 +224,4 @@ func _save() -> void:
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "size_index": size_index, "offset_x": offset_x,
-			"height_index": height_index, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))
+			"dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))

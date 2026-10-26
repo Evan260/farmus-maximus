@@ -46,6 +46,7 @@ A wall lizard,A wall lizard
 "A white butterfly, rare and lucky, on a fine day.","A white butterfly, rare and lucky, on a fine day."
 A whole year of Roman festivals celebrated.,A whole year of Roman festivals celebrated.
 A year of feasts,A year of feasts
+Achievement,Achievement
 Achievement: %s,Achievement: %s
 Achievements: %d of %d,Achievements: %d of %d
 After the rain,After the rain
@@ -118,6 +119,7 @@ Buy this land first,Buy this land first
 Buy this land to plant here,Buy this land to plant here
 Buy this ruin,Buy this ruin
 Buy your first land deed,Buy your first land deed
+Cancel,Cancel
 Carries %d goods instead of %d.,Carries %d goods instead of %d.
 Cart back in  %s,Cart back in  %s
 Cart ready  (carries %d),Cart ready  (carries %d)
@@ -495,6 +497,7 @@ Strip height,Strip height
 Strip height: %s,Strip height: %s
 Strip scale,Strip scale
 Strip scale: %s,Strip scale: %s
+Strip size,Strip size
 Strip: painted sky,Strip: painted sky
 Strip: transparent,Strip: transparent
 Suggest another name,Suggest another name
@@ -584,6 +587,7 @@ Triumph,Triumph
 Triumph!,Triumph!
 Truffle,Truffle
 Trusted supplier,Trusted supplier
+"Type ""%s"" to delete this farm for good.","Type ""%s"" to delete this farm for good."
 Unguent workshop,Unguent workshop
 Unlikely friends,Unlikely friends
 Upgrade,Upgrade
@@ -644,6 +648,7 @@ and a rare seed,and a rare seed
 cart,cart
 cart %d each,cart %d each
 click to dig up,click to dig up
+delete,delete
 dry,dry
 for building,for building
 "for building, takes no room","for building, takes no room"

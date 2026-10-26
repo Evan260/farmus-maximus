@@ -610,7 +610,7 @@ func _build_toolbar() -> void:
 
 
 func _update_toolbar() -> void:
-	_toolbar.visible = not Windowing.strip and _title == null
+	_toolbar.visible = _title == null
 	var sig := JSON.stringify(Game.crops_unlocked)
 	if sig != _tool_signature:
 		_tool_signature = sig
