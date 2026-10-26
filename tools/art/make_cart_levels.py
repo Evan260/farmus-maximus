@@ -34,6 +34,9 @@ def stretch_rows(img, gy):
     out = np.zeros((h + gy, w, 4), np.uint8)
     out[:TOP] = img[:TOP]
     out[TOP + gy:] = img[TOP:]
+    # The new rows repeat the top of the original side, so the end boards and corner posts run their full height.
+    for k in range(gy):
+        out[TOP + k] = img[TOP + 1 + k % 3]
     return out
 
 
@@ -106,11 +109,12 @@ def build(level):
     if level >= 2:
         # A woven wicker rail on top of the planks makes the sides higher.
         for y in range(TOP - 5, TOP):
-            for x in range(LEFT - 3, right):
+            for x in range(2, right + 8):
                 weave = (x + y) % 4 < 2 if (x // 4) % 2 else (x - y) % 4 < 2
                 front[y, x] = WICKER[0 if weave else 1] + (255,)
-            front[y, LEFT - 3] = WICKER[2] + (255,)
-        for x in range(LEFT - 3, right):
+            front[y, 2] = WICKER[2] + (255,)
+            front[y, right + 7] = WICKER[2] + (255,)
+        for x in range(2, right + 8):
             front[TOP - 6, x] = POST[1] + (255,)
     if level >= 3:
         for x in (LEFT, right - 2):
