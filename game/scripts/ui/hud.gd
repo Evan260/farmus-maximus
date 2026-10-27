@@ -484,7 +484,7 @@ func _on_achievement(a: Dictionary) -> void:
 		_triumph()
 		return
 	_achievements.add(a)
-	Sfx.play("villa_complete", -6.0)
+	Sfx.play("flourish", -6.0)
 
 
 ## Earning every achievement is celebrated like a Roman triumph: a fanfare, rose petals thrown over the whole view, and

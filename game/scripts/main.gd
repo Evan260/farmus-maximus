@@ -1286,7 +1286,7 @@ func _note_state(id: String, state: String) -> void:
 
 
 func _on_zone_bought(zone_id: String) -> void:
-	Sfx.play("villa_complete")
+	Sfx.play("flourish")
 	var z := Game.zone_info(zone_id)
 	_dust(Vector2(float(z["x"]) + 240, 250), 30)
 	hud.toast(tr("The %s is yours!") % tr(String(z.get("name", ""))).to_lower())

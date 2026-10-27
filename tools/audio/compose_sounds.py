@@ -3,6 +3,9 @@
 built: building work finished; the last three hammer blows, a beat's pause, then a mallet set down hard on the
 timber, so it sounds like the builders knocking in the final peg and downing tools.
 
+flourish: a deed bought or an achievement earned; one harp chord taken from the soundtrack itself (the opening of
+The Unknown Awaits You), so the moment sounds like part of the music.
+
 Usage: python tools/audio/compose_sounds.py
 Reads and writes game/assets/audio/sfx/.
 """
@@ -12,6 +15,7 @@ import numpy as np
 import soundfile as sf
 
 SFX = Path(__file__).resolve().parents[2] / "game" / "assets" / "audio" / "sfx"
+MUSIC = SFX.parent / "music"
 
 
 def read(name):
@@ -19,7 +23,26 @@ def read(name):
     return (data.mean(axis=1) if data.ndim > 1 else data), rate
 
 
+def save(name, out, rate):
+    with sf.SoundFile(SFX / f"{name}.ogg", "w", rate, 1, format="OGG", subtype="VORBIS") as f:
+        for k in range(0, len(out), rate // 4):
+            f.write(out[k:k + rate // 4])
+    print("wrote", name, round(len(out) / rate, 2), "s")
+
+
+def flourish():
+    data, rate = sf.read(MUSIC / "the_unknown_awaits_you.ogg")
+    data = data.mean(axis=1) if data.ndim > 1 else data
+    out = data[int(1.82 * rate):int(3.2 * rate)].copy()
+    out[: int(0.01 * rate)] *= np.linspace(0, 1, int(0.01 * rate))
+    fade = int(0.6 * rate)
+    out[-fade:] *= np.linspace(1, 0, fade) ** 2
+    out *= 0.7 / (np.abs(out).max() or 1.0)
+    save("flourish", out, rate)
+
+
 def main():
+    flourish()
     hammer, rate = read("hammer")
     thud, thud_rate = read("made")
     if thud_rate != rate:
@@ -31,10 +54,7 @@ def main():
     tail = int(0.08 * rate)
     out[-tail:] *= np.linspace(1, 0, tail)
     out *= 0.75 / (np.abs(out).max() or 1.0)
-    with sf.SoundFile(SFX / "built.ogg", "w", rate, 1, format="OGG", subtype="VORBIS") as f:
-        for k in range(0, len(out), rate // 4):
-            f.write(out[k:k + rate // 4])
-    print("wrote built", round(len(out) / rate, 2), "s")
+    save("built", out, rate)
 
 
 if __name__ == "__main__":

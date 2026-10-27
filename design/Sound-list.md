@@ -27,7 +27,7 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `salve_man` | A man greeting the player when clicked: a friendly "Salve!" | No |
 | `hammer` | Repairs and villa building | Yes |
 | `built` | Building work finished: a building repaired or improved, a villa stage, a farm improvement. Made from `hammer` and `made` by `tools/audio/compose_sounds.py` | Yes |
-| `villa_complete` | A deed bought, an achievement | Yes |
+| `flourish` | A deed bought, an achievement: one harp chord from the soundtrack, made by `tools/audio/compose_sounds.py` | Yes |
 | `triumph` | Earning the Triumph, the achievement for all the others: a brass fanfare | Yes |
 | `nope` | Something cannot be done (not enough coins, no room) | Yes |
 | `made` | A workshop finishes a batch | Yes |
@@ -84,7 +84,6 @@ Every recording below is also named on the game's Credits screen, which reads `g
 | `cart_dirt` | [Horse and carriage on a dirt road](https://freesound.org/people/thefilmbakery/sounds/137843/) by thefilmbakery | CC0 |
 | `cart_stone` | [Horse and carriage on cobblestones](https://freesound.org/people/guynoland/sounds/549882/) by guynoland | CC0 |
 | `hammer` | [Hammering a nail into wood](https://freesound.org/people/L.i.Z.e.L.l.E_+/sounds/707864/) by L.i.Z.e.L.l.E_+ | CC0 |
-| `villa_complete` | [Small lyre strum](https://freesound.org/people/Irolan/sounds/735168/) by Irolan | CC0 |
 | `thump` | [Rabbit thumping](https://freesound.org/people/kessir/sounds/386007/) by kessir | CC0 |
 | `day` | [Rural Umbria, birds and flies](https://freesound.org/people/MicheleFalleri/sounds/578431/) by MicheleFalleri | CC0 |
 | `night` | [Summer night meadow, crickets and owl](https://freesound.org/people/raoul_slayer/sounds/203598/) by raoul_slayer | CC0 |
