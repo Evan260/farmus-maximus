@@ -1,5 +1,7 @@
+class_name Estate
 extends Node2D
-## Builds the estate from its layers and buildings, pans across it, and turns clicks into farm actions.
+## Builds the estate from its layers and buildings, pans across it, and turns clicks into farm actions. The road, the
+## cart and donkey, the villa, the wild growth and the development tools each live in their own script under estate/.
 
 const PlotView := preload("res://scripts/plot_view.gd")
 const BuildingView := preload("res://scripts/building_view.gd")
@@ -21,6 +23,11 @@ const Cat := preload("res://scripts/world/cat.gd")
 const Scaffold := preload("res://scripts/world/scaffold.gd")
 const Hud := preload("res://scripts/ui/hud.gd")
 const MarketView := preload("res://scripts/ui/market_view.gd")
+const DebugTools := preload("res://scripts/estate/debug_tools.gd")
+const Scenery := preload("res://scripts/estate/scenery.gd")
+const RoadWorks := preload("res://scripts/estate/road_works.gd")
+const CartRig := preload("res://scripts/estate/cart_rig.gd")
+const VillaView := preload("res://scripts/estate/villa_view.gd")
 const SWAY := preload("res://assets/shaders/sway.gdshader")
 const BG := "res://assets/backgrounds/estate/"
 const PEOPLE := "res://assets/sprites/people/"
@@ -63,6 +70,11 @@ var plot_views: Array = []
 var building_views: Array = []
 var signs: Array = []
 var hud: CanvasLayer
+var debug_tools: DebugTools
+var scenery: Scenery
+var road: RoadWorks
+var rig: CartRig
+var villa: VillaView
 var market: CanvasLayer
 var dog: Node2D
 var cat: Node2D
@@ -93,22 +105,13 @@ var _road: Sprite2D
 var _road_works: Node2D
 ## The raised kerbstones along the road's far edge, laid by the second road improvement.
 var _kerb: Sprite2D
-## How far along the road the milestones have been set.
-var _milestone_reach := -40.0
-## How far the gravel footpath along the verge has been laid.
-var _footpath_reach := -40.0
 ## Where the paving has reached while a stretch is being laid.
 var _paving_front := -40.0
 ## How far the paving itself reaches along the road.
 var _paved_reach := -40.0
 ## The water channel along the front of the home farm.
 var _channels: Node2D
-## The cart that brings paving stones up to the work, with its donkey and its load.
-var _stone_cart: Node2D
 var _stone_donkey: AnimatedSprite2D
-## Where the stone cart stands on the road, and its wheel.
-var _stone_x := 0.0
-var _stone_wheel: Sprite2D
 ## Scaffolding stood in front of the farmhouse while it is being restored.
 var _villa_scaffold: Node2D
 var _villa_hovered := false
@@ -127,8 +130,6 @@ var _cart_back: Sprite2D
 var _cart_park_x := 0.0
 ## True while the cart is setting off for the market with the player.
 var _riding := false
-## How many pixels longer and taller than the first cart the current one is.
-var _cart_grow := Vector2i.ZERO
 ## The goods heaped in the cart, drawn behind its side boards so they sit inside it.
 var _cart_load: Node2D
 var _cart_x := 0.0
@@ -140,9 +141,6 @@ var _donkey: AnimatedSprite2D
 ## the barn, "barn" for the night, and "back" while it comes home in the morning.
 var _donkey_night := ""
 var _donkey_tween: Tween
-var _donkey_first_look := true
-## How far the trader's cart has tipped forward, in radians, with no donkey in its shafts.
-var _cart_tilt := 0.0
 ## The paving cart's back, heap and front, which tip together, and where its donkey is between dusk and dawn.
 var _stone_parts: Array = []
 var _stone_night := ""
@@ -155,19 +153,12 @@ var _title_drift := 1.0
 var _wildlife: Node2D
 ## Shepherds and travellers on the road, while they are on the estate.
 var _passers: Array = []
-## The golden laurel wreath over the villa door, hung for the Triumph.
-var _wreath: Sprite2D
-## One light per villa window, each with its own evening: when it is lit, when it goes out, and its flicker.
-var _windows: Array = []
-var _windows_night := -1
 var _hammer_timer := 0.0
 var _camera: Camera2D
 var _sky_layer: CanvasLayer
 var _helpers := {}
 ## Builders at work, by the site they are working on.
 var _builders := {}
-## Weeds and bushes grown up around each building still in ruins, by building.
-var _overgrowth := {}
 var _traveller_timer := 40.0
 var _dog_dig_check := 5.0
 var _follow_timer := 0.0
@@ -186,9 +177,14 @@ var _centre := HOME + 240.0
 
 
 func _ready() -> void:
+	debug_tools = _part(DebugTools) as DebugTools
+	scenery = _part(Scenery) as Scenery
+	road = _part(RoadWorks) as RoadWorks
+	rig = _part(CartRig) as CartRig
+	villa = _part(VillaView) as VillaView
 	estate_width = float(Balance.get_value("estate.width", 2400))
 	if "--demo" in OS.get_cmdline_user_args():
-		_load_demo_state()
+		debug_tools.load_demo_state()
 	# The sky has its own layer at screen resolution, outside the night tint, so clouds and the moon move smoothly
 	# and the night sky's stars keep their own colours.
 	_sky_layer = CanvasLayer.new()
@@ -231,25 +227,25 @@ func _ready() -> void:
 	_scenery.append(pine)
 	_scenery.append(_add_texture(Lighting.ellipse_texture(64, 7, SHADOW), Vector2(pine.position.x + pine.region_rect.size.x / 2 - 32, 236)))
 	_villa_shadow = _add_texture(null, Vector2.ZERO)
-	_villa = _add_trimmed(_villa_texture(), Vector2.ZERO)
+	_villa = _add_trimmed(villa.villa_texture(), Vector2.ZERO)
 	_villa_scaffold = Scaffold.new()
 	_villa_scaffold.storeys = 2
 	_villa_scaffold.visible = false
 	world.add_child(_villa_scaffold)
 	_stork = _add_texture(load("res://assets/sprites/animals/stork/nest.png") if ResourceLoader.exists("res://assets/sprites/animals/stork/nest.png") else null, Vector2.ZERO)
 	_villa_outline = Node2D.new()
-	_villa_outline.draw.connect(_draw_villa_overlay)
+	_villa_outline.draw.connect(villa.draw_villa_overlay)
 	world.add_child(_villa_outline)
-	_place_villa()
+	villa.place_villa()
 	_add_texture(Lighting.ellipse_texture(70, 7, SHADOW), Vector2(HOME + 194, 230))
 	_storehouse = _add_trimmed(load("res://assets/sprites/farm/storehouse.png"), Vector2(HOME + 198, 0), true, 236)
 	_dress_storehouse()
 	_build_buildings()
-	_scatter_meadow.call_deferred()
-	_flowers_by_hives.call_deferred()
-	_root_in_ground.call_deferred(_villa_rect().grow_individual(-12, 0, -12, 0), 851, _villa)
-	_root_in_ground.call_deferred(Rect2(_storehouse.position, _storehouse.region_rect.size), 678, _storehouse)
-	_sync_overgrowth.call_deferred()
+	scenery.scatter_meadow.call_deferred()
+	scenery.flowers_by_hives.call_deferred()
+	scenery.root_in_ground.call_deferred(villa.villa_rect().grow_individual(-12, 0, -12, 0), 851, _villa)
+	scenery.root_in_ground.call_deferred(Rect2(_storehouse.position, _storehouse.region_rect.size), 678, _storehouse)
+	scenery.sync_overgrowth.call_deferred()
 	var decor := DecorView.new()
 	decor.glow_layer = _glow_layer
 	world.add_child(decor)
@@ -259,9 +255,9 @@ func _ready() -> void:
 	_kerb = _add_texture(_road.texture, Vector2(-40, 270))
 	_kerb.region_enabled = true
 	_road_works = Node2D.new()
-	_road_works.draw.connect(_draw_road_works)
+	_road_works.draw.connect(road.draw_road_works)
 	world.add_child(_road_works)
-	_pave_road()
+	road.pave_road()
 	_pasture = Pasture.new()
 	world.add_child(_pasture)
 	var ground_fx := WeatherFx.new()
@@ -302,23 +298,23 @@ func _ready() -> void:
 	_front_wheel.visible = false
 	_cart.add_child(_front_wheel)
 	_donkey = AnimatedSprite2D.new()
-	_donkey.sprite_frames = _donkey_frames()
+	_donkey.sprite_frames = rig.donkey_frames()
 	_donkey.centered = false
 	_donkey.offset = Vector2(-32, -Frames.feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
 	_donkey.play("stand")
 	world.add_child(_donkey)
 	_harness = Node2D.new()
-	_harness.draw.connect(_draw_harness)
+	_harness.draw.connect(rig.draw_harness)
 	world.add_child(_harness)
-	_size_cart()
+	rig.size_cart()
 	Game.upgrade_bought.connect(_on_upgrade_bought)
 	Game.upgrade_started.connect(_on_upgrade_started)
 	_store_scaffold = Scaffold.new()
 	_store_scaffold.rect = Rect2(_storehouse.position, _storehouse.region_rect.size)
 	_store_scaffold.visible = Game.projects.has("storage")
 	world.add_child(_store_scaffold)
-	_park_rig()
-	_build_stone_cart()
+	rig.park_rig()
+	road.build_stone_cart()
 	for id in Game.helpers:
 		_spawn_helper(id)
 
@@ -358,7 +354,7 @@ func _ready() -> void:
 	Game.pets_changed.connect(_spawn_pets)
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
-		_donkey.position.x = _harness_x(_cart.position.x, false)
+		_donkey.position.x = rig.harness_x(_cart.position.x, false)
 	_centre = HOME + 240.0
 	cam_x = _centre - _last_view_width / 2.0
 	_update_view()
@@ -374,47 +370,11 @@ func _ready() -> void:
 			go_to_town.call_deferred()
 			market.call_deferred("_open", arg.trim_prefix("--town="))
 		elif arg.begins_with("--panel="):
-			_open_panel.call_deferred(arg.trim_prefix("--panel="))
+			debug_tools.open_panel.call_deferred(arg.trim_prefix("--panel="))
 		elif arg.begins_with("--shot="):
-			_take_screenshot(arg.trim_prefix("--shot="))
+			debug_tools.take_screenshot(arg.trim_prefix("--shot="))
 		elif arg.begins_with("--burst="):
-			_take_burst(arg.trim_prefix("--burst="))
-
-
-## Saves exactly what the window shows after the scene settles, then quits; used for store screenshots and layout checks.
-func _take_screenshot(path: String) -> void:
-	for i in 45:
-		await get_tree().process_frame
-	get_viewport().get_texture().get_image().save_png(path)
-	get_tree().quit()
-
-
-## Saves eight frames a quarter of a second apart (or --burst-gap seconds), for checking anything that flickers or moves.
-func _take_burst(prefix: String) -> void:
-	for i in 45:
-		await get_tree().process_frame
-	for k in 8:
-		get_viewport().get_texture().get_image().save_png("%s_%d.png" % [prefix, k])
-		var gap := 0.25
-		for arg in OS.get_cmdline_user_args():
-			if arg.begins_with("--burst-gap="):
-				gap = float(arg.trim_prefix("--burst-gap="))
-		await get_tree().create_timer(gap).timeout
-	get_tree().quit()
-
-
-func _open_panel(which: String) -> void:
-	if which.begins_with("journal:"):
-		hud.open_window("journal")
-		hud.show_journal_entry(which.trim_prefix("journal:"))
-	elif which.begins_with("settings:"):
-		hud.open_window("settings")
-		hud._settings.tab = which.trim_prefix("settings:")
-		hud._settings.show_page()
-	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions", "credits"]:
-		hud.open_window(which)
-	else:
-		hud.show_building(which)
+			debug_tools.take_burst(arg.trim_prefix("--burst="))
 
 
 ## The donkey sets off down the road with the cart before the market town comes into view.
@@ -426,9 +386,9 @@ func _ride_to_market() -> void:
 		return
 	_riding = true
 	var wheels := Sfx.play("cart_stone" if _paved_reach > _cart.position.x + 60.0 else "cart_dirt")
-	_face_rig(false)
+	rig.face_rig(false)
 	_donkey.play("walk")
-	_move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
+	rig.move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
 	await get_tree().create_timer(2.1).timeout
 	Sfx.fade_out(wheels, 1.2)
 	go_to_town()
@@ -440,7 +400,7 @@ func _back_from_market() -> void:
 	if not Game.cart["away"] and not _cart_returning:
 		if _rig_tween:
 			_rig_tween.kill()
-		_park_rig()
+		rig.park_rig()
 
 
 func go_to_town() -> void:
@@ -464,7 +424,7 @@ func _process(delta: float) -> void:
 	var far := Color.WHITE.lerp(Color(0.62, 0.6, 0.7), night)
 	_mountains.modulate = far
 	_mountains_far.modulate = far
-	_light_windows(night)
+	villa.light_windows(night)
 	var windy := 1.6 if Game.calendar.weather in ["rain", "cloudy"] else 1.0
 	if PlotView.wind:
 		PlotView.wind.set_shader_parameter("strength", 0.0 if Settings.reduced_motion else windy)
@@ -478,13 +438,13 @@ func _process(delta: float) -> void:
 		if cam_x >= edge - 1.0 or cam_x <= 1.0:
 			_title_drift = -1.0 if cam_x >= edge - 1.0 else 1.0
 		_pan_by(_title_drift * 9.0 * delta)
-	_stable_donkey()
+	rig.stable_donkey()
 	_idle_stork(delta)
 	_cart_shadow.position = Vector2(_cart.position.x - 2, RIG_BASE - 5)
 	_cart_load.position = _cart.position
 	_cart_back.position = _cart.position
 	_cart_back.flip_h = _cart.flip_h
-	_tip_cart(delta)
+	rig.tip_cart(delta)
 	_harness.queue_redraw()
 	# The wheel turns by the distance travelled over its radius, in steps fine enough to look smooth at this size.
 	var rolled := _cart.position.x - _cart_x
@@ -493,7 +453,7 @@ func _process(delta: float) -> void:
 		_wheel.rotation = snappedf(_wheel.rotation + rolled / 12.0, PI / 24.0)
 		_front_wheel.rotation = _wheel.rotation
 	if Engine.get_process_frames() % 20 == 0:
-		_update_cart_load()
+		rig.update_cart_load()
 	if Windowing.strip and Windowing.transparent:
 		_click_area_timer -= delta
 		if _click_area_timer <= 0.0:
@@ -536,10 +496,10 @@ func _busiest_zone() -> String:
 
 ## The people and animals that come and go: the dog's digging, the trader by the cart, travellers on the road, the cat and dog napping.
 func _update_life(delta: float) -> void:
-	_update_road_cart(delta)
+	road.update_road_cart(delta)
 	if Engine.get_process_frames() % 30 == 0:
 		_sync_builders()
-		_sync_overgrowth()
+		scenery.sync_overgrowth()
 	_dog_dig_check -= delta
 	if _dog_dig_check <= 0.0:
 		_dog_dig_check = 5.0
@@ -597,8 +557,8 @@ func _sync_builders() -> void:
 		var left := func() -> float: return float(Game.projects.get(id, 0.0))
 		sites["project_" + id] = {"rect": _project_site(String(id)), "ladders": [], "left": left}
 	if Game.villa_build["active"]:
-		var r := _villa_rect()
-		var ladders: Array = _villa_ladders().map(func(x): return r.position.x + x)
+		var r := villa.villa_rect()
+		var ladders: Array = villa.villa_ladders().map(func(x): return r.position.x + x)
 		var left := func() -> float: return float(Game.villa_build["time_left"])
 		sites["villa_a"] = {"rect": r, "planks": Scaffold.plank_rows(r, 2), "ladders": ladders, "left": left}
 		sites["villa_b"] = {"rect": r, "planks": Scaffold.plank_rows(r, 2), "ladders": ladders, "left": left}
@@ -684,251 +644,20 @@ func _plot_near(x: float) -> int:
 
 
 ## Where a helper would find a ripe plant to pick, or NAN when there is none.
+## One of the estate's parts, given this scene to work on.
+func _part(script: GDScript) -> Node:
+	var part: Node = script.new()
+	part.m = self
+	add_child(part)
+	return part
+
+
 func _ready_plot_x(info: Dictionary) -> float:
 	for v in plot_views:
 		var p: Dictionary = Game.plots[v.index]
 		if Game.is_ready(v.index) and ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
 			return v.position.x + 15.0
 	return NAN
-
-
-## Fills the farm with plants at every stage, for screenshots and clips; saving is switched off so a real save is never touched.
-func _load_demo_state() -> void:
-	Saves.enabled = false
-	Saves.pending_summary = {}
-	Settings.show_tutorial = false
-	Game.new_game()
-	Game.intro_seen = true
-	Game.farm_name = "Villa Aurelia"
-	# Enough of everything to buy and build anything straight away.
-	Game.coins = 10000000
-	Game.aureus = 1000
-	Game.build_speed = 5.0
-	Game.levels["storage"] = Balance.get_value("upgrades.storage.values", [12]).size() - 1
-	Game.storage = {"stone": 999, "timber": 999, "tiles": 999}
-	for item in Balance.get_value("items", {}):
-		if String(Balance.get_value("items.%s.kind" % item, "good")) == "good":
-			Game.storage[item] = 4
-	Game.storage["bread"] = 15
-	var stages := [1.0, 1.0, 0.7, 1.0, 0.4, 1.0, 1.0, 0.1, 1.0, 1.0, 0.8, 1.0, 1.0, 0.3, 1.0, 1.0, 0.0]
-	for i in Game.plots.size():
-		var p: Dictionary = Game.plots[i]
-		if p["zone"] == "home":
-			p["unlocked"] = i < 15 or i >= Game.plots.size() - 5
-			if p["unlocked"]:
-				p["crop"] = ["lavender", "lavender", "lavender_violet", "lavender", "lavender_bluegrey", "lavender", "lavender_white", "wheat"][i % 8]
-				p["growth"] = stages[i % stages.size()] * Game.time_to_ready(p)
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--hour="):
-			Game.day_time = float(arg.trim_prefix("--hour="))
-		elif arg.begins_with("--villa="):
-			Game.villa_stage = int(arg.trim_prefix("--villa="))
-		elif arg == "--aurora":
-			(func() -> void: _sky_view.force_aurora = true).call_deferred()
-		elif arg == "--rainbow":
-			(func() -> void: _sky_view.fx.show_rainbow(40.0)).call_deferred()
-		elif arg.begins_with("--weather="):
-			Game.calendar.weather = arg.trim_prefix("--weather=")
-			Game.calendar.weather_left = 9999.0
-			Game.calendar.wet_left = 9999.0 if Game.calendar.weather == "rain" else 0.0
-		elif arg.begins_with("--day="):
-			Game.calendar.day = int(arg.trim_prefix("--day="))
-		elif arg.begins_with("--cart="):
-			Game.levels["cart_capacity"] = int(arg.trim_prefix("--cart="))
-		elif arg.begins_with("--road="):
-			Game.levels["cart_speed"] = int(arg.trim_prefix("--road="))
-		elif arg.begins_with("--start="):
-			Game.buy_upgrade.call_deferred(arg.trim_prefix("--start="))
-		elif arg == "--build-villa":
-			Game.upgrade_villa.call_deferred()
-		elif arg == "--send-cart":
-			Game.send_cart.call_deferred()
-		elif arg == "--estate":
-			_demo_estate()
-		elif arg == "--maxed":
-			_demo_estate()
-			_demo_maxed()
-		elif arg.begins_with("--pets="):
-			var breeds := arg.trim_prefix("--pets=").split(",")
-			Game.pets["dog"]["breed"] = breeds[0]
-			Game.pets["dog"]["coat"] = Coats.options("dog", breeds[0]).keys()[0]
-			if breeds.size() > 1:
-				Game.pets["cat"]["breed"] = breeds[1]
-				Game.pets["cat"]["coat"] = Coats.options("cat", breeds[1]).keys()[0]
-			_spawn_pets.call_deferred()
-		elif arg == "--greet":
-			get_tree().create_timer(1.6).timeout.connect(func():
-				for w in _people() + market._folk:
-					w.greet())
-		elif arg.begins_with("--achievement"):
-			# The named achievements, or the next two not yet earned, to see their cards slide in one after the other.
-			var named := arg.trim_prefix("--achievement=").split(",") if "=" in arg else PackedStringArray()
-			var fresh: Array = Balance.get_value("achievements", []).filter(func(a): return not a.get("special", false) and (a["id"] in named if not named.is_empty() else not Game.journal.achievements.has(a["id"])))
-			for a in fresh.slice(0, 2 if named.is_empty() else named.size()):
-				Game.achievement_unlocked.emit.call_deferred(a)
-		elif arg == "--triumph":
-			for a in Balance.get_value("achievements", []):
-				if not a.get("special", false):
-					Game.journal.achievements[a["id"]] = true
-			Game.check_achievements.call_deferred()
-
-
-## Shows the whole estate in use: every zone owned, a mix of building states, helpers at work, animals and decorations.
-func _demo_estate() -> void:
-	Game.villa_stage = maxi(Game.villa_stage, 5)
-	for z in Game.zones_owned:
-		Game.zones_owned[z] = true
-	for c in Balance.get_value("crops", {}):
-		Game.unlock_crop(c)
-	var looks := {"drying_shed": "working", "mill": "working", "bakery": "repairing", "beehives": "working", "olive_press": "owned",
-		"unguent": "ruin", "wine_press": "working", "cellar": "working", "barn": "working", "dairy": "repairing", "lararium": "working"}
-	for id in looks:
-		Game.buildings[id]["state"] = looks[id]
-		Game.buildings[id]["time_left"] = float(Game.building_info(id).get("repair_seconds", 60)) * 0.8
-	Game.buildings["mill"]["busy"] = true
-	Game.buildings["mill"]["progress"] = 12.0
-	Game.buildings["cellar"]["casks"] = [100.0, 2000.0, 4000.0]
-	Game.buildings["barn"]["animals"] = {"chicken": 5, "goat": 3}
-	Game.buildings["barn"]["feed"] = 12
-	for h in ["farmhand", "miller", "beekeeper", "presser", "stablehand", "perfumer", "trader"]:
-		Game.helpers[h] = 1
-	for d in ["statue", "lanterns", "planters", "fountain", "bench", "dovecote", "column", "sundial", "birdbath", "pergola"]:
-		Game.decorations[d] = true
-	Game.levels["channels"] = 1
-	Game.storage.merge({"lavender@1": 2, "bread@2": 1}, true)
-	var fills := {"grove": [1.0, 0.5, 1.0, 0.2, 1.0, 0.8], "vineyard": [1.0, 0.7, 1.0, 0.3, 1.0, 0.6]}
-	var counts := {"grove": 0, "vineyard": 0}
-	for i in Game.plots.size():
-		var zone := String(Game.plots[i]["zone"])
-		if fills.has(zone):
-			Game.plots[i]["unlocked"] = true
-			var olive: bool = counts[zone] % 3 != 1 and counts[zone] < 6
-			Game.plots[i]["crop"] = ("olives" if olive else "herbs") if zone == "grove" else "grapes"
-			Game.plots[i]["growth"] = fills[zone][counts[zone] % fills[zone].size()] * Game.time_to_ready(Game.plots[i])
-			counts[zone] += 1
-	Game.market.add_order()
-	Game.market.add_order()
-
-
-## Everything at its best: the grand estate, every building working at its top level, every helper fully trained, every
-## upgrade bought, every bed planted and every page of the journal found.
-func _demo_maxed() -> void:
-	Game.quiet = true
-	Game.villa_stage = Game.villa_stages().size()
-	for id in Game.buildings:
-		var b: Dictionary = Game.buildings[id]
-		b["state"] = "working"
-		b["level"] = Game.building_info(id).get("levels", []).size()
-	var barn: Dictionary = Game.buildings["barn"]
-	for kind in ["chicken", "goat"]:
-		barn["animals"][kind] = Game.animal_capacity(kind)
-	barn["feed"] = 40
-	for h in Balance.get_value("helpers", {}):
-		Game.helpers[h] = Game.helper_info(h).get("costs", [0]).size()
-	for u in Game.levels:
-		Game.levels[u] = Balance.get_value("upgrades.%s.values" % u, [0]).size() - 1
-	for d in Balance.get_value("decorations", {}):
-		Game.decorations[d] = true
-	var home_crops := ["lavender", "lavender_violet", "lavender_bluegrey", "lavender_white", "wheat", "lavender"]
-	for i in Game.plots.size():
-		var p: Dictionary = Game.plots[i]
-		p["unlocked"] = true
-		if p["zone"] == "home":
-			p["crop"] = home_crops[i % home_crops.size()]
-			p["growth"] = (1.0 if i % 3 != 1 else 0.6) * Game.time_to_ready(p)
-	for entry in Game.journal.catalogue():
-		Game.discover(String(entry["id"]))
-	# The trader would carry the full storehouse off at once, so every good starts marked to keep.
-	for item in Balance.get_value("items", {}):
-		Game.keep_goods[item] = true
-	Game.quiet = false
-
-
-## Tufts, weeds and wildflowers across the estate's grass, with a band of long uncut grass along its back edge where
-## it meets the walls and buildings; the ground picture says where the grass is, and the planting beds are kept clear.
-func _scatter_meadow() -> void:
-	var ground: Image = (load(BG + "ground.png") as Texture2D).get_image()
-	var grassy := func(x: float, y: float) -> bool:
-		var c := ground.get_pixel(clampi(int(x) + 40, 0, ground.get_width() - 1), clampi(int(y), 0, ground.get_height() - 1))
-		return c.a > 0.0 and c.g > c.r + 0.06
-	var clear_of_beds := func(x: float, y: float) -> bool:
-		return not plot_views.any(func(p): return absf(x - p.position.x - 15.0) < 20.0 and absf(y - p.position.y) < 12.0)
-	var node := Node2D.new()
-	world.add_child(node)
-	world.move_child(node, plot_views[0].get_index())
-	# Grass in the pasture grows behind the fence and the animals rather than over them.
-	var pasture_grass := Node2D.new()
-	world.add_child(pasture_grass)
-	world.move_child(pasture_grass, _pasture.get_index())
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1234
-	var plants := []
-	var x := 0.0
-	while x < estate_width:
-		# The castellum stands at the head of the water channel, and no grass grows across its front.
-		if grassy.call(x, 240.0) and clear_of_beds.call(x, 238.0) and absf(x - CASTELLUM_X) > 26.0:
-			var tall: Array[Texture2D] = GroundPlants.tall_textures()
-			plants.append([tall[rng.randi() % tall.size()], Vector2(x, 238 + rng.randi_range(0, 2))])
-		x += rng.randf_range(3.0, 9.0)
-	for i in int(estate_width / 9.0):
-		var at := Vector2(rng.randf_range(0.0, estate_width), rng.randf_range(244.0, 267.0))
-		if grassy.call(at.x, at.y) and clear_of_beds.call(at.x, at.y) and absf(at.x - CASTELLUM_X) > 30.0:
-			var tufts: Array[Texture2D] = GroundPlants.textures()
-			plants.append([tufts[rng.randi() % tufts.size()], at])
-	plants.sort_custom(func(a, b): return a[1].y < b[1].y)
-	for entry in plants:
-		var plant := Sprite2D.new()
-		plant.texture = entry[0]
-		plant.centered = false
-		plant.flip_h = rng.randf() < 0.5
-		plant.position = (entry[1] - Vector2(roundf(entry[0].get_width() / 2.0), entry[0].get_height())).round()
-		var in_pasture: bool = entry[1].x > Pasture.FENCE_LEFT - 16.0 and entry[1].x < Pasture.FENCE_RIGHT + 10.0
-		(pasture_grass if in_pasture else node).add_child(plant)
-		_sway(plant)
-
-
-## Wild flowers at the foot of the beehives, where the bees have the least way to go.
-func _flowers_by_hives() -> void:
-	var hives: Rect2 = building_views.filter(func(v): return v.id == "beehives")[0].world_rect()
-	var node := Node2D.new()
-	world.add_child(node)
-	world.move_child(node, plot_views[0].get_index())
-	var flowers := GroundPlants.flower_textures()
-	for k in 5:
-		var tex: Texture2D = flowers[(k * 2 + 1) % flowers.size()]
-		var at := Vector2(hives.position.x - 6 + k * (hives.size.x + 12) / 4.0, hives.end.y + 2 + (k % 2) * 2).round()
-		var plant := _add_texture(tex, at - Vector2(roundf(tex.get_width() / 2.0), tex.get_height()), node)
-		_sway(plant)
-
-
-## A fringe of grass and a few strands of vine along a building's foot, so it sits in the ground rather than on it.
-func _root_in_ground(rect: Rect2, seed: int, after: Node) -> void:
-	var node := Node2D.new()
-	world.add_child(node)
-	world.move_child(node, after.get_index() + 1)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
-	var tufts := GroundPlants.textures()
-	var x := rect.position.x + rng.randf_range(0.0, 6.0)
-	while x < rect.end.x - 4.0:
-		var tex: Texture2D = tufts[rng.randi() % tufts.size()]
-		var plant := Sprite2D.new()
-		plant.texture = tex
-		plant.centered = false
-		plant.flip_h = rng.randf() < 0.5
-		plant.position = Vector2(roundf(x), rect.end.y + rng.randi_range(0, 2) - tex.get_height())
-		node.add_child(plant)
-		x += rng.randf_range(6.0, 16.0)
-	var vines := []
-	for i in rng.randi_range(2, 4):
-		vines.append([roundf(rng.randf_range(rect.position.x + 4.0, rect.end.x - 4.0)), rng.randi_range(4, 10), rng.randi_range(0, 1000)])
-	node.draw.connect(func() -> void:
-		for v in vines:
-			for k in int(v[1]):
-				var vx: float = v[0] + (1.0 if (int(v[2]) + k) % 5 == 0 else 0.0)
-				node.draw_rect(Rect2(vx, rect.end.y - 1 - k, 1, 1), Color8(70, 98, 46))
-				if (k + int(v[2])) % 3 == 0:
-					node.draw_rect(Rect2(vx + (1 if k % 2 else -1), rect.end.y - 1 - k, 1, 1), Color8(104, 132, 60)))
 
 
 func _build_plots() -> void:
@@ -979,67 +708,7 @@ func _build_buildings() -> void:
 		world.add_child(v)
 		building_views.append(v)
 		_building_states[id] = String(Game.buildings[id]["state"])
-		_root_in_ground.call_deferred(v.world_rect(), hash(id), v)
-
-
-## A building nobody has started to repair stands in weeds, long grass and brambles; they are cleared when work begins.
-func _sync_overgrowth() -> void:
-	for v in building_views:
-		var wild := String(Game.buildings[v.id]["state"]) in ["ruin", "owned"]
-		if wild and not _overgrowth.has(v.id):
-			_overgrowth[v.id] = _grow_wild(v)
-		elif not wild and _overgrowth.has(v.id):
-			var node: Node2D = _overgrowth[v.id]
-			_overgrowth.erase(v.id)
-			for part in [node, node.get_meta("ground")]:
-				var fade: Tween = part.create_tween()
-				fade.tween_property(part, "modulate:a", 0.0, 1.5)
-				fade.tween_callback(part.queue_free)
-
-
-func _grow_wild(v: Node2D) -> Node2D:
-	var node := Node2D.new()
-	world.add_child(node)
-	world.move_child(node, v.get_index() + 1)
-	var r: Rect2 = v.world_rect()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(v.id)
-	var plants := []
-	# A few big weeds and brambles against the walls...
-	var kinds := ["grass", "grass", "weeds", "weeds", "bramble", "thistle"]
-	var x := r.position.x - 8.0 + rng.randf_range(0.0, 10.0)
-	while x < r.end.x:
-		var tex: Texture2D = load("res://assets/sprites/wild/%s.png" % kinds[rng.randi() % kinds.size()])
-		var used := tex.get_image().get_used_rect()
-		plants.append([tex, Vector2(roundf(x - used.position.x), roundf(r.end.y + rng.randi_range(0, 2) - used.end.y)), used.end.y])
-		x += used.size.x * rng.randf_range(1.3, 2.2)
-	# ...and little tufts scattered over the ground in front, kept off the planting beds. They are drawn with the beds,
-	# over the ground strip, rather than with the building behind it.
-	var ground := Node2D.new()
-	world.add_child(ground)
-	world.move_child(ground, plot_views[0].get_index())
-	node.set_meta("ground", ground)
-	var tufts := GroundPlants.textures()
-	for i in int(r.size.x / 6.0):
-		var at := Vector2(roundf(rng.randf_range(r.position.x - 30.0, r.end.x + 30.0)), roundf(rng.randf_range(r.end.y + 4.0, 267.0)))
-		if plot_views.any(func(p): return absf(at.x - p.position.x - 15.0) < 22.0 and absf(at.y - p.position.y) < 12.0):
-			continue
-		# The castellum at the head of the water channel stands on clear ground.
-		if absf(at.x - 470.0) < 30.0:
-			continue
-		var tex: Texture2D = tufts[rng.randi() % tufts.size()]
-		plants.append([tex, at - Vector2(roundf(tex.get_width() / 2.0), tex.get_height()), at.y, ground])
-	# Plants lower on the ground stand in front of those behind them.
-	plants.sort_custom(func(a, b): return a[1].y + a[0].get_height() < b[1].y + b[0].get_height())
-	for entry in plants:
-		var plant := Sprite2D.new()
-		plant.texture = entry[0]
-		plant.centered = false
-		plant.flip_h = rng.randf() < 0.5
-		plant.position = entry[1]
-		(entry[3] if entry.size() > 3 else node).add_child(plant)
-		_sway(plant)
-	return node
+		scenery.root_in_ground.call_deferred(v.world_rect(), hash(id), v)
 
 
 func _build_signs() -> void:
@@ -1301,7 +970,7 @@ func _click(point: Vector2) -> void:
 	if _cart_rect().has_point(point) and not Game.cart["away"]:
 		_ride_to_market()
 		return
-	if _villa_rect().has_point(point):
+	if villa.villa_rect().has_point(point):
 		hud.show_building(hud.VILLA)
 		return
 	if Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
@@ -1345,7 +1014,7 @@ func _targets() -> Array:
 	for sgn in signs:
 		if sgn.visible:
 			points.append(sgn.world_rect().get_center())
-	points.append(_villa_rect().position + Vector2(_villa_rect().size.x / 2.0, 10))
+	points.append(villa.villa_rect().position + Vector2(villa.villa_rect().size.x / 2.0, 10))
 	points.append(_storehouse.position + Vector2(_storehouse.region_rect.size.x / 2.0, 8))
 	if not Game.cart["away"]:
 		points.append(_cart_rect().get_center())
@@ -1427,7 +1096,7 @@ func _update_hover(point: Vector2) -> void:
 	var building: Node2D = null if view or sign_hit or pet or animal != "" else _building_at(point)
 	for b in building_views:
 		b.hovered = b == building
-	var on_villa := not view and not sign_hit and not pet and animal == "" and not building and not _cart_rect().has_point(point) and _villa_rect().has_point(point)
+	var on_villa := not view and not sign_hit and not pet and animal == "" and not building and not _cart_rect().has_point(point) and villa.villa_rect().has_point(point)
 	if on_villa != _villa_hovered:
 		_villa_hovered = on_villa
 		_villa_outline.queue_redraw()
@@ -1615,25 +1284,25 @@ func _on_cart_left(_items: int, value: int) -> void:
 		_harness.visible = true
 	Sfx.play("cart")
 	hud.toast(tr("The cart heads to market with %d sestertii of goods") % value)
-	_face_rig(false)
+	rig.face_rig(false)
 	_donkey.play("walk")
 	# The road to town runs off the right edge of the estate, so the cart travels the whole way there.
-	_move_rig(estate_width + 60, (estate_width + 60 - _cart.position.x) / 90.0)
+	rig.move_rig(estate_width + 60, (estate_width + 60 - _cart.position.x) / 90.0)
 
 
 func _on_cart_returned(coins: int) -> void:
 	Sfx.play("cart")
 	# Coming home the donkey leads from the right, so the rig is mirrored with the donkey in front.
-	_face_rig(true)
+	rig.face_rig(true)
 	_cart_returning = true
 	_cart.position.x = estate_width + 60
-	_donkey.position.x = _harness_x(_cart.position.x, true)
+	_donkey.position.x = rig.harness_x(_cart.position.x, true)
 	_donkey.play("walk")
-	_move_rig(CART_HOME_X, (estate_width + 60 - CART_HOME_X) / 90.0, true)
+	rig.move_rig(CART_HOME_X, (estate_width + 60 - CART_HOME_X) / 90.0, true)
 	await _rig_tween.finished
 	_dust(Vector2(CART_HOME_X + 40, RIG_BASE), 10)
 	_cart_returning = false
-	_park_rig()
+	rig.park_rig()
 	Sfx.play("coins")
 	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46) - _camera.position, "+%d" % coins)
 	_burst(Vector2(CART_HOME_X + 30, RIG_BASE - 20), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
@@ -1659,7 +1328,7 @@ func _hearts(at: Vector2) -> void:
 
 func _on_build_started() -> void:
 	Sfx.play("hammer")
-	_place_villa()
+	villa.place_villa()
 	_villa_scaffold.visible = true
 	if not Settings.reduced_motion:
 		_villa_scaffold.rise()
@@ -1668,7 +1337,7 @@ func _on_build_started() -> void:
 
 
 func _on_villa_finished() -> void:
-	_place_villa()
+	villa.place_villa()
 	if Settings.reduced_motion:
 		_villa_scaffold.visible = false
 	else:
@@ -1678,20 +1347,6 @@ func _on_villa_finished() -> void:
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
 	_villa.modulate = Color(1.6, 1.5, 1.3)
 	create_tween().tween_property(_villa, "modulate", Color.WHITE, 0.9)
-
-
-## Parks the cart with the donkey standing at its handles, both facing right towards the road to market.
-func _park_rig() -> void:
-	# A donkey walking to or from the barn, or stabled for the night, keeps to what it is doing.
-	var walking_alone := _donkey_night != ""
-	var facing := _donkey.flip_h
-	_face_rig(false)
-	_cart.position.x = CART_HOME_X
-	if walking_alone:
-		_donkey.flip_h = facing
-		return
-	_donkey.position = Vector2(_harness_x(CART_HOME_X, false), RIG_BASE)
-	_donkey.play("stand")
 
 
 ## Now and then the stork blinks, bobs its head or turns to look back over its shoulder, then settles again.
@@ -1720,322 +1375,6 @@ func _idle_stork(delta: float) -> void:
 	else:
 		_stork.texture = _stork_poses["nest_look"]
 		_stork_timer = randf_range(2.0, 4.0)
-
-
-## At nightfall, once the cart is home, the donkey is unhitched and walks down the road to the barn in the pasture,
-## turns in at its door and goes inside; at daybreak it comes out, walks back and is put in the shafts again.
-func _stable_donkey() -> void:
-	var night := Game.is_night()
-	var with_cart: bool = Game.cart["away"] or _cart_returning or _riding
-	if _donkey_night == "" and night and not with_cart:
-		# A farm opened at night finds the donkey already stabled rather than watching it walk the whole way.
-		if _donkey_first_look:
-			_donkey_night = "barn"
-			_donkey.visible = false
-			_harness.visible = false
-		else:
-			_donkey_walk_to_barn()
-	elif _donkey_night == "barn" and not night:
-		_donkey_walk_home()
-	_donkey_first_look = false
-
-
-func _donkey_walk_to_barn() -> void:
-	_donkey_night = "out"
-	_harness.visible = false
-	_dust(Vector2(_donkey.position.x, RIG_BASE), 6)
-	var door := Vector2((Pasture.BARN_LEFT + Pasture.BARN_RIGHT) / 2.0, 252.0)
-	_donkey.flip_h = false
-	_donkey_stroll(true)
-	_donkey_tween = create_tween()
-	_donkey_tween.tween_property(_donkey, "position:x", door.x, absf(door.x - _donkey.position.x) / 26.0)
-	_donkey_tween.tween_property(_donkey, "position:y", door.y, (RIG_BASE - door.y) / 14.0)
-	_donkey_tween.tween_callback(_donkey.play.bind("stand"))
-	_donkey_tween.tween_property(_donkey, "modulate:a", 0.0, 0.8)
-	_donkey_tween.tween_callback(func():
-		_donkey_night = "barn"
-		_donkey.visible = false)
-
-
-func _donkey_walk_home() -> void:
-	_donkey_night = "back"
-	var home := Vector2(_harness_x(CART_HOME_X, false), RIG_BASE)
-	_donkey.position = Vector2((Pasture.BARN_LEFT + Pasture.BARN_RIGHT) / 2.0, 252.0)
-	_donkey.modulate.a = 0.0
-	_donkey.visible = true
-	_donkey.flip_h = true
-	_donkey.play("stand")
-	_donkey_tween = create_tween()
-	_donkey_tween.tween_property(_donkey, "modulate:a", 1.0, 0.8)
-	_donkey_tween.tween_callback(_donkey_stroll.bind(true))
-	_donkey_tween.tween_property(_donkey, "position:y", float(RIG_BASE), (RIG_BASE - 252.0) / 14.0)
-	_donkey_tween.tween_property(_donkey, "position:x", home.x, absf(_donkey.position.x - home.x) / 26.0)
-	# Back at the cart it turns round to face the road, and the harness goes on again.
-	_donkey_tween.tween_callback(func():
-		_donkey_stroll(false)
-		_donkey_night = ""
-		_harness.visible = true
-		if not Game.cart["away"] and not _cart_returning:
-			_park_rig())
-
-
-## A two-wheeled cart with no donkey between its shafts tips forward until the shaft ends rest on the ground, about
-## its axle, and comes level again when the donkey is put back in.
-func _tip_cart(delta: float) -> void:
-	var axle := _wheel.position
-	# The four-wheeled wagon stands on its own wheels, so only the two-wheeled carts tip.
-	var target := _rest_angle(44.0 + _cart_grow.x) if _donkey_night != "" and not _front_wheel.visible else 0.0
-	_cart_tilt = move_toward(_cart_tilt, target, delta * 0.25)
-	for sprite in [_cart, _cart_back]:
-		sprite.rotation = _cart_tilt
-		sprite.offset = axle.rotated(-_cart_tilt) - axle
-	_cart_load.rotation = _cart_tilt
-	_cart_load.position = _cart.position + axle - axle.rotated(_cart_tilt)
-	if not _stone_parts.is_empty():
-		var rest: Vector2 = _stone_parts[0].get_meta("rest")
-		_tip_parts(_stone_parts, rest + Vector2(15, 23), _rest_angle(44.0) if _stone_night != "" else 0.0, delta)
-
-
-## How far a cart tips forward before its shaft ends touch the ground: the shaft ends are reach pixels ahead of the
-## axle and 4 above it, and the ground is 12 below the axle, where the wheel stands.
-func _rest_angle(reach: float) -> float:
-	var tip := Vector2(reach, -4.0)
-	return asin(12.0 / tip.length()) - tip.angle()
-
-
-## Tips a cart made of separate pictures about its axle, easing towards the angle; each part turns about the axle from
-## where it rests.
-func _tip_parts(parts: Array, axle: Vector2, target: float, delta: float) -> void:
-	var angle := move_toward(float(parts[0].rotation), target, delta * 0.25)
-	for part in parts:
-		var rest: Vector2 = part.get_meta("rest")
-		part.rotation = angle
-		part.position = axle + (rest - axle).rotated(angle)
-
-
-## Walks the donkey at an amble on its own, its legs slowed to match, or puts it back to the cart's pace.
-func _donkey_stroll(walking: bool) -> void:
-	_donkey.play("walk" if walking else "stand")
-	var pace := Walker.natural_pace(_donkey.sprite_frames, "walk")
-	_donkey.speed_scale = 26.0 / pace if walking and pace > 0.0 else 1.0
-
-
-## Where the donkey stands so the shaft tips reach its harness: going out the shafts point right, coming home the cart is turned round.
-func _harness_x(cart_x: float, homeward: bool) -> float:
-	return cart_x + 2.0 if homeward else cart_x + 58.0 + _cart_grow.x
-
-
-## Each bigger cart is its own picture: stakes, then a wicker rail, then a four-wheeled wagon, each a little longer and
-## taller than the last; the wheel and shafts stay at the same height.
-func _size_cart() -> void:
-	var level := clampi(int(Game.levels.get("cart_capacity", 0)), 0, CART_GROW.size() - 1)
-	_cart_grow = CART_GROW[level]
-	var used := load("res://assets/sprites/farm/cart.png").get_image().get_used_rect() as Rect2i
-	for pair in [[_cart_back, "cart_back"], [_cart, "cart_front"]]:
-		var s: Sprite2D = pair[0]
-		var path := "res://assets/sprites/farm/%s_%d.png" % [pair[1], level]
-		s.texture = load(path if level > 0 and ResourceLoader.exists(path) else "res://assets/sprites/farm/%s.png" % pair[1])
-		s.region_rect = Rect2(used.position, used.size + _cart_grow)
-		s.position.y = RIG_BASE - s.region_rect.size.y
-	_front_wheel.visible = level >= 3
-	_face_rig(_cart.flip_h)
-	_harness.queue_redraw()
-	if not Game.cart["away"] and not _cart_returning:
-		_park_rig()
-
-
-## Each improvement to the road is worked along its whole length: first the paving, then a kerb of raised stones along
-## its far edge with milestones beside it, then a gravel footpath along the verge. While one is under way it reaches as
-## far as the work has come.
-func _pave_road() -> void:
-	var level := int(Game.levels.get("cart_speed", 0))
-	var front := 2440.0
-	if Game.projects.has("cart_speed"):
-		var done := clampf(1.0 - float(Game.projects["cart_speed"]) / maxf(1.0, Game.upgrade_seconds("cart_speed")), 0.0, 1.0)
-		front = roundf(lerpf(-40.0, 2440.0, done))
-	var reach := func(stage: int) -> float:
-		if level > stage:
-			return 2440.0
-		return front if level == stage and Game.projects.has("cart_speed") else -40.0
-	_paving_front = front
-	var paved: float = reach.call(0)
-	_paved_reach = paved
-	_road.visible = paved > -40.0
-	# The paving's own far kerb is only shown once the kerbstones have been laid.
-	_road.region_rect = Rect2(0, 3, paved + 40.0, 17)
-	_road.position = Vector2(-40.0, 273.0)
-	_kerb.visible = float(reach.call(1)) > -40.0
-	_kerb.region_rect = Rect2(0, 0, float(reach.call(1)) + 40.0, 3)
-	_kerb.position = Vector2(-40.0, 270.0)
-	_milestone_reach = reach.call(1)
-	_footpath_reach = reach.call(2)
-	_road_works.queue_redraw()
-
-
-## Ahead of the paving, a strip of levelled gravel waits for the stones, with a heap of them at the working edge; the
-## milestones stand at the road's far side as far as they have been set.
-func _draw_road_works() -> void:
-	# The footpath: a strip of pale packed gravel along the verge, flecked with darker stones.
-	if _footpath_reach > -40.0:
-		_road_works.draw_rect(Rect2(-40, 266, _footpath_reach + 40.0, 4), Color8(196, 178, 140))
-		_road_works.draw_rect(Rect2(-40, 266, _footpath_reach + 40.0, 1), Color8(214, 198, 160))
-		for x in range(-40, int(_footpath_reach), 5):
-			_road_works.draw_rect(Rect2(x + (x * 7) % 3, 267 + (x * 13) % 3, 1, 1), Color8(150, 134, 108))
-	for at in MILESTONES:
-		if at <= _milestone_reach:
-			_draw_milestone(float(at))
-	if not Game.projects.has("cart_speed") or int(Game.levels.get("cart_speed", 0)) > 0:
-		return
-	var x := _paving_front
-	var gravel := Color8(150, 138, 118)
-	for i in 40:
-		var shade := gravel.darkened(0.08 * ((i * 7) % 3))
-		_road_works.draw_rect(Rect2(x + i, 272, 1, 18), shade)
-	for k in 14:
-		var at := Vector2(x + (k * 13) % 38, 273 + (k * 5) % 15)
-		_road_works.draw_rect(Rect2(at, Vector2(1, 1)), gravel.darkened(0.25))
-	var stone := Color8(128, 122, 116)
-	for row in 4:
-		var w := 8 - row * 2
-		_road_works.draw_rect(Rect2(x + 2 + row, 270 - row * 2, w, 2), stone.lightened(0.08 * row))
-		_road_works.draw_rect(Rect2(x + 2 + row, 271 - row * 2, w, 1), stone.darkened(0.2))
-	for k in 5:
-		_road_works.draw_rect(Rect2(x + 12 + k * 5, 278 + (k % 2) * 5, 3, 2), stone)
-
-
-## A Roman milestone: a short round column on a square foot, lit on its left, with its lettering as a dark band.
-func _draw_milestone(x: float) -> void:
-	var stone := Color8(196, 188, 170)
-	var shade := Color8(150, 142, 128)
-	_road_works.draw_rect(Rect2(x - 3, 266, 7, 3), shade)
-	_road_works.draw_rect(Rect2(x - 3, 266, 7, 1), stone)
-	for row in 12:
-		var y := 254 + row
-		_road_works.draw_rect(Rect2(x - 2, y, 2, 1), stone.lightened(0.08) if row < 2 else stone)
-		_road_works.draw_rect(Rect2(x, y, 2, 1), shade)
-		_road_works.draw_rect(Rect2(x + 2, y, 1, 1), shade.darkened(0.2))
-	_road_works.draw_rect(Rect2(x - 2, 253, 4, 1), stone.lightened(0.12))
-	_road_works.draw_rect(Rect2(x - 2, 258, 4, 1), shade.darkened(0.35))
-	_road_works.draw_rect(Rect2(x - 1, 260, 3, 1), shade.darkened(0.3))
-	_road_works.draw_rect(Rect2(x - 4, 269, 9, 1), Color(0.18, 0.14, 0.08, 0.3))
-
-
-## A donkey cart heaped with paving stones stands on the new road just behind the work and moves up as the paving
-## advances, so the builders always have stones to hand.
-func _update_road_cart(delta: float) -> void:
-	var paving := Game.projects.has("cart_speed")
-	if not paving:
-		if _stone_cart.visible:
-			_stone_cart.visible = false
-		return
-	_pave_road()
-	var target := maxf(0.0, _paving_front - 96.0)
-	if not _stone_cart.visible:
-		_stone_cart.visible = true
-		_stone_x = target
-	var before := _stone_x
-	_stable_stone_donkey()
-	# It waits until the work has moved on a few steps, then walks up to it at an amble, rather than inching along; only
-	# if the work has got well ahead does it hurry.
-	if _stone_night != "":
-		pass
-	elif target - _stone_x > 8.0 or (_stone_donkey.animation == "walk" and target > _stone_x):
-		var pace := 14.0 if target - _stone_x < 60.0 else 26.0
-		_stone_x = move_toward(_stone_x, target, pace * delta)
-		_stone_donkey.play("walk")
-		_stone_donkey.speed_scale = pace / maxf(1.0, Walker.natural_pace(_stone_donkey.sprite_frames, "walk"))
-	else:
-		_stone_donkey.play("stand")
-		_stone_donkey.speed_scale = 1.0
-	_stone_wheel.rotation += (_stone_x - before) / 11.0
-	_stone_cart.position = Vector2(roundf(_stone_x), 0)
-
-
-## The paving cart's donkey keeps the same hours as the trader's: unhitched at dusk and walked to the barn, and back to
-## its cart at daybreak.
-func _stable_stone_donkey() -> void:
-	var night: bool = Game.is_night()
-	var barn := Vector2((Pasture.BARN_LEFT + Pasture.BARN_RIGHT) / 2.0 - _stone_cart.position.x, 252.0)
-	var home := Vector2(58, RIG_BASE)
-	if _stone_night == "" and night:
-		_stone_night = "out"
-		_stone_donkey.flip_h = false
-		_stone_donkey.play("walk")
-		var walk := create_tween()
-		walk.tween_property(_stone_donkey, "position:x", barn.x, absf(barn.x - home.x) / 26.0)
-		walk.tween_property(_stone_donkey, "position:y", barn.y, (RIG_BASE - barn.y) / 14.0)
-		walk.tween_property(_stone_donkey, "modulate:a", 0.0, 0.8)
-		walk.tween_callback(func(): _stone_night = "barn")
-	elif _stone_night == "barn" and not night:
-		_stone_night = "back"
-		_stone_donkey.position = barn
-		_stone_donkey.flip_h = true
-		_stone_donkey.play("walk")
-		var walk := create_tween()
-		walk.tween_property(_stone_donkey, "modulate:a", 1.0, 0.8)
-		walk.tween_property(_stone_donkey, "position:y", float(RIG_BASE), (RIG_BASE - barn.y) / 14.0)
-		walk.tween_property(_stone_donkey, "position:x", home.x, absf(barn.x - home.x) / 26.0)
-		walk.tween_callback(func():
-			_stone_donkey.flip_h = false
-			_stone_donkey.play("stand")
-			_stone_night = "")
-
-
-## A paving cart in three layers like the trader's: the back rim, the heap of stones, and the front wall with its
-## wheel, so the stones sit down inside the bed.
-func _build_stone_cart() -> void:
-	_stone_cart = Node2D.new()
-	_stone_cart.visible = false
-	world.add_child(_stone_cart)
-	var used := Rect2(load("res://assets/sprites/farm/cart.png").get_image().get_used_rect())
-	var top := RIG_BASE - used.size.y
-	for part in ["cart_back", "heap", "cart_front"]:
-		if part == "heap":
-			var heap := Node2D.new()
-			heap.position = Vector2(0, top)
-			heap.set_meta("rest", heap.position)
-			heap.draw.connect(_draw_stone_heap.bind(heap))
-			_stone_cart.add_child(heap)
-			_stone_parts.append(heap)
-			continue
-		var s := Sprite2D.new()
-		s.texture = load("res://assets/sprites/farm/%s.png" % part)
-		s.centered = false
-		s.region_enabled = true
-		s.region_rect = used
-		s.position = Vector2(0, top)
-		s.set_meta("rest", s.position)
-		_stone_cart.add_child(s)
-		_stone_parts.append(s)
-		if part == "cart_front":
-			_stone_wheel = Sprite2D.new()
-			_stone_wheel.texture = load("res://assets/sprites/farm/cart_wheel.png")
-			_stone_wheel.position = Vector2(15, 23)
-			s.add_child(_stone_wheel)
-	_stone_donkey = AnimatedSprite2D.new()
-	_stone_donkey.sprite_frames = _donkey_frames()
-	_stone_donkey.centered = false
-	_stone_donkey.offset = Vector2(-32, -Frames.feet_line(load("res://assets/sprites/donkey/walk_east/frame_00.png")))
-	_stone_donkey.position = Vector2(58, RIG_BASE)
-	_stone_donkey.play("stand")
-	_stone_cart.add_child(_stone_donkey)
-
-
-## A mound of flat grey paving stones piled in the bed, highest in the middle; the front wall hides its bottom.
-func _draw_stone_heap(heap: Node2D) -> void:
-	var tones := [Color8(122, 116, 110), Color8(136, 129, 120), Color8(114, 109, 106), Color8(146, 138, 128)]
-	var k := 0
-	for layer in 3:
-		var y := 5 - layer * 2
-		var x := 5 + layer * 3
-		while x < 33 - layer * 3:
-			var w := 6 - (k % 3)
-			var c: Color = tones[(k * 3 + layer) % tones.size()]
-			heap.draw_rect(Rect2(x, y, w, 3), c)
-			heap.draw_rect(Rect2(x, y, w, 1), c.lightened(0.18))
-			heap.draw_rect(Rect2(x + w - 1, y, 1, 3), c.darkened(0.25))
-			x += w + (1 if k % 4 == 0 else 0)
-			k += 1
 
 
 ## Where builders work on a farm improvement: at the storehouse, along the water channel, or on the next stretch of road.
@@ -2084,274 +1423,11 @@ func _on_upgrade_bought(id: String) -> void:
 		Sfx.play("villa_complete")
 		hud.toast(tr("The work is finished"))
 	if id == "cart_speed":
-		_pave_road()
+		road.pave_road()
 		_dust(Vector2(cam_x + _view_size().x / 2.0, 280), 24)
 	if id == "cart_capacity":
-		_size_cart()
+		rig.size_cart()
 		_dust(Vector2(_cart.position.x + 30, RIG_BASE), 14)
-
-
-func _face_rig(homeward: bool) -> void:
-	_cart.flip_h = homeward
-	_donkey.flip_h = homeward
-	_wheel.position = Vector2(45.0 + _cart_grow.x if homeward else 15.0, 23.0 + _cart_grow.y)
-	var front := 21.0 + _cart_grow.x
-	_front_wheel.position = Vector2(60.0 + _cart_grow.x - front if homeward else front, 23.0 + _cart_grow.y)
-	_update_cart_load()
-
-
-## The near shaft runs from the front of the cart along the donkey's side to the collar at its shoulder,
-## with a strap over its back holding the shaft up; the painted shafts on the cart are the far side's.
-func _draw_harness() -> void:
-	var home := _cart.flip_h
-	var dir := -1.0 if home else 1.0
-	var a := Vector2(_cart.position.x + (26.0 if home else 34.0 + _cart_grow.x), _cart.position.y + 17.0 + _cart_grow.y).round()
-	var b := Vector2(_donkey.position.x + 12.0 * dir, float(RIG_BASE) - 20.0).round()
-	var leather := Color(0.3, 0.17, 0.11)
-	var steps := int(absf(b.x - a.x))
-	for i in steps + 1:
-		var p := a.lerp(b, float(i) / maxf(1.0, steps)).round()
-		_harness.draw_rect(Rect2(p, Vector2.ONE), Color(0.62, 0.4, 0.23))
-		_harness.draw_rect(Rect2(p + Vector2(0, 1), Vector2.ONE), Color(0.4, 0.24, 0.14))
-	# The back strap rises from the shaft over the saddle; the collar strap wraps the chest at the shaft's end.
-	var saddle_x := roundf(_donkey.position.x + 2.0 * dir)
-	var on_shaft := roundf(lerpf(a.y, b.y, (saddle_x - a.x) / (b.x - a.x))) if b.x != a.x else a.y
-	_harness.draw_rect(Rect2(saddle_x, float(RIG_BASE) - 27.0, 1, on_shaft - (float(RIG_BASE) - 27.0)), leather)
-	_harness.draw_rect(Rect2(b.x, b.y - 5, 1, 7), leather)
-
-
-## What the cart carries: the goods waiting to go while it is home, its load on the road, and a purse of coins coming back.
-func _update_cart_load() -> void:
-	var keys: Array = []
-	if _cart_returning:
-		keys = ["sestertius"]
-	elif Game.cart["away"]:
-		keys = Game.cart.get("load", [])
-	else:
-		var goods: Dictionary = Game.sellable_goods()
-		keys = goods.keys()
-		keys.sort_custom(func(a, b): return goods[a] > goods[b])
-	var paths := []
-	for key in keys:
-		var path := "res://assets/sprites/icons/%s.png" % Game.item_base(key)
-		if ResourceLoader.exists(path) and not path in paths:
-			paths.append(path)
-	# As many goods as fit along the bed, raised to show above a wicker rail on the carts that have one.
-	paths = paths.slice(0, 4 + _cart_grow.x / 12)
-	var rail := 5.0 if int(Game.levels.get("cart_capacity", 0)) >= 2 else 0.0
-	while _cart_load.get_child_count() < paths.size():
-		var icon := Sprite2D.new()
-		icon.centered = false
-		_cart_load.add_child(icon)
-	for k in _cart_load.get_child_count():
-		var icon: Sprite2D = _cart_load.get_child(k)
-		icon.visible = k < paths.size()
-		if icon.visible:
-			icon.texture = load(paths[k])
-			var x := 4.0 + k * 8.0
-			# Each good sits down in the bed: its visible bottom is placed below the cart's rim, which hides it.
-			var bottom := icon.texture.get_image().get_used_rect().end.y
-			icon.position = Vector2(x if not _cart.flip_h else 60.0 + _cart_grow.x - x - 16.0, 9 - bottom - rail)
-
-
-## Moves cart and donkey together; when returning, the donkey walks in front on the left.
-func _move_rig(cart_x: float, seconds: float, returning := false) -> void:
-	if _rig_tween:
-		_rig_tween.kill()
-	var donkey_x := _harness_x(cart_x, returning)
-	_rig_tween = create_tween().set_parallel()
-	_rig_tween.tween_property(_cart, "position:x", cart_x, seconds)
-	_rig_tween.tween_property(_donkey, "position:x", donkey_x, seconds)
-
-
-func _donkey_frames() -> SpriteFrames:
-	var f := SpriteFrames.new()
-	f.remove_animation("default")
-	# The walk's first picture is its standing pose, so the cycle starts from the second.
-	Frames.add_folder(f, "walk", "res://assets/sprites/donkey/walk_east/", 9.0, true, Callable(), 1)
-	# Standing, the donkey breathes, flicks an ear and swishes its tail, slowly, rather than freezing.
-	Frames.add_folder(f, "stand", "res://assets/sprites/donkey/idle_east/", 4.0)
-	Frames.add_folder(f, "bray", "res://assets/sprites/donkey/bray_east/", 8.0, false)
-	return f
-
-
-func _villa_texture() -> Texture2D:
-	var stages := Game.villa_stages()
-	var stage: Dictionary = stages[clampi(Game.villa_stage - 1, 0, stages.size() - 1)]
-	var path := "res://assets/sprites/villa/%s.png" % stage.get("sprite", "stage1")
-	return load(path) if ResourceLoader.exists(path) else load("res://assets/sprites/villa/stage2.png")
-
-
-func _villa_rect() -> Rect2:
-	return Rect2(_villa.position, _villa.region_rect.size)
-
-
-## The farmhouse's hover outline, and while it is being restored a progress bar over its roof like the other buildings'.
-func _draw_villa_overlay() -> void:
-	var r := _villa_rect()
-	if _villa_hovered:
-		UiKit.outline(_villa_outline, r, Color(1, 0.96, 0.85, 0.7))
-	if not Game.villa_build["active"]:
-		return
-	var total := float(Game.villa_stages()[mini(Game.villa_stage, Game.villa_stages().size() - 1)].get("build_seconds", 1))
-	var fill := clampf(1.0 - float(Game.villa_build["time_left"]) / maxf(total, 1.0), 0.0, 1.0)
-	var bar := Rect2(roundf(r.position.x + r.size.x / 2.0 - 16.0), r.position.y - 6, 32, 3)
-	_villa_outline.draw_rect(bar, Color(0.2, 0.14, 0.12, 0.8))
-	_villa_outline.draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(roundf(30.0 * fill), 1)), Color(0.98, 0.84, 0.4))
-
-
-## Where the farmhouse's ladders stand, in pixels from its left edge; they are set as shares of its width, since each
-## stage of the farmhouse is drawn a different size.
-func _villa_ladders() -> Array:
-	var width := _villa_rect().size.x
-	return Balance.get_value("villa.ladders", []).map(func(share): return roundf(width * float(share)))
-
-
-func _place_villa() -> void:
-	var tex := _villa_texture()
-	_villa.texture = tex
-	var used := tex.get_image().get_used_rect()
-	_villa.region_rect = used
-	_villa.position = Vector2(round(VILLA_BASE.x - used.size.x / 2.0), VILLA_BASE.y - used.size.y + 1)
-	_villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 7, SHADOW)
-	_villa_shadow.position = Vector2(_villa.position.x - 6, VILLA_BASE.y - 5)
-	_make_windows(tex, used)
-	_hang_wreath(tex, used)
-	if _villa_scaffold:
-		_villa_scaffold.rect = _villa_rect()
-		_villa_scaffold.ladders = _villa_ladders()
-		_villa_scaffold.visible = Game.villa_build["active"] or _villa_scaffold.share > 0.0 and _villa_scaffold.visible
-		_villa_scaffold.queue_redraw()
-	# Storks only nest on a well-kept roof, so they arrive with the peristyle garden.
-	_stork.visible = _stork.texture != null and Game.villa_stage >= 5 and not Game.villa_build["active"]
-	if _stork.texture:
-		_stork.position = Vector2(_villa.position.x + used.size.x * 0.68, _villa.position.y - _stork.texture.get_height() + 12)
-
-
-## Once the Triumph is earned, a golden laurel wreath hangs over the villa's front door, found as the top of the
-## door's dark wood in the middle of the house.
-func _hang_wreath(tex: Texture2D, used: Rect2i) -> void:
-	if _wreath == null:
-		_wreath = _add_texture(load("res://assets/sprites/decorations/laurel_wreath.png"), Vector2.ZERO)
-		world.move_child(_wreath, _villa.get_index() + 1)
-		Game.achievement_unlocked.connect(func(a): if a["id"] == "triumph": _place_villa())
-	_wreath.visible = Game.journal.achievements.has("triumph") and Game.villa_stage > 1
-	if not _wreath.visible:
-		return
-	var img := tex.get_image()
-	var mid := used.position.x + used.size.x / 2
-	var door := func(y: int) -> bool:
-		var c := img.get_pixel(mid, y)
-		return c.a > 0.5 and c.v < 0.42 and c.s > 0.3
-	var top := used.end.y - 1
-	while top > used.position.y and not door.call(top):
-		top -= 1
-	while top > used.position.y and door.call(top - 1):
-		top -= 1
-	var size := _wreath.texture.get_size()
-	_wreath.position = _villa.position + Vector2(mid - used.position.x, top - used.position.y) - Vector2(roundf(size.x / 2.0), size.y + 1)
-
-
-## Finds the villa's windows (its glass-blue pixels, grouped into panes, and panes close together into one window) and
-## gives each window a lamp inside that lights all its panes and spills out onto the wall and the ground.
-func _make_windows(tex: Texture2D, used: Rect2i) -> void:
-	for w in _windows:
-		for pane in w["panes"]:
-			pane.queue_free()
-		w["lamp"].queue_free()
-	_windows = []
-	_windows_night = -1
-	# The ruin has no glass, only dark holes, so it stays dark.
-	if Game.villa_stage <= 1:
-		return
-	var img := tex.get_image()
-	img.convert(Image.FORMAT_RGBA8)
-	var glass := {}
-	var boxes: Array[Rect2i] = []
-	var panes: Array[Sprite2D] = []
-	for x in range(used.position.x, used.end.x):
-		for y in range(used.position.y, used.end.y):
-			var c := img.get_pixel(x, y)
-			if c.a > 0.5 and c.b > c.r + 0.08 and c.b > c.g + 0.02:
-				glass[Vector2i(x, y)] = true
-	while not glass.is_empty():
-		var pane: Array = [glass.keys()[0]]
-		glass.erase(pane[0])
-		var k := 0
-		while k < pane.size():
-			var p: Vector2i = pane[k]
-			k += 1
-			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1)]:
-				if glass.has(p + d):
-					glass.erase(p + d)
-					pane.append(p + d)
-		if pane.size() < 4:
-			continue
-		var box := Rect2i(pane[0], Vector2i.ONE)
-		for p in pane:
-			box = box.expand(p).expand(p + Vector2i.ONE)
-		var light := Image.create(box.size.x, box.size.y, false, Image.FORMAT_RGBA8)
-		for p in pane:
-			light.set_pixelv(p - box.position, Color(1.0, 0.8, 0.42, 0.95))
-		var sprite := _add_texture(ImageTexture.create_from_image(light), _villa.position + Vector2(box.position - used.position), _glow_layer)
-		sprite.modulate.a = 0.0
-		boxes.append(box)
-		panes.append(sprite)
-	# Panes a few pixels apart, split only by glazing bars or a frame, belong to the same window.
-	var group := range(boxes.size())
-	var changed := true
-	while changed:
-		changed = false
-		for i in boxes.size():
-			for j in boxes.size():
-				if group[i] != group[j] and boxes[i].grow(3).intersects(boxes[j]):
-					var keep := mini(group[i], group[j])
-					var drop := maxi(group[i], group[j])
-					for k in group.size():
-						if group[k] == drop:
-							group[k] = keep
-					changed = true
-	for g in range(boxes.size()):
-		var members := range(boxes.size()).filter(func(k): return group[k] == g)
-		if members.is_empty():
-			continue
-		var outline := boxes[members[0]]
-		for k in members:
-			outline = outline.merge(boxes[k])
-		var lamp := Lamp.new()
-		lamp.position = _villa.position + Vector2(outline.position - used.position) + Vector2(outline.size) / 2.0 + Vector2(0, 3)
-		lamp.radius = clampf(outline.size.x * 2.2, 18.0, 34.0)
-		lamp.power = 0.9
-		world.add_child(lamp)
-		_windows.append({"panes": members.map(func(k): return panes[k]), "lamp": lamp, "phase": randf() * TAU, "speed": randf_range(0.8, 1.3)})
-
-
-## Each evening some windows are lit, one after another as dusk falls, and go out at different hours; a few light again before dawn.
-## A lit window flickers gently, like a candle or an oil lamp.
-func _light_windows(night: float) -> void:
-	if _windows.is_empty():
-		return
-	if _windows_night != Game.calendar.day:
-		_windows_night = Game.calendar.day
-		var rng := RandomNumberGenerator.new()
-		rng.seed = Game.calendar.day * 7919 + _windows.size()
-		for w in _windows:
-			w["lit"] = rng.randf() < 0.75
-			w["on"] = rng.randf_range(18.6, 20.2)
-			w["off"] = rng.randf_range(21.5, 25.5)
-			w["dawn"] = rng.randf() < 0.3
-	var hour := Game.day_time
-	var t := Time.get_ticks_msec() / 1000.0
-	for w in _windows:
-		var since := fposmod(hour - 12.0, 24.0)
-		var evening := smoothstep(float(w["on"]) - 12.0, float(w["on"]) - 11.7, since) * (1.0 - smoothstep(float(w["off"]) - 12.0, float(w["off"]) - 11.8, since))
-		var morning := (smoothstep(5.0, 5.3, hour) * (1.0 - smoothstep(6.8, 7.2, hour))) if w["dawn"] else 0.0
-		var on := maxf(evening if w["lit"] else 0.0, morning)
-		var flicker := 1.0 if Settings.reduced_motion else 0.84 + 0.09 * sin(t * 5.1 * float(w["speed"]) + float(w["phase"])) + 0.07 * sin(t * 11.7 * float(w["speed"]) + float(w["phase"]) * 1.7)
-		var glow := clampf(on * flicker * maxf(night, 0.35), 0.0, 1.0)
-		for pane in w["panes"]:
-			pane.modulate.a = glow
-		w["lamp"].shine(glow * night)
 
 
 func _sway(s: Sprite2D) -> void:

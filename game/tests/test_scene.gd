@@ -50,7 +50,7 @@ func _run() -> void:
 	_check(game.stored_total() == 1, "clicking a blooming plot harvests it")
 	game.add_item("stone", 3, true)
 	game.add_item("tiles", 3, true)
-	var top: Vector2 = main._villa_rect().position + Vector2(main._villa_rect().size.x / 2, 10)
+	var top: Vector2 = main.villa.villa_rect().position + Vector2(main.villa.villa_rect().size.x / 2, 10)
 	main._click(top)
 	_check(main.hud._building.visible and main.hud._building.id == "villa", "clicking the farmhouse opens its panel")
 	main.hud._building._action.pressed.emit()
