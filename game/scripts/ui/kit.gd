@@ -3,8 +3,9 @@ class_name UiKit
 
 const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
 const FUSION := "res://assets/fonts/fusion-pixel/"
-## Languages written in Cyrillic, which the 8-pixel fonts lack, so their whole interface uses a 10-pixel font instead.
-const CYRILLIC := ["ru", "uk", "be", "bg"]
+## Languages whose letters the 8-pixel fonts lack (Cyrillic, and the Polish and Turkish accented letters), so their
+## whole interface uses a 10-pixel font instead.
+const TEN_PIXEL := ["ru", "uk", "be", "bg", "pl", "tr"]
 const PANEL_TEX := preload("res://assets/ui/panel.png")
 const BUTTON_TEX := preload("res://assets/ui/button.png")
 const ICONS := "res://assets/sprites/icons/"
@@ -269,10 +270,10 @@ static func plural(n: int, one: String, many: String) -> String:
 static func duration(seconds: float) -> String:
 	var s := int(ceil(seconds))
 	if s >= 3600:
-		return "%dh %02dm" % [s / 3600, (s % 3600) / 60]
+		return TranslationServer.translate("%dh %02dm") % [s / 3600, (s % 3600) / 60]
 	if s >= 60:
-		return "%dm %02ds" % [s / 60, s % 60]
-	return "%ds" % s
+		return TranslationServer.translate("%dm %02ds") % [s / 60, s % 60]
+	return TranslationServer.translate("%ds") % s
 
 
 static func make_theme() -> Theme:
@@ -330,8 +331,8 @@ static func make_theme() -> Theme:
 ## accented letters and the Chinese, Japanese and Korean characters it lacks, in the forms the language uses.
 static func ui_font() -> Font:
 	var locale := TranslationServer.get_locale()
-	var cyrillic := cyrillic_font()
-	if locale.get_slice("_", 0) in CYRILLIC:
+	var cyrillic := ten_pixel_font()
+	if locale.get_slice("_", 0) in TEN_PIXEL:
 		return cyrillic
 	var han := "zh_hans"
 	if locale.begins_with("zh_TW") or locale.begins_with("zh_HK") or locale.begins_with("zh_Hant"):
@@ -346,14 +347,14 @@ static func ui_font() -> Font:
 	return font
 
 
-## The 10-pixel font with Cyrillic letters, drawn at size 10.
-static func cyrillic_font() -> FontFile:
+## The 10-pixel font with Cyrillic and every accented Latin letter, drawn at size 10.
+static func ten_pixel_font() -> FontFile:
 	return _crisp(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
 
 
 ## The interface's text size in pixels, which is the size its pixel font is drawn for.
 static func text_size() -> int:
-	return 10 if TranslationServer.get_locale().get_slice("_", 0) in CYRILLIC else 8
+	return 10 if TranslationServer.get_locale().get_slice("_", 0) in TEN_PIXEL else 8
 
 
 ## A copy of a pixel font drawn without smoothing, so it stays crisp at the game's low resolution.

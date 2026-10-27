@@ -20,7 +20,7 @@ static func describe(info: Dictionary) -> String:
 	var stages: Array = Balance.get_value("villa.stages", [])
 	var stage: String = String(stages[clampi(int(info["villa"]) - 1, 0, stages.size() - 1)].get("name", "")) if not stages.is_empty() else ""
 	var name: String = String(info["name"]) if String(info["name"]) != "" else TranslationServer.translate("Your farm")
-	return "%s  -  %s %d  -  %s" % [name, TranslationServer.translate("day"), int(info["day"]), TranslationServer.translate(stage)]
+	return "%s  -  %s  -  %s" % [name, TranslationServer.translate("day %d") % int(info["day"]), TranslationServer.translate(stage)]
 
 
 ## Each visit to the list starts with no farm half way through being deleted.

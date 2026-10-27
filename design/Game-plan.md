@@ -207,7 +207,7 @@ The first version that looks like the real game. Everything in it should be good
 
 **Done when:** a new player can go from the ruined farmhouse to the grand estate across all five zones, every pacing target holds, and nothing in the asset list is still a placeholder.
 
-**Status:** every system above is built and tested, and the art is generated. Still to do: translations and their font, the Steam connection (GodotSteam plus the store's App ID), final music and sounds, and pacing tuned in real play.
+**Status:** every system above is built and tested, and the art is generated. Translated into 13 languages (French, German, Spanish, Italian, Brazilian Portuguese, Polish, Turkish, Russian, Ukrainian, Japanese, Korean, Simplified and Traditional Chinese). Still to do: the Steam connection (GodotSteam plus the store's App ID), final music and sounds, and pacing tuned in real play.
 
 ### Phase 7: Demo and Steam Next Fest
 

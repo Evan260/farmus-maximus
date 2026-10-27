@@ -21,8 +21,8 @@ LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # Lines that pass strings to the engine rather than to the player.
 ENGINE_LINE = re.compile(r"Sfx\.|get_node|res://|user://|push_|print|has_method|connect\(|add_theme|set_stylebox|set_color|"
                          r"set_constant|set_icon|find_children|Engine\.|AudioServer|\.bus\b|path_join|InputMap|is_action|load\(|BUSES")
-# Names that stay as they are in every language: the default pet and farm names, and the store.
-KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam"}
+# Names that stay as they are in every language: the default pet and farm names, the store, and a locale code.
+KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Hant"}
 
 
 def unescape(s):
@@ -32,7 +32,7 @@ def unescape(s):
 
 def from_scripts():
     found = []
-    pattern = re.compile(r'\btr\(\s*"((?:[^"\\]|\\.)*)"')
+    pattern = re.compile(r'\b(?:tr|TranslationServer\.translate)\(\s*"((?:[^"\\]|\\.)*)"')
     for f in sorted((ROOT / "scripts").rglob("*.gd")):
         text = f.read_text(encoding="utf-8")
         for m in pattern.finditer(text):

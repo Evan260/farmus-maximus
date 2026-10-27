@@ -22,7 +22,7 @@ func signature() -> String:
 
 func build() -> void:
 	var tabs := UiKit.row(top)
-	for t in ["Sound", "Display", "Play", "Keys"]:
+	for t in ["Sound", "Display", "Gameplay", "Keys"]:
 		var b := UiKit.tab_button(tabs, tr(t), func(): tab = t; show_page())
 		b.toggle_mode = true
 		b.button_pressed = t == tab
@@ -52,7 +52,7 @@ func build() -> void:
 			_toggle("Strip follows the busiest zone", Windowing.follow, func(v): Windowing.set_follow(v))
 			_toggle("Low power", Settings.low_power, func(v): Settings.set_value("low_power", v); Windowing._update_fps())
 			UiKit.para(body, tr("Drag the strip with the right mouse button. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.FADED)
-		"Play":
+		"Gameplay":
 			var locales := TranslationServer.get_loaded_locales()
 			if locales.size() > 1:
 				UiKit.section(body, tr("Language"))
@@ -66,9 +66,9 @@ func build() -> void:
 					b.toggle_mode = true
 					b.button_pressed = TranslationServer.get_locale() == loc
 					b.custom_minimum_size = Vector2(76, 0)
-					# A Cyrillic name is drawn at its own font's size, so it stays crisp in any language.
-					if loc.get_slice("_", 0) in UiKit.CYRILLIC:
-						b.add_theme_font_override("font", UiKit.cyrillic_font())
+					# A name the 8-pixel font cannot spell is drawn in the 10-pixel font at its own size, so it stays crisp in any language.
+					if loc.get_slice("_", 0) in UiKit.TEN_PIXEL:
+						b.add_theme_font_override("font", UiKit.ten_pixel_font())
 						b.add_theme_font_size_override("font_size", 10)
 			UiKit.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
 			UiKit.setting(body, tr("Length of a day"), tr("%d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
