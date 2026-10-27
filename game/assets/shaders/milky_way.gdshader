@@ -1,19 +1,20 @@
 shader_type canvas_item;
 render_mode blend_add;
-// The Milky Way on a dark, moonless night: a broad arch of light from one side of the sky to the other, swelling to a
-// glowing golden heart low over the hills, bluish and violet along its arms, with rose-red clouds of glowing gas,
-// dark rifts of dust and a crowd of coloured stars. Worked out per sky pixel, so it keeps the sky's pixel grid.
+// The Milky Way on a dark, moonless night, as it looks rising over a landscape: its glowing golden heart just above
+// the hills, climbing the sky as a leaning column that narrows, cools to violet and fades as it goes, with rose-red
+// clouds of glowing gas, dark rifts of dust and a crowd of coloured stars. Worked out per sky pixel, so it keeps the
+// sky's pixel grid.
 
 uniform float amount = 0.0;
 // The sprite's size and top left corner in sky pixels.
 uniform vec2 area = vec2(1536.0, 400.0);
 uniform vec2 origin = vec2(0.0, -120.0);
 uniform float clock = 0.0;
-// Where the arch meets the hills and how high it climbs.
+// Where the column rises from the hills, how high it climbs and how far it leans to the right as it goes up.
 uniform float horizon = 205.0;
-uniform float rise = 185.0;
-// Where along the arch, from 0 to 1, the bright heart of the galaxy sits.
-uniform float heart = 0.3;
+uniform float base_x = 190.0;
+uniform float height = 260.0;
+uniform float lean = 0.42;
 
 // A hash built from fractions rather than a sine, which on some graphics cards repeats in visible stripes.
 float hash(vec2 p) {
@@ -42,33 +43,39 @@ float fbm(vec2 p) {
 
 void fragment() {
 	vec2 p = floor(origin + UV * area);
-	float along = p.x / area.x;
-	float centre = horizon - rise * sin(3.14159 * along);
-	float across = p.y - centre;
-	// The band is broadest and brightest around the heart, and thins towards its ends.
-	float swell = exp(-pow((along - heart) / 0.16, 2.0));
-	float width = 30.0 + 26.0 * swell + 6.0 * sin(p.x * 0.011);
-	float band = exp(-pow(across / width, 2.0));
-	float inner = exp(-pow(across / (width * 0.42), 2.0));
+	// Distance up the column from where it leaves the hills, and sideways from its middle line.
+	vec2 axis = normalize(vec2(lean, -1.0));
+	vec2 q = p - vec2(base_x, horizon + 10.0);
+	float up = dot(q, axis);
+	float across = dot(q, vec2(-axis.y, axis.x));
+	float rel = clamp(up / height, 0.0, 1.0);
+	// The heart sits low, just above the hills; higher up the column narrows and fades into the night.
+	float swell = exp(-pow((rel - 0.12) / 0.16, 2.0));
+	float fade = smoothstep(-0.05, 0.08, rel) * (1.0 - smoothstep(0.55, 1.0, rel));
+	float width = (84.0 - 50.0 * rel + 30.0 * swell) * (1.0 + 0.12 * sin(up * 0.05));
+	float band = exp(-pow(across / width, 2.0)) * fade;
+	float inner = exp(-pow(across / (width * 0.42), 2.0)) * fade;
+	// Patterns are laid along the column, stretched in the direction it climbs.
+	vec2 c = vec2(up, across);
 	// Billowing star clouds, so the light gathers in clumps rather than an even smear.
-	float clouds = fbm(p * vec2(0.014, 0.022) + vec2(3.1, 7.7));
-	float detail = fbm(p * vec2(0.05, 0.07) + vec2(9.4, 1.2));
+	float clouds = fbm(c * vec2(0.014, 0.022) + vec2(3.1, 7.7));
+	float detail = fbm(c * vec2(0.05, 0.07) + vec2(9.4, 1.2));
 	float light = band * (0.25 + 1.1 * clouds * clouds) + inner * (0.4 + 0.6 * detail) * (0.5 + swell);
 	// Dark rifts of dust: one long lane along the middle and wisps branching off it.
-	float wander = (fbm(p * vec2(0.008, 0.02) + vec2(11.0, 2.0)) - 0.5) * 18.0;
+	float wander = (fbm(c * vec2(0.008, 0.02) + vec2(11.0, 2.0)) - 0.5) * 18.0;
 	float rift = exp(-pow((across - 3.0 + wander) / (4.0 + 5.0 * swell), 2.0));
-	float wisps = smoothstep(0.55, 0.75, fbm(p * vec2(0.03, 0.045) + vec2(5.0, 9.0))) * band;
+	float wisps = smoothstep(0.55, 0.75, fbm(c * vec2(0.03, 0.045) + vec2(5.0, 9.0))) * band;
 	light *= 1.0 - 0.8 * clamp(rift * (0.6 + 0.4 * swell) + wisps * 0.7, 0.0, 1.0);
 	// Colour: violet and blue along the faint arms, white-gold towards the middle of the band, a glowing amber heart.
 	vec3 arm = mix(vec3(0.32, 0.36, 0.95), vec3(0.62, 0.42, 0.95), smoothstep(0.35, 0.7, noise(p * 0.01)));
-	vec3 colour = mix(arm, vec3(1.0, 0.94, 0.86), clamp(inner * 1.3, 0.0, 1.0));
-	colour = mix(colour, vec3(1.0, 0.72, 0.38), clamp(inner * swell * 1.6, 0.0, 1.0));
+	vec3 colour = mix(arm, vec3(1.0, 0.88, 0.72), clamp(inner * 0.9, 0.0, 1.0));
+	colour = mix(colour, vec3(1.0, 0.66, 0.32), clamp(inner * swell * 1.8, 0.0, 1.0));
 	vec3 total = colour * light * 0.75;
 	// Rose-red clouds of glowing gas scattered along the band.
 	float gas = smoothstep(0.6, 0.78, fbm(p * 0.03 + vec2(17.0, 4.0))) * band;
 	total += vec3(0.95, 0.28, 0.45) * gas * 0.45;
-	// A soft halo around the heart, as if the light is too much for the air.
-	total += vec3(0.9, 0.6, 0.35) * swell * exp(-pow(across / (width * 1.6), 2.0)) * 0.12;
+	// The bulge: a broad golden glow where the column leaves the hills, the bright centre of the galaxy.
+	total += vec3(1.0, 0.68, 0.36) * exp(-pow(across / 70.0, 2.0) - pow((up - 26.0) / 40.0, 2.0)) * 0.42 * (1.0 - 0.6 * rift);
 	// Stars: many more inside the band, in white, blue-white, gold and orange, the brightest ones twinkling.
 	float h = hash(p + vec2(41.0, 13.0));
 	float crowd = 0.988 - 0.05 * band - 0.04 * inner * swell;
