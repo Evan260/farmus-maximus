@@ -45,9 +45,9 @@ Each loops without a gap, so the end must join the start smoothly.
 
 | File | When it plays | Have it |
 |---|---|---|
-| `day.wav` | Daytime: breeze, distant birds | Yes |
-| `night.wav` | Night: crickets | Yes |
-| `rain.wav` | While it rains, over the day or night loop | No |
+| `day` | Daytime: breeze, distant birds | Yes |
+| `night` | Night: crickets | Yes |
+| `rain` | While it rains, over the day or night loop | Yes |
 
 ## Recordings
 
@@ -73,6 +73,19 @@ Every recording below is also named on the game's Credits screen, which reads `g
 | `page_turn` | [Turning a book page](https://freesound.org/people/SpaceJoe/sounds/484968/) by SpaceJoe | CC0 |
 | `shrine_bell` | [Small metal bell](https://freesound.org/people/steffcaffrey/sounds/452379/) by steffcaffrey | CC0 |
 | `triumph` | [Trumpet fanfare](https://freesound.org/people/joepayne/sounds/413201/) by joepayne | CC0 |
+| `plant` | [Trowel digging in potting soil](https://freesound.org/people/dhallcomposer/sounds/696531/) by dhallcomposer | CC0 |
+| `harvest` | [Plant harvest](https://freesound.org/people/Valenspire/sounds/699491/) by Valenspire | CC0 |
+| `unlock` | [Shovel digging grass and dirt](https://freesound.org/people/dr19/sounds/353907/) by dr19 | CC0 |
+| `cart` | [Small wooden cart rolling](https://freesound.org/people/Sonicquinn/sounds/518790/) by Sonicquinn | CC0 |
+| `cart_dirt` | [Horse and carriage on a dirt road](https://freesound.org/people/thefilmbakery/sounds/137843/) by thefilmbakery | CC0 |
+| `cart_stone` | [Horse and carriage on cobblestones](https://freesound.org/people/guynoland/sounds/549882/) by guynoland | CC0 |
+| `hammer` | [Hammering a nail into wood](https://freesound.org/people/L.i.Z.e.L.l.E_+/sounds/707864/) by L.i.Z.e.L.l.E_+ | CC0 |
+| `villa_complete` | [Small lyre strum](https://freesound.org/people/Irolan/sounds/735168/) by Irolan | CC0 |
+| `thump` | [Rabbit thumping](https://freesound.org/people/kessir/sounds/386007/) by kessir | CC0 |
+| `day` | [Rural Umbria, birds and flies](https://freesound.org/people/MicheleFalleri/sounds/578431/) by MicheleFalleri | CC0 |
+| `night` | [Summer night meadow, crickets and owl](https://freesound.org/people/raoul_slayer/sounds/203598/) by raoul_slayer | CC0 |
+| `rain` | [Soft rain in the countryside](https://freesound.org/people/EduFigueres/sounds/688896/) by EduFigueres | CC0 |
+| `click`, `tab`, `nope`, `coins` | [Interface Sounds](https://kenney.nl/assets/interface-sounds), [RPG Audio](https://kenney.nl/assets/rpg-audio) by Kenney | CC0 |
 
 ## Music (`game/assets/audio/music/`)
 

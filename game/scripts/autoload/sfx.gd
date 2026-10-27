@@ -43,9 +43,9 @@ func _ready() -> void:
 			if not _takes.has(base[0]):
 				_takes[base[0]] = []
 			_takes[base[0]].append(_sounds[file])
-	_day = _ambience("res://assets/audio/ambience/day.wav")
-	_night = _ambience("res://assets/audio/ambience/night.wav")
-	_rain = _ambience("res://assets/audio/ambience/rain.wav")
+	_day = _ambience("day")
+	_night = _ambience("night")
+	_rain = _ambience("rain")
 	_tracks = _scan(MUSIC_DIR).values()
 	_music = AudioStreamPlayer.new()
 	_music.bus = "Music"
@@ -171,11 +171,17 @@ func _scan(dir: String) -> Dictionary:
 	return found
 
 
-func _ambience(path: String) -> AudioStreamPlayer:
-	if not ResourceLoader.exists(path):
+## A looping ambience found by name in the ambience folder, as an .ogg, .wav or .mp3.
+func _ambience(name: String) -> AudioStreamPlayer:
+	var path := ""
+	for ext in ["ogg", "wav", "mp3"]:
+		if ResourceLoader.exists("res://assets/audio/ambience/%s.%s" % [name, ext]):
+			path = "res://assets/audio/ambience/%s.%s" % [name, ext]
+			break
+	if path == "":
 		return null
 	var stream: AudioStream = load(path)
-	# The loops are made seamless when synthesized, so they repeat end to start without a gap.
+	# The loops are cut so their end runs straight into their start, so they repeat without a gap.
 	if stream is AudioStreamWAV:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0

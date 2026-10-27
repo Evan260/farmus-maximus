@@ -79,6 +79,6 @@ Zip it with `tools/playtest/How to play test.txt` to send to a tester. Steam bui
 
 The art is pixel art, generated with PixelLab (`tools/art/pixellab.py`, every paid call logged in `tools/art/ledger.csv`) and drawn or finished with the Python scripts in `tools/art/`. Each script says at the top what it makes and how to run it again.
 
-The animal calls are real recordings from Freesound, cut to length by `tools/audio/cut_recordings.py`. Most are CC0; the stork's needs a credit in the game's credits, as noted in the [sound list](design/Sound-list.md). The other sounds are placeholders made by `tools/audio/make_placeholder_sfx.py` until real ones replace them.
+Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; the game's Credits screen names them all, as listed in the [sound list](design/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music. Only the "Salve!" greetings are still missing.
 
 The font is Silkscreen, under the SIL Open Font License (`game/assets/fonts/OFL.txt`).
