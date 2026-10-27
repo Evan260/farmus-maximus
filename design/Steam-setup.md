@@ -12,6 +12,8 @@ What has to happen on Steam's side before launch. The game already does its part
 
 Enter each of these in Steamworks under Stats and Achievements, with exactly this API name. The list comes from `game/data/balance.json`; regenerate this table if that list changes. Achievements earned before Steam was connected are sent the next time the game starts.
 
+Each achievement also needs two 64 by 64 icons in Steamworks: one for when it is earned and a grey one for before. They are in `store/achievements`: `<API name>.jpg` is the earned icon and `<API name>_locked.jpg` the grey one, and `sheet.png` shows them all side by side. `python tools/art/make_achievement_icons.py` makes them from the game's own art; when an achievement is added, choose its picture in that script's `ART` list (it refuses to run until every achievement has one) and run it again.
+
 | API name | Name | Description |
 |---|---|---|
 | `first_harvest` | First bloom | Harvest your first crop |
@@ -80,4 +82,14 @@ Use Auto-Cloud; the game needs no code for it. Each farm slot is saved as `farm_
 
 ## 4. Demo
 
-The demo is the same project exported with the `demo` export presets in `game/export_presets.cfg`. It stops at the villa rustica and the first two zones. Its save sits in the same folder as the full game's, so progress carries over on the same computer. Give the demo its own App ID in Steamworks, linked to the main game.
+The demo is the same project exported with the `demo` export presets in `game/export_presets.cfg`. It stops at the villa rustica and the first two zones. Its save sits in the same folder as the full game's, so progress carries over on the same computer.
+
+In Steamworks, the demo is an app of its own, linked to the main game:
+
+1. On the main game's Steamworks page, under All Associated Packages, DLC, Demos and Tools, create a demo. Steam gives it its own App ID.
+2. Set it up like the main game (steps 2 to 6 of the Steamworks setup in `Steam-publishing.md`): three depots, a `testing` branch, App Bundles Are Notarized, and these launch options:
+   - `Farmus Maximus Demo.exe`, Windows
+   - `Farmus Maximus Demo.app`, macOS
+   - `Farmus Maximus Demo.x86_64`, Linux + SteamOS
+3. Put its App ID and depots into `targets.demo` in `tools/steam/steam.json`.
+4. Upload it with `python tools/steam/publish.py demo`. As with the main game, the build goes live on `testing`, and you set it live on the default branch in Steamworks when the demo is ready to release.

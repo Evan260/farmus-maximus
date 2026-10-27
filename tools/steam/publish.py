@@ -4,6 +4,7 @@ Usage:
   python tools/steam/publish.py playtest            upload to the Playtest app, live on its test branch
   python tools/steam/publish.py game                upload to the main game, live on its test branch
   python tools/steam/publish.py playtest --note "Faster cart trips"
+  python tools/steam/publish.py demo               upload the free demo, live on its test branch
   python tools/steam/publish.py game --dry-run      build, sign and lay out every platform, but do not upload
 
 The Steam account, app and depot ids are in tools/steam/steam.json; a depot left at 0 is skipped. Godot exports every
@@ -30,6 +31,12 @@ PRESETS = {
     "macos": ("macOS", "Farmus Maximus.zip"),
     "linux": ("Linux", "Farmus Maximus.x86_64"),
 }
+# The demo is the same project exported with its own presets, which stop at the villa rustica and the first two zones.
+DEMO_PRESETS = {
+    "windows": ("Windows demo", "Farmus Maximus Demo.exe"),
+    "macos": ("macOS demo", "Farmus Maximus Demo.zip"),
+    "linux": ("Linux demo", "Farmus Maximus Demo.x86_64"),
+}
 
 
 def fail(text):
@@ -44,8 +51,8 @@ def wsl(*args):
     return subprocess.run(["wsl.exe", "--", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
-def export(platform, folder):
-    preset, name = PRESETS[platform]
+def export(platform, folder, demo):
+    preset, name = (DEMO_PRESETS if demo else PRESETS)[platform]
     folder.mkdir(parents=True)
     result = subprocess.run([str(GODOT), "--headless", "--path", str(ROOT / "game"), "--export-release", preset, str(folder / name)],
                             capture_output=True, text=True)
@@ -82,7 +89,7 @@ def vdf(target, note, content, output):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("target", choices=["playtest", "game"])
+    parser.add_argument("target", choices=["playtest", "game", "demo"])
     parser.add_argument("--note", default="")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -100,7 +107,7 @@ def main():
         shutil.rmtree(stage)
     for platform, depot in target["depots"].items():
         if depot:
-            export(platform, stage / platform)
+            export(platform, stage / platform, args.target == "demo")
     work = f"{home}/farmus-steam/{args.target}"
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     note = f"{datetime.date.today()} {commit} {args.note}".strip().replace('"', "'")

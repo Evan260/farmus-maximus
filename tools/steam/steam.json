@@ -18,6 +18,15 @@
         "linux": 0
       },
       "branch": "testing"
+    },
+    "demo": {
+      "app_id": 0,
+      "depots": {
+        "windows": 0,
+        "macos": 0,
+        "linux": 0
+      },
+      "branch": "testing"
     }
   }
 }
