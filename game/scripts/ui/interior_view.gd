@@ -22,8 +22,10 @@ const SKY_AT := {"room": [Vector2(399, 57), Vector2(230, 170)], "ruin": [Vector2
 ## The loom, and the line its shuttle runs along between the warp threads.
 const LOOM := Rect2(155, 84, 85, 80)
 const SHED := [178.0, 226.0, 111.0]
-## Inside, the pets are drawn at the room painting's own detail, asleep, one picture for each breed.
-const ROOM_PETS := "res://assets/sprites/room_pets/"
+## The room is drawn with half as many pixels as its painting, the same coarseness as the farm's own art: everything
+## is placed in the painting's 480 by 270 but drawn onto a canvas of half that, and each of its pixels shown at twice
+## the estate's pixel size. The pets keep their farm pictures, one of their pixels to one of the room's.
+const DETAIL := 2.0
 const FIRE_GLOW := Vector2(101, 140)
 const LAMP_FLAMES := [Vector2(70, 49), Vector2(132, 53), Vector2(20, 119), Vector2(305, 102)]
 ## The pool's surface, as a shape the shimmer stays inside.
@@ -32,6 +34,14 @@ const NIGHT_SKY := Color8(14, 18, 44)
 const MARK := Color(1, 0.95, 0.75)
 
 var _scene: Node2D
+var _viewport: SubViewport
+var _display: Sprite2D
+## Where the painting's top left corner sits on the half-detail canvas, in painting pixels, when the window is wider
+## or taller than the painting.
+var _origin := Vector2.ZERO
+var _dog_offsets := {}
+## Set while the dog is awake from a stroke: up, wagging, then lying back down.
+var _dog_awake := false
 var _sky_layer: CanvasLayer
 var _sky: Node2D
 var _loom: Node2D
@@ -68,21 +78,29 @@ var _spots: Dictionary = {}
 func _ready() -> void:
 	layer = 8
 	visible = false
+	_viewport = SubViewport.new()
+	_viewport.disable_3d = true
+	_viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	add_child(_viewport)
+	_display = Sprite2D.new()
+	_display.centered = false
+	_display.texture = _viewport.get_texture()
+	add_child(_display)
 	# The estate's own sky, with its clouds, stars, moon and northern lights, shows through the doorway behind the room.
 	_sky_layer = CanvasLayer.new()
-	_sky_layer.layer = 7
-	_sky_layer.visible = false
-	add_child(_sky_layer)
+	_sky_layer.layer = -1
+	_viewport.add_child(_sky_layer)
 	_sky = SkyView.new()
 	_sky.sky_visible = func() -> bool: return visible
 	_sky_layer.add_child(_sky)
 	_spots = JSON.parse_string(FileAccess.get_file_as_string(DIR + "furnishings.json")) if FileAccess.file_exists(DIR + "furnishings.json") else {}
 	_scene = Node2D.new()
-	add_child(_scene)
+	_viewport.add_child(_scene)
 	_light = CanvasModulate.new()
-	add_child(_light)
+	_viewport.add_child(_light)
 	_base = Sprite2D.new()
 	_base.centered = false
+	_base.scale = Vector2(DETAIL, DETAIL)
 	# Past the painting's edges its walls and floor carry on, mirrored.
 	_base.texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
 	_scene.add_child(_base)
@@ -92,7 +110,8 @@ func _ready() -> void:
 		var s := Sprite2D.new()
 		s.centered = false
 		s.texture = load(DIR + id + ".png")
-		s.position = Vector2(_spots[id][0], _spots[id][1])
+		s.position = Vector2(_spots[id][0], _spots[id][1]) * DETAIL
+		s.scale = Vector2(DETAIL, DETAIL)
 		s.visible = false
 		if id == "water":
 			var ripple := ShaderMaterial.new()
@@ -112,19 +131,20 @@ func _ready() -> void:
 	_dog_shadow = _shadow(Vector2(102, 244), 80, 14)
 	_dog = AnimatedSprite2D.new()
 	_dog.centered = false
+	_dog.scale = Vector2(DETAIL, DETAIL)
 	_scene.add_child(_dog)
 	_cat_shadow = _shadow(Vector2(280, 115), 40, 9)
 	_cat = AnimatedSprite2D.new()
 	_cat.centered = false
+	_cat.scale = Vector2(DETAIL, DETAIL)
 	_scene.add_child(_cat)
 	_marks = Node2D.new()
 	_marks.draw.connect(_draw_marks)
 	_scene.add_child(_marks)
 	# Fire, lamplight and stars are added on their own layer, so the room's dimming at night does not dim them too.
 	_glow_layer = CanvasLayer.new()
-	_glow_layer.layer = 9
-	_glow_layer.visible = false
-	add_child(_glow_layer)
+	_glow_layer.layer = 1
+	_viewport.add_child(_glow_layer)
 	_glow = Node2D.new()
 	_glow.draw.connect(_draw_glow)
 	_glow_layer.add_child(_glow)
@@ -178,21 +198,28 @@ func _build_ui() -> void:
 		_scroll = _scroll.get_parent()
 
 
-## The room is drawn at the estate's own pixel scale, so its pixels are the same size as everywhere else in the game;
-## a window of another shape shows more of the room's walls and floor, the painting carried on past its edges.
+## Each pixel of the half-detail canvas is shown at twice the estate's pixel size; a window of another shape shows
+## more of the room's walls and floor, the painting carried on past its edges.
 func _fit() -> void:
 	var view := get_viewport().get_visible_rect().size
-	var cover := Windowing.scale
-	var spare := ((view / cover - Vector2(480, 270)) / 2.0).ceil().max(Vector2.ZERO)
-	for node in [_scene, _glow]:
-		node.scale = Vector2(cover, cover)
-		node.position = ((view - Vector2(480, 270) * cover) / 2.0).round()
+	var shown := Windowing.scale * DETAIL
+	var canvas := (view / shown).ceil()
+	_viewport.size = Vector2i(canvas)
+	_origin = (((canvas * DETAIL - Vector2(480, 270)) / 2.0) / DETAIL).floor() * DETAIL
+	var place := Transform2D(0.0, Vector2.ONE / DETAIL, 0.0, _origin / DETAIL)
+	_viewport.canvas_transform = place
+	for l in [_sky_layer, _glow_layer]:
+		l.transform = place
+	_display.scale = Vector2(shown, shown)
+	_display.position = ((view - canvas * shown) / 2.0).floor()
+	var spare := _origin.max(Vector2.ZERO) / DETAIL
 	_base.region_enabled = true
-	_base.region_rect = Rect2(-spare, Vector2(480, 270) + spare * 2.0)
-	_base.position = -spare
+	_base.region_rect = Rect2(-spare, Vector2(240, 135) + spare * 2.0)
+	_base.position = -spare * DETAIL
+	# The sky is drawn at the same coarseness, its horizon behind the doorway's.
 	var at: Array = SKY_AT["ruin" if ruined() else "room"]
-	_sky.scale = Vector2(cover, cover)
-	_sky.position = _scene.position + (at[0] - at[1]) * cover
+	_sky.scale = Vector2(DETAIL, DETAIL)
+	_sky.position = at[0] - at[1] * DETAIL
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
 	_panel.position = Vector2(_ui_root.size.x - 240, 30)
@@ -201,8 +228,6 @@ func _fit() -> void:
 func enter() -> void:
 	visible = true
 	_ui_layer.visible = true
-	_glow_layer.visible = true
-	_sky_layer.visible = true
 	_panel.visible = false
 	_selected = ""
 	_dress_room()
@@ -214,8 +239,6 @@ func leave() -> void:
 	Dissolve.play(self, func() -> void:
 		visible = false
 		_ui_layer.visible = false
-		_glow_layer.visible = false
-		_sky_layer.visible = false
 		left_house.emit())
 
 
@@ -234,28 +257,37 @@ func _dress_room() -> void:
 		pet.visible = not ruined()
 	if ruined():
 		return
-	_dog.sprite_frames = _room_pet("dog", "hound")
-	_dog.position = Vector2(102, 248)
-	_cat.sprite_frames = _room_pet("cat", "tabby")
-	_cat.position = Vector2(280, 120)
-	for pet in [_dog, _cat]:
-		pet.play("sleep")
-		pet.offset = Frames.anchor(pet.sprite_frames.get_frame_texture("sleep", 0))
-	_fit()
-
-
-## The pet's room picture for its breed, in the coat the player chose.
-func _room_pet(kind: String, fallback: String) -> SpriteFrames:
-	var pet: Dictionary = Game.pets.get(kind, {})
-	var breed := String(pet.get("breed", fallback))
-	var path := ROOM_PETS + breed + ".png"
-	if not ResourceLoader.exists(path):
-		path = ROOM_PETS + fallback + ".png"
+	var dog: Dictionary = Game.pets.get("dog", {})
+	var dog_dir := Coats.breed_dir("dog", String(dog.get("breed", "")))
+	var dog_look := func(tex: Texture2D) -> Texture2D: return Coats.recolour(tex, "dog", String(dog.get("coat", "")))
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
-	f.add_animation("sleep")
-	f.add_frame("sleep", Coats.recolour(load(path), kind, String(pet.get("coat", ""))))
-	return f
+	# Lying down is the first four pictures of the sleep folder; the sleeping loop is the rest.
+	Frames.add_folder(f, "sleep", dog_dir + "sleep_east/", 3.0, true, dog_look, 4)
+	Frames.add_folder(f, "lie_down", dog_dir + "sleep_east/", 6.0, false, dog_look)
+	while f.get_frame_count("lie_down") > 4:
+		f.remove_frame("lie_down", 4)
+	Frames.add_folder(f, "happy", dog_dir + "happy_east/", 12.0, true, dog_look, 1)
+	_dog_offsets = {}
+	for anim in f.get_animation_names():
+		_dog_offsets[anim] = Frames.anchor(f.get_frame_texture(anim, 0))
+	_dog.sprite_frames = f
+	_dog_play("sleep")
+	_dog.position = Vector2(102, 246)
+	var cat: Dictionary = Game.pets.get("cat", {})
+	var cat_dir := Coats.breed_dir("cat", String(cat.get("breed", "")))
+	var cf := SpriteFrames.new()
+	cf.remove_animation("default")
+	var cat_look := func(tex: Texture2D) -> Texture2D: return Coats.recolour(tex, "cat", String(cat.get("coat", ""))) if String(cat.get("coat", "")) != "" else tex
+	var count := Frames.add_folder(cf, "sleep", cat_dir + "sleep_east/", 1.0, false, cat_look)
+	_cat.sprite_frames = cf
+	if count > 0:
+		# The cat is already curled up, so it shows the last picture of lying down.
+		_cat.animation = "sleep"
+		_cat.frame = count - 1
+		_cat.offset = Frames.anchor(cf.get_frame_texture("sleep", count - 1))
+	_cat.position = Vector2(280, 118)
+	_fit()
 
 
 func _process(delta: float) -> void:
@@ -270,10 +302,6 @@ func _process(delta: float) -> void:
 		warmth = 0.08 + (0.14 if Game.furnishings.has("fire") else 0.0) + (0.1 if Game.furnishings.has("lamps") else 0.0)
 	_light.color = day.lerp(Color(1.0, 0.86, 0.68), warmth * night).lerp(Color(1.0, 0.97, 0.92), 0.4 * (1.0 - night))
 	_weaving = maxf(0.0, _weaving - delta)
-	# Sleeping pets breathe: a slow rise and fall of a pixel.
-	for pet in [_dog, _cat]:
-		if not _stirring.has(pet):
-			pet.scale = Vector2(1.0, 1.0 + 0.025 * sin(_t * (1.6 if pet == _dog else 2.1)))
 	_loom.queue_redraw()
 	for h in _hearts:
 		h["age"] += delta
@@ -283,15 +311,20 @@ func _process(delta: float) -> void:
 	_refresh()
 
 
+## A dot of light on the half-detail canvas: placed on its grid and a whole number of its pixels in size.
+func _dot(item: CanvasItem, at: Vector2, size: Vector2, colour: Color) -> void:
+	item.draw_rect(Rect2((at / DETAIL).floor() * DETAIL, size * DETAIL), colour)
+
+
 func _draw_glow() -> void:
 	var night := Lighting.night_amount(Game.day_time)
 	# The painted land outside darkens with the evening, under the sky's own stars.
 	_glow.draw_rect(RUIN_LAND if ruined() else LAND, Color(NIGHT_SKY, 0.7 * night))
 	for h in _hearts:
 		var a: float = 1.0 - h["age"] / 1.4
-		var p: Vector2 = (h["at"] + Vector2(sin(h["age"] * 5.0) * 2.0, -h["age"] * 16.0)).floor()
+		var p: Vector2 = h["at"] + Vector2(sin(h["age"] * 5.0) * 3.0, -h["age"] * 20.0)
 		for d in [Vector2(0, 0), Vector2(2, 0), Vector2(-1, 1), Vector2(0, 1), Vector2(1, 1), Vector2(2, 1), Vector2(3, 1), Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(1, 3)]:
-			_glow.draw_rect(Rect2(p + d, Vector2.ONE), Color(0.92, 0.3, 0.36, a))
+			_dot(_glow, p + d * DETAIL, Vector2.ONE, Color(0.92, 0.3, 0.36, a))
 	if ruined():
 		return
 	if Game.furnishings.has("fire"):
@@ -311,7 +344,7 @@ func _draw_glow() -> void:
 			var seed := floorf(_t * 0.5 + k * 0.37) * 13.0 + k * 7.0
 			var at := Vector2(206 + fposmod(seed * 37.0, 130.0), 186 + fposmod(seed * 19.0, 38.0)).floor()
 			if Geometry2D.is_point_in_polygon(at, PackedVector2Array(POOL)):
-				_glow.draw_rect(Rect2(at, Vector2(2, 1)), Color(1.0, 0.95, 0.8, 0.5 * sin(phase * PI)))
+				_dot(_glow, at, Vector2(2, 1), Color(1.0, 0.95, 0.8, 0.5 * sin(phase * PI)))
 
 
 ## The light and the rain that come down through the roof opening onto the pool.
@@ -335,7 +368,7 @@ func _draw_atrium_sky(night: float) -> void:
 		var x := 198.0 + fposmod(k * 53.7, 144.0)
 		var y := fposmod(_t * 190.0 + k * 41.3, 236.0) - 8.0
 		if Geometry2D.is_point_in_polygon(Vector2(x, y + 5), shaft):
-			_glow.draw_rect(Rect2(Vector2(x, y).floor(), Vector2(1, 5)), Color(0.82, 0.88, 0.97, 0.55))
+			_dot(_glow, Vector2(x, y), Vector2(1, 3), Color(0.82, 0.88, 0.97, 0.55))
 	# Where the drops land, rings spread on the water, or small splashes jump off the dry stone.
 	for k in 9:
 		var life := fposmod(_t * 1.3 + k * 0.29, 1.0)
@@ -348,10 +381,10 @@ func _draw_atrium_sky(night: float) -> void:
 			var r := 1.0 + life * 6.0
 			for a in 16:
 				var angle := a * TAU / 16.0
-				_glow.draw_rect(Rect2((at + Vector2(cos(angle) * r, sin(angle) * r * 0.4)).floor(), Vector2.ONE), Color(0.85, 0.92, 1.0, 0.5 * fade))
+				_dot(_glow, at + Vector2(cos(angle) * r, sin(angle) * r * 0.4) * DETAIL, Vector2.ONE, Color(0.85, 0.92, 1.0, 0.5 * fade))
 		elif life < 0.3:
 			for d in [Vector2(-1, -1), Vector2(1, -1), Vector2(0, -2)]:
-				_glow.draw_rect(Rect2(at + d * (1.0 + life * 4.0), Vector2.ONE), Color(0.85, 0.9, 0.95, 0.6 * fade))
+				_dot(_glow, at + d * (1.0 + life * 4.0) * DETAIL, Vector2.ONE, Color(0.85, 0.9, 0.95, 0.6 * fade))
 
 
 ## Spots that can still be furnished twinkle softly, and the one under the pointer is outlined.
@@ -362,13 +395,17 @@ func _draw_marks() -> void:
 		var rects: Array = Game.furnishing_info(id).get("rects", [])
 		if id == _hovered:
 			for r in rects:
-				UiKit.outline(_marks, Rect2(r[0], r[1], r[2] - r[0], r[3] - r[1]), MARK)
+				var box := Rect2(r[0], r[1], r[2] - r[0], r[3] - r[1])
+				_dot(_marks, box.position - Vector2(DETAIL, DETAIL), Vector2(box.size.x / DETAIL + 2, 1), MARK)
+				_dot(_marks, Vector2(box.position.x - DETAIL, box.end.y), Vector2(box.size.x / DETAIL + 2, 1), MARK)
+				_dot(_marks, box.position - Vector2(DETAIL, 0), Vector2(1, box.size.y / DETAIL), MARK)
+				_dot(_marks, Vector2(box.end.x, box.position.y), Vector2(1, box.size.y / DETAIL), MARK)
 		elif not Game.furnishings.has(id) and Game.furnishing_block(id) == "" and not rects.is_empty():
 			var r: Array = rects[0]
 			var c := Vector2(roundf((r[0] + r[2]) / 2.0), roundf((r[1] + r[3]) / 2.0))
 			var a := 0.35 + 0.35 * sin(_t * 2.5 + c.x * 0.1)
-			for d in [Vector2(0, -2), Vector2(0, 2), Vector2(-2, 0), Vector2(2, 0), Vector2.ZERO]:
-				_marks.draw_rect(Rect2(c + d, Vector2.ONE), Color(MARK, a))
+			for d in [Vector2(0, -1), Vector2(0, 1), Vector2(-1, 0), Vector2(1, 0), Vector2.ZERO]:
+				_dot(_marks, c + d * DETAIL, Vector2.ONE, Color(MARK, a))
 
 
 ## While weaving, the shuttle runs back and forth between the warp threads, and the heddle bar lifts and drops
@@ -380,11 +417,10 @@ func _draw_loom() -> void:
 	var k := int(floorf(_weaving / pass_time))
 	var along := fposmod(_weaving, pass_time) / pass_time
 	var x := lerpf(SHED[0], SHED[1], along if k % 2 == 0 else 1.0 - along)
-	_loom.draw_rect(Rect2(roundf(x) - 3, SHED[2], 7, 2), Color8(92, 56, 34))
-	_loom.draw_rect(Rect2(roundf(x) - 2, SHED[2], 5, 1), Color8(196, 150, 96))
-	var lift := 1.0 if k % 2 == 0 else -1.0
-	_loom.draw_rect(Rect2(176, 103 + lift, 54, 1), Color8(214, 176, 120))
-	_loom.draw_rect(Rect2(176, 104 + lift, 54, 1), Color8(120, 78, 44))
+	_dot(_loom, Vector2(x - 4, SHED[2]), Vector2(4, 1), Color8(92, 56, 34))
+	_dot(_loom, Vector2(x - 2, SHED[2]), Vector2(2, 1), Color8(196, 150, 96))
+	var lift := DETAIL if k % 2 == 0 else -DETAIL
+	_dot(_loom, Vector2(176, 102 + lift), Vector2(27, 1), Color8(214, 176, 120))
 
 
 func _pet_at(point: Vector2) -> AnimatedSprite2D:
@@ -395,14 +431,15 @@ func _pet_at(point: Vector2) -> AnimatedSprite2D:
 			continue
 		var tex: Texture2D = pet.sprite_frames.get_frame_texture(pet.animation, pet.frame)
 		var used := Rect2(tex.get_image().get_used_rect())
-		var box := Rect2(pet.position + pet.offset + used.position, used.size)
+		var box := Rect2(pet.position + (pet.offset + used.position) * DETAIL, used.size * DETAIL)
 		if box.grow(2).has_point(point):
 			return pet
 	return null
 
 
+## A point on the screen as a pixel of the painting.
 func _picture_point(ui_point: Vector2) -> Vector2:
-	return (ui_point * Windowing.ui_scale - _scene.position) / _scene.scale.x
+	return (ui_point * Windowing.ui_scale - _display.position) / _display.scale.x * DETAIL - _origin
 
 
 func _spot_at(point: Vector2) -> String:
@@ -456,26 +493,50 @@ func _stroke(pet: AnimatedSprite2D) -> void:
 	# The dog thumps its tail as it stirs, gets up to wag, then settles back to sleep; the cat purrs in its sleep.
 	if dog:
 		Sfx.tail_thumps()
+		_wake_dog()
 	else:
 		Sfx.play("cat", -4.0)
 	Game.add_stat("pets", 1)
 	_hearts.append({"at": pet.position + Vector2(6 if dog else 0, -26 if dog else -30), "age": 0.0})
-	_stir(pet)
+	if not dog:
+		_stir(pet)
 
 
-## A stroked pet stirs without waking: a happy wriggle and a stretch, a little lean into the hand, then it settles.
+## A stroked cat stirs without waking: a little wriggle, then it settles.
 func _stir(pet: AnimatedSprite2D) -> void:
 	if _stirring.has(pet):
 		return
 	_stirring[pet] = true
 	var tween := create_tween()
 	for k in 3:
-		tween.tween_property(pet, "scale", Vector2(1.04, 0.96), 0.1)
-		tween.tween_property(pet, "scale", Vector2(0.98, 1.03), 0.1)
-	tween.tween_property(pet, "rotation", -0.04, 0.25)
-	tween.tween_property(pet, "rotation", 0.0, 0.4)
-	tween.tween_property(pet, "scale", Vector2.ONE, 0.2)
+		tween.tween_property(pet, "position:y", pet.position.y - DETAIL, 0.1)
+		tween.tween_property(pet, "position:y", pet.position.y, 0.1)
 	tween.tween_callback(func(): _stirring.erase(pet))
+
+
+func _dog_play(anim: String, backwards := false) -> void:
+	if not _dog.sprite_frames.has_animation(anim):
+		return
+	_dog.offset = _dog_offsets.get(anim, Vector2.ZERO)
+	if backwards:
+		_dog.play_backwards(anim)
+	else:
+		_dog.play(anim)
+
+
+## Stroked, the sleeping dog rises from the rug, wags its tail for a little while, then lies back down and sleeps.
+func _wake_dog() -> void:
+	if _dog_awake or not _dog.sprite_frames.has_animation("happy"):
+		return
+	_dog_awake = true
+	_dog_play("lie_down", true)
+	await _dog.animation_finished
+	_dog_play("happy")
+	await get_tree().create_timer(2.6).timeout
+	_dog_play("lie_down")
+	await _dog.animation_finished
+	_dog_play("sleep")
+	_dog_awake = false
 
 
 ## A few passes of the shuttle, each beaten home with a soft knock.

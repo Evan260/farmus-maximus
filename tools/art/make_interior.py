@@ -372,11 +372,10 @@ def main():
         # The room is not sent along, as PixelLab then paints a small copy of the whole room on the floor.
         inpaint(no_cat, shapes(polys=[RUG]), RUG_WORDS, clean, blank=True)
     furnished = soften_outlines(tidy_rug(Image.open(clean)))
-    furnished.save(OUT / "furnished.png")
     # Each furnishing is repainted away from the furnished room on its own, and the empty room gathers every repaint,
     # so one can be redone without the others.
     empty = np.array(furnished).copy()
-    spots = {}
+    owns = {}
     masks = [find(room) for _, find, *_ in FURNISHINGS]
     for k, (name, find, how, *shared) in enumerate(FURNISHINGS):
         mask = masks[k]
@@ -398,19 +397,58 @@ def main():
         from scipy import ndimage
         changed = own & (np.abs(a.astype(int) - empty.astype(int)).sum(axis=2) > 30)
         # Solid shapes: specks of changed wall dropped, and the holes left where a colour happened to match filled in.
-        own &= ndimage.binary_fill_holes(ndimage.binary_opening(changed, np.ones((2, 2))))
-        layer = np.zeros((H, W, 4), np.uint8)
-        layer[own, :3] = a[own]
-        layer[own, 3] = 255
-        ys, xs = np.nonzero(own)
+        owns[name] = own & ndimage.binary_fill_holes(ndimage.binary_opening(changed, np.ones((2, 2))))
+    rooms = {
+        "empty": open_sky(Image.fromarray(empty), ROOM_SKY, False),
+        "painted": repaint_walls(open_sky(Image.fromarray(empty), ROOM_SKY, False)),
+        "ruin": ruin_room(open_sky(Image.fromarray(empty), ROOM_SKY, False)),
+        "furnished": furnished.convert("RGBA"),
+    }
+    write_half(rooms, owns)
+    print("wrote", OUT)
+
+
+def halve(img):
+    """The picture at half its size: each square of four pixels becomes one, their colour averaged, and a pixel is
+    see-through only where most of its four were."""
+    a = np.array(img.convert("RGBA")).astype(float)
+    h, w = a.shape[0] // 2 * 2, a.shape[1] // 2 * 2
+    blocks = a[:h, :w].reshape(h // 2, 2, w // 2, 2, 4)
+    alpha = blocks[..., 3].mean(axis=(1, 3))
+    weight = blocks[..., 3:4] / 255.0
+    rgb = (blocks[..., :3] * weight).sum(axis=(1, 3)) / np.maximum(weight.sum(axis=(1, 3)), 1e-6)
+    out = np.zeros((h // 2, w // 2, 4))
+    out[..., :3] = rgb
+    out[..., 3] = np.where(alpha >= 128, 255, 0)
+    return out
+
+
+def write_half(rooms, owns):
+    """The farm is drawn with far fewer pixels to an object than the paintings, so the room is kept at half their
+    detail: every picture is halved and shares one palette of colours. Each furnishing is cut from the halved
+    furnished room, and its place is given in the halved room's pixels."""
+    halves = {name: halve(img) for name, img in rooms.items()}
+    together = np.concatenate([h[..., :3] for h in halves.values()], axis=0).astype(np.uint8)
+    palette = Image.fromarray(together).quantize(colors=96, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+
+    def flat(a):
+        rgb = np.array(Image.fromarray(a[..., :3].astype(np.uint8)).quantize(palette=palette, dither=Image.Dither.NONE).convert("RGB"))
+        return np.dstack([rgb, a[..., 3]]).astype(np.uint8)
+
+    for name in ("empty", "painted", "ruin"):
+        Image.fromarray(flat(halves[name])).save(OUT / f"{name}.png")
+    furnished = flat(halves["furnished"])
+    spots = {}
+    for name, own in owns.items():
+        small = own[: H // 2 * 2, : W // 2 * 2].reshape(H // 2, 2, W // 2, 2).mean(axis=(1, 3)) >= 0.5
+        layer = np.zeros(furnished.shape, np.uint8)
+        layer[small] = furnished[small]
+        ys, xs = np.nonzero(small)
         box = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
         Image.fromarray(layer[box[1]:box[3], box[0]:box[2]]).save(OUT / f"{name}.png")
         spots[name] = box
-    open_sky(Image.fromarray(empty), ROOM_SKY, False).save(OUT / "empty.png")
-    repaint_walls(open_sky(Image.fromarray(empty), ROOM_SKY, False)).save(OUT / "painted.png")
-    ruin_room(open_sky(Image.fromarray(empty), ROOM_SKY, False)).save(OUT / "ruin.png")
+    (OUT / "furnished.png").unlink(missing_ok=True)
     (OUT / "furnishings.json").write_text(json.dumps(spots, indent="\t") + "\n", encoding="utf-8")
-    print("wrote", OUT)
 
 
 if __name__ == "__main__":
