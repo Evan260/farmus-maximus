@@ -14,7 +14,7 @@ const WATER := preload("res://assets/shaders/water.gdshader")
 ## daylight falls on the water in a soft shaft and rain falls straight into it.
 const SHAFT := [Vector2(196, 0), Vector2(344, 0), Vector2(344, 200), Vector2(320, 182), Vector2(228, 182), Vector2(196, 196)]
 ## The painted land seen through the doorway, which darkens at night like the estate.
-const LAND := Rect2(366, 56, 66, 80)
+const LAND := Rect2(366, 56, 66, 78)
 ## The ruin is the same room fallen apart, so its doorway is the same one.
 const RUIN_LAND := LAND
 ## Which part of the estate's sky shows through the doorway: the room's pixel at the doorway's horizon, and the sky's.
@@ -30,7 +30,6 @@ const FIRE_GLOW := Vector2(101, 140)
 const LAMP_FLAMES := [Vector2(70, 49), Vector2(132, 53), Vector2(20, 119), Vector2(305, 102)]
 ## The pool's surface, as a shape the shimmer stays inside.
 const POOL := [Vector2(196, 196), Vector2(228, 182), Vector2(320, 182), Vector2(344, 200), Vector2(300, 228), Vector2(210, 228)]
-const NIGHT_SKY := Color8(14, 18, 44)
 const MARK := Color(1, 0.95, 0.75)
 
 var _scene: Node2D
@@ -53,6 +52,7 @@ var _top: Sprite2D
 var _light: CanvasModulate
 var _glow_layer: CanvasLayer
 var _glow: Node2D
+var _land: Node2D
 var _sprites := {}
 var _marks: Node2D
 var _dog: AnimatedSprite2D
@@ -156,6 +156,18 @@ func _ready() -> void:
 	_glow = Node2D.new()
 	_glow.draw.connect(_draw_glow)
 	_glow_layer.add_child(_glow)
+	# The land seen through the doorway is lit as the estate is outside, not as the room is, so it darkens with the
+	# sky above it: the room's own light is taken off it again and the outdoor light put on, by multiplying.
+	_land = Node2D.new()
+	var mul := CanvasItemMaterial.new()
+	mul.blend_mode = CanvasItemMaterial.BLEND_MODE_MUL
+	_land.material = mul
+	_land.draw.connect(func():
+		var outdoor: Color = Lighting.color_at(Game.day_time) * Estate.SEASON_TINT.get(Game.calendar.season_id(), Color.WHITE)
+		var ratio := Color(minf(1.0, outdoor.r / maxf(_light.color.r, 0.01)), minf(1.0, outdoor.g / maxf(_light.color.g, 0.01)), minf(1.0, outdoor.b / maxf(_light.color.b, 0.01)))
+		var land: Rect2 = RUIN_LAND if ruined() else LAND
+		_dot(_land, land.position, land.size / DETAIL, ratio))
+	_glow_layer.add_child(_land)
 	_build_ui()
 	Windowing.view_changed.connect(_fit)
 	_fit()
@@ -324,6 +336,7 @@ func _process(delta: float) -> void:
 		h["age"] += delta
 	_hearts = _hearts.filter(func(h): return h["age"] < 1.4)
 	_glow.queue_redraw()
+	_land.queue_redraw()
 	_marks.queue_redraw()
 	_refresh()
 
@@ -336,8 +349,6 @@ func _dot(item: CanvasItem, at: Vector2, size: Vector2, colour: Color) -> void:
 func _draw_glow() -> void:
 	var night := Lighting.night_amount(Game.day_time)
 	# The painted land outside darkens with the evening, under the sky's own stars.
-	var land: Rect2 = RUIN_LAND if ruined() else LAND
-	_dot(_glow, land.position, land.size / DETAIL, Color(NIGHT_SKY, 0.7 * night))
 	for h in _hearts:
 		var a: float = 1.0 - h["age"] / 1.4
 		var p: Vector2 = h["at"] + Vector2(sin(h["age"] * 5.0) * 3.0, -h["age"] * 20.0)

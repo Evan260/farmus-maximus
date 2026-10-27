@@ -207,7 +207,7 @@ def open_sky(img, rects, blue):
 
 
 # Where the outdoors shows, as rectangles in which painted sky is cut out.
-ROOM_SKY = [(366, 18, 432, 58)]
+ROOM_SKY = [(366, 18, 432, 64)]
 RUIN_SKY = [(398, 62, 460, 116), (268, 0, 342, 26)]
 
 
