@@ -14,7 +14,7 @@ const WATER := preload("res://assets/shaders/water.gdshader")
 ## daylight falls on the water in a soft shaft and rain falls straight into it.
 const SHAFT := [Vector2(196, 0), Vector2(344, 0), Vector2(344, 200), Vector2(320, 182), Vector2(228, 182), Vector2(196, 196)]
 ## The painted land seen through the doorway, which darkens at night like the estate.
-const LAND := Rect2(367, 57, 64, 72)
+const LAND := Rect2(366, 56, 66, 80)
 ## The ruin is the same room fallen apart, so its doorway is the same one.
 const RUIN_LAND := LAND
 ## Which part of the estate's sky shows through the doorway: the room's pixel at the doorway's horizon, and the sky's.
@@ -336,7 +336,8 @@ func _dot(item: CanvasItem, at: Vector2, size: Vector2, colour: Color) -> void:
 func _draw_glow() -> void:
 	var night := Lighting.night_amount(Game.day_time)
 	# The painted land outside darkens with the evening, under the sky's own stars.
-	_glow.draw_rect(RUIN_LAND if ruined() else LAND, Color(NIGHT_SKY, 0.7 * night))
+	var land: Rect2 = RUIN_LAND if ruined() else LAND
+	_dot(_glow, land.position, land.size / DETAIL, Color(NIGHT_SKY, 0.7 * night))
 	for h in _hearts:
 		var a: float = 1.0 - h["age"] / 1.4
 		var p: Vector2 = h["at"] + Vector2(sin(h["age"] * 5.0) * 3.0, -h["age"] * 20.0)
