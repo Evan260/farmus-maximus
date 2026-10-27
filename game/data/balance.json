@@ -2439,8 +2439,16 @@
 			}
 		},
 		{
-			"id": "villa",
+			"id": "house",
 			"text": "Optime! With coins in your purse, look to the house. Click the farmhouse to see what it needs to be restored.",
+			"done": {
+				"stat": "villa_viewed",
+				"at": 1
+			}
+		},
+		{
+			"id": "villa",
+			"text": "The builders need stone and roof tiles from the market town, and sestertii for their wages. Gather them, then click the farmhouse again to set them to work.",
 			"done": {
 				"villa": 2
 			}

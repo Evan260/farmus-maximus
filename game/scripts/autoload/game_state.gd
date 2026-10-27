@@ -1669,6 +1669,9 @@ func from_dict(d: Dictionary) -> void:
 		var dug := plots.filter(func(p): return p["unlocked"] and p["zone"] == "home").size()
 		if dug > int(Balance.get_value("start.unlocked_plots", 4)):
 			stats["plots_unlocked"] = maxi(int(stats.get("plots_unlocked", 0)), 1)
+	# A farmhouse already restored was looked at before the tutorial counted it.
+	if villa_stage >= 2:
+		stats["villa_viewed"] = maxi(int(stats.get("villa_viewed", 0)), 1)
 	dog_timer = float(d.get("dog_timer", dog_timer))
 	calendar.from_dict(d.get("calendar", {}))
 	market.from_dict(d.get("market", {}))

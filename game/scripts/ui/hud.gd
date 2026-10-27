@@ -252,6 +252,9 @@ func close_windows() -> bool:
 
 func show_building(id: String) -> void:
 	_building.id = id
+	# Uncle Marcus's advice to look at the house is followed once its window has been opened.
+	if id == VILLA:
+		Game.add_stat("villa_viewed", 1)
 	if _building.visible:
 		_building.open()
 	else:
