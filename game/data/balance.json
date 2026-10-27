@@ -2456,6 +2456,7 @@
 		{
 			"id": "villa",
 			"text": "The builders need stone and roof tiles from the market town, and sestertii for their wages. Gather them, then click the farmhouse again to set them to work.",
+			"praise": "Look at that, a roof again! The old house hasn't looked this fine since I was a boy. I'm proud of you, my dear heir.",
 			"done": {
 				"villa": 2
 			}

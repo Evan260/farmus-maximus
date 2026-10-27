@@ -50,6 +50,8 @@ var _achievements: Control
 var _uncle: Control
 ## Something Uncle Marcus has to say outside the tutorial, such as the coins he gives a stranded farm, as an id and text.
 var _notice := {}
+## The tutorial step he was last on, so finishing one that has a word of praise brings that praise first.
+var _last_step := {}
 var _tip: Label
 var _debug: PanelContainer
 var _stats_panel: PanelContainer
@@ -378,7 +380,8 @@ func _apply_text_size() -> void:
 ## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
 ## and never over the title screen or the strip. When every step is done he says goodbye, once. At any time, even
 ## after the tutorial, he comes back when the farm is short of money: with coins if it has no way to earn, or with
-## a word to sell what is in the storehouse first.
+## a word to sell what is in the storehouse first. A step with praise, such as restoring the farmhouse, earns that
+## praise before his next advice.
 func _update_tip() -> void:
 	_tip.visible = false
 	_uncle.position = Vector2.ZERO
@@ -390,13 +393,17 @@ func _update_tip() -> void:
 		return
 	if not _notice.is_empty() and _uncle.dismissed() == String(_notice["id"]):
 		_notice = {}
+	var step: Dictionary = Game.journal.tutorial_step() if ready else {}
+	if ready and step != _last_step:
+		if _last_step.has("praise") and Game.journal.met(_last_step["done"]):
+			_notice = {"id": "praise " + String(_last_step["id"]), "text": tr(String(_last_step["praise"]))}
+		_last_step = step
 	var notice := _notice
 	if notice.is_empty() and ready and Game.short_of_seed() and Game.stored_total() > 0 and not Game.cart["away"]:
 		notice = {"id": "sell first", "text": tr("Your purse is empty, but the storehouse is not. Send the cart to market, then plant again.")}
 	if settled and not notice.is_empty():
 		_uncle.show_advice(String(notice["id"]), String(notice["text"]))
 		return
-	var step: Dictionary = Game.journal.tutorial_step() if ready else {}
 	if not step.is_empty():
 		Game.stats["guide_seen"] = 1
 		_uncle.show_advice(String(step["id"]), tr(String(step["text"])))
