@@ -23,7 +23,6 @@ const SEED_TINTS := {"lavender_violet": Color(0.82, 0.62, 1.0), "lavender_bluegr
 ## Bedtime: the sleep button shows from evening until shortly before dawn, and sleeping runs on until this morning hour.
 const SLEEP_FROM := 19.5
 const WAKE_AT := 6.5
-const WEATHER_NAMES := {"sun": "Sunny", "cloudy": "Cloudy", "rain": "Rain", "mist": "Mist"}
 const SHORT_ZONES := {"grove": "Grove", "home": "Farm", "yard": "Yard", "vineyard": "Vines", "pasture": "Pasture"}
 
 var _root: Control
@@ -218,7 +217,8 @@ func _process(delta: float) -> void:
 		_cart.text = tr("Trader ready  (carries %d)") % Game.cart_capacity()
 	else:
 		_cart.text = tr("Cart ready for market")
-	var cal := "%s %d  %s" % [tr(Game.calendar.season_name()), Game.calendar.day_of_season() + 1, tr(WEATHER_NAMES.get(Game.calendar.weather, ""))]
+	# The farm's own running day count leads, the number players share; the weather is left to the sky to show.
+	var cal := "%s   %s" % [tr("Day %d") % (Game.calendar.day + 1), tr(Game.calendar.season_name())]
 	var festival: Dictionary = Game.calendar.festival()
 	if not festival.is_empty():
 		cal += "  " + tr(String(festival["name"]))
