@@ -160,10 +160,18 @@ func _check_milestones() -> void:
 
 
 ## The first tutorial step not yet done, or an empty dictionary when the tutorial is finished.
+## The first piece of Uncle Marcus's advice not yet followed. A step once done stays done, so a building being
+## upgraded, which stops working for a while, never sends him back to advice the player already took.
 func tutorial_step() -> Dictionary:
+	if int(_game.stats.get("guide_seen", 0)) >= 2:
+		return {}
 	for step in Balance.get_value("tutorial", []):
+		var key := "tutorial_" + String(step["id"])
+		if int(_game.stats.get(key, 0)) > 0:
+			continue
 		if not met(step["done"]):
 			return step
+		_game.stats[key] = 1
 	return {}
 
 

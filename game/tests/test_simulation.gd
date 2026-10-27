@@ -59,6 +59,16 @@ func _run() -> void:
 	_check(is_equal_approx(game.take_items({"lavender": 2}), 0.0) and game.storage.has("lavender@2"), "takes common goods before excellent ones")
 	_check(game.journal.has("quality:lavender:2"), "the journal records a first excellent good")
 
+	# Uncle Marcus's advice never goes back: a step once done stays done, as when a working building is being upgraded.
+	game.new_game()
+	_check(String(game.journal.tutorial_step().get("id", "")) == "plant", "the tutorial starts by asking to plant")
+	game.stats["planted"] = 1
+	_check(String(game.journal.tutorial_step().get("id", "")) != "plant", "planting moves the tutorial on")
+	game.stats["planted"] = 0
+	_check(String(game.journal.tutorial_step().get("id", "")) != "plant", "a step once done stays done")
+	game.stats["guide_seen"] = 2
+	_check(game.journal.tutorial_step().is_empty(), "a finished tutorial gives no more advice")
+
 	# A farm left with no coins for a seed and nothing growing or to sell is given enough to start again.
 	game.new_game()
 	game.coins = 1

@@ -129,9 +129,12 @@ func load_game(n: int) -> void:
 		Game.from_dict(parsed)
 		has_farm = true
 		var away := Time.get_unix_time_from_system() - float(parsed.get("saved_at", Time.get_unix_time_from_system()))
-		# With offline progress switched off, the estate simply waits exactly as it was left.
-		if Settings.offline_progress and away >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
-			pending_summary = Game.simulate_offline(away)
+		# With offline progress switched off, the estate simply waits exactly as it was left. Any time away is caught up,
+		# so work that finished while the game was closed is finished on opening; only a longer absence gets a summary.
+		if Settings.offline_progress and away > 0.0:
+			var summary := Game.simulate_offline(away)
+			if away >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
+				pending_summary = summary
 		return
 	has_farm = false
 	Game.new_game()
