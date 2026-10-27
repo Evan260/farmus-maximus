@@ -59,6 +59,17 @@ func _run() -> void:
 	_check(is_equal_approx(game.take_items({"lavender": 2}), 0.0) and game.storage.has("lavender@2"), "takes common goods before excellent ones")
 	_check(game.journal.has("quality:lavender:2"), "the journal records a first excellent good")
 
+	# A farm left with no coins for a seed and nothing growing or to sell is given enough to start again.
+	game.new_game()
+	game.coins = 1
+	game.advance(1.0)
+	_check(game.coins == 1 + int(data_file.get_value("start.rescue_coins", 10)), "a stranded farm is sent coins to start again")
+	game.coins = 3
+	game.try_plant(0)
+	game.coins = 0
+	game.advance(1.0)
+	_check(game.coins == 0, "a farm with something growing is left to earn its own way")
+
 	# Growth depends on the season, water and manure.
 	game.new_game()
 	game.day_time = 8.0

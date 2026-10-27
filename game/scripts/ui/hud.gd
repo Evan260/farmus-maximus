@@ -132,6 +132,7 @@ func _ready() -> void:
 	Game.festival_started.connect(_on_festival)
 	Game.season_changed.connect(func(_s): toast(tr("%s has come to the estate") % tr(Game.calendar.season_name())))
 	Game.dog_found.connect(func(_id, text): toast(tr(text)))
+	Game.rescued.connect(func(gift): toast(tr("Uncle Marcus sends %d sestertii to start again. Plant something, and mind the shovel!") % gift); Sfx.play("coins"))
 	Game.blessing_started.connect(func(god): Sfx.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % Game.helper_info(id).get("name", "")))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
@@ -369,7 +370,12 @@ func _apply_text_size() -> void:
 ## and never over the title screen or the strip. When every step is done he says goodbye, once.
 func _update_tip() -> void:
 	_tip.visible = false
-	var ready := Settings.show_tutorial and not Windowing.strip and _title == null and Game.pets_chosen and not _companions.visible
+	_uncle.position = Vector2.ZERO
+	var ready := Settings.show_tutorial and not Windowing.strip and _title == null and Game.pets_chosen
+	# He steps aside while a window is open, so his advice never covers it, and returns without sliding in again.
+	if ready and window_open():
+		_uncle.visible = false
+		return
 	var step: Dictionary = Game.journal.tutorial_step() if ready else {}
 	if not step.is_empty():
 		Game.stats["guide_seen"] = 1
@@ -381,7 +387,6 @@ func _update_tip() -> void:
 			get_tree().create_timer(14.0).timeout.connect(func(): Game.stats["guide_seen"] = 2)
 	else:
 		_uncle.show_advice("", "")
-	_uncle.position = Vector2.ZERO
 
 
 func _on_discovered(id: String) -> void:

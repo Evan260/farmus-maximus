@@ -31,6 +31,7 @@ signal decoration_bought(decoration_id: String)
 signal furnishing_bought(furnishing_id: String)
 signal animal_added(kind: String)
 signal pets_changed
+signal rescued(coins: int)
 signal upgrade_bought(upgrade_id: String)
 signal upgrade_started(upgrade_id: String)
 
@@ -772,7 +773,29 @@ func advance(dt: float) -> Dictionary:
 			if not quiet:
 				cart_returned.emit(value)
 	result["harvested"] += _advance_helpers(dt)
+	_rescue_if_stranded()
 	return result
+
+
+## A farm with no coins for a seed, nothing growing, nothing to sell and nothing on its way could never earn again,
+## so Uncle Marcus sends a few sestertii to start over. In ordinary play this never happens.
+func _rescue_if_stranded() -> void:
+	var cheapest := INF
+	for id in Balance.get_value("crops", {}):
+		if crop_unlocked(id):
+			cheapest = minf(cheapest, float(crop_info(id).get("plant_cost", 0)))
+	if coins >= cheapest or stored_total() > 0 or cart["away"]:
+		return
+	for p in plots:
+		if p["crop"] != "":
+			return
+	for id in buildings:
+		if buildings[id].get("busy", false):
+			return
+	var gift := int(Balance.get_value("start.rescue_coins", 10))
+	coins += gift
+	if not quiet:
+		rescued.emit(gift)
 
 
 ## Catches up on time the game was closed, in small steps so every rule applies in order.

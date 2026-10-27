@@ -1,7 +1,8 @@
 {
 	"start": {
 		"coins": 20,
-		"unlocked_plots": 4
+		"unlocked_plots": 4,
+		"rescue_coins": 10
 	},
 	"crops": {
 		"lavender": {
