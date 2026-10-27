@@ -88,7 +88,9 @@ func load_demo_state() -> void:
 			(func() -> void:
 				m.hud.visible = false
 				m.interior.enter()
-				if open != "-":
+				if open == "pet":
+					m.interior.get_tree().create_timer(1.0).timeout.connect(func(): m.interior._stroke(m.interior._dog))
+				elif open != "-":
 					m.interior._open("" if open == "list" else open)).call_deferred()
 		elif arg.begins_with("--guide"):
 			# Uncle Marcus's advice, from the start or from a later step such as "--guide=cart".
@@ -223,4 +225,6 @@ func demo_maxed() -> void:
 	# The trader would carry the full storehouse off at once, so every good starts marked to keep.
 	for item in Balance.get_value("items", {}):
 		Game.keep_goods[item] = true
+	# Every achievement this farm has earned is recorded now, quietly, rather than each one chiming in after the start.
+	Game.check_achievements()
 	Game.quiet = false

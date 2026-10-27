@@ -1707,20 +1707,6 @@
 					]
 				]
 			},
-			"rug": {
-				"name": "Woven rug",
-				"desc": "Striped wool from the market weavers. The dog has already claimed it.",
-				"price": 1500,
-				"requires_villa": 2,
-				"rects": [
-					[
-						14,
-						194,
-						197,
-						265
-					]
-				]
-			},
 			"plants": {
 				"name": "Potted plants",
 				"desc": "Aloe and rosemary in terracotta pots, by the door and along the walls.",
@@ -2396,7 +2382,7 @@
 			"name": "A home again",
 			"desc": "Furnish every corner of the farmhouse",
 			"when": {
-				"furnishings": 8
+				"furnishings": 7
 			}
 		},
 		{

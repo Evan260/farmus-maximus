@@ -197,6 +197,8 @@ func _ambience(name: String) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
 	p.stream = stream
 	p.bus = "Ambience"
+	# Each loop starts silent and is brought up by the hour and the weather, so none bursts in at full volume.
+	p.volume_db = -60.0
 	add_child(p)
 	p.play()
 	return p

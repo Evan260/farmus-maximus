@@ -97,16 +97,16 @@ def water(room):
 # Each step: a name, how to find its mask in the furnished room, and how to take it away: what PixelLab should paint
 # there instead, or for something as small as a flame, the pixels around it closing over it. A fourth part names an
 # earlier repaint to reuse, where two furnishings were taken away together.
-ANIMALS = ("animals", lambda room: shapes(ellipses=[(56, 199, 148, 248), (252, 90, 306, 121)]),
-           "an orange and brown striped woven rug on a stone floor, and a red cushioned couch, empty, no animals")
+ANIMALS = ("animals", lambda room: shapes(ellipses=[(252, 90, 306, 121)]), "a red cushioned couch, empty, no animals")
+# The rug the painted dog lay on is painted again whole, without the dog; it is part of the room, the dog's own spot.
+RUG = [(14, 230), (56, 198), (148, 194), (196, 236), (174, 264), (48, 264)]
+RUG_WORDS = "one flat rectangular woven wool rug with orange, brown and cream stripes and a short fringe, lying on the stone floor, seen at an angle"
 FURNISHINGS = [
     ("fire", lambda room: shapes(rects=[(77, 88, 137, 155)]),
      "the inside of a cold dark stone fireplace, sooty bricks and a heap of grey ash, no fire, no flames, no logs"),
     ("lamps", lambda room: flames(room, [(62, 40, 79, 58), (125, 45, 139, 61), (12, 108, 29, 131), (299, 95, 312, 110)]), heal),
     ("plants", lambda room: shapes(rects=[(0, 220, 44, 269), (434, 110, 479, 178), (426, 206, 479, 269)]),
      "the flagstone floor and the lower stone wall, no plants, no pots"),
-    ("rug", lambda room: shapes(polys=[[(14, 230), (56, 198), (148, 194), (196, 236), (174, 264), (48, 264)]]),
-     "irregular cream, tan and brown flagstone floor tiles, no rug"),
     ("scrolls", lambda room: shapes(rects=[(204, 2, 292, 37)]),
      "an empty wooden shelf against a worn red plaster wall, nothing on the shelves", "amphorae"),
     ("amphorae", lambda room: shapes(rects=[(208, 43, 293, 77)]),
@@ -118,13 +118,20 @@ FURNISHINGS = [
 ]
 
 
-def inpaint(before, mask, description, out):
+def inpaint(before, mask, description, out, context=False, blank=False):
     tmp_mask = STEPS / f"{out.stem}_mask.png"
     Image.fromarray((mask * 255).astype(np.uint8)).save(tmp_mask)
-    # The whole room is not sent along: it still shows the thing being removed, and PixelLab paints it straight back.
+    flags = [] if context else ["--no-context"]
+    if context or blank:
+        # What is being replaced is first blanked to the colour around it, or PixelLab paints it straight back.
+        a = np.array(Image.open(before).convert("RGB"))
+        ring = grow(mask, 2) & ~mask
+        a[mask] = a[ring].mean(axis=0).astype(np.uint8)
+        before = STEPS / f"{out.stem}_blank.png"
+        Image.fromarray(a).save(before)
     subprocess.run([sys.executable, str(ROOT / "tools" / "art" / "pixellab.py"), "inpaint",
                     str(before.relative_to(ROOT)), str(tmp_mask.relative_to(ROOT)),
-                    description + ", cozy pixel art, warm lamplit Roman room", "--out", str(out.relative_to(ROOT)), "--no-context"], check=True)
+                    description + ", cozy pixel art, warm lamplit Roman room", "--out", str(out.relative_to(ROOT)), *flags], check=True)
 
 
 def preview_masks(room, folder):
@@ -145,6 +152,15 @@ def _shared_mask(room, step):
         if shared and shared[0] == step:
             m |= find(room)
     return m
+
+
+def tidy_rug(img):
+    """The repainted rug leaves a sliver of stripes past its fringed left edge; the floor just above covers it."""
+    a = np.array(img.convert("RGB"))
+    sliver = shapes(polys=[[(14, 204), (48, 204), (48, 206), (33, 230), (28, 236), (14, 236)]]) & (lum(a.astype(int)) > 0)
+    for y, x in zip(*np.nonzero(sliver)):
+        a[y, x] = a[y - 18, x]
+    return Image.fromarray(a)
 
 
 def soften_outlines(img):
@@ -198,10 +214,14 @@ def main():
     room.save(STEPS / "room.png")
     # The furnished room without the painted animals, then the room losing one furnishing after another.
     name, find, words = ANIMALS
+    no_cat = STEPS / "no_cat.png"
+    if name in redo or not no_cat.exists():
+        inpaint(STEPS / "room.png", find(room), words, no_cat)
     clean = STEPS / "clean.png"
-    if name in redo or not clean.exists():
-        inpaint(STEPS / "room.png", find(room), words, clean)
-    furnished = soften_outlines(Image.open(clean))
+    if "rug" in redo or not clean.exists():
+        # The room is not sent along, as PixelLab then paints a small copy of the whole room on the floor.
+        inpaint(no_cat, shapes(polys=[RUG]), RUG_WORDS, clean, blank=True)
+    furnished = soften_outlines(tidy_rug(Image.open(clean)))
     furnished.save(OUT / "furnished.png")
     # Each furnishing is repainted away from the furnished room on its own, and the empty room gathers every repaint,
     # so one can be redone without the others.
@@ -218,7 +238,7 @@ def main():
             step = STEPS / f"without_{shared[0] if shared else name}.png"
             if name in redo or not step.exists():
                 inpaint(clean, mask if not shared else _shared_mask(room, shared[0]), how, step)
-            empty[mask] = np.array(soften_outlines(Image.open(step)))[mask]
+            empty[mask] = np.array(soften_outlines(tidy_rug(Image.open(step))))[mask]
         a = np.array(furnished)
         # Where two furnishings' areas overlap, the pixels belong to the later one, so neither draws over the other.
         own = mask.copy()

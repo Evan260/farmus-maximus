@@ -304,3 +304,11 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-26T21:05:35,pixen,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/uncle/uncle_2.png,0.0075,0,3.6387
 2026-10-26T21:22:19,pixen,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/uncle/uncle_3.png,0.0082,0,3.6305
 2026-10-26T21:23:21,pixen,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/uncle/uncle_4.png,0.0112,0,3.6194
+2026-10-26T21:40:05,inpaint,tools\art\sources\interior\steps\no_cat.png,0.0226,0,3.5968
+2026-10-26T21:40:44,inpaint,tools\art\sources\interior\steps\floor.png,0.0349,0,3.5619
+2026-10-26T21:42:05,inpaint,tools\art\sources\interior\steps\clean.png,0.0343,0,3.5276
+2026-10-26T21:43:44,inpaint,tools/art/sources/interior/steps/fl_out.png,0.0307,0,3.4968
+2026-10-26T21:45:28,inpaint,tools/art/sources/interior/steps/fl_out2.png,0.0792,0,3.4177
+2026-10-26T21:48:46,inpaint,tools/art/sources/interior/steps/fl_out3.png,0.1211,0,3.2966
+2026-10-26T21:49:51,inpaint,tools\art\sources\interior\steps\clean.png,0.0345,0,3.2621
+2026-10-26T21:50:46,inpaint,tools\art\sources\interior\steps\clean.png,0.0309,0,3.2312

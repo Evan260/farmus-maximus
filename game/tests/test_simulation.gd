@@ -270,7 +270,7 @@ func _run() -> void:
 	_check(not game.buy_furnishing("fire"), "a furnishing is bought only once")
 	_check(game.helper_interval("farmhand") < plain, "a more comfortable home makes the helpers quicker")
 	game.villa_stage = 1
-	_check(game.furnishing_block("rug") != "", "a ruined farmhouse cannot be furnished")
+	_check(game.furnishing_block("lamps") != "", "a ruined farmhouse cannot be furnished")
 	game.villa_stage = 4
 	game.dog_timer = 0.0
 	var find: String = game.dog_dig()

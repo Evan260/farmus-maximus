@@ -1614,7 +1614,11 @@ func from_dict(d: Dictionary) -> void:
 	for id in d.get("helper_timers", {}):
 		helper_timers[id] = float(d["helper_timers"][id])
 	decorations = Dictionary(d.get("decorations", {}))
-	furnishings = Dictionary(d.get("furnishings", {}))
+	# Only furnishings that still exist are kept; the rug, for one, became part of the room.
+	furnishings = {}
+	for id in d.get("furnishings", {}):
+		if Balance.get_value("interior.furnishings", {}).has(id):
+			furnishings[id] = true
 	for kind in d.get("pets", {}):
 		pets[kind] = {"name": String(d["pets"][kind].get("name", "")), "coat": String(d["pets"][kind].get("coat", "")),
 			"breed": String(d["pets"][kind].get("breed", "hound" if kind == "dog" else "tabby"))}
