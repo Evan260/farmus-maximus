@@ -105,7 +105,7 @@ def load():
 
 def save(header, rows):
     with CSV_PATH.open("w", encoding="utf-8", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
 

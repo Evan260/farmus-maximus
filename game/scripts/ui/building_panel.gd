@@ -206,7 +206,7 @@ func _build_workshop() -> void:
 	else:
 		_load = UiKit.button(body, tr("Load from the storehouse"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
 		if helper != "":
-			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), tr(String(Game.helper_info(helper).get("role", ""))).to_lower()], WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), UiKit.mid(tr(String(Game.helper_info(helper).get("role", ""))))], WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 
 
 ## What the storehouse holds of everything this workshop uses and makes, so the player can see at a glance how many
@@ -270,7 +270,7 @@ func _cask_text() -> String:
 		lines.append(tr("Still resting: %d") % counts[-1])
 	for q in 3:
 		if counts[q] > 0:
-			lines.append(tr("Ready as %s wine: %d") % [tr(String(names[q])).to_lower(), counts[q]])
+			lines.append(tr("Ready as %s wine: %d") % [UiKit.mid(tr(String(names[q]))), counts[q]])
 	return "\n".join(lines)
 
 
@@ -323,7 +323,7 @@ func _build_villa() -> void:
 	UiKit.para(body, tr("Brings: %s.") % tr(String(next.get("unlocks", ""))), WIDTH)
 	UiKit.para(body, tr("Builders work on it for %s.") % UiKit.duration(float(next.get("build_seconds", 0)) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 	_costs = UiKit.cost_list(body, Game.villa_next_price())
-	_action = UiKit.button(body, tr("Build the %s") % tr(String(next["name"])).to_lower(), func(): Game.upgrade_villa())
+	_action = UiKit.button(body, tr("Build the %s") % UiKit.mid(tr(String(next["name"]))), func(): Game.upgrade_villa())
 	_note = UiKit.label(body)
 	_note.add_theme_color_override("font_color", UiKit.SHORT)
 	if Game.count_item("stone") + Game.count_item("tiles") + Game.count_item("timber") == 0:
@@ -343,7 +343,7 @@ func _tick_villa() -> void:
 	var stages := Game.villa_stages()
 	if Game.villa_build["active"]:
 		var next: Dictionary = stages[mini(Game.villa_stage, stages.size() - 1)]
-		_status.text = _work_text(tr("Builders at work on the %s: %%s left") % tr(String(next["name"])).to_lower(), float(Game.villa_build["time_left"]))
+		_status.text = _work_text(tr("Builders at work on the %s: %%s left") % UiKit.mid(tr(String(next["name"]))), float(Game.villa_build["time_left"]))
 		if _bar:
 			_bar.value = 1.0 - float(Game.villa_build["time_left"]) / maxf(1.0, float(next.get("build_seconds", 1)))
 	elif Game.villa_stage >= stages.size():

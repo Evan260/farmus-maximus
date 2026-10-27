@@ -35,7 +35,7 @@ func build() -> void:
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var level := int(Game.helpers.get(id, 0))
 		var levels: Array = info.get("costs", [0])
-		var title := "%s, %s" % [info.get("name", id), tr(String(info.get("role", ""))).to_lower()]
+		var title := "%s, %s" % [info.get("name", id), UiKit.mid(tr(String(info.get("role", ""))))]
 		if level > 0 and levels.size() > 1:
 			title += "  " + tr("(level %d)") % level
 		UiKit.label(col, title).add_theme_color_override("font_color", UiKit.HEADING)

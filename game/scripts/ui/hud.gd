@@ -681,7 +681,7 @@ func _update_toolbar() -> void:
 			var item := String(info.get("item", crop))
 			var path := "res://assets/sprites/icons/%s.png" % item
 			var tint: Color = SEED_TINTS.get(crop, Color.WHITE)
-			var text := tr("Plant %s: %d sestertii") % [tr(String(info.get("name", crop))).to_lower(), int(info.get("plant_cost", 0))]
+			var text := tr("Plant %s: %d sestertii") % [UiKit.mid(tr(String(info.get("name", crop)))), int(info.get("plant_cost", 0))]
 			_tool_slot("seed:" + crop, load(path) if ResourceLoader.exists(path) else null, text, tint)
 		_tool_slot("dig", load("res://assets/sprites/icons/tool_dig.png"), tr("Dig up: clear a plant from its bed"), Color.WHITE)
 	var current := "seed:" + Game.selected_seed if tool == "seed" else tool

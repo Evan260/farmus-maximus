@@ -274,6 +274,9 @@ func _achievement_progress(page: VBoxContainer, key: String) -> void:
 
 
 func _name(id: String) -> String:
+	if id.begins_with("helper:"):
+		var h := Game.helper_info(id.get_slice(":", 1))
+		return tr("%s the %s") % [h.get("name", ""), UiKit.mid(tr(String(h.get("role", ""))))]
 	for e in _entries():
 		if e["id"] == id:
 			return String(e["name"])
@@ -288,22 +291,22 @@ func _describe(id: String) -> String:
 	match kind:
 		"crop":
 			var c := Game.crop_info(key)
-			var zone := tr(" and the ").join(Game.crop_zones(key).map(func(z): return tr(String(Game.zone_info(z).get("name", ""))).to_lower()))
+			var zone := tr(" and the ").join(Game.crop_zones(key).map(func(z): return UiKit.mid(tr(String(Game.zone_info(z).get("name", ""))))))
 			var text := tr("Grows on the %s. Ready after %s") % [zone, UiKit.duration(float(c.get("grow_seconds", 60)))]
 			text += (tr(", then again every %s.") % UiKit.duration(float(c["regrow_seconds"]))) if c.get("perennial", false) else tr(", then needs replanting.")
-			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), tr(String(Balance.get_value("items.%s.name" % c.get("item", key), key))).to_lower()]
+			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), UiKit.mid(tr(String(Balance.get_value("items.%s.name" % c.get("item", key), key))))]
 		"item":
 			var lines := [tr("Worth about %d sestertii at market.") % int(Game.base_price(key))]
 			for crop in Balance.get_value("crops", {}):
 				if Game.crop_info(crop).get("item", "") == key:
-					lines.append(tr("Harvested from %s.") % tr(String(Game.crop_info(crop).get("name", crop))).to_lower())
+					lines.append(tr("Harvested from %s.") % UiKit.mid(tr(String(Game.crop_info(crop).get("name", crop)))))
 					break
 			for b in Balance.get_value("buildings", {}):
 				for r in Game.building_info(b).get("recipes", []):
 					if r.get("out", {}).has(key):
-						lines.append(tr("Made in the %s.") % tr(String(Game.building_info(b).get("name", b))).to_lower())
+						lines.append(tr("Made in the %s.") % UiKit.mid(tr(String(Game.building_info(b).get("name", b)))))
 					if r.get("in", {}).has(key):
-						lines.append(tr("Used by the %s.") % tr(String(Game.building_info(b).get("name", b))).to_lower())
+						lines.append(tr("Used by the %s.") % UiKit.mid(tr(String(Game.building_info(b).get("name", b)))))
 			return " ".join(lines)
 		"building":
 			var info := Game.building_info(key)
@@ -311,9 +314,9 @@ func _describe(id: String) -> String:
 			var outs := []
 			for r in info.get("recipes", []):
 				for item in r.get("out", {}):
-					outs.append(tr(String(Balance.get_value("items.%s.name" % item, item))).to_lower())
+					outs.append(UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
 			var what := tr("Makes %s.") % ", ".join(outs) if not outs.is_empty() else ""
-			return (tr("Stands on the %s.") % tr(zone).to_lower()) + " " + what
+			return (tr("Stands on the %s.") % UiKit.mid(tr(zone))) + " " + what
 		"helper":
 			var h := Game.helper_info(key)
 			return "%s. \"%s\"" % [tr(String(h.get("does", ""))), tr(String(h.get("quote", "")))]

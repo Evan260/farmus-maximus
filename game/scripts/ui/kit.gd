@@ -149,8 +149,8 @@ static func update_costs(lines: Array) -> void:
 		var key := String(l.get_meta("key"))
 		var need := int(l.get_meta("need"))
 		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
-		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key)).to_lower()))
-		l.text = "%s  %d / %d" % [TranslationServer.translate(name), mini(have, need), need]
+		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key))))
+		l.text = "%s  %d / %d" % [mid(TranslationServer.translate(name)), mini(have, need), need]
 		l.add_theme_color_override("font_color", INK if have >= need else SHORT)
 
 
@@ -244,7 +244,7 @@ static func cost_text(cost: Dictionary) -> String:
 	for key in cost:
 		if key in ["coins", "aureus"] or int(cost[key]) <= 0:
 			continue
-		var name: String = TranslationServer.translate("bread or wine") if key == "provisions" else TranslationServer.translate(String(Balance.get_value("items.%s.name" % key, key))).to_lower()
+		var name: String = TranslationServer.translate("bread or wine") if key == "provisions" else mid(TranslationServer.translate(String(Balance.get_value("items.%s.name" % key, key))))
 		parts.append("%d %s" % [int(cost[key]), name])
 	return ", ".join(parts) if not parts.is_empty() else TranslationServer.translate("free")
 
@@ -253,8 +253,13 @@ static func cost_text(cost: Dictionary) -> String:
 static func goods_text(goods: Dictionary) -> String:
 	var parts := []
 	for item in goods:
-		parts.append("%d %s" % [int(goods[item]), TranslationServer.translate(String(Balance.get_value("items.%s.name" % item, item))).to_lower()])
+		parts.append("%d %s" % [int(goods[item]), mid(TranslationServer.translate(String(Balance.get_value("items.%s.name" % item, item))))])
 	return " + ".join(parts)
+
+
+## A translated name as it reads in the middle of a sentence: lowercased, except in German, where nouns keep their capital.
+static func mid(text: String) -> String:
+	return text if TranslationServer.get_locale().begins_with("de") else text.to_lower()
 
 
 static func plural(n: int, one: String, many: String) -> String:

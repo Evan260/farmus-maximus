@@ -139,12 +139,12 @@ func add_order() -> bool:
 	var reward := int(round(base_price * n * _game.rng.randf_range(float(bonus_range[0]), float(bonus_range[1]))))
 	var aureus_chance := float(_cfg("orders.aureus_chance", 0.12)) * (2.0 if not festival.is_empty() else 1.0)
 	var aureus := 1 if _game.rng.randf() < aureus_chance else 0
-	var name := String(Balance.get_value("items.%s.name" % item, item)).to_lower()
+	var name := UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item))))
 	# Now and then a regular offers something money cannot buy: the rare white lavender.
 	var seed := "lavender_white" if not _game.crop_unlocked("lavender_white") and _game.rng.randf() < float(_cfg("orders.rare_seed_chance", 0.06)) else ""
 	orders.append({
 		"who": who.get("name", ""), "role": who.get("role", ""), "item": item, "amount": n, "coins": reward, "aureus": aureus, "seed": seed,
-		"text": String(who.get("line", "{n} {item}")).format({"n": n, "item": name}),
+		"text": tr(String(who.get("line", "{n} {item}"))).format({"n": n, "item": name}),
 	})
 	if not _game.quiet:
 		_game.order_added.emit()
@@ -168,7 +168,7 @@ func deliver(index: int) -> bool:
 	if String(o.get("seed", "")) != "" and not _game.crop_unlocked(String(o["seed"])):
 		_game.unlock_crop(String(o["seed"]))
 		_game.discover("find:rare_seed")
-		_game.message.emit("%s gives you a rare seed: white lavender!" % o["who"])
+		_game.message.emit(tr("%s gives you a rare seed: white lavender!") % tr(String(o["who"])))
 	_game.add_stat("orders", 1)
 	orders.remove_at(index)
 	return true
@@ -181,9 +181,9 @@ func catalog_block(entry: Dictionary) -> String:
 	if entry.has("unlock_crop") and _game.crop_unlocked(String(entry["unlock_crop"])):
 		return "Bought"
 	if int(entry.get("requires_villa", 0)) > _game.villa_stage:
-		return "Needs the %s" % String(_game.villa_stages()[int(entry["requires_villa"]) - 1]["name"]).to_lower()
+		return tr("Needs the %s") % UiKit.mid(tr(String(_game.villa_stages()[int(entry["requires_villa"]) - 1]["name"])))
 	if entry.has("requires_zone") and not _game.zone_owned(String(entry["requires_zone"])):
-		return "Needs the %s" % String(_game.zone_info(String(entry["requires_zone"])).get("name", "")).to_lower()
+		return tr("Needs the %s") % UiKit.mid(tr(String(_game.zone_info(String(entry["requires_zone"])).get("name", ""))))
 	if entry.has("animal"):
 		return _game.barn_room_block(String(entry["animal"]))
 	return ""

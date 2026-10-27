@@ -618,7 +618,7 @@ func _spawn_helper(id: String) -> void:
 	w.home_x = clampf(VILLA_BASE.x, w.min_x, w.max_x)
 	var info := Game.helper_info(id)
 	w.react_folder = "greet"
-	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), tr(String(info.get("role", ""))).to_lower()]
+	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), UiKit.mid(tr(String(info.get("role", ""))))]
 	w.voice = "salve_woman" if id in WOMEN else "salve_man"
 	w.sayings = id
 	if info.has("zones") or info.has("crops"):
@@ -1134,7 +1134,7 @@ func _update_hover(point: Vector2) -> void:
 	elif sign_hit:
 		var z := Game.zone_info(sign_hit.zone_id)
 		var block := Game.zone_block(sign_hit.zone_id)
-		hud.set_info(tr(block) if block != "" else tr("Buy the %s deed: %d sestertii") % [tr(String(z.get("name", ""))).to_lower(), int(z.get("deed", 0))])
+		hud.set_info(tr(block) if block != "" else tr("Buy the %s deed: %d sestertii") % [UiKit.mid(tr(String(z.get("name", "")))), int(z.get("deed", 0))])
 	elif pet:
 		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat") if pet_hit in [cat, dog] else pet_hit.display_name)
 	elif animal != "":
@@ -1167,9 +1167,9 @@ func _describe_plot(i: int) -> void:
 				hud.set_info(tr(Game.seed_block(i)))
 			else:
 				var seed := Game.crop_info(seed_id)
-				hud.set_info(tr("Plant %s: %d sestertii") % [tr(String(seed.get("name", ""))).to_lower(), int(seed.get("plant_cost", 0))])
+				hud.set_info(tr("Plant %s: %d sestertii") % [UiKit.mid(tr(String(seed.get("name", "")))), int(seed.get("plant_cost", 0))])
 		"bloom":
-			hud.set_info(tr("Dig up the %s") % crop_name.to_lower() if hud.tool == "dig" else tr("%s is ready: click to harvest") % crop_name)
+			hud.set_info(tr("Dig up the %s") % UiKit.mid(crop_name) if hud.tool == "dig" else tr("%s is ready: click to harvest") % crop_name)
 		_:
 			var notes := []
 			if not Game.watered(i):
@@ -1246,14 +1246,14 @@ func _on_building_made(id: String, item: String, amount: int) -> void:
 	Sfx.play({"aged_wine": "cork", "bread": "oven", "herb_bread": "oven"}.get(item, "made"), -4.0)
 	for v in building_views:
 		if v.id == id:
-			hud.float_text(v.position + Vector2(-16, -v.local_rect().size.y - 14) - _camera.position, "+%d %s" % [amount, tr(String(Balance.get_value("items.%s.name" % item, item))).to_lower()])
+			hud.float_text(v.position + Vector2(-16, -v.local_rect().size.y - 14) - _camera.position, "+%d %s" % [amount, UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item))))])
 			_burst(v.position + Vector2(0, -v.local_rect().size.y / 2), [Color(1, 0.9, 0.6), Color(0.95, 0.8, 0.5)], 6)
 
 
 func _on_building_changed(id: String) -> void:
 	var state := String(Game.buildings[id]["state"])
 	call_deferred("_note_state", id, state)
-	var name := tr(String(Game.building_info(id).get("name", ""))).to_lower()
+	var name := UiKit.mid(tr(String(Game.building_info(id).get("name", ""))))
 	for v in building_views:
 		if v.id != id:
 			continue
@@ -1289,7 +1289,7 @@ func _on_zone_bought(zone_id: String) -> void:
 	Sfx.play("flourish")
 	var z := Game.zone_info(zone_id)
 	_dust(Vector2(float(z["x"]) + 240, 250), 30)
-	hud.toast(tr("The %s is yours!") % tr(String(z.get("name", ""))).to_lower())
+	hud.toast(tr("The %s is yours!") % UiKit.mid(tr(String(z.get("name", "")))))
 
 
 func _on_weather_changed(weather: String, before: String) -> void:
@@ -1375,7 +1375,7 @@ func _on_villa_finished() -> void:
 	else:
 		_villa_scaffold.sink().tween_callback(func(): _villa_scaffold.visible = Game.villa_build["active"])
 	Sfx.play("built")
-	hud.toast(tr("The villa has been restored: %s!") % tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"])).to_lower())
+	hud.toast(tr("The villa has been restored: %s!") % UiKit.mid(tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"]))))
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
 	_villa.modulate = Color(1.6, 1.5, 1.3)
 	create_tween().tween_property(_villa, "modulate", Color.WHITE, 0.9)

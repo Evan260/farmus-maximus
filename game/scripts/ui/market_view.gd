@@ -637,7 +637,7 @@ func _build_orders() -> void:
 	for i in Game.market.orders.size():
 		var o: Dictionary = Game.market.orders[i]
 		var box := UiKit.column(_list)
-		UiKit.para(box, "%s (%s): \"%s\"" % [o["who"], tr(String(o["role"])).to_lower(), tr(String(o["text"]))], 280)
+		UiKit.para(box, "%s (%s): \"%s\"" % [o["who"], UiKit.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
 		var r := UiKit.row(box)
 		UiKit.icon(r, String(o["item"]))
 		var reward := tr("Pays %d sestertii") % int(o["coins"])
@@ -656,7 +656,7 @@ func _build_prices() -> void:
 		UiKit.para(_list, "%s: %s" % [tr(String(festival["name"])), tr(String(festival.get("about", "")))], 280)
 	var fav := []
 	for item in Game.market.favourites:
-		fav.append(tr(String(Balance.get_value("items.%s.name" % item, item))).to_lower())
+		fav.append(UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
 	UiKit.para(_list, tr("Wanted today: %s") % ", ".join(fav), 280)
 	UiKit.para(_list, tr("Selling many of one good lowers its price until tomorrow, so a mix pays best."), 280).add_theme_color_override("font_color", UiKit.FADED)
 	for item in Balance.get_value("items", {}):
