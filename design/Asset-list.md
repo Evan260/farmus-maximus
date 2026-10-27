@@ -1,20 +1,19 @@
 # Farmus Maximus: Asset List
 
-Every art, audio and store asset the game needs, based on `Game-design.md`. Counts are estimates to help plan the work.
+Every picture and store image the game needs, based on `Game-design.md`. Sounds and music are in `Sound-list.md`.
 
 ## Conventions
 
-These are proposals; lock them in before making final art, because changing them later means redoing everything.
+The base resolution and the art rules that never change are in `CLAUDE.md` under Fixed decisions. The sizes below are what the art is drawn at.
 
-| Setting | Proposal |
+| Setting | Value |
 |---|---|
-| Base resolution | 480 x 270, scaled up by whole numbers (x4 = 1920 x 1080) |
 | Plot size | 32 x 32 pixels (one lavender bush fills one plot, as in the PixelLab tests) |
 | Crop sprites | Up to 32 x 48 (tall crops overlap the plot above) |
 | Characters and animals | 48 x 48 canvas for the dog and farmhands (animations get a larger canvas automatically) |
 | Trees | Up to 64 x 96 |
-| Buildings | Up to about 192 x 112 (the villa) |
-| Palette | One fixed palette for the whole game (`palette.hex` from the art tests is the starting point), with a range of lavender purples added as the signature accent colour |
+| Buildings | Up to 224 x 128 (the villa) |
+| Palette | One fixed palette for the whole game, with a range of lavender purples added as the signature accent colour |
 | Lighting | Light comes from the upper left in all art |
 | Day, night and seasons | Done in the engine with colour tinting where possible, so most art needs only one version |
 
@@ -424,61 +423,13 @@ Mostly done in the engine with small sprite pieces.
 
 ## 11. Audio
 
-### Music
-
-Idle players listen for hours, so variety matters more than length of any one track.
-
-| Item | Count | Notes | Source |
-|---|---|---|---|
-| Main theme | 1 | Title screen | License or commission |
-| Day tracks | 6 to 8 | Calm, acoustic (lyre, flute, strings), 2 to 4 minutes each | License or commission |
-| Night tracks | 2 to 3 | Even softer | License or commission |
-| Season or land variations | 3 to 5 | Optional flavour | License or commission |
-| Festival tracks | 2 to 3 | Slightly more festive | License or commission |
-
-Music plays with long ambient-only gaps between tracks, so it never becomes repetitive.
-
-**Total target:** 30 to 60 minutes of music.
-
-### Ambience loops
-
-| Loop | Notes |
-|---|---|
-| Daytime countryside | Birds, breeze |
-| Summer cicadas | |
-| Night | Crickets, an owl |
-| Light rain | |
-| Storm | Distant thunder |
-| River | River valley land |
-| Sea and gulls | Coastal land |
-| Mountain wind and goat bells | Mountain pasture land |
-| Distant village | Faint voices, a cart, a bell |
-
-**Estimate:** 9 to 10 loops. Source: CC0 libraries or licensed packs.
-
-### Sound effects
-
-Each with 2 to 3 variations or random pitch, so repeats do not sound identical.
-
-| Group | Sounds |
-|---|---|
-| Farming | Hoe the soil, plant a seed, water, harvest (grain, leafy, fruit), perfect harvest chime |
-| Processing | Olive press creak, grape treading squish, mill turning, oven crackle, wine pour, bees buzzing |
-| Selling | Cart loading, cart wheels, donkey bray, coins clink, sale complete |
-| Villa | Construction (hammering), upgrade complete fanfare (soft) |
-| Dog | Bark, happy whine, panting, digging, petting |
-| Other animals | Chicken cluck, goat bleat, cat purr, bird chirps |
-| Shrine | Offering placed, blessing chime |
-| UI | Click, hover, open panel, close panel, tab switch, notification, journal page turn, order complete |
-| Weather | Rain start, thunder (soft) |
-
-**Estimate:** about 45 sound effects.
+Every sound effect, ambience loop and music track, with the sources and licences of the recordings, is in `Sound-list.md`.
 
 ---
 
-## 12. Steam store and marketing
+## 12. Steam store images
 
-The website has its own asset list in `Website-plan.md`. Check current Steam sizes in the Steamworks documentation before making these.
+The trailer, screenshots, clips and press kit are planned in `Business-plan.md`, and the achievement icons are made by `tools/art/make_achievement_icons.py` (see `Steam-setup.md`). Check current Steam sizes in the Steamworks documentation before making these.
 
 | Asset | Size (current Steam spec, verify) |
 |---|---|
@@ -492,46 +443,3 @@ The website has its own asset list in `Website-plan.md`. Check current Steam siz
 | Page background | 1438 x 810 |
 | Community icon | 184 x 184 |
 | App icon (desktop shortcut) | 256 x 256, plus smaller sizes |
-| Achievement icons | 64 x 64, one unlocked and one locked version each |
-| Screenshots | At least 5, 1920 x 1080 |
-| Trailer | 30 to 90 seconds; first 5 seconds show the hook |
-| Short clips / GIFs | For TikTok, YouTube Shorts and Reddit (vertical 1080 x 1920 versions too) |
-| Press kit | Logo, key art, screenshots, fact sheet |
-
-**Estimate:** about 12 store images, about 30 achievement icons (x2), 5+ screenshots, 1 trailer, a steady stream of clips.
-
----
-
-## Totals (rough)
-
-| Category | Estimated count |
-|---|---|
-| Landscape layers and sky pieces | about 50 |
-| Villa stages and overlays | about 17 |
-| Farm buildings | about 40 sprites, 8 animations |
-| Plots and soil | about 8 |
-| Lavender (all varieties, stages and sway) | about 45 |
-| Other crops (all stages) | about 115 |
-| Item icons | about 95 |
-| Character and animal frames | about 165, plus 10 portraits |
-| Ambient creatures and passers-by | about 190 frames |
-| Water and atmosphere animations | about 15 loops, mostly shader-assisted |
-| Decorations | about 35, plus icons |
-| UI pieces | about 60, plus 2 fonts |
-| Music | 30 to 60 minutes |
-| Ambience loops | 9 to 10 |
-| Sound effects | about 45 |
-| Store and marketing | about 20 images, about 60 achievement icons, trailer, clips |
-
-## Suggested order of work
-
-Make assets in the order the game needs them for testing, so art never blocks progress:
-
-1. Palette, base resolution and lighting direction locked in.
-2. Home farm landscape layers (the first full PixelLab scene).
-3. Lavender (all stages and the wind sway), plots, 2 to 3 more starter crops, the storeroom, the cart and donkey.
-4. The dog (idle, walk, sleep), butterflies and bees, the aqueduct channel water.
-5. UI basics: slim UI bar, buttons, coin counter, storage meter.
-6. Villa stages 1 to 3.
-7. Starter sound effects and 2 to 3 ambience loops.
-8. Everything else, land by land.

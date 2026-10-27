@@ -2,7 +2,7 @@
 
 *A play on the Circus Maximus, ancient Rome's grandest stage, given to a humble farm.*
 
-The complete design of the game, kept high level. Art details are in `Asset-list.md`, the build order in `Game-plan.md`.
+The complete design of the game, kept high level. Art details are in `Asset-list.md`.
 
 ## Pitch
 
@@ -305,7 +305,31 @@ Coins ──▶ land deeds, ruins, repairs, upgrades, helpers, seeds, animals, d
 
 ---
 
-## 14. Decisions made while building
+## 14. Platforms and performance
+
+The desktop strip has only been tested on Windows so far. Before launch it must pass on each of these:
+
+| System | Checks |
+|---|---|
+| Windows 10 and 11 | Transparency, always on top, click-through, taskbar at the bottom and the side, high-DPI scaling |
+| macOS (Apple Silicon) | The same, plus full-screen apps and multiple desktops |
+| Linux X11 | The same as Windows |
+| Linux Wayland | Expect limits on always-on-top and positioning; the solid-background mode must still work |
+| Steam Deck | Full window only: a controller, readable text, battery use |
+| With overlays | Steam, Discord, NVIDIA and AMD overlays running |
+
+The strip must run for a full workday on Windows and Mac without a black background, a stuck window or noticeable battery drain, and every other system must at least run cleanly in solid mode.
+
+| Situation | Target |
+|---|---|
+| Full window, active | 60 fps, low CPU |
+| Strip in the background | 30 fps or less |
+| Nothing changing on screen | Close to idle CPU |
+| Steam Deck | Several hours of battery |
+
+---
+
+## 15. Decisions made while building
 
 These were open questions; the full build settled them as follows. Any of them can still change.
 
@@ -320,7 +344,7 @@ These were open questions; the full build settled them as follows. Any of them c
 
 Also added during the build: a dairy (milk to cheese) and a perfumer to run the drying shed and unguent workshop, since no other helper covered them. The unguent workshop stands on the vineyard slope, because the workshop yard had no room for a fourth building.
 
-## 15. Still open
+## 16. Still open
 
 - A "legacy" option to pass the estate to an heir and start again with bonuses?
 - Trademark, domain and social handle checks for the name.

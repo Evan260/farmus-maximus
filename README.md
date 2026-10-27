@@ -32,14 +32,11 @@ In development builds, F1 opens a debug panel with time speed-ups, free coins an
 | `tools/` | Scripts for making art and sound, collecting translatable text, and publishing to Steam |
 | `builds/` | Exported builds (not kept in git) |
 
-`CLAUDE.md` is the detailed guide to how the code is organised, the conventions, and every development flag.
-
 ## Design documents
 
 | Document | What it covers |
 |---|---|
 | [Game design](design/Game-design.md) | The whole game, from the estate to the market town |
-| [Game plan](design/Game-plan.md) | The build phases |
 | [Asset list](design/Asset-list.md) | Every picture the game needs |
 | [Sound list](design/Sound-list.md) | Every sound the game plays, by file name, with the sources and licences of the recordings |
 | [Business plan](design/Business-plan.md) | Who the game is for, where it sells, costs and the plan to launch |

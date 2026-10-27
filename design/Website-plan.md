@@ -2,30 +2,18 @@
 
 The game's website: what it is for, how it looks, every section on the page, and the assets it needs.
 
-## The marketing-first plan
+## Not in the plan anymore
 
-The site is built before the game, so it has to sell an idea people cannot play yet. The order of work:
+The game will not have its own website for now. The Steam page is the home of the game, and a site is only built if the game sells very well (see "Only if it sells very well" in `Business-plan.md`). Why:
 
-1. **Website:** the home of the game. Collects email signups from day one.
-2. **Steam page:** goes live as early as possible so wishlists start piling up.
-3. **Prototype:** a playable core loop, mostly to produce real footage.
-4. **Short-form content:** a steady stream of clips on TikTok, YouTube Shorts, Instagram Reels and Reddit, all pointing to the Steam page and the site.
-5. **Build and polish** the full game, with wishlists and audience feedback guiding what matters.
+- **Wishlists are what count.** Steam shows a game to more people the more wishlists it has, and every clip and post can link straight to the Steam page. An email signup on a site does not add a wishlist, so the site would sit in the way of the one number that matters.
+- **The audience is on Steam and short-form video.** People find cozy games through TikTok, YouTube Shorts, Reddit and Steam itself, not by visiting a game's website.
+- **Time is better spent on the game and the clips.** The site planned below is a project of its own: an animated hero scene, scroll effects, a shared pet counter, a devlog and a press kit, all to build and keep up to date.
+- **It costs money for little return:** a domain, hosting and an email service, before the game has earned anything.
 
-### What the site asks visitors to do at each stage
+What the site would have done is covered elsewhere: the Steam page carries the screenshots, trailer and description, Discord gathers the players who want to follow along, and a press kit can be a shared folder.
 
-Each stage has exactly one main button. Everything else is secondary.
-
-| Stage | Main button | Secondary |
-|---|---|---|
-| Before the Steam page exists | **Get notified** (email signup) | Follow on TikTok / YouTube |
-| Steam page live | **Wishlist on Steam** | Email signup, Discord |
-| Demo available | **Play the free demo** | Wishlist |
-| Launched | **Buy on Steam** | Discord, newsletter |
-
-**Important:** Steam expects store screenshots to show the actual game, not concept art. Build the hero scene and a few views in the engine (even before the gameplay works) so the Steam page has real in-game screenshots. The website can show more polished key art.
-
-**Art rule for the site:** use the game's own final art (made with PixelLab, whose terms allow commercial use). Keep the Bing test images private; they were mood boards only.
+The rest of this document stays as the design to start from if a website is ever built.
 
 ---
 

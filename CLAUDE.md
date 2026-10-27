@@ -13,10 +13,10 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `game/data/balance.json` | Every number and name: crops, goods, buildings, helpers, market, calendar, achievements, tutorial |
 | `game/translations/strings.csv` | Every player-facing string, one column per language; regenerate with `python tools/extract_strings.py` |
 | `tools/translate_strings.py` | Fills the empty language columns of `strings.csv` with Azure AI Translator (key `AZURE_TRANSLATOR_KEY` in `.env`); `--dry-run` shows what is missing. The game loads every column that has translations and offers it under Settings > Gameplay; Cyrillic, Polish and Turkish switch the interface to a 10 px font, Chinese, Japanese and Korean fall back to Fusion Pixel 8 px. `--locale=ja` tries a language without saving it. Azure gets short interface words wrong without context (Settings as scenery, Resume as a CV), so every language was then reviewed line by line against the code that shows it; new strings need the same review |
-| `design/` | Design docs: `Game-design.md` (the whole game), `Game-plan.md` (build phases), `Asset-list.md`, `Business-plan.md`, competitor research in `reports/` |
-| `design/Art tests/` | Early art experiments and the reference scene |
+| `design/` | Design docs: `Game-design.md` (the whole game), `Asset-list.md`, `Business-plan.md`, competitor research in `reports/` |
+| `tools/art/reference/` | The style pictures PixelLab is shown so new buildings, trees and crops match the game's look |
 | `tools/art/pixellab.py` | Art pipeline: generate with PixelLab, slice sheets, clean stray pixels; every paid call is logged in `tools/art/ledger.csv` |
-| `design/Art tests/content/gen_content.sh` | The script that generated the full game's buildings, people, animals, decorations and icons; it skips finished files |
+| `tools/art/batches/gen_content.sh` | The script that generated the full game's buildings, people, animals, decorations and icons; it skips finished files |
 | `tools/art/split_layers.py`, `make_estate_ground.py` | Split the estate painting into parallax layers; paint the ground strip |
 | `tools/art/split_sky.py`, `make_icons.py` | Cut a sky into a clean base, moving clouds and the moon; make the 16-pixel list icons from the 32-pixel ones |
 | `tools/art/split_town_sky.py` | Cut the market town painting into its sky, drifting clouds and the town in front |

@@ -8,34 +8,35 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 
 | File | When it plays | Have it |
 |---|---|---|
-| `click` | Any button | Yes |
+| `click` | Any button (3 takes) | Yes |
 | `plant` | Planting a plot; the dog digging | Yes |
 | `harvest` | Harvesting a plant | Yes |
-| `unlock` | Digging a new bed; a new animal in the barn | Yes |
-| `coins` | Buying, selling, the cart's return | Yes |
+| `unlock` | Digging a new bed; a new animal in the barn other than a hen or a goat, which cluck and bleat instead | Yes |
+| `coins` | Buying, selling, the cart's return (2 takes) | Yes |
 | `cart` | The cart leaving or coming home | Yes |
-| `dog` | Petting the dog: one friendly woof | Yes |
+| `dog` | Petting the dog while it is awake: one friendly woof | Yes |
+| `thump` | A rabbit clicked, stamping a hind foot before it bolts; the fox startled; a sleeping dog stroked, its tail beating the ground (2 takes) | Yes |
 | `cat` | Petting the cat: a purr, or now and then a contented chirp (3 takes) | Yes |
-| `cluck` | Clicking a hen (3 takes) | Yes |
+| `cluck` | Clicking a hen, and a new hen arriving (3 takes) | Yes |
 | `stork` | Clicking the stork on the villa roof: its bill clattering | Yes |
 | `donkey` | Clicking the donkey: a bray | Yes |
 | `cart_dirt` | Riding the cart to market along the dirt road: hooves, gravel and creaking wood | Yes |
 | `cart_stone` | Riding the cart to market along the paved road: hooves and wheels knocking over the stones | Yes |
-| `tab` | Turning to a tab in a window or a bookmark in the journal | Yes |
-| `rustle` | Someone greeting the player when clicked: their clothes as they wave or bow (3 takes) | Yes |
-| `salve_woman` | A woman greeting the player when clicked: a warm "Salve!" | No |
-| `salve_man` | A man greeting the player when clicked: a friendly "Salve!" | No |
+| `tab` | Turning to a tab in a window or a bookmark in the journal (2 takes) | Yes |
+| `rustle` | Someone greeting the player when clicked, or a helper joining: their clothes as they wave or bow; the fox dashing off; the loom's shuttle passing (3 takes) | Yes |
+| `salve_woman` | A woman greeting the player when clicked, or a woman helper joining: a warm "Salve!" | No |
+| `salve_man` | A man greeting the player when clicked, or a man helper joining: a friendly "Salve!" | No |
 | `hammer` | Repairs and villa building | Yes |
 | `built` | Building work finished: a building repaired or improved, a villa stage, a farm improvement. Made from `hammer` and `made` by `tools/audio/compose_sounds.py` | Yes |
 | `flourish` | A deed bought, an achievement: one harp chord from the soundtrack, made by `tools/audio/compose_sounds.py` | Yes |
 | `triumph` | Earning the Triumph, the achievement for all the others: a brass fanfare | Yes |
 | `nope` | Something cannot be done (not enough coins, no room) | Yes |
-| `made` | A workshop finishes a batch | Yes |
+| `made` | A workshop finishes a batch; a decoration bought; the loom's beater packing each row | Yes |
 | `oven` | The bakery takes out bread | Yes |
 | `cork` | Wine drawn from the cellar | Yes |
 | `rain_start` | Rain begins | Yes |
 | `rooster` | Dawn, once there are hens (2 takes) | Yes |
-| `goat` | Now and then once there are goats, and clicking a goat (3 takes) | Yes |
+| `goat` | Now and then once there are goats, clicking a goat, and a new goat arriving (3 takes) | Yes |
 | `market_bell` | Arriving in the market town | Yes |
 | `page_turn` | Opening the journal | Yes |
 | `shrine_bell` | A blessing at the lararium | Yes |
