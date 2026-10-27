@@ -64,7 +64,7 @@ func show_advice(id: String, text: String) -> void:
 	tween.tween_property(_portrait, "position:x", 0.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_box.modulate.a = 0.0
 	tween.tween_property(_box, "modulate:a", 1.0, 0.3).set_delay(0.25)
-	Sfx.play("page_turn", -6.0)
+	Sfx.play("advice", -3.0)
 
 
 func showing() -> String:

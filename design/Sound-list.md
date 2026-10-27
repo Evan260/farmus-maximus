@@ -29,6 +29,7 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `hammer` | Repairs and villa building | Yes |
 | `built` | Building work finished: a building repaired or improved, a villa stage, a farm improvement. Made from `hammer` and `made` by `tools/audio/compose_sounds.py` | Yes |
 | `flourish` | A deed bought, an achievement: one harp chord from the soundtrack, made by `tools/audio/compose_sounds.py` | Yes |
+| `advice` | Uncle Marcus has new advice: one soft harp note from the soundtrack, made by `tools/audio/compose_sounds.py` | Yes |
 | `triumph` | Earning the Triumph, the achievement for all the others: a brass fanfare | Yes |
 | `nope` | Something cannot be done (not enough coins, no room) | Yes |
 | `made` | A workshop finishes a batch; a decoration bought; the loom's beater packing each row | Yes |

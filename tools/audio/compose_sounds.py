@@ -6,6 +6,9 @@ timber, so it sounds like the builders knocking in the final peg and downing too
 flourish: a deed bought or an achievement earned; one harp chord taken from the soundtrack itself (the opening of
 The Unknown Awaits You), so the moment sounds like part of the music.
 
+advice: Uncle Marcus has something new to say; a single soft harp note from Solitary Expedition, a quieter cousin of
+the flourish, so his advice is noticed without sounding like a reward.
+
 Usage: python tools/audio/compose_sounds.py
 Reads and writes game/assets/audio/sfx/.
 """
@@ -41,8 +44,20 @@ def flourish():
     save("flourish", out, rate)
 
 
+def advice():
+    data, rate = sf.read(MUSIC / "solitary_expedition.ogg")
+    data = data.mean(axis=1) if data.ndim > 1 else data
+    out = data[int(11.99 * rate):int(12.85 * rate)].copy()
+    out[: int(0.005 * rate)] *= np.linspace(0, 1, int(0.005 * rate))
+    fade = int(0.45 * rate)
+    out[-fade:] *= np.linspace(1, 0, fade) ** 2
+    out *= 0.6 / (np.abs(out).max() or 1.0)
+    save("advice", out, rate)
+
+
 def main():
     flourish()
+    advice()
     hammer, rate = read("hammer")
     thud, thud_rate = read("made")
     if thud_rate != rate:
