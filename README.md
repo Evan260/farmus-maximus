@@ -70,12 +70,18 @@ A play-test build is one self-contained `.exe`:
 GODOT --headless --path game --export-release "Windows" "../builds/windows/Farmus Maximus.exe"
 ```
 
-Zip it with `tools/playtest/How to play test.txt` to send to a tester. Steam builds go up with `python tools/steam/publish.py playtest`; see [Steam publishing](design/Steam-publishing.md) for the one-time setup.
+Write the credits file beside it, since the licences of Godot and the stork recording ask to ship with the game:
+
+```
+GODOT --headless --path game --script res://tools/write_credits.gd -- --out="../builds/windows/Credits and licences.txt"
+```
+
+Zip both with `tools/playtest/How to play test.txt` to send to a tester. Steam builds go up with `python tools/steam/publish.py playtest`; see [Steam publishing](design/Steam-publishing.md) for the one-time setup.
 
 ## Art and sound
 
 The art is pixel art, generated with PixelLab (`tools/art/pixellab.py`, every paid call logged in `tools/art/ledger.csv`) and drawn or finished with the Python scripts in `tools/art/`. Each script says at the top what it makes and how to run it again.
 
-Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; the game's Credits screen names them all, as listed in the [sound list](design/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music. Only the "Salve!" greetings are still missing.
+Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; `Credits and licences.txt`, shipped beside the game, names them all, as listed in the [sound list](design/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music. Only the "Salve!" greetings are still missing.
 
 The font is Silkscreen, under the SIL Open Font License (`game/assets/fonts/OFL.txt`).

@@ -56,9 +56,9 @@ Each loops without a gap, so the end must join the start smoothly.
 
 ## Recordings
 
-The animal calls and the other recorded effects come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork, which is CC BY 4.0 and must be credited in the game's credits as shown.
+The animal calls and the other recorded effects come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork, which is CC BY 4.0 and must be credited as shown.
 
-Every recording below is also named on the game's Credits screen, which reads `game/data/credits.json`; add a line there whenever a recording is added. A CC BY recording must be credited there in the form its licence asks.
+Every recording below is also named in `Credits and licences.txt`, which ships beside the game and is written from `game/data/credits.json` by `game/tools/write_credits.gd`; add a line to `credits.json` whenever a recording is added. A CC BY recording must be credited there in the form its licence asks.
 
 | Sound | Recording | Licence |
 |---|---|---|

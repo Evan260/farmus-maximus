@@ -36,7 +36,7 @@ func open_panel(which: String) -> void:
 		m.hud.open_window("settings")
 		m.hud._settings.tab = which.trim_prefix("settings:")
 		m.hud._settings.show_page()
-	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions", "credits"]:
+	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions"]:
 		m.hud.open_window(which)
 	else:
 		m.hud.show_building(which)

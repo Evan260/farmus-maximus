@@ -28,6 +28,7 @@ fi
 if [ -d "$STAGE/macos" ]; then
   mkdir -p "$WORK/content/macos"
   unzip -q "$STAGE/macos/"*.zip -d "$WORK/content/macos"
+  cp "$STAGE/macos/"*.txt "$WORK/content/macos/"
   app=$(ls -d "$WORK/content/macos/"*.app)
   chmod 755 "$app/Contents/MacOS/"*
   if [ -f "$APPLE/developer_id.p12" ] && [ -f "$APPLE/api_key.json" ]; then

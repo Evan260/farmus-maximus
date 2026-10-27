@@ -39,6 +39,9 @@ DEMO_PRESETS = {
 }
 
 
+CREDITS_FILE = "Credits and licences.txt"
+
+
 def fail(text):
     sys.exit("publish: " + text)
 
@@ -58,6 +61,12 @@ def export(platform, folder, demo):
                             capture_output=True, text=True)
     if not (folder / name).exists():
         fail(f"the {platform} export failed:\n{result.stdout[-2000:]}\n{result.stderr[-2000:]}")
+    # The licences of Godot and of the stork recording ask for their notice to ship with the game, so it goes beside it.
+    credits = folder / CREDITS_FILE
+    subprocess.run([str(GODOT), "--headless", "--path", str(ROOT / "game"), "--script", "res://tools/write_credits.gd", "--", f"--out={credits}"],
+                   capture_output=True, text=True)
+    if not credits.exists():
+        fail(f"could not write {CREDITS_FILE} for {platform}")
     print(f"built {platform}: {folder / name}")
 
 
