@@ -2421,18 +2421,18 @@
 			}
 		},
 		{
-			"id": "unlock",
-			"text": "One bed never fed a family. Click a bed with a lock on it to dig another.",
-			"done": {
-				"stat": "plots_unlocked",
-				"at": 1
-			}
-		},
-		{
 			"id": "cart",
 			"text": "Now, to market! Click the cart to ride into town, then click the market stalls to sell what you have grown.",
 			"done": {
 				"stat": "sold_market",
+				"at": 1
+			}
+		},
+		{
+			"id": "unlock",
+			"text": "One bed never fed a family. Click a bed with a lock on it to dig another.",
+			"done": {
+				"stat": "plots_unlocked",
 				"at": 1
 			}
 		},
