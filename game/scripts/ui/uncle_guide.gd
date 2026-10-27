@@ -1,5 +1,5 @@
 extends Control
-## Uncle Marcus, who left the farm to the player, leans in from the bottom left of the screen with a word of advice
+## Uncle Marcus, who left the farm to the player, stands in the bottom left corner of the screen with a word of advice
 ## for the next thing to do: plant, harvest, dig more beds, sell at market, and so on. Each new piece of advice slides
 ## in beside his portrait; clicking him folds the advice away and back. When every step is done he says goodbye.
 
@@ -51,7 +51,7 @@ func show_advice(id: String, text: String) -> void:
 	_box.reset_size()
 	# He slides in from the left edge, and the advice follows a moment later.
 	var tween := create_tween().set_parallel()
-	_portrait.position.x = -70
+	_portrait.position.x = -100
 	tween.tween_property(_portrait, "position:x", 0.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_box.modulate.a = 0.0
 	tween.tween_property(_box, "modulate:a", 1.0, 0.3).set_delay(0.25)
@@ -62,12 +62,17 @@ func showing() -> String:
 	return _shown_id if visible else ""
 
 
+## He stands in the corner of the screen, cut off at the waist by its bottom edge; his advice sits beside his head,
+## high enough to keep clear of the fields.
 func _process(delta: float) -> void:
 	if not visible:
 		return
 	_t += delta
+	var screen := get_parent_area_size()
+	size = screen
 	_box.reset_size()
-	size = Vector2(64 + 4 + _box.size.x, maxf(64, _box.size.y))
+	var tall := PORTRAIT.get_height()
 	# He breathes gently, a pixel up and down, so he seems present rather than pasted on.
-	_portrait.position.y = size.y - 64 + (1.0 if fmod(_t, 2.4) < 1.2 else 0.0)
-	_box.position = Vector2(66, size.y - _box.size.y - 18)
+	_portrait.position.y = screen.y - tall + 2 + (1.0 if fmod(_t, 2.4) < 1.2 else 0.0)
+	var top := minf(screen.y - tall + 6, screen.y * 0.6 - _box.size.y)
+	_box.position = Vector2(PORTRAIT.get_width() - 4, roundf(maxf(30.0, top)))

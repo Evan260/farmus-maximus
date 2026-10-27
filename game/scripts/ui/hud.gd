@@ -383,7 +383,7 @@ func _update_tip() -> void:
 			get_tree().create_timer(14.0).timeout.connect(func(): Game.stats["guide_seen"] = 2)
 	else:
 		_uncle.show_advice("", "")
-	_uncle.position = Vector2(4, _above_toolbar() - _uncle.size.y - 4)
+	_uncle.position = Vector2.ZERO
 
 
 func _on_discovered(id: String) -> void:
