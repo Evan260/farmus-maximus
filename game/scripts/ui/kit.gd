@@ -7,6 +7,10 @@ const FUSION := "res://assets/fonts/fusion-pixel/"
 ## whole interface uses a 10-pixel font instead.
 const TEN_PIXEL := ["ru", "uk", "be", "bg", "pl", "tr"]
 const PANEL_TEX := preload("res://assets/ui/panel.png")
+
+## The interface fonts made so far, one per language, and the shared 10-pixel font.
+static var _fonts := {}
+static var _ten_pixel: FontFile
 const BUTTON_TEX := preload("res://assets/ui/button.png")
 const ICONS := "res://assets/sprites/icons/"
 ## Dark ink for text on parchment, and cream for text on terracotta buttons or straight over the scene.
@@ -359,8 +363,16 @@ static func make_theme() -> Theme:
 
 ## The interface font for the current language: the Silkscreen pixel font, falling back to a pixel font with the
 ## accented letters and the Chinese, Japanese and Korean characters it lacks, in the forms the language uses.
+## Each language's font is made once and kept, because text drawn with a font that is then thrown away loses its
+## letters and shows as solid blocks.
 static func ui_font() -> Font:
 	var locale := TranslationServer.get_locale()
+	if not _fonts.has(locale):
+		_fonts[locale] = _make_ui_font(locale)
+	return _fonts[locale]
+
+
+static func _make_ui_font(locale: String) -> Font:
 	var cyrillic := ten_pixel_font()
 	if locale.get_slice("_", 0) in TEN_PIXEL:
 		return cyrillic
@@ -379,7 +391,9 @@ static func ui_font() -> Font:
 
 ## The 10-pixel font with Cyrillic and every accented Latin letter, drawn at size 10.
 static func ten_pixel_font() -> FontFile:
-	return _crisp(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
+	if _ten_pixel == null:
+		_ten_pixel = _crisp(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
+	return _ten_pixel
 
 
 ## The interface's text size in pixels, which is the size its pixel font is drawn for.
