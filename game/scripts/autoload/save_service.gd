@@ -167,7 +167,7 @@ func play(n: int) -> void:
 	get_tree().reload_current_scene()
 
 
-## Starts a new farm with its name in an empty slot and plays it from the uncle's letter.
+## Starts a new farm with its name in an empty slot and plays it from the first-day welcome.
 func create(n: int, farm_name: String) -> void:
 	save_game()
 	slot = n

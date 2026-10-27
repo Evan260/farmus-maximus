@@ -67,7 +67,7 @@ var furnishings := {}
 var pets := {}
 ## What the player named their farm.
 var farm_name := ""
-## Whether this farm's player has read the uncle's letter that opens it.
+## Whether this farm has had its first-day welcome: the choice of pets and Uncle Marcus's greeting.
 var intro_seen := false
 ## False on a new farm until the player has chosen their dog and cat; until then neither is about on the farm.
 var pets_chosen := false
@@ -1547,7 +1547,7 @@ func to_dict() -> Dictionary:
 func from_dict(d: Dictionary) -> void:
 	new_game()
 	farm_name = String(d.get("farm_name", ""))
-	# Farms saved before the letter was kept per farm had already been opened, letter and all.
+	# Farms saved before the welcome was kept per farm had already been opened and played.
 	intro_seen = bool(d.get("intro_seen", true))
 	pets_chosen = bool(d.get("pets_chosen", true))
 	coins = int(d.get("coins", coins))

@@ -36,8 +36,6 @@ var tool := "harvest"
 var _toolbar: PanelContainer
 ## The title screen while it is showing.
 var _title: Control
-## The uncle's letter while it is showing; nothing else on screen answers until it is closed.
-var _letter: Control
 var _tool_row: HBoxContainer
 var _tool_buttons := {}
 var _tool_signature := ""
@@ -169,18 +167,21 @@ func title_open() -> bool:
 	return _title != null
 
 
-## True while the title screen or the letter covers the estate, so clicks and keys leave the farm alone.
+## True while the title screen covers the estate, so clicks and keys leave the farm alone.
 func modal_open() -> bool:
-	return _title != null or _letter != null
+	return _title != null
 
 
-## Once the farm is on screen: the uncle's letter on a new farm, or what happened while the player was away.
+## Once the farm is on screen: on a new farm the player chooses their dog and cat, after which Uncle Marcus welcomes
+## them; otherwise, what happened while the player was away.
 func _after_title() -> void:
-	# A farmer who already has harvests behind them has read the letter long ago.
+	# A farmer who already has harvests behind them was welcomed long ago.
 	if not Game.intro_seen and int(Game.stats.get("harvested", 0)) > 0:
 		Game.intro_seen = true
 	if not Game.intro_seen:
-		_show_intro()
+		Game.intro_seen = true
+		Saves.save_game()
+		_choose_pets()
 	elif not Saves.pending_summary.is_empty():
 		_show_away(Saves.pending_summary)
 		Saves.pending_summary = {}
@@ -364,11 +365,11 @@ func _apply_text_size() -> void:
 		l.add_theme_font_size_override("font_size", UiKit.text_size() * (2 if Settings.large_text else 1))
 
 
-## Uncle Marcus gives the next piece of advice once the farm is settled in: after the letter and the choice of pets,
+## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
 ## and never over the title screen or the strip. When every step is done he says goodbye, once.
 func _update_tip() -> void:
 	_tip.visible = false
-	var ready := Settings.show_tutorial and not Windowing.strip and _title == null and _letter == null and Game.pets_chosen and not _companions.visible
+	var ready := Settings.show_tutorial and not Windowing.strip and _title == null and Game.pets_chosen and not _companions.visible
 	var step: Dictionary = Game.journal.tutorial_step() if ready else {}
 	if not step.is_empty():
 		Game.stats["guide_seen"] = 1
@@ -412,56 +413,7 @@ func _build_zone_bar() -> void:
 	_zone_bar.offset_top = 4
 
 
-func _show_intro() -> void:
-	_letter = ColorRect.new()
-	_letter.color = Color(0, 0, 0, 0.35)
-	_letter.mouse_filter = Control.MOUSE_FILTER_STOP
-	_root.add_child(_letter)
-	_letter.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var holder := UiKit.column(_letter)
-	holder.alignment = BoxContainer.ALIGNMENT_CENTER
-	var letter := PanelContainer.new()
-	var paper := StyleBoxTexture.new()
-	paper.texture = LetterPaper.sheet(Vector2i(250, 236))
-	paper.set_content_margin_all(14)
-	letter.add_theme_stylebox_override("panel", paper)
-	holder.add_child(letter)
-	var col := UiKit.column(letter)
-	col.add_theme_constant_override("separation", 4)
-	var ink := LetterPaper.INK
-	var date := UiKit.label(col, tr("Rome, on the Kalends of March"))
-	date.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	date.add_theme_color_override("font_color", ink.lerp(LetterPaper.PARCH, 0.35))
-	UiKit.label(col, tr("My dear heir,")).add_theme_color_override("font_color", ink)
-	var opening := tr("The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.")
-	if Game.farm_name != "":
-		opening = tr("The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.") % Game.farm_name
-	for line in [opening,
-			tr("Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.")]:
-		UiKit.para(col, line, 222).add_theme_color_override("font_color", ink)
-	var sign := UiKit.row(col)
-	var gap := Control.new()
-	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sign.add_child(gap)
-	var bye := UiKit.column(sign)
-	UiKit.label(bye, tr("With love,")).add_theme_color_override("font_color", ink)
-	UiKit.label(bye, tr("your uncle Marcus")).add_theme_color_override("font_color", ink)
-	var wax := TextureRect.new()
-	wax.texture = LetterPaper.seal()
-	wax.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-	wax.custom_minimum_size = Vector2(18, 18)
-	wax.size_flags_vertical = Control.SIZE_SHRINK_END
-	sign.add_child(wax)
-	var begin := UiKit.button(holder, tr("Begin"), func(): Game.intro_seen = true; Saves.save_game(); _letter.queue_free(); _letter = null; _choose_pets())
-	begin.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	begin.custom_minimum_size = Vector2(90, 0)
-	holder.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	holder.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	holder.grow_vertical = Control.GROW_DIRECTION_BOTH
-	UiKit.fade_in(_letter, 0.6)
-
-
-## After the letter the player names the dog and cat; however the window is closed, the pets then come home.
+## On a new farm the player names the dog and cat; however the window is closed, the pets then come home.
 func _choose_pets() -> void:
 	_open(_companions)
 	_companions.closed.connect(func():

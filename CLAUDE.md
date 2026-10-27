@@ -47,7 +47,7 @@ Godot executable: `C:\Users\evand\AppData\Local\Microsoft\WinGet\Packages\GodotE
 - Art: one cohesive background painting per land; nothing that moves inside a background; everything that moves or changes is a separate sprite; buildings sit on fixed anchor spots with one sprite per stage.
 - Characters are generated outline-free with natural proportions to match the backgrounds.
 - No punishment for being away: crops never die; the only offline limit is a full storehouse.
-- Saves: a player keeps up to three farms, each in `user://farm_<n>.json` with three rolling backups; `user://farms.json` remembers the one played last (`save_service.gd`). The farm's name and whether its opening letter was read are part of each save.
+- Saves: a player keeps up to three farms, each in `user://farm_<n>.json` with three rolling backups; `user://farms.json` remembers the one played last (`save_service.gd`). The farm's name and whether it has had its first-day welcome are part of each save.
 - Sounds are found by file name: `Sfx.play("rain")` plays `assets/audio/sfx/rain.wav` if it exists and is silent otherwise; any file in `assets/audio/music/` joins the playlist, as does any in the player's own `user://music/` folder, which Settings > Sound opens. `design/Sound-list.md` lists the names the game asks for.
 - The demo is the same project exported with the `demo` feature (presets in `game/export_presets.cfg`); `Game.is_demo()` caps it at villa stage 3 and the first two zones.
 

@@ -339,7 +339,7 @@ These were open questions; the full build settled them as follows. Any of them c
 | How many zones at launch? | All five: olive grove, home farm, workshop yard, vineyard slope, pasture. |
 | Which goods have quality? | Every good except materials, straw, wax, manure and truffles. Workshops pass the quality of their ingredients on. |
 | A walking character, or an unseen hand? | An unseen hand. The helpers, the dog and the townspeople are the people on screen. |
-| How much story? | Light: a letter from your uncle Marcus on the first day, and the regulars' lines on the notice board. |
+| How much story? | Light: your uncle Marcus, who left you the farm, welcomes you on the first day and guides your first steps, and the regulars have their lines on the notice board. |
 | When do deeds go on sale? | The grove with the restored farmhouse, the workshop yard and vineyard with the villa rustica, the pasture with the portico. |
 
 Also added during the build: a dairy (milk to cheese) and a perfumer to run the drying shed and unguent workshop, since no other helper covered them. The unguent workshop stands on the vineyard slope, because the workshop yard had no room for a fourth building.

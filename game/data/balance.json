@@ -2406,7 +2406,7 @@
 	"tutorial": [
 		{
 			"id": "plant",
-			"text": "Salve, my dear heir! The beds by the house are dug and waiting. Pick the lavender on the toolbar below, then click an empty bed to plant it.",
+			"text": "Salve, my dear heir! The old farm is yours now: the house is a ruin, but the soil is good. Pick the lavender on the toolbar below, then click an empty bed to plant it.",
 			"done": {
 				"stat": "planted",
 				"at": 1
