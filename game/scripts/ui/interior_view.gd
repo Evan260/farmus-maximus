@@ -572,8 +572,10 @@ func _furnishing_card(id: String, named: bool) -> void:
 	var r := UiKit.row(card)
 	var buy := UiKit.button(r, tr("Buy for %d sestertii") % int(f.get("price", 0)), func():
 		if Game.buy_furnishing(id):
-			Sfx.play("coins")
-			Sfx.play("unlock", -4.0)
+			Sfx.play("coins", -6.0)
+			# Each furnishing arrives with its own sound: water poured in, a fire lit, pots set down.
+			for sound in f.get("sounds", []):
+				Sfx.play(String(sound), -2.0)
 			_sprites[id].visible = true
 			UiKit.fade_in(_sprites[id], 0.6)
 			_signature = "")

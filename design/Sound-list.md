@@ -38,6 +38,9 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `market_bell` | Arriving in the market town | Yes |
 | `page_turn` | Opening the journal | Yes |
 | `shrine_bell` | A blessing at the lararium | Yes |
+| `water_fill` | Filling the rain pool in the farmhouse | No |
+| `fire_light` | Lighting the hearth or the lamps in the farmhouse | No |
+| `clay` | Amphorae set on the farmhouse shelves | No |
 
 ## Ambience (`game/assets/audio/ambience/`)
 

@@ -105,7 +105,8 @@ FURNISHINGS = [
     ("fire", lambda room: shapes(rects=[(77, 88, 137, 155)]),
      "the inside of a cold dark stone fireplace, sooty bricks and a heap of grey ash, no fire, no flames, no logs"),
     ("lamps", lambda room: flames(room, [(62, 40, 79, 58), (125, 45, 139, 61), (12, 108, 29, 131), (299, 95, 312, 110)]), heal),
-    ("plants", lambda room: shapes(rects=[(0, 220, 44, 269), (434, 110, 479, 178), (426, 206, 479, 269)]),
+    # The bottom left pot's area stops at the rug's fringed left edge, so taking the plant away never cuts the rug.
+    ("plants", lambda room: shapes(polys=[[(0, 220), (30, 220), (33, 230), (45, 262), (46, 269), (0, 269)]], rects=[(434, 110, 479, 178), (426, 206, 479, 269)]),
      "the flagstone floor and the lower stone wall, no plants, no pots"),
     ("scrolls", lambda room: shapes(rects=[(204, 2, 292, 37)]),
      "an empty wooden shelf against a worn red plaster wall, nothing on the shelves", "amphorae"),
@@ -155,11 +156,11 @@ def _shared_mask(room, step):
 
 
 def tidy_rug(img):
-    """The repainted rug leaves a sliver of stripes past its fringed left edge; the floor just above covers it."""
+    """The repainted rug leaves a sliver of stripes past its fringed left edge; the floor just beside it covers it."""
     a = np.array(img.convert("RGB"))
-    sliver = shapes(polys=[[(14, 204), (48, 204), (48, 206), (33, 230), (28, 236), (14, 236)]]) & (lum(a.astype(int)) > 0)
+    sliver = shapes(polys=[[(22, 212), (46, 206), (33, 230), (28, 234), (22, 234)]])
     for y, x in zip(*np.nonzero(sliver)):
-        a[y, x] = a[y - 18, x]
+        a[y, x] = a[y, x - 18]
     return Image.fromarray(a)
 
 

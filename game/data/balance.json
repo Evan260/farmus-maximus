@@ -1664,6 +1664,7 @@
 			"fire": {
 				"name": "A fire in the hearth",
 				"desc": "Logs crackling in the old hearth. The house is warm again.",
+				"sounds": ["fire_light"],
 				"price": 300,
 				"requires_villa": 2,
 				"rects": [
@@ -1678,6 +1679,7 @@
 			"lamps": {
 				"name": "Oil lamps",
 				"desc": "Clay lamps on the mantel and the tables, lit every evening.",
+				"sounds": ["fire_light"],
 				"price": 800,
 				"requires_villa": 2,
 				"rects": [
@@ -1710,6 +1712,7 @@
 			"plants": {
 				"name": "Potted plants",
 				"desc": "Aloe and rosemary in terracotta pots, by the door and along the walls.",
+				"sounds": ["plant", "rustle"],
 				"price": 2500,
 				"requires_villa": 2,
 				"rects": [
@@ -1736,6 +1739,7 @@
 			"amphorae": {
 				"name": "Amphorae",
 				"desc": "Jars of the estate's own oil and wine along the shelves.",
+				"sounds": ["clay"],
 				"price": 4000,
 				"requires_villa": 3,
 				"rects": [
@@ -1756,6 +1760,7 @@
 			"scrolls": {
 				"name": "Scrolls",
 				"desc": "A little library: Cato and Varro on farming, and Virgil's Georgics for the evenings.",
+				"sounds": ["page_turn"],
 				"price": 6000,
 				"requires_villa": 3,
 				"rects": [
@@ -1770,6 +1775,7 @@
 			"panel": {
 				"name": "Painted panel",
 				"desc": "A framed panel painted with a winding maze, the kind the Romans called a labyrinth.",
+				"sounds": ["hammer"],
 				"price": 10000,
 				"requires_villa": 4,
 				"rects": [
@@ -1784,6 +1790,7 @@
 			"water": {
 				"name": "Rain pool",
 				"desc": "The impluvium filled again, cool and still, catching the light.",
+				"sounds": ["water_fill"],
 				"price": 15000,
 				"requires_villa": 4,
 				"rects": [

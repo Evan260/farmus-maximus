@@ -356,7 +356,10 @@ func _ready() -> void:
 	Game.building_made.connect(_on_building_made)
 	Game.helper_hired.connect(_spawn_helper)
 	Game.weather_changed.connect(_on_weather_changed)
-	Game.animal_added.connect(func(_k): Sfx.play("unlock"))
+	# A new animal announces itself in its own voice; a helper arrives with a greeting; a decoration is knocked into place.
+	Game.animal_added.connect(func(kind): Sfx.play({"hen": "cluck", "goat": "goat"}.get(kind, "unlock")))
+	Game.helper_hired.connect(func(id): Sfx.play("rustle", -6.0); Sfx.play("salve_woman" if id in WOMEN else "salve_man", -4.0))
+	Game.decoration_bought.connect(func(_id): Sfx.play("made", -4.0))
 	Game.pets_changed.connect(_spawn_pets)
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
@@ -1452,6 +1455,9 @@ func _on_upgrade_bought(id: String) -> void:
 		road.pave_road()
 		_dust(Vector2(cam_x + _view_size().x / 2.0, 280), 24)
 	if id == "cart_capacity":
+		# The new cart is knocked together on the spot and rolled out.
+		Sfx.play("made", -4.0)
+		Sfx.play("cart", -6.0)
 		rig.size_cart()
 		_dust(Vector2(_cart.position.x + 30, RIG_BASE), 14)
 
