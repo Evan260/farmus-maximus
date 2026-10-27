@@ -22,8 +22,8 @@ const SKY_AT := {"room": [Vector2(399, 57), Vector2(230, 170)], "ruin": [Vector2
 ## The loom, and the line its shuttle runs along between the warp threads.
 const LOOM := Rect2(155, 84, 85, 80)
 const SHED := [178.0, 226.0, 111.0]
-## Pets are drawn twice the size they are on the estate, since the room is seen from much closer.
-const PET_SCALE := 2.0
+## Inside, the pets are drawn at the room painting's own detail, asleep, one picture for each breed.
+const ROOM_PETS := "res://assets/sprites/room_pets/"
 const FIRE_GLOW := Vector2(101, 140)
 const LAMP_FLAMES := [Vector2(70, 49), Vector2(132, 53), Vector2(20, 119), Vector2(305, 102)]
 ## The pool's surface, as a shape the shimmer stays inside.
@@ -45,9 +45,8 @@ var _sprites := {}
 var _marks: Node2D
 var _dog: AnimatedSprite2D
 var _dog_shadow: Sprite2D
-var _dog_offsets := {}
-## Set while the dog is awake from a stroke: up, wagging, then lying back down.
-var _dog_awake := false
+## Set while a stroked pet is stirring, so a second stroke waits for the first to finish.
+var _stirring := {}
 var _cat_shadow: Sprite2D
 var _cat: AnimatedSprite2D
 var _ui_layer: CanvasLayer
@@ -111,12 +110,10 @@ func _ready() -> void:
 	_dog_shadow = _shadow(Vector2(102, 244), 80, 14)
 	_dog = AnimatedSprite2D.new()
 	_dog.centered = false
-	_dog.scale = Vector2(PET_SCALE, PET_SCALE)
 	_scene.add_child(_dog)
 	_cat_shadow = _shadow(Vector2(280, 115), 40, 9)
 	_cat = AnimatedSprite2D.new()
 	_cat.centered = false
-	_cat.scale = Vector2(PET_SCALE, PET_SCALE)
 	_scene.add_child(_cat)
 	_marks = Node2D.new()
 	_marks.draw.connect(_draw_marks)
@@ -230,37 +227,28 @@ func _dress_room() -> void:
 		pet.visible = not ruined()
 	if ruined():
 		return
-	var dog: Dictionary = Game.pets.get("dog", {})
-	var dog_dir := Coats.breed_dir("dog", String(dog.get("breed", "")))
-	var dog_look := func(tex: Texture2D) -> Texture2D: return Coats.recolour(tex, "dog", String(dog.get("coat", "")))
+	_dog.sprite_frames = _room_pet("dog", "hound")
+	_dog.position = Vector2(102, 248)
+	_cat.sprite_frames = _room_pet("cat", "tabby")
+	_cat.position = Vector2(280, 120)
+	for pet in [_dog, _cat]:
+		pet.play("sleep")
+		pet.offset = Frames.anchor(pet.sprite_frames.get_frame_texture("sleep", 0))
+	_fit()
+
+
+## The pet's room picture for its breed, in the coat the player chose.
+func _room_pet(kind: String, fallback: String) -> SpriteFrames:
+	var pet: Dictionary = Game.pets.get(kind, {})
+	var breed := String(pet.get("breed", fallback))
+	var path := ROOM_PETS + breed + ".png"
+	if not ResourceLoader.exists(path):
+		path = ROOM_PETS + fallback + ".png"
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
-	# Lying down is the first four pictures of the sleep folder; the sleeping loop is the rest.
-	Frames.add_folder(f, "sleep", dog_dir + "sleep_east/", 3.0, true, dog_look, 4)
-	Frames.add_folder(f, "lie_down", dog_dir + "sleep_east/", 6.0, false, dog_look)
-	while f.get_frame_count("lie_down") > 4:
-		f.remove_frame("lie_down", 4)
-	Frames.add_folder(f, "happy", dog_dir + "happy_east/", 12.0, true, dog_look, 1)
-	_dog_offsets = {}
-	for anim in f.get_animation_names():
-		_dog_offsets[anim] = Frames.anchor(f.get_frame_texture(anim, 0))
-	_dog.sprite_frames = f
-	_dog_play("sleep")
-	_dog.position = Vector2(102, 246)
-	var cat: Dictionary = Game.pets.get("cat", {})
-	var cat_dir := Coats.breed_dir("cat", String(cat.get("breed", "")))
-	var cf := SpriteFrames.new()
-	cf.remove_animation("default")
-	var cat_look := func(tex: Texture2D) -> Texture2D: return Coats.recolour(tex, "cat", String(cat.get("coat", ""))) if String(cat.get("coat", "")) != "" else tex
-	var count := Frames.add_folder(cf, "sleep", cat_dir + "sleep_east/", 1.0, false, cat_look)
-	_cat.sprite_frames = cf
-	if count > 0:
-		# The cat is already curled up, so it shows the last picture of lying down.
-		_cat.animation = "sleep"
-		_cat.frame = count - 1
-		_cat.offset = Frames.anchor(cf.get_frame_texture("sleep", count - 1))
-	_cat.position = Vector2(280, 117)
-	_fit()
+	f.add_animation("sleep")
+	f.add_frame("sleep", Coats.recolour(load(path), kind, String(pet.get("coat", ""))))
+	return f
 
 
 func _process(delta: float) -> void:
@@ -275,6 +263,10 @@ func _process(delta: float) -> void:
 		warmth = 0.08 + (0.14 if Game.furnishings.has("fire") else 0.0) + (0.1 if Game.furnishings.has("lamps") else 0.0)
 	_light.color = day.lerp(Color(1.0, 0.86, 0.68), warmth * night).lerp(Color(1.0, 0.97, 0.92), 0.4 * (1.0 - night))
 	_weaving = maxf(0.0, _weaving - delta)
+	# Sleeping pets breathe: a slow rise and fall of a pixel.
+	for pet in [_dog, _cat]:
+		if not _stirring.has(pet):
+			pet.scale = Vector2(1.0, 1.0 + 0.025 * sin(_t * (1.6 if pet == _dog else 2.1)))
 	_loom.queue_redraw()
 	for h in _hearts:
 		h["age"] += delta
@@ -396,7 +388,7 @@ func _pet_at(point: Vector2) -> AnimatedSprite2D:
 			continue
 		var tex: Texture2D = pet.sprite_frames.get_frame_texture(pet.animation, pet.frame)
 		var used := Rect2(tex.get_image().get_used_rect())
-		var box := Rect2(pet.position + (pet.offset + used.position) * PET_SCALE, used.size * PET_SCALE)
+		var box := Rect2(pet.position + pet.offset + used.position, used.size)
 		if box.grow(2).has_point(point):
 			return pet
 	return null
@@ -457,39 +449,26 @@ func _stroke(pet: AnimatedSprite2D) -> void:
 	# The dog thumps its tail as it stirs, gets up to wag, then settles back to sleep; the cat purrs in its sleep.
 	if dog:
 		Sfx.tail_thumps()
-		_wake_dog()
 	else:
 		Sfx.play("cat", -4.0)
 	Game.add_stat("pets", 1)
 	_hearts.append({"at": pet.position + Vector2(6 if dog else 0, -26 if dog else -30), "age": 0.0})
+	_stir(pet)
+
+
+## A stroked pet stirs without waking: a happy wriggle and a stretch, a little lean into the hand, then it settles.
+func _stir(pet: AnimatedSprite2D) -> void:
+	if _stirring.has(pet):
+		return
+	_stirring[pet] = true
 	var tween := create_tween()
-	tween.tween_property(pet, "scale", Vector2(PET_SCALE * 1.06, PET_SCALE * 0.94), 0.12)
-	tween.tween_property(pet, "scale", Vector2(PET_SCALE, PET_SCALE), 0.2)
-
-
-func _dog_play(anim: String, backwards := false) -> void:
-	if not _dog.sprite_frames.has_animation(anim):
-		return
-	_dog.offset = _dog_offsets.get(anim, Vector2.ZERO)
-	if backwards:
-		_dog.play_backwards(anim)
-	else:
-		_dog.play(anim)
-
-
-## Stroked, the sleeping dog rises from the rug, wags its tail for a little while, then lies back down and sleeps.
-func _wake_dog() -> void:
-	if _dog_awake or not _dog.sprite_frames.has_animation("happy"):
-		return
-	_dog_awake = true
-	_dog_play("lie_down", true)
-	await _dog.animation_finished
-	_dog_play("happy")
-	await get_tree().create_timer(2.6).timeout
-	_dog_play("lie_down")
-	await _dog.animation_finished
-	_dog_play("sleep")
-	_dog_awake = false
+	for k in 3:
+		tween.tween_property(pet, "scale", Vector2(1.04, 0.96), 0.1)
+		tween.tween_property(pet, "scale", Vector2(0.98, 1.03), 0.1)
+	tween.tween_property(pet, "rotation", -0.04, 0.25)
+	tween.tween_property(pet, "rotation", 0.0, 0.4)
+	tween.tween_property(pet, "scale", Vector2.ONE, 0.2)
+	tween.tween_callback(func(): _stirring.erase(pet))
 
 
 ## A few passes of the shuttle, each beaten home with a soft knock.

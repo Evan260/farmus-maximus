@@ -323,3 +323,13 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-26T22:08:03,inpaint,tools\art\sources\interior\steps\ruin_basin.png,0.0303,0,2.9774
 2026-10-26T22:08:23,inpaint,tools\art\sources\interior\steps\ruin_debris.png,0.0227,0,2.9548
 2026-10-26T22:22:06,inpaint,tools\art\sources\interior\steps\without_panel.png,0.0226,0,2.9322
+2026-10-26T22:29:34,proflash,C:/Users/evand/AppData/Local/Temp/claude/c--laragon-www-argo-books-website/0a8965cc-02ed-4fc0-b9ee-1dbcfec0e7fe/scratchpad/pets/hound.png,0.0237,0,2.9085
+2026-10-26T22:30:24,proflash,game\assets\sprites\room_pets\hound.png,0.0240,0,2.8845
+2026-10-26T22:30:52,proflash,game\assets\sprites\room_pets\molossian.png,0.0239,0,2.8605
+2026-10-26T22:31:21,proflash,game\assets\sprites\room_pets\sighthound.png,0.0239,0,2.8366
+2026-10-26T22:31:51,proflash,game\assets\sprites\room_pets\lapdog.png,0.0240,0,2.8126
+2026-10-26T22:32:29,proflash,game\assets\sprites\room_pets\sheepdog.png,0.0240,0,2.7886
+2026-10-26T22:33:07,proflash,game\assets\sprites\room_pets\tabby.png,0.0240,0,2.7647
+2026-10-26T22:33:36,proflash,game\assets\sprites\room_pets\longhair.png,0.0238,0,2.7409
+2026-10-26T22:34:05,proflash,game\assets\sprites\room_pets\spotted.png,0.0241,0,2.7168
+2026-10-26T22:34:34,proflash,game\assets\sprites\room_pets\stocky.png,0.0239,0,2.6929
