@@ -443,7 +443,11 @@ func _on_picture_input(event: InputEvent) -> void:
 ## A sleeping pet stirs at a stroke: it gives a happy sound and a heart floats up from it.
 func _stroke(pet: AnimatedSprite2D) -> void:
 	var dog := pet == _dog
-	Sfx.play("dog" if dog else "cat", -10.0 if dog else -4.0)
+	# The dog is asleep, so it only thumps its tail; the cat purrs in its sleep.
+	if dog:
+		Sfx.tail_thumps()
+	else:
+		Sfx.play("cat", -4.0)
 	Game.add_stat("pets", 1)
 	_hearts.append({"at": pet.position + Vector2(6 if dog else 0, -26 if dog else -30), "age": 0.0})
 	var tween := create_tween()
@@ -502,12 +506,20 @@ func _refresh() -> void:
 		return
 	_title.text = tr(String(Game.furnishing_info(_selected).get("name", ""))) if _selected != "" else tr("Furnish the house")
 	var ids: Array = [_selected] if _selected != "" else Balance.get_value("interior.furnishings", {}).keys()
-	# One furnishing needs only a short window; the whole list scrolls in a taller one.
-	_scroll.custom_minimum_size.y = 74 if _selected != "" else 170
 	for id in ids:
 		_furnishing_card(String(id), _selected == "")
 	if _selected != "":
 		UiKit.button(_list, tr("See everything"), func(): _open(""))
+	_size_panel.call_deferred()
+
+
+## One furnishing gets a window just tall enough for it; the whole list scrolls in a taller one. The text wraps only
+## once laid out, so this runs a frame after the window is filled.
+func _size_panel() -> void:
+	await get_tree().process_frame
+	var need := _list.get_combined_minimum_size().y + 2
+	_scroll.custom_minimum_size.y = minf(need, 170.0) if _selected != "" else 170.0
+	_panel.reset_size()
 
 
 func _furnishing_card(id: String, named: bool) -> void:

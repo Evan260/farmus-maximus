@@ -1,7 +1,8 @@
 extends Node2D
 ## The farm dog: trots along the front of the field, sits, naps (more often at night), and wags happily when petted.
 
-signal petted
+## Sent when the dog is stroked; sleepy is true when it was asleep, so it stirs quietly instead of barking.
+signal petted(sleepy: bool)
 
 ## The breed's folder of pictures, set from the breed before the dog is added.
 var dir := "res://assets/sprites/dog/"
@@ -49,6 +50,7 @@ func _process(delta: float) -> void:
 
 ## A sitting or sleeping dog gets up to greet whoever is petting it, then wags; a dog on its feet wags straight away.
 func pet() -> void:
+	var sleepy := _state in ["lie_down", "sleep"]
 	if _state in ["sit_down", "sit"]:
 		_state = "getting_up"
 		sprite.play_backwards("sit_down")
@@ -57,7 +59,7 @@ func pet() -> void:
 		sprite.play_backwards("lie_down")
 	elif _state != "getting_up":
 		_wag()
-	petted.emit()
+	petted.emit(sleepy)
 
 
 func _wag() -> void:

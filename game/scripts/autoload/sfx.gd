@@ -109,6 +109,12 @@ func open_music_folder() -> void:
 	OS.shell_open(folder)
 
 
+## A sleepy dog's tail beating a few soft thumps on the ground, which is all a dog woken by a stroke says.
+func tail_thumps(count := 3) -> void:
+	for k in count:
+		get_tree().create_timer(0.22 * k).timeout.connect(func(): play("thump", -15.0 - k * 2.0, 0.12))
+
+
 func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamPlayer:
 	var stream: AudioStream = null
 	if _takes.has(sound):

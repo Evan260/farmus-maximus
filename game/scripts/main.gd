@@ -1332,8 +1332,11 @@ func _on_cart_returned(coins: int) -> void:
 	hud.toast(tr("The cart is back: +%d sestertii") % coins)
 
 
-func _on_dog_petted() -> void:
-	Sfx.play("dog", -9.0, 0.06)
+func _on_dog_petted(sleepy := false) -> void:
+	if sleepy:
+		Sfx.tail_thumps()
+	else:
+		Sfx.play("dog", -9.0, 0.06)
 	Game.add_stat("pets", 1)
 	_hearts(dog.position + Vector2(0, -32))
 
