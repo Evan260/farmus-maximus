@@ -4,6 +4,14 @@ extends Control
 ## in beside his portrait; clicking him folds the advice away and back. When every step is done he says goodbye.
 
 const PORTRAIT := preload("res://assets/ui/uncle.png")
+## The portrait is drawn at twice its pixel size, with the screen's bottom edge cutting him off below the hands.
+const SCALE := 2.0
+const SHOWN_ROWS := 100
+## The picture's columns and row where his head ends and starts, so the advice can sit beside it or above it.
+const HEAD_RIGHT := 70
+const HEAD_TOP := 7
+## How far above the bottom of the scene the advice stays, in the scene's own pixels, so it never covers the crop fields.
+const FIELDS_CLEAR := 72.0
 
 var _portrait: TextureRect
 var _box: PanelContainer
@@ -18,6 +26,7 @@ func _ready() -> void:
 	visible = false
 	_portrait = TextureRect.new()
 	_portrait.texture = PORTRAIT
+	_portrait.scale = Vector2(SCALE, SCALE)
 	_portrait.mouse_filter = Control.MOUSE_FILTER_STOP
 	_portrait.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_portrait.tooltip_text = tr("Uncle Marcus")
@@ -51,7 +60,7 @@ func show_advice(id: String, text: String) -> void:
 	_box.reset_size()
 	# He slides in from the left edge, and the advice follows a moment later.
 	var tween := create_tween().set_parallel()
-	_portrait.position.x = -100
+	_portrait.position.x = -PORTRAIT.get_width() * SCALE
 	tween.tween_property(_portrait, "position:x", 0.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_box.modulate.a = 0.0
 	tween.tween_property(_box, "modulate:a", 1.0, 0.3).set_delay(0.25)
@@ -62,8 +71,8 @@ func showing() -> String:
 	return _shown_id if visible else ""
 
 
-## He stands in the corner of the screen, cut off at the waist by its bottom edge; his advice sits beside his head,
-## high enough to keep clear of the fields.
+## He stands in the corner of the screen, cut off below the hands by its bottom edge; his advice sits beside his
+## head, high enough to keep clear of the fields, or above his head when the window is too narrow for both.
 func _process(delta: float) -> void:
 	if not visible:
 		return
@@ -71,8 +80,13 @@ func _process(delta: float) -> void:
 	var screen := get_parent_area_size()
 	size = screen
 	_box.reset_size()
-	var tall := PORTRAIT.get_height()
 	# He breathes gently, a pixel up and down, so he seems present rather than pasted on.
-	_portrait.position.y = screen.y - tall + 2 + (1.0 if fmod(_t, 2.4) < 1.2 else 0.0)
-	var top := minf(screen.y - tall + 6, screen.y * 0.6 - _box.size.y)
-	_box.position = Vector2(PORTRAIT.get_width() - 4, roundf(maxf(30.0, top)))
+	_portrait.position.y = screen.y - SHOWN_ROWS * SCALE + (1.0 if fmod(_t, 2.4) < 1.2 else 0.0)
+	var head_top := _portrait.position.y + HEAD_TOP * SCALE
+	var beside := HEAD_RIGHT * SCALE + 4
+	if beside + _box.size.x <= screen.x - 4:
+		# The scene and the interface can be drawn at different scales, so the fields' height is converted to interface pixels.
+		var clear := FIELDS_CLEAR * Windowing.scale / Windowing.ui_scale
+		_box.position = Vector2(beside, roundf(maxf(30.0, minf(head_top, screen.y - clear - _box.size.y))))
+	else:
+		_box.position = Vector2(maxf(4.0, screen.x - 4 - _box.size.x), roundf(maxf(4.0, head_top - _box.size.y - 4)))
