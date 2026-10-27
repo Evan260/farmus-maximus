@@ -432,6 +432,9 @@ func go_to_town() -> void:
 
 
 func _process(delta: float) -> void:
+	# Time skipped all at once finishes the work quietly, so the finish is shown here: scaffold down, word of it.
+	if Game.villa_stage != villa.shown_stage and villa.shown_stage > 0:
+		_on_villa_finished()
 	# The progress bar is redrawn while the builders work, and once more when they finish, so it is taken away.
 	if Game.villa_build["active"] or _villa_bar_up:
 		_villa_outline.queue_redraw()

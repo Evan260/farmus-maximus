@@ -4,6 +4,8 @@ extends Node
 
 ## The estate scene this works for.
 var m: Estate
+## The villa stage the farmhouse is drawn at, so a stage reached without its signal can still be shown being finished.
+var shown_stage := 0
 ## The golden laurel wreath over the villa door, hung for the Triumph.
 var _wreath: Sprite2D
 ## One light per villa window, each with its own evening: when it is lit, when it goes out, and its flicker.
@@ -44,6 +46,7 @@ func villa_ladders() -> Array:
 
 
 func place_villa() -> void:
+	shown_stage = Game.villa_stage
 	var tex := villa_texture()
 	m._villa.texture = tex
 	var used := tex.get_image().get_used_rect()
