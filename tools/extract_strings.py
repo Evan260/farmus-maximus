@@ -42,7 +42,10 @@ def from_data():
     found += data["quality"]["names"]
     for section in data["journal"].values():
         found += list(section.values())
-    return found
+    for lines in data.get("sayings", {}).values():
+        found += lines
+    found.append(data.get("tutorial_farewell", ""))
+    return [f for f in found if f]
 
 
 def main():

@@ -99,5 +99,6 @@ func _done() -> void:
 		if String(_choice[kind]["name"]) == "":
 			_choice[kind]["name"] = defaults[kind]["name"]
 	Game.pets = _choice
+	Game.pets_chosen = true
 	Game.pets_changed.emit()
 	close()

@@ -9,6 +9,10 @@ signal left_house
 const DIR := "res://assets/backgrounds/interior/"
 const SkyView := preload("res://scripts/world/sky_view.gd")
 const FLAME := preload("res://assets/shaders/flame.gdshader")
+const WATER := preload("res://assets/shaders/water.gdshader")
+## The square of sky over the pool: an atrium's roof opens above its rain pool, out of sight above the picture, so
+## daylight falls on the water in a soft shaft and rain falls straight into it.
+const SHAFT := [Vector2(196, 0), Vector2(344, 0), Vector2(344, 200), Vector2(320, 182), Vector2(228, 182), Vector2(196, 196)]
 ## The painted land seen through the doorway, which darkens at night like the estate.
 const LAND := Rect2(367, 57, 64, 72)
 const RUIN_LAND := Rect2(400, 116, 56, 84)
@@ -85,6 +89,10 @@ func _ready() -> void:
 		s.texture = load(DIR + id + ".png")
 		s.position = Vector2(_spots[id][0], _spots[id][1])
 		s.visible = false
+		if id == "water":
+			var ripple := ShaderMaterial.new()
+			ripple.shader = WATER
+			s.material = ripple
 		if id in ["fire", "lamps"]:
 			var flame := ShaderMaterial.new()
 			flame.shader = FLAME
@@ -95,19 +103,15 @@ func _ready() -> void:
 	_loom = Node2D.new()
 	_loom.draw.connect(_draw_loom)
 	_scene.add_child(_loom)
-	# A soft shadow and a thin dark outline keep each pet from melting into the rug or the cushions it lies on.
-	var outline := ShaderMaterial.new()
-	outline.shader = preload("res://assets/shaders/outline.gdshader")
+	# A soft shadow keeps each pet from melting into the rug or the cushions it lies on.
 	_dog_shadow = _shadow(Vector2(102, 244), 80, 14)
 	_dog = AnimatedSprite2D.new()
 	_dog.centered = false
-	_dog.material = outline
 	_dog.scale = Vector2(PET_SCALE, PET_SCALE)
 	_scene.add_child(_dog)
 	_cat_shadow = _shadow(Vector2(280, 115), 40, 9)
 	_cat = AnimatedSprite2D.new()
 	_cat.centered = false
-	_cat.material = outline
 	_cat.scale = Vector2(PET_SCALE, PET_SCALE)
 	_scene.add_child(_cat)
 	_marks = Node2D.new()
@@ -289,6 +293,7 @@ func _draw_glow() -> void:
 			var f := 0.85 + 0.15 * sin(_t * 6.0 + p.x)
 			_glow.draw_circle(p, 12.0, Color(1.0, 0.7, 0.35, 0.09 * night * f))
 			_glow.draw_circle(p, 5.0, Color(1.0, 0.8, 0.45, 0.15 * night * f))
+	_draw_atrium_sky(night)
 	if Game.furnishings.has("water"):
 		# Glints come and go across the water, a few at a time.
 		for k in 7:
@@ -297,6 +302,46 @@ func _draw_glow() -> void:
 			var at := Vector2(206 + fposmod(seed * 37.0, 130.0), 186 + fposmod(seed * 19.0, 38.0)).floor()
 			if Geometry2D.is_point_in_polygon(at, PackedVector2Array(POOL)):
 				_glow.draw_rect(Rect2(at, Vector2(2, 1)), Color(1.0, 0.95, 0.8, 0.5 * sin(phase * PI)))
+
+
+## The light and the rain that come down through the roof opening onto the pool.
+func _draw_atrium_sky(night: float) -> void:
+	var raining: bool = Game.calendar.raining()
+	var shaft := PackedVector2Array(SHAFT)
+	var pool := PackedVector2Array(POOL)
+	# Sunlight by day, a faint cool moonlight by night, both dimmed under rain clouds.
+	var light := Color(1.0, 0.95, 0.8).lerp(Color(0.6, 0.7, 1.0), night)
+	var strength := (0.12 - 0.08 * night) * (0.5 if raining else 1.0)
+	_glow.draw_colored_polygon(shaft, Color(light, strength))
+	# The water itself catches the light rather than a shape laid over the stone around it.
+	if _sprites.has("water"):
+		var lift := 1.0 + strength * 2.5
+		_sprites["water"].modulate = Color(lift, lift, lift * 0.98)
+	if not raining:
+		return
+	var water := Game.furnishings.has("water")
+	# Rain falls straight down the shaft; each streak is a short line of pale pixels.
+	for k in 26:
+		var x := 198.0 + fposmod(k * 53.7, 144.0)
+		var y := fposmod(_t * 190.0 + k * 41.3, 236.0) - 8.0
+		if Geometry2D.is_point_in_polygon(Vector2(x, y + 5), shaft):
+			_glow.draw_rect(Rect2(Vector2(x, y).floor(), Vector2(1, 5)), Color(0.82, 0.88, 0.97, 0.55))
+	# Where the drops land, rings spread on the water, or small splashes jump off the dry stone.
+	for k in 9:
+		var life := fposmod(_t * 1.3 + k * 0.29, 1.0)
+		var round_no := floorf(_t * 1.3 + k * 0.29)
+		var at := Vector2(206 + fposmod((round_no + k) * 47.0, 132.0), 188 + fposmod((round_no * 3.0 + k) * 13.0, 36.0)).floor()
+		if not Geometry2D.is_point_in_polygon(at, pool):
+			continue
+		var fade := 1.0 - life
+		if water:
+			var r := 1.0 + life * 6.0
+			for a in 16:
+				var angle := a * TAU / 16.0
+				_glow.draw_rect(Rect2((at + Vector2(cos(angle) * r, sin(angle) * r * 0.4)).floor(), Vector2.ONE), Color(0.85, 0.92, 1.0, 0.5 * fade))
+		elif life < 0.3:
+			for d in [Vector2(-1, -1), Vector2(1, -1), Vector2(0, -2)]:
+				_glow.draw_rect(Rect2(at + d * (1.0 + life * 4.0), Vector2.ONE), Color(0.85, 0.9, 0.95, 0.6 * fade))
 
 
 ## Spots that can still be furnished twinkle softly, and the one under the pointer is outlined.

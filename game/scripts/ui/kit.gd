@@ -189,12 +189,20 @@ static func icon(parent: Node, item: String) -> TextureRect:
 	return t
 
 
+## Lets a finger drag a scrolling area up and down on a touch screen.
+static func touch_scroll(s: ScrollContainer) -> void:
+	var t: Node = load("res://scripts/ui/touch_scroll.gd").new()
+	t.scroll = s
+	s.add_child(t)
+
+
 ## A scrolling list area, for panels whose contents can grow longer than the screen.
 static func scroll(parent: Node, size: Vector2) -> VBoxContainer:
 	var s := ScrollContainer.new()
 	s.custom_minimum_size = size
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	parent.add_child(s)
+	touch_scroll(s)
 	# The list keeps clear of the scroll bar, so buttons at the end of a line are not drawn under it.
 	var gap := MarginContainer.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -385,6 +393,50 @@ static func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> Sty
 		s.set_content_margin(side, pad + 1)
 	s.modulate_color = tint
 	return s
+
+
+## A speech bubble over someone's head: a small parchment note with a tail pointing down at them, which fades after
+## a few seconds. One person speaks at a time, so a new bubble replaces any still showing.
+static func speech(parent: Control, at: Vector2, text: String) -> void:
+	if text == "":
+		return
+	for old in parent.get_children():
+		if old.has_meta("speech"):
+			old.queue_free()
+	var bubble := PanelContainer.new()
+	bubble.set_meta("speech", true)
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.99, 0.95, 0.86)
+	box.border_color = INK
+	box.set_border_width_all(1)
+	box.set_content_margin_all(4)
+	bubble.add_theme_stylebox_override("panel", box)
+	parent.add_child(bubble)
+	para(bubble, text, 140)
+	bubble.reset_size()
+	var tail := Control.new()
+	tail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tail.draw.connect(func():
+		for k in 4:
+			tail.draw_rect(Rect2(-3 + k, k, 7 - k * 2, 1), INK if k == 3 else Color(0.99, 0.95, 0.86))
+			tail.draw_rect(Rect2(-4 + k, k, 1, 1), INK)
+			tail.draw_rect(Rect2(3 - k, k, 1, 1), INK))
+	bubble.add_child(tail)
+	# The bubble's size settles once its text is laid out, so it is placed a frame later.
+	(func() -> void:
+		await parent.get_tree().process_frame
+		if not is_instance_valid(bubble):
+			return
+		bubble.reset_size()
+		var pos := (at - Vector2(bubble.size.x / 2.0, bubble.size.y + 4)).round()
+		bubble.position = pos.clamp(Vector2(2, 2), parent.size - bubble.size - Vector2(2, 2))
+		tail.position = Vector2(roundf(at.x - bubble.position.x), bubble.size.y - 1)).call()
+	fade_in(bubble, 0.15)
+	var tween := bubble.create_tween()
+	tween.tween_interval(3.5)
+	tween.tween_property(bubble, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(bubble.queue_free)
 
 
 ## A 1px frame just outside a shape; drawn as four filled strips because an unfilled rect straddles pixel edges.

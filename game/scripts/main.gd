@@ -541,6 +541,7 @@ func _update_life(delta: float) -> void:
 			w.react_folder = "greet"
 			w.display_name = tr("A shepherd") if who == "shepherd" else tr("A traveller")
 			w.voice = "salve_man"
+			w.sayings = who
 			world.add_child(w)
 			_passers.append(w)
 	if cat and dog and dog.is_asleep() and cat.is_asleep() and absf(cat.position.x - dog.position.x) < 60.0:
@@ -613,6 +614,7 @@ func _spawn_helper(id: String) -> void:
 	w.react_folder = "greet"
 	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), tr(String(info.get("role", ""))).to_lower()]
 	w.voice = "salve_woman" if id in WOMEN else "salve_man"
+	w.sayings = id
 	if info.has("zones") or info.has("crops"):
 		w.find_work = func() -> float: return _ready_plot_x(info)
 		w.work_done = func(x: float) -> String: return Game.helper_harvest(id, _plot_near(x))
@@ -918,6 +920,8 @@ func _animal_at(point: Vector2) -> String:
 			return "donkey"
 	if not _wildlife.rabbit_at(point).is_empty():
 		return "rabbit"
+	if _wildlife.fox_at(point):
+		return "fox"
 	return ""
 
 
@@ -925,6 +929,9 @@ func _call_out(animal: String, point: Vector2) -> void:
 	var grazing: Node2D = _pasture.animal_at(point)
 	if animal == "rabbit":
 		_wildlife.startle(_wildlife.rabbit_at(point), point)
+		return
+	if animal == "fox":
+		_wildlife.startle_fox(point)
 		return
 	if grazing:
 		grazing.react()
@@ -947,7 +954,7 @@ func _call_out(animal: String, point: Vector2) -> void:
 
 ## The dog or cat under the pointer, if it stands in front of the plant there (or there is no plant).
 func _pet_at(point: Vector2, plant: Node2D) -> Node2D:
-	var under := ([cat, dog] + _people()).filter(func(p): return p and p.contains(point) and (plant == null or p.position.y >= plant.position.y))
+	var under := ([cat, dog] + _people()).filter(func(p): return p and p.visible and p.contains(point) and (plant == null or p.position.y >= plant.position.y))
 	return Hit.front_most(under, point)
 
 
@@ -966,6 +973,7 @@ func _click(point: Vector2) -> void:
 			pet.pet()
 		else:
 			pet.greet()
+			hud.say(pet.position + Vector2(0, -46) - _camera.position, pet.saying())
 		return
 	if view:
 		_click_plot(view.index)
@@ -1526,4 +1534,7 @@ func _spawn_pets() -> void:
 	if _cart_load:
 		world.move_child(cat, _cart_load.get_index())
 		world.move_child(dog, _cart_load.get_index())
+	# On a new farm the pets come home once the player has chosen them.
+	cat.visible = Game.pets_chosen
+	dog.visible = Game.pets_chosen
 

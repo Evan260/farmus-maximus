@@ -146,6 +146,7 @@ func _ready() -> void:
 		w.react_folder = "greet"
 		w.display_name = tr({"townsman": "A townsman", "townswoman": "A townswoman", "traveller": "A traveller", "shepherd": "A shepherd"}[who])
 		w.voice = "salve_woman" if who == "townswoman" else "salve_man"
+		w.sayings = who
 		_scene.add_child(w)
 		_folk.append(w)
 		if who == "townswoman":
@@ -380,6 +381,8 @@ func _on_picture_input(event: InputEvent) -> void:
 		return
 	if person and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		person.greet()
+		var head: Vector2 = (person.position + Vector2(0, -46)) * _scene.scale.x + _scene.position
+		UiKit.speech(_ui_root, head / Windowing.ui_scale, person.saying())
 		return
 	if event is InputEventMouseMotion:
 		var spot := _spot_at(event.position)

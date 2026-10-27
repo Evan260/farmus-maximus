@@ -102,6 +102,7 @@ func _page(book: Control, x: int, _left: bool) -> VBoxContainer:
 	area.position = Vector2(x + MARGIN, MARGIN)
 	area.size = Vector2(PAGE_W - MARGIN - 4, PAGE_H - MARGIN * 2)
 	book.add_child(area)
+	UiKit.touch_scroll(area)
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	area.add_child(col)

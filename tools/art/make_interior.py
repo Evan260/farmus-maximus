@@ -147,6 +147,25 @@ def _shared_mask(room, step):
     return m
 
 
+def soften_outlines(img):
+    """The paintings outline everything in near black, which the estate's art does not; each thin dark line becomes a
+    darker shade of the colours beside it instead. Wide dark areas, such as the firebox and deep shadows, stay."""
+    from scipy import ndimage
+    a = np.array(img.convert("RGB")).astype(float)
+    dark = lum(a) < 50
+    thin = dark & ~ndimage.binary_opening(dark, np.ones((3, 3)))
+    total = np.zeros_like(a)
+    count = np.zeros(dark.shape)
+    for dy in range(-2, 3):
+        for dx in range(-2, 3):
+            ok = np.roll(np.roll(~dark, dy, 0), dx, 1)
+            total += np.roll(np.roll(a, dy, 0), dx, 1) * ok[..., None]
+            count += ok
+    fix = thin & (count > 0)
+    a[fix] = total[fix] / count[fix][:, None] * 0.62
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+
 def open_sky(img, rects, blue):
     """The picture with its painted sky cut out where the outdoors shows, so the game's own sky can show through: the
     pale sunset sky in the restored room's doorway, or the blue sky in the ruin's doorway and broken roof. Trees, vines
@@ -175,14 +194,14 @@ def main():
     redo = set(sys.argv[sys.argv.index("--redo") + 1].split(",")) if "--redo" in sys.argv else set()
     STEPS.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
-    open_sky(load("ruin", 30), RUIN_SKY, True).save(OUT / "ruin.png")
+    open_sky(soften_outlines(load("ruin", 30)), RUIN_SKY, True).save(OUT / "ruin.png")
     room.save(STEPS / "room.png")
     # The furnished room without the painted animals, then the room losing one furnishing after another.
     name, find, words = ANIMALS
     clean = STEPS / "clean.png"
     if name in redo or not clean.exists():
         inpaint(STEPS / "room.png", find(room), words, clean)
-    furnished = Image.open(clean).convert("RGB")
+    furnished = soften_outlines(Image.open(clean))
     furnished.save(OUT / "furnished.png")
     # Each furnishing is repainted away from the furnished room on its own, and the empty room gathers every repaint,
     # so one can be redone without the others.
@@ -199,7 +218,7 @@ def main():
             step = STEPS / f"without_{shared[0] if shared else name}.png"
             if name in redo or not step.exists():
                 inpaint(clean, mask if not shared else _shared_mask(room, shared[0]), how, step)
-            empty[mask] = np.array(Image.open(step).convert("RGB"))[mask]
+            empty[mask] = np.array(soften_outlines(Image.open(step)))[mask]
         a = np.array(furnished)
         # Where two furnishings' areas overlap, the pixels belong to the later one, so neither draws over the other.
         own = mask.copy()

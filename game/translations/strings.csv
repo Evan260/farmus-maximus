@@ -22,6 +22,7 @@ keys,en
 ", then needs replanting.",", then needs replanting."
 "A Roman farm, slowly brought back to life","A Roman farm, slowly brought back to life"
 A drop of lavender oil and even a senator smiles.,A drop of lavender oil and even a senator smiles.
+A drop of this and a Roman lady will pay anything.,A drop of this and a Roman lady will pay anything.
 "A farmhand to hire, and land deeds on sale","A farmhand to hire, and land deeds on sale"
 A fine portico,A fine portico
 A fire in the hearth,A fire in the hearth
@@ -57,6 +58,7 @@ Achievement: %s,Achievement: %s
 Achievements: %d of %d,Achievements: %d of %d
 After the rain,After the rain
 Aged wine,Aged wine
+"All roads lead to Rome, they say. This one leads to your farm!","All roads lead to Rome, they say. This one leads to your farm!"
 "Aloe and rosemary in terracotta pots, by the door and along the walls.","Aloe and rosemary in terracotta pots, by the door and along the walls."
 Amphorae,Amphorae
 An empty bed: choose a seed in the toolbar,An empty bed: choose a seed in the toolbar
@@ -67,6 +69,7 @@ An old coin,An old coin
 "An old ruin, waiting for someone to bring it back.","An old ruin, waiting for someone to bring it back."
 An old ruin. %s.,An old ruin. %s.
 Animals,Animals
+Animals know a kind farm when they see one.,Animals know a kind farm when they see one.
 Another,Another
 Aqueduct channels,Aqueduct channels
 At work,At work
@@ -75,6 +78,7 @@ Aulus,Aulus
 Aurei  %d,Aurei  %d
 Autumn,Autumn
 Ave!,Ave!
+"Ave, friend! The gods smile on this farm.","Ave, friend! The gods smile on this farm."
 Bacchus,Bacchus
 Back,Back
 Back outside,Back outside
@@ -89,6 +93,7 @@ Bath oil,Bath oil
 Bathhouse wing,Bathhouse wing
 Beehives,Beehives
 Beekeeper,Beekeeper
+"Bees make honey, and honey sells. Buy the beehives in the grove and set them to work.","Bees make honey, and honey sells. Buy the beehives in the grove and set them to work."
 Beeswax,Beeswax
 Begin,Begin
 Being repaired: %s left,Being repaired: %s left
@@ -123,6 +128,7 @@ Buy 5,Buy 5
 Buy and repair the beehives in the grove,Buy and repair the beehives in the grove
 Buy cuttings for this land at the market,Buy cuttings for this land at the market
 Buy for %d sestertii,Buy for %d sestertii
+"Buy low, sell in the market! Carpe diem!","Buy low, sell in the market! Carpe diem!"
 Buy the %s deed: %d sestertii,Buy the %s deed: %d sestertii
 Buy the deed,Buy the deed
 Buy the olive grove: click its sign,Buy the olive grove: click its sign
@@ -131,6 +137,7 @@ Buy this land to plant here,Buy this land to plant here
 Buy this ruin,Buy this ruin
 Buy your first land deed,Buy your first land deed
 Cancel,Cancel
+Carpe diem! The sun will not wait for us.,Carpe diem! The sun will not wait for us.
 Carries %d goods instead of %d.,Carries %d goods instead of %d.
 Cart back in  %s,Cart back in  %s
 Cart ready  (carries %d),Cart ready  (carries %d)
@@ -171,6 +178,7 @@ Delete,Delete
 Deliver,Deliver
 Desktop strip  (%s),Desktop strip  (%s)
 Desktop strip (%s),Desktop strip (%s)
+"Di immortales, my back aches!","Di immortales, my back aches!"
 Dig a new bed here: %d sestertii,Dig a new bed here: %d sestertii
 Dig up the %s,Dig up the %s
 Dig up: clear a plant from its bed,Dig up: clear a plant from its bed
@@ -194,6 +202,12 @@ Early mornings sometimes bring mist over the fields.,Early mornings sometimes br
 Earn an aureus,Earn an aureus
 Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door,Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door
 Earned  %d sestertii,Earned  %d sestertii
+Ecastor! My little one grows faster than your wheat.,Ecastor! My little one grows faster than your wheat.
+Ecastor! The cheese in town is dear this week.,Ecastor! The cheese in town is dear this week.
+"Ecastor, the flowers are perfect today.","Ecastor, the flowers are perfect today."
+"Ecastor, what a lovely villa this is becoming!","Ecastor, what a lovely villa this is becoming!"
+"Edepol, flour in my hair again!","Edepol, flour in my hair again!"
+"Edepol, is that a fox I saw by the fence?","Edepol, is that a fox I saw by the fence?"
 Eggs,Eggs
 Empty,Empty
 Empty. Buy hens and goats at the market.,Empty. Buy hens and goats at the market.
@@ -223,6 +237,8 @@ Feed,Feed
 Feed in the troughs: %d of %d,Feed in the troughs: %d of %d
 Feeds the animals and runs the dairy,Feeds the animals and runs the dairy
 Felix,Felix
+"Festina lente, as my father used to say. Hurry slowly.","Festina lente, as my father used to say. Hurry slowly."
+"Festina lente, as we say: hurry slowly. When the lavender blooms, click it to pick it.","Festina lente, as we say: hurry slowly. When the lavender blooms, click it to pick it."
 Fill 25 orders,Fill 25 orders
 Fill an order,Fill an order
 Fill casks,Fill casks
@@ -258,6 +274,7 @@ Goats,Goats
 Gold!,Gold!
 Golden statue,Golden statue
 Good bread starts with honest flour. And a strong arm.,Good bread starts with honest flour. And a strong arm.
+Good bread starts with honest flour. Optime!,Good bread starts with honest flour. Optime!
 Good night...,Good night...
 Good nose,Good nose
 Grain grows twice as fast,Grain grows twice as fast
@@ -278,6 +295,7 @@ Harvest: click ripe plants to pick them,Harvest: click ripe plants to pick them
 Harvested  %d,Harvested  %d
 Harvested from %s.,Harvested from %s.
 Harvests and replants the home fields,Harvests and replants the home fields
+Have you tried the honey cakes? Optime!,Have you tried the honey cakes? Optime!
 Helpers,Helpers
 Hens,Hens
 "Hens lay an egg each, every day the troughs are full.","Hens lay an egg each, every day the troughs are full."
@@ -296,12 +314,14 @@ Honeybees,Honeybees
 Hops out of the grove and the pasture at dawn and dusk.,Hops out of the grove and the pasture at dawn and dusk.
 Hot baths,Hot baths
 House proud,House proud
+I have walked these hills since I was a boy.,I have walked these hills since I was a boy.
 I know which stall pays best on any day of the week.,I know which stall pays best on any day of the week.
 Idle: load it from the storehouse,Idle: load it from the storehouse
 In place,In place
 In the storehouse,In the storehouse
 Innkeeper,Innkeeper
 Interface size,Interface size
+Io! It will be a good harvest this year.,Io! It will be a good harvest this year.
 Ivy column,Ivy column
 Jars of the estate's own oil and wine along the shelves.,Jars of the estate's own oil and wine along the shelves.
 Journal,Journal
@@ -314,6 +334,7 @@ Landowner,Landowner
 Language,Language
 Lararium,Lararium
 Lavender,Lavender
+"Lavender before breakfast, wheat after lunch!","Lavender before breakfast, wheat after lunch!"
 "Lavender before breakfast, wheat after lunch, a nap under the pine in between.","Lavender before breakfast, wheat after lunch, a nap under the pine in between."
 Lavender bundle,Lavender bundle
 Lavender honey,Lavender honey
@@ -346,6 +367,12 @@ Manure,Manure
 Marble bench,Marble bench
 Market,Market
 "Market town  -  %s, day %d","Market town  -  %s, day %d"
+"Mehercule, my arms! The press is heavy work.","Mehercule, my arms! The press is heavy work."
+"Mehercule, the lavender smells sweet today!","Mehercule, the lavender smells sweet today!"
+"Mehercule, the prices in this market!","Mehercule, the prices in this market!"
+"Mehercule, these beds will not weed themselves.","Mehercule, these beds will not weed themselves."
+"Mehercule, you hardly need an old man's advice now. The farm is in good hands. Vale, and may the gods keep you!","Mehercule, you hardly need an old man's advice now. The farm is in good hands. Vale, and may the gods keep you!"
+Mel dulce! Sweet honey this year.,Mel dulce! Sweet honey this year.
 Merchant from Ostia,Merchant from Ostia
 Mercury,Mercury
 Milk,Milk
@@ -386,6 +413,7 @@ No requests today. New ones are pinned up through the day.,No requests today. Ne
 No straw or wheat in the storehouse,No straw or wheat in the storehouse
 No wine is ready yet,No wine is ready yet
 "No young wine, or no empty casks","No young wine, or no empty casks"
+Not a single sting today. The gods are kind.,Not a single sting today. The gods are kind.
 Not discovered yet.,Not discovered yet.
 Not earned yet.,Not earned yet.
 Not earned yet: %d of %d so far.,Not earned yet: %d of %d so far.
@@ -396,6 +424,7 @@ Nothing growing here to dig up,Nothing growing here to dig up
 Nothing left in ruins,Nothing left in ruins
 "Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut.","Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut."
 "Nothing to sell. Bring goods from the storehouse: they are sold here at full price, without the trader's cut.","Nothing to sell. Bring goods from the storehouse: they are sold here at full price, without the trader's cut."
+"Now, to market! Click the cart to ride into town, then click the market stalls to sell what you have grown.","Now, to market! Click the cart to ride into town, then click the market stalls to sell what you have grown."
 Off,Off
 Offer,Offer
 Offerings,Offerings
@@ -408,11 +437,15 @@ Olive tree,Olive tree
 Olive trees give one more olive each,Olive trees give one more olive each
 Olives,Olives
 "Olives in the morning, grapes by evening. My feet have never been so purple.","Olives in the morning, grapes by evening. My feet have never been so purple."
+"Olives in, oil out. Simple as that!","Olives in, oil out. Simple as that!"
 On,On
 "On a clear night with no moon, the Via Lactea, the road of milk, arches over the farm from hill to hill.","On a clear night with no moon, the Via Lactea, the road of milk, arches over the farm from hill to hill."
 "On a clear night, keep watching the stars.","On a clear night, keep watching the stars."
 "On a rare clear night, curtains of green and violet light ripple over the hills.","On a rare clear night, curtains of green and violet light ripple over the hills."
+One bed never fed a family. Click a bed with a lock on it to dig another.,One bed never fed a family. Click a bed with a lock on it to dig another.
 Open folder,Open folder
+Optime! Everything grows well here.,Optime! Everything grows well here.
+"Optime! With coins in your purse, look to the house. Click the farmhouse to see what it needs to be restored.","Optime! With coins in your purse, look to the house. Click the farmhouse to see what it needs to be restored."
 Own 5 decorations,Own 5 decorations
 Own every zone,Own every zone
 Pages filled: %d%%,Pages filled: %d%%
@@ -428,6 +461,7 @@ Paves the estate's road in %s.,Paves the estate's road in %s.
 Paves the next stretch in %s. The trader's trips take %d s instead of %d s.,Paves the next stretch in %s. The trader's trips take %d s instead of %d s.
 Paves the next stretch of road to town in %s.,Paves the next stretch of road to town in %s.
 Pays %d sestertii,Pays %d sestertii
+Pecunia non olet: money does not smell.,Pecunia non olet: money does not smell.
 Perfumer,Perfumer
 Pet %s,Pet %s
 Pet the dog,Pet the dog
@@ -473,6 +507,15 @@ Rosemary seedlings,Rosemary seedlings
 Ruined farmhouse,Ruined farmhouse
 Runs the drying shed and the unguent workshop,Runs the drying shed and the unguent workshop
 Runs the mill and the bakery oven,Runs the mill and the bakery oven
+Salve! Fine weather for the fields.,Salve! Fine weather for the fields.
+Salve! Fresh news from Rome: the Senate is arguing again.,Salve! Fresh news from Rome: the Senate is arguing again.
+Salve! Is there water for a tired traveller?,Salve! Is there water for a tired traveller?
+Salve! The figs are sweet this year.,Salve! The figs are sweet this year.
+Salve! The goats got into the herbs again.,Salve! The goats got into the herbs again.
+Salve! Your lavender sold out early yesterday.,Salve! Your lavender sold out early yesterday.
+"Salve, dominus! The soil is good and soft today.","Salve, dominus! The soil is good and soft today."
+"Salve, my dear heir! The beds by the house are dug and waiting. Pick the lavender on the toolbar below, then click an empty bed to plant it.","Salve, my dear heir! The beds by the house are dug and waiting. Pick the lavender on the toolbar below, then click an empty bed to plant it."
+Salve. The sheep are fat and the grass is sweet.,Salve. The sheep are fat and the grass is sweet.
 Saturnalia,Saturnalia
 Saturnalia lamps,Saturnalia lamps
 "Save 250 sestertii, then click the farmhouse to restore it","Save 250 sestertii, then click the farmhouse to restore it"
@@ -499,10 +542,12 @@ Sets milestones along the road in %s.,Sets milestones along the road in %s.
 Settings,Settings
 Sleep until morning,Sleep until morning
 Sly visitor,Sly visitor
+Smell that? Pure lavender oil. Optime!,Smell that? Pure lavender oil. Optime!
 Snails,Snails
 Snow in summer,Snow in summer
 "Sometimes, at night, the two of them nap side by side.","Sometimes, at night, the two of them nap side by side."
 Sounds,Sounds
+"Speak softly, the bees are listening.","Speak softly, the bees are listening."
 Spot the fox,Spot the fox
 Spread manure when planting,Spread manure when planting
 Spread manure when planting: off,Spread manure when planting: off
@@ -558,6 +603,7 @@ The Milky Way,The Milky Way
 The animals are resting: the troughs are empty.,The animals are resting: the troughs are empty.
 The animals are resting: there is no feed.,The animals are resting: there is no feed.
 The animals of the house,The animals of the house
+"The baker's bread is good, but yours is better.","The baker's bread is good, but yours is better."
 The bees are at work,The bees are at work
 The bees are out among the flowers,The bees are out among the flowers
 The builders have gone home for the night and come back in %s. %s of work left.,The builders have gone home for the night and come back in %s. %s of work left.
@@ -572,6 +618,7 @@ The dog,The dog
 The dog finds a truffle,The dog finds a truffle
 The dog sometimes digs up old coins from long ago.,The dog sometimes digs up old coins from long ago.
 The donkey,The donkey
+The donkey bit me again. Mehercule!,The donkey bit me again. Mehercule!
 The farm dog,The farm dog
 "The festival of Ceres: grain, flour and bread sell well","The festival of Ceres: grain, flour and bread sell well"
 The festival of flowers: lavender and honey sell well,The festival of flowers: lavender and honey sell well
@@ -589,12 +636,16 @@ The household gods watch over the estate.,The household gods watch over the esta
 "The impluvium filled again, cool and still, catching the light.","The impluvium filled again, cool and still, catching the light."
 "The lararium, the pasture deed and decorations","The lararium, the pasture deed and decorations"
 The loom: click to weave,The loom: click to weave
+The millstone sings when the grain is dry.,The millstone sings when the grain is dry.
 The northern lights,The northern lights
 "The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
 "The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
+The olive grove next door is for sale. Click its sign to buy it when you can.,The olive grove next door is for sale. Click its sign to buy it when you can.
 The ovens are hungry! Could you bring {n} {item}?,The ovens are hungry! Could you bring {n} {item}?
 The peristyle,The peristyle
 The rest of the villa's story is in the full game. Thank you for playing the demo!,The rest of the villa's story is in the full game. Thank you for playing the demo!
+"The road to Rome is long, friend. Vale!","The road to Rome is long, friend. Vale!"
+The road to town is short when the cart is full.,The road to town is short when the cart is full.
 The senator holds a banquet. He requires {n} {item}.,The senator holds a banquet. He requires {n} {item}.
 The storehouse cat,The storehouse cat
 The storehouse is full,The storehouse is full
@@ -608,10 +659,12 @@ The white butterfly,The white butterfly
 The whole estate,The whole estate
 The whole estate is yours.,The whole estate is yours.
 The whole road is paved. The trader's trips take %d s.,The whole road is paved. The trader's trips take %d s.
+The wolves keep away from this valley. Di gratias!,The wolves keep away from this valley. Di gratias!
 The work is finished,The work is finished
 "The workshop yard and vineyard deeds, and cellar plans","The workshop yard and vineyard deeds, and cellar plans"
 They light up the fields on warm nights.,They light up the fields on warm nights.
 "They visit every flower in bloom, and fill the hives with honey.","They visit every flower in bloom, and fill the hives with honey."
+This year's wine will make Bacchus jealous.,This year's wine will make Bacchus jealous.
 Timber,Timber
 Tip: %s,Tip: %s
 Titus,Titus
@@ -629,12 +682,14 @@ Triumph!,Triumph!
 Truffle,Truffle
 Trusted supplier,Trusted supplier
 "Type ""%s"" to delete this farm for good.","Type ""%s"" to delete this farm for good."
+Uncle Marcus,Uncle Marcus
 Unguent workshop,Unguent workshop
 Unlikely friends,Unlikely friends
 Upgrade,Upgrade
 Upgrade to level %d,Upgrade to level %d
 Upgrades,Upgrades
 Used by the %s.,Used by the %s.
+Vale! I must be on my way.,Vale! I must be on my way.
 Valerius's steward,Valerius's steward
 Villa rustica,Villa rustica
 Villa with peristyle garden,Villa with peristyle garden

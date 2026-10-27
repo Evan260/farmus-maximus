@@ -13,6 +13,8 @@ var _lizard := {}
 var _rabbits: Array = []
 var _fox: AnimatedSprite2D
 var _fox_dir := 1.0
+## Seconds left of the fox's dash after being startled; it runs off at a gallop and is gone.
+var _fox_fleeing := 0.0
 var _hoopoe: Sprite2D
 var _hoopoe_left := 0.0
 var _white := {}
@@ -164,7 +166,9 @@ func _start_rare(hour: float, night: float, view: Rect2) -> void:
 func _update_fox(delta: float, view: Rect2) -> void:
 	if not _fox or not _fox.visible:
 		return
-	_fox.position.x += _fox_dir * 28.0 * delta
+	_fox_fleeing = maxf(0.0, _fox_fleeing - delta)
+	_fox.position.x += _fox_dir * (95.0 if _fox_fleeing > 0.0 else 28.0) * delta
+	_fox.speed_scale = 2.6 if _fox_fleeing > 0.0 else 1.0
 	if view.has_point(_fox.position + Vector2(0, -6)):
 		Game.discover("animal:fox")
 		Game.discover("sighting:fox")
@@ -206,6 +210,20 @@ func rabbit_at(point: Vector2) -> Dictionary:
 		if float(r.get("flee", 0.0)) <= 0.0 and float(r["life"]) > 0.6 and Hit.texture_has_pixel(_rabbit_hop if float(r["hop"]) > 0.0 else _rabbit_sit, corner, point, flipped):
 			return r
 	return {}
+
+
+## The fox under the pointer, if it is out and not already running.
+func fox_at(point: Vector2) -> bool:
+	return _fox != null and _fox.visible and _fox_fleeing <= 0.0 and Hit.frame_has_pixel(_fox, _fox, point)
+
+
+## A startled fox wheels round, away from the click, and dashes off out of sight.
+func startle_fox(from: Vector2) -> void:
+	_fox_dir = 1.0 if _fox.position.x >= from.x else -1.0
+	_fox.flip_h = _fox_dir < 0
+	_fox_fleeing = 6.0
+	Sfx.play("thump", -6.0, 0.15)
+	Sfx.play("rustle", -8.0, 0.1)
 
 
 ## Thumps a hind foot in alarm and bounds away from the click.

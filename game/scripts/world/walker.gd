@@ -32,6 +32,8 @@ var react_folder := ""
 var display_name := ""
 ## The sound of their greeting when clicked, such as "salve_woman"; silent if the game has no such sound.
 var voice := ""
+## Which of the sayings in the data this person draws on when clicked, such as "miller" or "shepherd".
+var sayings := ""
 var home_x := NAN
 var _homeward := false
 var sprite: AnimatedSprite2D
@@ -193,6 +195,16 @@ func greet() -> void:
 		Sfx.play("rustle", -10.0, 0.1)
 		if voice != "":
 			Sfx.play(voice, -4.0, 0.05)
+
+
+## Something this person says when clicked: one of their own lines, or a common Latin exclamation of the day.
+func saying() -> String:
+	var all: Dictionary = Balance.get_value("sayings", {})
+	var pool: Array = all.get(sayings, []).duplicate()
+	pool += all.get("woman" if voice == "salve_woman" else "any", [])
+	if voice == "salve_woman":
+		pool += all.get("any", []).slice(0, 4)
+	return tr(String(pool[randi() % pool.size()])) if not pool.is_empty() else ""
 
 
 func has_animation(anim: String) -> bool:

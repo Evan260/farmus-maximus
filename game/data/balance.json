@@ -2412,7 +2412,7 @@
 	"tutorial": [
 		{
 			"id": "plant",
-			"text": "Pick lavender in the toolbar at the bottom, then click an empty plot to plant it",
+			"text": "Salve, my dear heir! The beds by the house are dug and waiting. Pick the lavender on the toolbar below, then click an empty bed to plant it.",
 			"done": {
 				"stat": "planted",
 				"at": 1
@@ -2420,58 +2420,125 @@
 		},
 		{
 			"id": "harvest",
-			"text": "When the lavender blooms, click it to harvest",
+			"text": "Festina lente, as we say: hurry slowly. When the lavender blooms, click it to pick it.",
 			"done": {
 				"stat": "harvested",
 				"at": 1
 			}
 		},
 		{
-			"id": "cart",
-			"text": "Click the cart to ride to market and sell your goods at the stalls",
-			"done": {
-				"stat": "sold_market",
-				"at": 1
-			}
-		},
-		{
 			"id": "unlock",
-			"text": "Click a plot with a lock to dig a new bed",
+			"text": "One bed never fed a family. Click a bed with a lock on it to dig another.",
 			"done": {
 				"stat": "plots_unlocked",
 				"at": 1
 			}
 		},
 		{
-			"id": "market",
-			"text": "Visit the market town (the Town button): sell at full price, and buy stone and roof tiles",
+			"id": "cart",
+			"text": "Now, to market! Click the cart to ride into town, then click the market stalls to sell what you have grown.",
 			"done": {
-				"stat": "market_visits",
+				"stat": "sold_market",
 				"at": 1
 			}
 		},
 		{
 			"id": "villa",
-			"text": "Click the farmhouse, then gather what it needs to be restored",
+			"text": "Optime! With coins in your purse, look to the house. Click the farmhouse to see what it needs to be restored.",
 			"done": {
 				"villa": 2
 			}
 		},
 		{
 			"id": "deed",
-			"text": "Buy the olive grove: click its sign",
+			"text": "The olive grove next door is for sale. Click its sign to buy it when you can.",
 			"done": {
 				"zones": 2
 			}
 		},
 		{
 			"id": "building",
-			"text": "Buy and repair the beehives in the grove",
+			"text": "Bees make honey, and honey sells. Buy the beehives in the grove and set them to work.",
 			"done": {
 				"buildings": 1
 			}
 		}
 	],
+	"tutorial_farewell": "Mehercule, you hardly need an old man's advice now. The farm is in good hands. Vale, and may the gods keep you!",
+	"sayings": {
+		"any": [
+			"Salve! Fine weather for the fields.",
+			"Ave, friend! The gods smile on this farm.",
+			"Mehercule, the lavender smells sweet today!",
+			"Carpe diem! The sun will not wait for us.",
+			"Festina lente, as my father used to say. Hurry slowly.",
+			"Di immortales, my back aches!",
+			"Optime! Everything grows well here.",
+			"Io! It will be a good harvest this year.",
+			"Edepol, is that a fox I saw by the fence?",
+			"Vale! I must be on my way."
+		],
+		"woman": [
+			"Ecastor! The cheese in town is dear this week.",
+			"Salve! The figs are sweet this year.",
+			"Ecastor, what a lovely villa this is becoming!"
+		],
+		"farmhand": [
+			"Mehercule, these beds will not weed themselves.",
+			"Lavender before breakfast, wheat after lunch!",
+			"Salve, dominus! The soil is good and soft today."
+		],
+		"miller": [
+			"Edepol, flour in my hair again!",
+			"Good bread starts with honest flour. Optime!",
+			"The millstone sings when the grain is dry."
+		],
+		"beekeeper": [
+			"Speak softly, the bees are listening.",
+			"Mel dulce! Sweet honey this year.",
+			"Not a single sting today. The gods are kind."
+		],
+		"perfumer": [
+			"Smell that? Pure lavender oil. Optime!",
+			"A drop of this and a Roman lady will pay anything.",
+			"Ecastor, the flowers are perfect today."
+		],
+		"presser": [
+			"Olives in, oil out. Simple as that!",
+			"Mehercule, my arms! The press is heavy work.",
+			"This year's wine will make Bacchus jealous."
+		],
+		"stablehand": [
+			"The donkey bit me again. Mehercule!",
+			"Animals know a kind farm when they see one.",
+			"Salve! The goats got into the herbs again."
+		],
+		"trader": [
+			"Buy low, sell in the market! Carpe diem!",
+			"Pecunia non olet: money does not smell.",
+			"The road to town is short when the cart is full."
+		],
+		"shepherd": [
+			"Salve. The sheep are fat and the grass is sweet.",
+			"The wolves keep away from this valley. Di gratias!",
+			"I have walked these hills since I was a boy."
+		],
+		"traveller": [
+			"The road to Rome is long, friend. Vale!",
+			"All roads lead to Rome, they say. This one leads to your farm!",
+			"Salve! Is there water for a tired traveller?"
+		],
+		"townsman": [
+			"Salve! Fresh news from Rome: the Senate is arguing again.",
+			"Mehercule, the prices in this market!",
+			"Have you tried the honey cakes? Optime!"
+		],
+		"townswoman": [
+			"Ecastor! My little one grows faster than your wheat.",
+			"Salve! Your lavender sold out early yesterday.",
+			"The baker's bread is good, but yours is better."
+		]
+	},
 	"demo": {
 		"max_villa": 3,
 		"zones": [

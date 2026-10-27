@@ -1,0 +1,52 @@
+extends Node
+## Lets a finger scroll a list on a touch screen: dragging up or down anywhere over the list moves it, even when the
+## drag starts on a button, and a drag never counts as pressing the button it began on.
+
+## How far a finger must move, in screen pixels, before a touch becomes a scroll rather than a tap.
+const DEADZONE := 8.0
+
+var scroll: ScrollContainer
+var _touching := false
+var _dragging := false
+var _from := Vector2.ZERO
+var _start := 0
+var _swallow_release := false
+
+
+func _input(event: InputEvent) -> void:
+	if scroll == null or not scroll.is_visible_in_tree():
+		return
+	if event is InputEventScreenTouch:
+		if event.pressed and _screen_rect().has_point(event.position):
+			_touching = true
+			_dragging = false
+			_from = event.position
+			_start = scroll.scroll_vertical
+		elif not event.pressed and _touching:
+			_touching = false
+			_swallow_release = _dragging
+	elif event is InputEventScreenDrag and _touching:
+		var moved: float = event.position.y - _from.y
+		if not _dragging and absf(moved) > DEADZONE:
+			_dragging = true
+			# The press already reached the button under the finger; a release far away lets it go without a click.
+			var away := InputEventMouseButton.new()
+			away.button_index = MOUSE_BUTTON_LEFT
+			away.pressed = false
+			away.position = Vector2(-10000, -10000)
+			Input.parse_input_event(away)
+		if _dragging:
+			scroll.scroll_vertical = _start - roundi(moved / _scale())
+	elif event is InputEventMouseButton and not event.pressed and _swallow_release and event.position.x > -1000:
+		# The release the system makes up for the lifted finger would otherwise press the button now under it.
+		_swallow_release = false
+		get_viewport().set_input_as_handled()
+
+
+func _scale() -> float:
+	return maxf(0.01, scroll.get_global_transform_with_canvas().get_scale().y)
+
+
+func _screen_rect() -> Rect2:
+	var xform := scroll.get_global_transform_with_canvas()
+	return Rect2(xform.origin, scroll.size * xform.get_scale())

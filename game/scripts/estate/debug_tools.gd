@@ -49,6 +49,7 @@ func load_demo_state() -> void:
 	Settings.show_tutorial = false
 	Game.new_game()
 	Game.intro_seen = true
+	Game.pets_chosen = true
 	Game.farm_name = "Villa Aurelia"
 	# Enough of everything to buy and build anything straight away.
 	Game.coins = 10000000
@@ -89,6 +90,15 @@ func load_demo_state() -> void:
 				m.interior.enter()
 				if open != "-":
 					m.interior._open("" if open == "list" else open)).call_deferred()
+		elif arg.begins_with("--guide"):
+			# Uncle Marcus's advice, from the start or from a later step such as "--guide=cart".
+			Settings.show_tutorial = true
+			var from := arg.trim_prefix("--guide=") if "=" in arg else ""
+			for step in Balance.get_value("tutorial", []):
+				if String(step["id"]) == from:
+					break
+				if step["done"].has("stat"):
+					Game.stats[step["done"]["stat"]] = int(step["done"].get("at", 1))
 		elif arg == "--galaxy":
 			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
 		elif arg == "--rainbow":
@@ -125,7 +135,13 @@ func load_demo_state() -> void:
 		elif arg == "--greet":
 			get_tree().create_timer(1.6).timeout.connect(func():
 				for w in m._people() + m.market._folk:
-					w.greet())
+					w.greet()
+				# The first person in view also says something, to see the speech bubble.
+				var view := Rect2(m._camera.position, m._view_size())
+				for w in m._people():
+					if view.has_point(w.position):
+						m.hud.say(w.position + Vector2(0, -46) - m._camera.position, w.saying())
+						break)
 		elif arg.begins_with("--achievement"):
 			# The named achievements, or the next two not yet earned, to see their cards slide in one after the other.
 			var named := arg.trim_prefix("--achievement=").split(",") if "=" in arg else PackedStringArray()

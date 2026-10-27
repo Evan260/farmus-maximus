@@ -12,6 +12,7 @@ func _run() -> void:
 	var game: Node = root.get_node("Game")
 	root.get_node("Saves").enabled = false
 	game.new_game()
+	game.pets_chosen = true
 	game.day_time = 8.0
 	game.coins = 1000
 	var main: Node2D = load("res://scenes/main.tscn").instantiate()
@@ -123,6 +124,41 @@ func _run() -> void:
 				empty_corner = at if empty_corner == Vector2.INF else empty_corner
 	_check(solid != Vector2.INF and main._animal_at(solid) == "donkey", "the donkey answers a click on itself")
 	_check(empty_corner != Vector2.INF and main._animal_at(empty_corner) != "donkey", "the donkey ignores a click on the empty corner of its picture")
+	_check(String(pair[0].saying()) != "", "a person has something to say when clicked")
+	game.pets_chosen = false
+	main._spawn_pets()
+	_check(not main.dog.visible and not main.cat.visible, "on a new farm the pets stay away until they are chosen")
+	game.pets_chosen = true
+	main._spawn_pets()
+	_check(main.dog.visible and main.cat.visible, "and come home once they are")
+	var fox: AnimatedSprite2D = main._wildlife._fox
+	if fox:
+		fox.visible = true
+		fox.position = Vector2(300, 262)
+		main._wildlife.startle_fox(Vector2(280, 262))
+		_check(main._wildlife._fox_fleeing > 0.0 and not fox.flip_h, "a clicked fox runs off, away from the click")
+		fox.visible = false
+	var holder := Control.new()
+	holder.size = Vector2(200, 100)
+	main.hud._root.add_child(holder)
+	var kit: GDScript = load("res://scripts/ui/kit.gd")
+	var list: VBoxContainer = kit.scroll(holder, Vector2(120, 60))
+	for k in 20:
+		kit.button(list, "Row %d" % k, func(): pass)
+	await process_frame
+	await process_frame
+	var area: ScrollContainer = list.get_parent().get_parent()
+	var finger: Node = area.get_child(0) if not area.get_child(0) is Control else area.get_child(1)
+	var middle: Vector2 = finger._screen_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.position = middle
+	finger._input(touch)
+	var drag := InputEventScreenDrag.new()
+	drag.position = middle - Vector2(0, 40)
+	finger._input(drag)
+	_check(area.scroll_vertical > 0, "a finger dragging up a list scrolls it")
+	holder.queue_free()
 	game.villa_stage = 3
 	main.go_inside()
 	await create_timer(1.0).timeout

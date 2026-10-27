@@ -33,6 +33,7 @@ func _ready() -> void:
 	if fixed_size != Vector2.ZERO:
 		# A page longer than the window scrolls inside it, so the window is the same size on every tab.
 		_scroll = ScrollContainer.new()
+		UiKit.touch_scroll(_scroll)
 		_scroll.custom_minimum_size = fixed_size
 		_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		_col.remove_child(body)

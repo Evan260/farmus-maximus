@@ -22,6 +22,8 @@ var _fence: Texture2D
 
 func _ready() -> void:
 	_last_hour = Game.day_time
+	# Animals further back are drawn first, so one nearer the front always stands in front of it.
+	y_sort_enabled = true
 
 
 func _process(delta: float) -> void:

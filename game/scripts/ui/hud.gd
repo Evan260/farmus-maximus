@@ -16,6 +16,7 @@ const UpgradesPanel := preload("res://scripts/ui/upgrades_panel.gd")
 const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
 const AchievementPopup := preload("res://scripts/ui/achievement_popup.gd")
 const CreditsPanel := preload("res://scripts/ui/credits_panel.gd")
+const UncleGuide := preload("res://scripts/ui/uncle_guide.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
 ## Lavender varieties share one icon, so each seed slot is tinted towards its flower colour.
@@ -50,6 +51,7 @@ var _toast_tween: Tween
 var _toast_queue: Array = []
 var _achievements: Control
 var _credits: WindowPanel
+var _uncle: Control
 var _tip: Label
 var _debug: PanelContainer
 var _stats_panel: PanelContainer
@@ -122,6 +124,8 @@ func _ready() -> void:
 	_build_compact()
 	_build_toolbar()
 	_build_debug()
+	_uncle = UncleGuide.new()
+	_root.add_child(_uncle)
 	_achievements = AchievementPopup.new()
 	_root.add_child(_achievements)
 	Settings.changed.connect(_apply_text_size)
@@ -323,6 +327,11 @@ func _show_toast(text: String) -> void:
 	_toast_tween.tween_callback(func(): if not _toast_queue.is_empty(): _show_toast(_toast_queue.pop_front()))
 
 
+## A speech bubble above someone on the estate; pos is in estate pixels relative to the view's corner.
+func say(pos: Vector2, text: String) -> void:
+	UiKit.speech(_root, (pos * Windowing.scale / Windowing.ui_scale).round(), text)
+
+
 ## Text that floats up from a spot on screen; pos is in estate pixels relative to the view's corner.
 func float_text(pos: Vector2, text: String) -> void:
 	var l := UiKit.label(_root, text, true)
@@ -358,12 +367,23 @@ func _apply_text_size() -> void:
 		l.add_theme_font_size_override("font_size", UiKit.text_size() * (2 if Settings.large_text else 1))
 
 
+## Uncle Marcus gives the next piece of advice once the farm is settled in: after the letter and the choice of pets,
+## and never over the title screen or the strip. When every step is done he says goodbye, once.
 func _update_tip() -> void:
-	var step: Dictionary = Game.journal.tutorial_step() if Settings.show_tutorial else {}
-	_tip.visible = not step.is_empty() and not Windowing.strip and not _info.visible and _title == null
-	if _tip.visible:
-		_tip.text = tr("Tip: %s") % tr(String(step["text"]))
-		_tip.position = Vector2(4, _above_toolbar() - _tip.get_minimum_size().y - 2)
+	_tip.visible = false
+	var ready := Settings.show_tutorial and not Windowing.strip and _title == null and _letter == null and Game.pets_chosen and not _companions.visible
+	var step: Dictionary = Game.journal.tutorial_step() if ready else {}
+	if not step.is_empty():
+		Game.stats["guide_seen"] = 1
+		_uncle.show_advice(String(step["id"]), tr(String(step["text"])))
+	elif ready and int(Game.stats.get("guide_seen", 0)) == 1:
+		# The goodbye stays a while, then he is gone for good.
+		if _uncle.showing() != "farewell":
+			_uncle.show_advice("farewell", tr(String(Balance.get_value("tutorial_farewell", ""))))
+			get_tree().create_timer(14.0).timeout.connect(func(): Game.stats["guide_seen"] = 2)
+	else:
+		_uncle.show_advice("", "")
+	_uncle.position = Vector2(4, _above_toolbar() - _uncle.size.y - 4)
 
 
 func _on_discovered(id: String) -> void:
@@ -435,13 +455,28 @@ func _show_intro() -> void:
 	wax.custom_minimum_size = Vector2(18, 18)
 	wax.size_flags_vertical = Control.SIZE_SHRINK_END
 	sign.add_child(wax)
-	var begin := UiKit.button(holder, tr("Begin"), func(): Game.intro_seen = true; Saves.save_game(); _letter.queue_free(); _letter = null; _open(_companions))
+	var begin := UiKit.button(holder, tr("Begin"), func(): Game.intro_seen = true; Saves.save_game(); _letter.queue_free(); _letter = null; _choose_pets())
 	begin.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	begin.custom_minimum_size = Vector2(90, 0)
 	holder.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	holder.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	holder.grow_vertical = Control.GROW_DIRECTION_BOTH
 	UiKit.fade_in(_letter, 0.6)
+
+
+## After the letter the player names the dog and cat; however the window is closed, the pets then come home.
+func _choose_pets() -> void:
+	_open(_companions)
+	_companions.closed.connect(func():
+		if not Game.pets_chosen:
+			Game.pets_chosen = true
+			Game.pets_changed.emit()
+		_pets_chosen(), CONNECT_ONE_SHOT)
+
+
+## Once the pets are home the uncle can start with his advice.
+func _pets_chosen() -> void:
+	_update_tip()
 
 
 func _on_achievement(a: Dictionary) -> void:
