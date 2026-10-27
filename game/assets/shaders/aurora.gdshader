@@ -1,8 +1,9 @@
 shader_type canvas_item;
 render_mode blend_add;
-// The northern lights: a few rippling curtains, bright green along their lower hem, fading upward through teal into
-// violet, with faint vertical rays that shimmer. Worked out per sky pixel so it keeps the sky's pixel grid, but with
-// soft fades between the pixels rather than hard edges.
+// The northern lights, in one of their two shapes on any one night, since real displays tend to run all one way:
+// rippling curtains lying across the sky, bright green along their lower hem and fading upward through teal into
+// violet; or tall streamers rising almost straight up. Worked out per sky pixel so it keeps the sky's pixel grid, but
+// with soft fades between the pixels rather than hard edges.
 
 uniform float amount = 0.0;
 // The sprite's size and top left corner in sky pixels.
@@ -10,6 +11,8 @@ uniform vec2 area = vec2(1536.0, 400.0);
 uniform vec2 origin = vec2(0.0, -120.0);
 // Seconds the lights have been moving; the sky runs it faster while the night is fast-forwarded.
 uniform float clock = 0.0;
+// 0 for a night of curtains across the sky, 1 for a night of streamers rising up it.
+uniform float rising = 0.0;
 
 float hash(float n) {
 	return fract(sin(n * 91.3458) * 47453.5453);
@@ -42,9 +45,10 @@ vec3 streamer(vec2 p, float seed, float t) {
 	float base = mod(seed * 523.0 + t * 1.2, 1700.0) - 80.0;
 	float sway = 18.0 * sin(p.y * 0.02 + t * 0.12 + seed * 3.0) + 5.0 * sin(p.y * 0.06 - t * 0.18 + seed);
 	float dx = p.x - base - sway - (110.0 - p.y) * 0.25;
-	float core = exp(-pow(dx / 9.0, 2.0)) * 0.7 + exp(-pow(dx / 24.0, 2.0)) * 0.35;
-	float span = smoothstep(-40.0, 20.0, p.y) * smoothstep(128.0, 96.0, p.y);
-	float alive = smoothstep(0.35, 0.7, noise(t * 0.015 + seed * 7.0));
+	float core = exp(-pow(dx / 11.0, 2.0)) * 0.8 + exp(-pow(dx / 30.0, 2.0)) * 0.4;
+	float span = smoothstep(-60.0, 10.0, p.y) * smoothstep(150.0, 112.0, p.y);
+	// Each streamer brightens and fades over the night but never quite goes out, so the sky is never empty.
+	float alive = mix(0.3, 1.0, smoothstep(0.2, 0.6, noise(t * 0.015 + seed * 7.0)));
 	float rays = 0.6 + 0.4 * noise(p.y * 0.3 + seed * 11.0 - t * 0.8);
 	float up = clamp((110.0 - p.y) / 130.0, 0.0, 1.0);
 	vec3 colour = mix(mix(vec3(0.32, 1.0, 0.62), vec3(0.2, 0.75, 0.85), smoothstep(0.15, 0.5, up)), vec3(0.62, 0.36, 0.92), smoothstep(0.55, 1.0, up));
@@ -66,10 +70,10 @@ void fragment() {
 		vec3 teal = vec3(0.2, 0.75, 0.85);
 		vec3 violet = vec3(0.62, 0.36, 0.92);
 		vec3 colour = mix(mix(green, teal, smoothstep(0.1, 0.45, up)), violet, smoothstep(0.45, 0.95, up));
-		total += colour * c * (1.0 - float(i) * 0.22);
+		total += colour * c * (1.0 - float(i) * 0.22) * (1.0 - rising);
 	}
-	for (int i = 0; i < 4; i++) {
-		total += streamer(p, float(i) * 2.3 + 0.7, t) * 0.8;
+	for (int i = 0; i < 7; i++) {
+		total += streamer(p, float(i) * 2.3 + 0.7, t) * 1.5 * rising;
 	}
 	// Low down near the hills the light is lost in the haze.
 	total *= smoothstep(196.0, 150.0, p.y);

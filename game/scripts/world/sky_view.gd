@@ -38,6 +38,8 @@ var _aurora_amount := 0.0
 var _aurora_clock := 0.0
 ## Set for screenshots: the lights show tonight whatever the dice say.
 var force_aurora := false
+## "vertical" or "horizontal" to see one shape of the lights for checking; empty lets each night choose.
+var aurora_shape := ""
 
 
 func _ready() -> void:
@@ -195,6 +197,7 @@ func _show_aurora(delta: float, night: float) -> void:
 	# Nobody should miss the lights by bad luck alone: after enough days without them, every clear night has them.
 	var overdue: bool = evening >= int(Balance.get_value("calendar.aurora_sure_after_days", 30)) and not Game.journal.has("sighting:aurora")
 	var tonight := force_aurora or overdue or rng.randf() < float(Balance.get_value("calendar.aurora_chance", 0.07))
+	var rising := rng.randf() < 0.5 if aurora_shape == "" else aurora_shape == "vertical"
 	var clear: bool = Game.calendar.weather == "sun"
 	var target := smoothstep(0.75, 1.0, night) if tonight and clear else 0.0
 	# Sleeping fast-forwards the night, and the lights with it, though never so fast that they flicker.
@@ -206,6 +209,7 @@ func _show_aurora(delta: float, night: float) -> void:
 		var lights := _aurora.material as ShaderMaterial
 		lights.set_shader_parameter("amount", _aurora_amount)
 		lights.set_shader_parameter("clock", _aurora_clock)
+		lights.set_shader_parameter("rising", 1.0 if rising else 0.0)
 		if _aurora_amount > 0.5 and sky_visible.call():
 			Game.discover("sighting:aurora")
 
