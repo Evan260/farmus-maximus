@@ -139,10 +139,10 @@ func _tick_action(cost: Dictionary, block: String) -> void:
 	UiKit.update_costs(_costs)
 	if not _action:
 		return
-	var problem := block if block != "" else Game.missing(cost)
-	_action.disabled = problem != ""
-	_note.text = tr(problem)
-	_note.visible = problem != ""
+	_action.disabled = block != "" or Game.missing(cost) != ""
+	# What is short is already shown in red on the cost lines above, so only a reason those lines cannot show is spelled out.
+	_note.text = tr(block)
+	_note.visible = block != ""
 
 
 func _working_status() -> String:

@@ -18,6 +18,8 @@ var _portrait: TextureRect
 var _box: PanelContainer
 var _text: Label
 var _shown_id := ""
+## Advice the player has closed with OK; he stays away until he has something new to say.
+var _dismissed_id := ""
 var _folded := false
 var _t := 0.0
 
@@ -42,6 +44,11 @@ func _ready() -> void:
 	var col := UiKit.column(_box)
 	UiKit.label(col, tr("Uncle Marcus")).add_theme_color_override("font_color", UiKit.HEADING)
 	_text = UiKit.para(col, "", 170)
+	var ok := UiKit.button(col, tr("OK"), func():
+		_dismissed_id = _shown_id
+		visible = false)
+	ok.size_flags_horizontal = Control.SIZE_SHRINK_END
+	ok.custom_minimum_size = Vector2(40, 0)
 
 
 ## Shows a piece of advice, sliding it in when it is new; an empty id hides him.
@@ -49,6 +56,9 @@ func show_advice(id: String, text: String) -> void:
 	if id == "":
 		visible = false
 		_shown_id = ""
+		return
+	if id == _dismissed_id:
+		visible = false
 		return
 	visible = true
 	if id == _shown_id:
@@ -67,8 +77,9 @@ func show_advice(id: String, text: String) -> void:
 	Sfx.play("advice", -3.0)
 
 
+## The advice he is on, even while it is tucked away behind a window or closed with OK.
 func showing() -> String:
-	return _shown_id if visible else ""
+	return _shown_id
 
 
 ## He stands in the corner of the screen, cut off below the hands by its bottom edge; his advice sits beside his
