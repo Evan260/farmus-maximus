@@ -100,7 +100,7 @@ def water(room):
 ANIMALS = ("animals", lambda room: shapes(ellipses=[(56, 199, 148, 248), (252, 90, 306, 121)]),
            "an orange and brown striped woven rug on a stone floor, and a red cushioned couch, empty, no animals")
 FURNISHINGS = [
-    ("fire", lambda room: shapes(rects=[(81, 96, 121, 155)]),
+    ("fire", lambda room: shapes(rects=[(77, 88, 137, 155)]),
      "the inside of a cold dark stone fireplace, sooty bricks and a heap of grey ash, no fire, no flames, no logs"),
     ("lamps", lambda room: flames(room, [(62, 40, 79, 58), (125, 45, 139, 61), (12, 108, 29, 131), (299, 95, 312, 110)]), heal),
     ("plants", lambda room: shapes(rects=[(0, 220, 44, 269), (434, 110, 479, 178), (426, 206, 479, 269)]),
@@ -147,6 +147,25 @@ def _shared_mask(room, step):
     return m
 
 
+def open_sky(img, rects, blue):
+    """The picture with its painted sky cut out where the outdoors shows, so the game's own sky can show through: the
+    pale sunset sky in the restored room's doorway, or the blue sky in the ruin's doorway and broken roof. Trees, vines
+    and hills stay."""
+    a = np.array(img.convert("RGBA")).astype(int)
+    for x0, y0, x1, y1 in rects:
+        r = a[y0:y1, x0:x1]
+        light = lum(r) > 95
+        # The painted clouds go too, as the game's own clouds drift past instead.
+        sky = light & ((r[..., 2] > r[..., 0] + 20) | (lum(r) > 200) if blue else (r[..., 1] > 70))
+        r[..., 3][sky] = 0
+    return Image.fromarray(a.astype(np.uint8))
+
+
+# Where the outdoors shows, as rectangles in which painted sky is cut out.
+ROOM_SKY = [(366, 18, 432, 58)]
+RUIN_SKY = [(398, 62, 460, 116), (268, 0, 342, 26)]
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "build"
     room = load("room", 70)
@@ -156,7 +175,7 @@ def main():
     redo = set(sys.argv[sys.argv.index("--redo") + 1].split(",")) if "--redo" in sys.argv else set()
     STEPS.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
-    load("ruin", 30).save(OUT / "ruin.png")
+    open_sky(load("ruin", 30), RUIN_SKY, True).save(OUT / "ruin.png")
     room.save(STEPS / "room.png")
     # The furnished room without the painted animals, then the room losing one furnishing after another.
     name, find, words = ANIMALS
@@ -193,7 +212,7 @@ def main():
         box = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
         Image.fromarray(layer[box[1]:box[3], box[0]:box[2]]).save(OUT / f"{name}.png")
         spots[name] = box
-    Image.fromarray(empty).save(OUT / "empty.png")
+    open_sky(Image.fromarray(empty), ROOM_SKY, False).save(OUT / "empty.png")
     (OUT / "furnishings.json").write_text(json.dumps(spots, indent="\t") + "\n", encoding="utf-8")
     print("wrote", OUT)
 

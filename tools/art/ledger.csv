@@ -299,3 +299,4 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-26T19:39:39,inpaint,tools\art\sources\interior\steps\without_rug.png,0.0308,0,3.7311
 2026-10-26T19:40:09,inpaint,tools\art\sources\interior\steps\without_cloth.png,0.0228,0,3.7083
 2026-10-26T19:41:42,inpaint,tools\art\sources\interior\steps\without_rug.png,0.0307,0,3.6775
+2026-10-26T20:53:59,inpaint,tools\art\sources\interior\steps\without_fire.png,0.0225,0,3.6550

@@ -568,6 +568,7 @@ The cart carries %d goods.,The cart carries %d goods.
 The cart heads to market with %d sestertii of goods,The cart heads to market with %d sestertii of goods
 The cart is back: +%d sestertii,The cart is back: +%d sestertii
 The cat and dog asleep together,The cat and dog asleep together
+The dog,The dog
 The dog finds a truffle,The dog finds a truffle
 The dog sometimes digs up old coins from long ago.,The dog sometimes digs up old coins from long ago.
 The donkey,The donkey
@@ -587,6 +588,7 @@ The household,The household
 The household gods watch over the estate.,The household gods watch over the estate.
 "The impluvium filled again, cool and still, catching the light.","The impluvium filled again, cool and still, catching the light."
 "The lararium, the pasture deed and decorations","The lararium, the pasture deed and decorations"
+The loom: click to weave,The loom: click to weave
 The northern lights,The northern lights
 "The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
 "The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm, %s, is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
@@ -688,6 +690,7 @@ Yours,Yours
 "Yours, but still in ruins.","Yours, but still in ruins."
 and a gold aureus,and a gold aureus
 and a rare seed,and a rare seed
+asleep,asleep
 cart,cart
 cart %d each,cart %d each
 click to dig up,click to dig up

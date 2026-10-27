@@ -127,6 +127,13 @@ func _run() -> void:
 	main.go_inside()
 	await create_timer(1.0).timeout
 	_check(main.interior.visible and not main.hud.visible, "the farmhouse door leads inside")
+	var inside: CanvasLayer = main.interior
+	var stroked: int = game.stats.get("pets", 0)
+	_check(inside._pet_at(inside._dog.position + Vector2(0, -8)) == inside._dog, "the sleeping dog can be clicked inside")
+	inside._stroke(inside._dog)
+	_check(int(game.stats.get("pets", 0)) == stroked + 1, "stroking a pet inside counts like petting it outside")
+	inside._weave()
+	_check(inside._weaving > 0.0, "clicking the loom sets it weaving")
 	main.interior.leave()
 	await create_timer(1.0).timeout
 	_check(not main.interior.visible and main.hud.visible, "and back out to the farm")
