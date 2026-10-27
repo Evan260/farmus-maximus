@@ -102,6 +102,8 @@ func refresh() -> void:
 	UiKit.clear(body)
 	build()
 	tick()
+	if fixed_size == Vector2.ZERO:
+		_fit_to_screen()
 	if scrolled.is_empty():
 		for s in _scrolls():
 			s.scroll_vertical = 0

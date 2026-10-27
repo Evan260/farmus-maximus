@@ -89,10 +89,14 @@ func _run() -> void:
 		await process_frame
 	_check(main._store_scaffold.visible and main._builders.has("project_storage"), "enlarging the storehouse puts up scaffolding and brings a builder")
 	var pets: Control = main.hud._companions
+	# Without a window the screen is only 64 pixels square, so it is given a full screen's size to fit windows in.
+	var screen: Vector2 = main.hud._root.size
+	main.hud._root.size = Vector2(480, 270)
 	pets.open()
 	await process_frame
 	await process_frame
 	_check(pets._scroll == null or not pets._scroll.get_v_scroll_bar().visible, "the companions window fits without scrolling")
+	main.hud._root.size = screen
 	pets.close()
 	game.day_time = 22.0
 	main.hud._start_sleep()
