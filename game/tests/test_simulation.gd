@@ -20,10 +20,17 @@ func _run() -> void:
 	_check(not game.try_plant(5), "cannot plant in a locked plot")
 	_check(game.plot_visual(0) == "stage0", "new planting shows as a cutting")
 	game.calendar.wet_left = 9999.0
+	game.advance(10.0)
+	_check(not game.is_ready(0), "the farm's first plant is not ready after 10 seconds")
+	game.advance(3.0)
+	_check(game.is_ready(0), "the farm's first plant blooms after about 12 seconds")
+	_check(game.try_plant(1) and not game.plots[1].get("first", false), "only the farm's very first plant grows quickly")
 	game.advance(30.0)
-	_check(not game.is_ready(0), "not ready after 30 seconds")
-	game.advance(30.0)
-	_check(game.is_ready(0), "ready after 60 seconds in watered spring soil")
+	_check(not game.is_ready(1), "a later plant is not ready after 30 seconds")
+	game.advance(40.0)
+	_check(game.is_ready(1), "a later plant is ready after about a minute in watered spring soil")
+	game.dig_up(1)
+	game.coins += 3
 	_check(game.try_harvest(0), "harvests a ready plant")
 	_check(game.stored_total() == 1 and game.count_item("lavender") == 1, "harvest goes into the storehouse")
 	_check(game.plot_visual(0) == "harvested", "plant shows as trimmed after harvest")
@@ -58,6 +65,8 @@ func _run() -> void:
 	game.calendar.day = 12
 	game.calendar.wet_left = 0.0
 	game.calendar.weather = "sun"
+	# Past the farm's quick first plant, which ignores the season and the water.
+	game.stats["planted"] = 1
 	game.try_plant(0)
 	var winter_rate: float = game.growth_rate(0)
 	game.calendar.day = 4

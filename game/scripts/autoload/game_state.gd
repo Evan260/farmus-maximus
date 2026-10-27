@@ -401,6 +401,8 @@ func seconds_until_day() -> float:
 
 func growth_rate(i: int) -> float:
 	var p: Dictionary = plots[i]
+	if p.get("first", false):
+		return 1.0
 	var info := crop_info(p["crop"])
 	var rate := float(info.get("seasons", {}).get(calendar.season_id(), 1.0))
 	# Plants keep growing in the dark, but at about a third of their daytime pace.
@@ -485,6 +487,10 @@ func try_plant(i: int, crop_id := "") -> bool:
 	p["cycle"] = 0
 	p["ready_age"] = 0.0
 	p["pace"] = _new_pace()
+	# The very first plant on a farm blooms within seconds, so a new player sees a harvest before their attention drifts.
+	if int(stats.get("planted", 0)) == 0:
+		p["pace"] = float(Balance.get_value("plots.first_crop_seconds", 12)) / float(crop_info(crop_id).get("grow_seconds", 60))
+		p["first"] = true
 	_apply_manure(p)
 	add_stat("planted", 1)
 	discover("crop:" + crop_id)
@@ -502,6 +508,7 @@ func dig_up(i: int) -> bool:
 	p["cycle"] = 0
 	p["ready_age"] = 0.0
 	p["manured"] = false
+	p.erase("first")
 	dug_up.emit(i)
 	return true
 
@@ -545,6 +552,7 @@ func _harvest(i: int, by_hand := false) -> int:
 	p["cycle"] = int(p["cycle"]) + 1
 	p["manured"] = false
 	p["pace"] = _new_pace()
+	p.erase("first")
 	# Perennials like lavender regrow from the same plant; annuals like wheat leave the plot empty.
 	if not info.get("perennial", false):
 		p["crop"] = ""
@@ -1572,6 +1580,8 @@ func from_dict(d: Dictionary) -> void:
 		p["manured"] = bool(s.get("manured", false))
 		p["ready_age"] = float(s.get("ready_age", 0.0))
 		p["pace"] = float(s.get("pace", 1.0))
+		if s.get("first", false):
+			p["first"] = true
 		plots[i] = p
 	for id in d.get("levels", {}):
 		if levels.has(id):
