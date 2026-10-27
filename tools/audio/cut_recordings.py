@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
+from scipy.signal import butter, sosfiltfilt
 
 # name: (recording, start seconds, end seconds or None for the whole file), and optionally how long its ending fades away
 CUTS = [
@@ -68,6 +69,9 @@ CUTS = [
 # Ambience loops: their last LOOP_BLEND seconds are blended into their start, so the loop never jumps when it repeats.
 LOOPS = {"day", "night", "rain"}
 LOOP_BLEND = 2.0
+# The day and night recordings carry a loud band of hiss and high insect noise above the birds and crickets, which
+# plays as static; everything above these frequencies (Hz) is filtered away.
+LOWPASS = {"day": 9000, "night": 8000}
 
 
 def save_ogg(path, clip, rate):
@@ -97,8 +101,11 @@ def main():
         clip = data[int(a * rate):int(b * rate) if b is not None else len(data)].copy()
         clip -= clip.mean()
         if name in LOOPS:
-            clip = blend_loop(clip, rate)
-            clip *= 0.7 / (np.abs(clip).max() or 1.0)
+            # The level is set before the hiss is filtered away, so the birds and crickets stay as loud as they were.
+            gain = 0.7 / (np.abs(blend_loop(clip, rate)).max() or 1.0)
+            if name in LOWPASS:
+                clip = sosfiltfilt(butter(8, LOWPASS[name], fs=rate, output="sos"), clip)
+            clip = blend_loop(clip, rate) * gain
             # Loops play as ambience, which has a folder of its own beside the effects.
             save_ogg(out.parent / "ambience" / f"{name}.ogg", clip, rate)
             print("wrote loop", name, round(len(clip) / rate, 2), "s")
