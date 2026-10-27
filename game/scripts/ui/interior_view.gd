@@ -48,6 +48,8 @@ var _loom: Node2D
 var _weaving := 0.0
 var _hearts: Array = []
 var _base: Sprite2D
+## Above the painting on a tall window, its top strip of wall and beams repeated upwards.
+var _top: Sprite2D
 var _light: CanvasModulate
 var _glow_layer: CanvasLayer
 var _glow: Node2D
@@ -104,6 +106,12 @@ func _ready() -> void:
 	# Past the painting's edges its walls and floor carry on, mirrored.
 	_base.texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
 	_scene.add_child(_base)
+	_top = Sprite2D.new()
+	_top.centered = false
+	_top.flip_v = true
+	_top.scale = Vector2(DETAIL, DETAIL)
+	_top.texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
+	_scene.add_child(_top)
 	for id in Balance.get_value("interior.furnishings", {}):
 		if not _spots.has(id) or not ResourceLoader.exists(DIR + id + ".png"):
 			continue
@@ -205,17 +213,24 @@ func _fit() -> void:
 	var shown := Windowing.scale * DETAIL
 	var canvas := (view / shown).ceil()
 	_viewport.size = Vector2i(canvas)
-	_origin = (((canvas * DETAIL - Vector2(480, 270)) / 2.0) / DETAIL).floor() * DETAIL
+	# Spare width is shared between the sides; spare height all goes above, since the painting's bottom edge cuts
+	# through the plants and the rug and must stay on the bottom of the screen.
+	var extra := (canvas * DETAIL - Vector2(480, 270)).max(Vector2.ZERO)
+	_origin = Vector2(floorf(extra.x / 2.0 / DETAIL) * DETAIL, extra.y)
 	var place := Transform2D(0.0, Vector2.ONE / DETAIL, 0.0, _origin / DETAIL)
 	_viewport.canvas_transform = place
 	for l in [_sky_layer, _glow_layer]:
 		l.transform = place
 	_display.scale = Vector2(shown, shown)
 	_display.position = ((view - canvas * shown) / 2.0).floor()
-	var spare := _origin.max(Vector2.ZERO) / DETAIL
+	var spare := _origin / DETAIL
 	_base.region_enabled = true
-	_base.region_rect = Rect2(-spare, Vector2(240, 135) + spare * 2.0)
-	_base.position = -spare * DETAIL
+	_base.region_rect = Rect2(-spare.x, 0, 240 + spare.x * 2.0, 135)
+	_base.position = Vector2(-spare.x * DETAIL, 0)
+	_top.visible = spare.y > 0
+	_top.region_enabled = true
+	_top.region_rect = Rect2(-spare.x, 0, 240 + spare.x * 2.0, maxf(spare.y, 1.0))
+	_top.position = Vector2(-spare.x, -spare.y) * DETAIL
 	# The sky is drawn at the same coarseness, its horizon behind the doorway's.
 	var at: Array = SKY_AT["ruin" if ruined() else "room"]
 	_sky.scale = Vector2(DETAIL, DETAIL)
@@ -251,6 +266,8 @@ func _dress_room() -> void:
 	# From the villa rustica on, the walls are freshly painted rather than worn.
 	var room := "ruin.png" if ruined() else ("painted.png" if Game.villa_stage >= 3 else "empty.png")
 	_base.texture = load(DIR + room)
+	# The top rows of the painting hold no open sky, so they can be carried on upwards without showing a hole.
+	_top.texture = ImageTexture.create_from_image(_base.texture.get_image().get_region(Rect2i(0, 0, 240, 8)))
 	for id in _sprites:
 		_sprites[id].visible = not ruined() and Game.furnishings.has(id)
 	for pet in [_dog, _cat, _dog_shadow, _cat_shadow]:
