@@ -218,8 +218,9 @@ def cmd_inpaint(a):
     if not bx:
         sys.exit("mask is empty")
     W, H = image.size
-    tw = min(256, (bx[2] - bx[0] + 3) // 4 * 4, W // 4 * 4)
-    th = min(256, (bx[3] - bx[1] + 3) // 4 * 4, H // 4 * 4)
+    # PixelLab repaints areas from 32 to 256 pixels a side, so a thin area is sent with some of its surroundings.
+    tw = min(256, max(32, (bx[2] - bx[0] + 3) // 4 * 4), W // 4 * 4)
+    th = min(256, max(32, (bx[3] - bx[1] + 3) // 4 * 4), H // 4 * 4)
     done = Image.new("L", image.size, 0)
     for tx, ty in tiles(bx, max(tw, th)):
         tx = min((max(0, tx) + 3) // 4 * 4, (W - tw) // 4 * 4)

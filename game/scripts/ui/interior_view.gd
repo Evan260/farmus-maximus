@@ -15,9 +15,10 @@ const WATER := preload("res://assets/shaders/water.gdshader")
 const SHAFT := [Vector2(196, 0), Vector2(344, 0), Vector2(344, 200), Vector2(320, 182), Vector2(228, 182), Vector2(196, 196)]
 ## The painted land seen through the doorway, which darkens at night like the estate.
 const LAND := Rect2(367, 57, 64, 72)
-const RUIN_LAND := Rect2(400, 116, 56, 84)
+## The ruin is the same room fallen apart, so its doorway is the same one.
+const RUIN_LAND := LAND
 ## Which part of the estate's sky shows through the doorway: the room's pixel at the doorway's horizon, and the sky's.
-const SKY_AT := {"room": [Vector2(399, 57), Vector2(230, 170)], "ruin": [Vector2(429, 116), Vector2(230, 170)]}
+const SKY_AT := {"room": [Vector2(399, 57), Vector2(230, 170)], "ruin": [Vector2(399, 57), Vector2(230, 170)]}
 ## The loom, and the line its shuttle runs along between the warp threads.
 const LOOM := Rect2(155, 84, 85, 80)
 const SHED := [178.0, 226.0, 111.0]

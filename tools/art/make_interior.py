@@ -202,6 +202,112 @@ ROOM_SKY = [(366, 18, 432, 58)]
 RUIN_SKY = [(398, 62, 460, 116), (268, 0, 342, 26)]
 
 
+# The ruin is the restored room fallen into disrepair, drawn over the bare restored room so the hearth, the doorway
+# and the walls stand exactly where they do once it is mended.
+ROOF_HOLE = (272, 0, 48, 10)
+STONE = np.array([168, 150, 120])
+LEAVES = [np.array(c) for c in ([46, 74, 38], [72, 108, 48], [102, 138, 62])]
+TILE = [np.array(c) for c in ([176, 92, 54], [140, 70, 44], [112, 56, 38])]
+
+
+def _noise(rng, scale):
+    """Smooth random blobs over the room, from coarse random values scaled up."""
+    small = rng.random((H // scale + 2, W // scale + 2))
+    big = np.array(Image.fromarray((small * 255).astype(np.uint8)).resize(((W // scale + 2) * scale, (H // scale + 2) * scale), Image.BICUBIC))
+    return big[:H, :W] / 255.0
+
+
+def ruin_room(empty):
+    """The restored room as a ruin: plaster fallen from the red walls, cracks, ivy climbing and hanging, cobwebs,
+    fallen roof tiles and rubble on the floor and in the dry pool, a hole torn in the roof, and dust over it all."""
+    rng = np.random.default_rng(31)
+    a = np.array(empty.convert("RGBA")).astype(float)
+    rgb = a[..., :3]
+    ys, xs = np.mgrid[0:H, 0:W]
+    plaster = (rgb[..., 0] > rgb[..., 1] * 1.35) & (rgb[..., 0] > 90) & (ys < 100) & (a[..., 3] > 0)
+    # Plaster gone in patches, showing the stone behind with a dark broken edge.
+    fallen = plaster & ((_noise(rng, 14) * 0.7 + _noise(rng, 5) * 0.3) > 0.64)
+    edge = grow(fallen, 1) & ~fallen & plaster
+    shade = (_noise(rng, 3) - 0.5) * 30
+    rgb[fallen] = np.clip(STONE + shade[fallen][:, None], 0, 255)
+    rgb[edge] = rgb[edge] * 0.55
+    # Cracks wander down the walls, now and then splitting.
+    walls = plaster | fallen
+    for _ in range(16):
+        cand = np.argwhere(walls)
+        y, x = cand[rng.integers(len(cand))]
+        for _ in range(rng.integers(12, 40)):
+            if 0 <= y < H and 0 <= x < W and walls[y, x]:
+                rgb[y, x] = [58, 40, 34]
+            y += 1 if rng.random() < 0.7 else 0
+            x += rng.choice([-1, 0, 1])
+    # Ivy climbs from the foot of the walls and hangs from the broken roof.
+    for x0, y0, up in [(6, 100, True), (128, 92, True), (338, 138, True), (440, 140, True), (300, 82, True),
+                       (160, 0, False), (250, 0, False), (318, 0, False), (420, 0, False)]:
+        x, y = float(x0), float(y0)
+        for k in range(rng.integers(40, 80)):
+            y += -1 if up else 1
+            x += rng.normal(0, 0.6)
+            xi, yi = int(round(x)), int(y)
+            if not (0 <= xi < W and 0 <= yi < H) or a[yi, xi, 3] == 0:
+                break
+            rgb[yi, xi] = [54, 66, 34]
+            if k % 3 == 0:
+                c = LEAVES[rng.integers(3)]
+                for dx, dy in [(0, 0), (1, 0), (0, 1), (1, 1)][: rng.integers(2, 5)]:
+                    px, py = xi + dx * rng.choice([-1, 1]), yi + dy
+                    if 0 <= px < W and 0 <= py < H and a[py, px, 3] > 0:
+                        rgb[py, px] = c
+    # Cobwebs hang in the top corners.
+    for cx, cy, flip in [(0, 0, 1), (479, 0, -1), (140, 0, 1)]:
+        for r in range(4, 22, 5):
+            for t in np.linspace(0, np.pi / 2, r * 2):
+                px, py = int(cx + flip * r * np.cos(t)), int(cy + r * np.sin(t))
+                if 0 <= px < W and 0 <= py < H:
+                    rgb[py, px] = rgb[py, px] * 0.5 + np.array([210, 205, 195]) * 0.5
+        for t in np.linspace(0, np.pi / 2, 5):
+            for r in range(0, 22):
+                px, py = int(cx + flip * r * np.cos(t)), int(cy + r * np.sin(t))
+                if 0 <= px < W and 0 <= py < H:
+                    rgb[py, px] = rgb[py, px] * 0.6 + np.array([210, 205, 195]) * 0.4
+    # The rug left behind is worn thin and grey with dust.
+    rug = shapes(polys=[RUG])
+    rgb[rug] = rgb[rug] * 0.75 + (rgb[rug] @ [0.3, 0.59, 0.11])[:, None] * 0.25 * np.array([1.0, 0.95, 0.85])
+    # Fallen roof tiles and rubble, thickest under the hole in the roof and in the dry pool.
+    floor = (ys > 158) & (a[..., 3] > 0)
+    pool = shapes(polys=[[(196, 196), (228, 182), (320, 182), (344, 200), (300, 228), (210, 228)]])
+    for _ in range(170):
+        if rng.random() < 0.45:
+            cand = np.argwhere(pool)
+        else:
+            cand = np.argwhere(floor)
+        y, x = cand[rng.integers(len(cand))]
+        if rng.random() < 0.55:
+            w, h, c = rng.integers(3, 7), rng.integers(2, 3), TILE[rng.integers(3)]
+            for dy in range(h):
+                for dx in range(w):
+                    px, py = x + dx + dy, y + dy
+                    if 0 <= px < W and 0 <= py < H:
+                        rgb[py, px] = c * (0.85 if dy == h - 1 else 1.0)
+            if y + h < H:
+                rgb[y + h, x:x + w] *= 0.6
+        else:
+            g = 110 + rng.integers(0, 50)
+            rgb[y, x] = [g + 10, g, g - 12]
+            if x + 1 < W:
+                rgb[y, x + 1] = [g - 20, g - 26, g - 34]
+    # The roof is torn open at the top: the sky shows through a ragged hole edged with broken beams.
+    hx, hy, rx, ry = ROOF_HOLE
+    hole = ((xs - hx) / rx) ** 2 + ((ys - hy) / ry) ** 2 + (_noise(rng, 4) - 0.5) * 0.5 < 1.0
+    rim = grow(hole, 2) & ~hole
+    rgb[rim] = np.array([84, 56, 40]) + (_noise(rng, 2)[rim][:, None] - 0.5) * 40
+    a[hole, 3] = 0
+    # Everything faded and dusty: colours drained towards a dusty grey, and the light dimmed.
+    grey = (rgb @ [0.3, 0.59, 0.11])[..., None] * np.array([1.04, 1.0, 0.93])
+    a[..., :3] = (rgb * 0.68 + grey * 0.32) * 0.9
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "build"
     room = load("room", 70)
@@ -211,7 +317,6 @@ def main():
     redo = set(sys.argv[sys.argv.index("--redo") + 1].split(",")) if "--redo" in sys.argv else set()
     STEPS.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
-    open_sky(soften_outlines(load("ruin", 30)), RUIN_SKY, True).save(OUT / "ruin.png")
     room.save(STEPS / "room.png")
     # The furnished room without the painted animals, then the room losing one furnishing after another.
     name, find, words = ANIMALS
@@ -253,6 +358,7 @@ def main():
         Image.fromarray(layer[box[1]:box[3], box[0]:box[2]]).save(OUT / f"{name}.png")
         spots[name] = box
     open_sky(Image.fromarray(empty), ROOM_SKY, False).save(OUT / "empty.png")
+    ruin_room(open_sky(Image.fromarray(empty), ROOM_SKY, False)).save(OUT / "ruin.png")
     (OUT / "furnishings.json").write_text(json.dumps(spots, indent="\t") + "\n", encoding="utf-8")
     print("wrote", OUT)
 

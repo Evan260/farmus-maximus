@@ -312,3 +312,13 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-26T21:48:46,inpaint,tools/art/sources/interior/steps/fl_out3.png,0.1211,0,3.2966
 2026-10-26T21:49:51,inpaint,tools\art\sources\interior\steps\clean.png,0.0345,0,3.2621
 2026-10-26T21:50:46,inpaint,tools\art\sources\interior\steps\clean.png,0.0309,0,3.2312
+2026-10-26T22:04:38,inpaint,tools\art\sources\interior\steps\ruin_roof.png,0.0386,0,3.1925
+2026-10-26T22:05:06,inpaint,tools\art\sources\interior\steps\ruin_left_wall.png,0.0272,0,3.1654
+2026-10-26T22:05:27,inpaint,tools\art\sources\interior\steps\ruin_back_wall.png,0.0227,0,3.1426
+2026-10-26T22:05:47,inpaint,tools\art\sources\interior\steps\ruin_shelf.png,0.0271,0,3.1155
+2026-10-26T22:06:07,inpaint,tools\art\sources\interior\steps\ruin_right_wall.png,0.0269,0,3.0886
+2026-10-26T22:06:36,inpaint,tools\art\sources\interior\steps\ruin_loom.png,0.0229,0,3.0657
+2026-10-26T22:06:56,inpaint,tools\art\sources\interior\steps\ruin_bench.png,0.0271,0,3.0387
+2026-10-26T22:07:34,inpaint,tools\art\sources\interior\steps\ruin_rubble.png,0.0309,0,3.0078
+2026-10-26T22:08:03,inpaint,tools\art\sources\interior\steps\ruin_basin.png,0.0303,0,2.9774
+2026-10-26T22:08:23,inpaint,tools\art\sources\interior\steps\ruin_debris.png,0.0227,0,2.9548
