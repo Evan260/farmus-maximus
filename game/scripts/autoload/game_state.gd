@@ -226,7 +226,7 @@ func add_item(key: String, amount: int, force := false) -> int:
 	if Balance.get_value("items.%s.no_quality" % item_base(key), false):
 		key = item_base(key)
 	if not force and not is_material(key):
-		amount = mini(amount, storage_capacity() - stored_total())
+		amount = mini(amount, holding_capacity() - stored_total())
 	if amount <= 0:
 		return 0
 	storage[key] = int(storage.get(key, 0)) + amount
@@ -516,7 +516,7 @@ func dig_up(i: int) -> bool:
 func try_harvest(i: int) -> bool:
 	if not is_ready(i):
 		return false
-	if stored_total() >= storage_capacity():
+	if stored_total() >= holding_capacity():
 		storage_full.emit()
 		return false
 	_harvest(i, true)
@@ -613,6 +613,22 @@ func storage_capacity() -> int:
 
 func cart_capacity() -> int:
 	return int(upgrade_value("cart_capacity"))
+
+
+## Everything the farm can hold right now. A parked cart is loaded with goods waiting for market, so its space adds
+## to the storehouse's; while it is away on the road, only the storehouse holds anything.
+func holding_capacity() -> int:
+	return storage_capacity() + (0 if cart["away"] else cart_capacity())
+
+
+## How the goods held split between the storehouse and the parked cart: the storehouse fills first, the rest is on
+## the cart.
+func in_storehouse() -> int:
+	return mini(stored_total(), storage_capacity())
+
+
+func on_cart() -> int:
+	return 0 if cart["away"] else maxi(0, stored_total() - storage_capacity())
 
 
 func cart_trip_seconds() -> float:
@@ -820,7 +836,7 @@ func simulate_offline(seconds: float) -> Dictionary:
 	for i in plots.size():
 		if is_ready(i):
 			summary["ready"] += 1
-	summary["storage_full"] = stored_total() >= storage_capacity()
+	summary["storage_full"] = stored_total() >= holding_capacity()
 	return summary
 
 
@@ -1148,7 +1164,7 @@ func _advance_buildings(dt: float) -> int:
 		for item in out:
 			amount += int(out[item])
 		# A finished batch waits in the building until the storehouse has room for it.
-		if stored_total() + amount > storage_capacity():
+		if stored_total() + amount > holding_capacity():
 			continue
 		var q := clampi(int(round(float(b["batch_q"]))) + int(building_level_info(id).get("quality", 0)), 0, 2)
 		for item in out:
@@ -1200,7 +1216,7 @@ func draw_wine(id := "cellar", only_best := false) -> int:
 	var drawn := 0
 	for age in b["casks"]:
 		var q := cask_quality(float(age), id)
-		if q < 0 or (only_best and q < 2) or stored_total() >= storage_capacity():
+		if q < 0 or (only_best and q < 2) or stored_total() >= holding_capacity():
 			kept.append(age)
 			continue
 		add_item(item_key("aged_wine", q), 1)
@@ -1378,7 +1394,7 @@ func _advance_helpers(dt: float) -> int:
 		helper_timers[id] = float(helper_timers.get(id, 0.0)) - dt
 		while float(helper_timers[id]) <= 0.0:
 			var i := _ready_plot_for(info)
-			if i < 0 or stored_total() >= storage_capacity():
+			if i < 0 or stored_total() >= holding_capacity():
 				# Nothing to do, so the helper waits instead of saving up a burst of harvests.
 				helper_timers[id] = 0.0
 				break
@@ -1396,7 +1412,7 @@ func _advance_helpers(dt: float) -> int:
 ## A helper on screen harvests the plant they walked to, and returns what they picked; annual crops are replanted straight away.
 func helper_harvest(id: String, i: int) -> String:
 	var info := helper_info(id)
-	if i < 0 or not is_ready(i) or stored_total() >= storage_capacity():
+	if i < 0 or not is_ready(i) or stored_total() >= holding_capacity():
 		return ""
 	var p: Dictionary = plots[i]
 	if not ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):

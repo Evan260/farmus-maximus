@@ -49,7 +49,9 @@ func build() -> void:
 
 
 func tick() -> void:
-	_capacity.text = tr("Holds %d of %d") % [Game.stored_total(), Game.storage_capacity()]
+	_capacity.text = tr("Holds %d of %d") % [Game.in_storehouse(), Game.storage_capacity()]
+	if not Game.cart["away"]:
+		_capacity.text += "\n" + tr("On the cart: %d of %d") % [Game.on_cart(), Game.cart_capacity()]
 	if _grow:
 		_grow.disabled = Game.coins < Game.upgrade_cost("storage") or Game.projects.has("storage")
 		if Game.projects.has("storage"):

@@ -130,7 +130,7 @@ func _ready() -> void:
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
 	Game.message.connect(func(text): toast(tr(text)); Sfx.play("nope", -6.0))
-	Game.storage_full.connect(func(): toast(tr("The storehouse is full: send the cart to market")))
+	Game.storage_full.connect(func(): toast(tr("The storehouse and the cart are full: send the cart to market")))
 	Game.achievement_unlocked.connect(_on_achievement)
 	Game.discovered.connect(_on_discovered)
 	Game.festival_started.connect(_on_festival)
@@ -208,15 +208,15 @@ func _process(delta: float) -> void:
 	if in_strip:
 		for w in _windows:
 			w.visible = false
-	_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.storage_capacity()]
+	_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.holding_capacity()]
 	_coins.text = tr("Sestertii  %d") % Game.coins + (("   " + tr("Aurei  %d") % Game.aureus) if Game.aureus > 0 else "")
-	_storage.text = tr("Storehouse  %d / %d") % [Game.stored_total(), Game.storage_capacity()]
+	_storage.text = tr("Storehouse  %d / %d") % [Game.in_storehouse(), Game.storage_capacity()]
 	if Game.cart["away"]:
 		_cart.text = tr("Trader back in  %s") % UiKit.duration(float(Game.cart["time_left"]))
 	elif Game.helpers.has("trader"):
-		_cart.text = tr("Trader ready  (carries %d)") % Game.cart_capacity()
+		_cart.text = tr("Trader's cart  %d / %d") % [Game.on_cart(), Game.cart_capacity()]
 	else:
-		_cart.text = tr("Cart ready for market")
+		_cart.text = tr("Cart  %d / %d") % [Game.on_cart(), Game.cart_capacity()]
 	# The farm's own running day count leads, the number players share; the weather is left to the sky to show.
 	var cal := "%s   %s" % [tr("Day %d") % (Game.calendar.day + 1), tr(Game.calendar.season_name())]
 	var festival: Dictionary = Game.calendar.festival()
@@ -539,7 +539,7 @@ func _show_away(summary: Dictionary) -> void:
 	if int(summary.get("ready", 0)) > 0:
 		lines.append(tr("%d plants are ready to harvest") % int(summary["ready"]))
 	if summary.get("storage_full", false):
-		lines.append(tr("The storehouse is full"))
+		lines.append(tr("The storehouse and the cart are full"))
 	for line in lines:
 		UiKit.label(col, line)
 	UiKit.button(col, tr("Lovely"), p.queue_free)

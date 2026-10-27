@@ -136,7 +136,12 @@ func _run() -> void:
 		game.try_plant(i)
 	game.storage = {}
 	var summary: Dictionary = game.simulate_offline(3600.0 * 5)
-	_check(game.stored_total() == game.storage_capacity(), "offline harvesting stops at a full storehouse")
+	_check(game.stored_total() == game.holding_capacity(), "offline harvesting stops once the storehouse and the parked cart are full")
+	_check(game.holding_capacity() == game.storage_capacity() + game.cart_capacity(), "a parked cart adds its space to the storehouse's")
+	_check(game.in_storehouse() == game.storage_capacity() and game.on_cart() == game.cart_capacity(), "the storehouse fills first, the rest waits on the cart")
+	game.send_cart()
+	_check(game.holding_capacity() == game.storage_capacity(), "while the cart is on the road only the storehouse holds goods")
+	_check(game.on_cart() == 0, "nothing waits on a cart that is away")
 	_check(bool(summary["storage_full"]), "summary reports the full storehouse")
 
 	# The estate: deeds need the villa, buildings need materials, and workshops refine goods once loaded.

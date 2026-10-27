@@ -1147,7 +1147,7 @@ func _update_hover(point: Vector2) -> void:
 	elif _villa_hovered:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.villa_stages()[clampi(Game.villa_stage - 1, 0, Game.villa_stages().size() - 1)].get("name", "Farmhouse"))))
 	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
-		hud.set_info(tr("Storehouse: %d / %d") % [Game.stored_total(), Game.storage_capacity()])
+		hud.set_info(tr("Storehouse: %d / %d") % [Game.in_storehouse(), Game.storage_capacity()])
 	elif _cart_rect().has_point(point):
 		hud.set_info(tr("The trader is away at market") if Game.cart["away"] else tr("Ride the cart to market"))
 	else:
