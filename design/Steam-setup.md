@@ -63,13 +63,18 @@ Enter each of these in Steamworks under Stats and Achievements, with exactly thi
 
 ## 3. Steam Cloud
 
-Use Auto-Cloud; the game needs no code for it. Add one root path per platform:
+Use Auto-Cloud; the game needs no code for it. Each farm slot is saved as `farm_1.json`, `farm_2.json` and `farm_3.json`, each with up to three rolling backups (`farm_1.json.bak1` and so on), and `farms.json` remembers which farm was played last. Add two root paths per platform, one for the saves and one for their backups:
 
 | Platform | Root | Subdirectory | Pattern |
 |---|---|---|---|
-| Windows | `WinAppDataRoaming` | `Godot/app_userdata/Farmus Maximus` | `save.json*` |
-| macOS | `MacAppSupport` | `Godot/app_userdata/Farmus Maximus` | `save.json*` |
-| Linux | `LinuxXdgDataHome` | `godot/app_userdata/Farmus Maximus` | `save.json*` |
+| Windows | `WinAppDataRoaming` | `Godot/app_userdata/Farmus Maximus` | `farm*.json` |
+| Windows | `WinAppDataRoaming` | `Godot/app_userdata/Farmus Maximus` | `farm_*.json.bak*` |
+| macOS | `MacAppSupport` | `Godot/app_userdata/Farmus Maximus` | `farm*.json` |
+| macOS | `MacAppSupport` | `Godot/app_userdata/Farmus Maximus` | `farm_*.json.bak*` |
+| Linux | `LinuxXdgDataHome` | `godot/app_userdata/Farmus Maximus` | `farm*.json` |
+| Linux | `LinuxXdgDataHome` | `godot/app_userdata/Farmus Maximus` | `farm_*.json.bak*` |
+
+`farm*.json` covers both `farms.json` and every `farm_N.json`. The patterns leave out `farm_N.json.tmp`, which only exists for the moment a save is being written. If the save files are ever renamed, these patterns must change with them in `game/scripts/autoload/save_service.gd`, or cloud saves quietly stop syncing.
 
 `prefs.json`, `settings.json` and `window.json` are per-computer settings (key bindings, volume, where the strip sits), so they stay out of the cloud.
 
