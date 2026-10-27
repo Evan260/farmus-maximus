@@ -117,6 +117,8 @@ func tick() -> void:
 		"working":
 			_status.text = _working_status()
 			if _bar:
+				# An idle workshop says so in words, so an empty bar would only take up room.
+				_bar.visible = b["busy"]
 				_bar.value = float(b["progress"]) / float(Game.current_recipe(id).get("seconds", 30)) if b["busy"] else 0.0
 	_tick_action(Game.building_action(id).get("cost", {}), Game.building_block(id))
 	if _queue:

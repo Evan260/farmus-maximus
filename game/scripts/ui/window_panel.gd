@@ -15,6 +15,11 @@ var _refresh_timer := 0.0
 var _signature := "-"
 ## When set, the window keeps this size whatever it shows, so switching tabs never makes it jump.
 var fixed_size := Vector2.ZERO
+## Room kept clear above a window, and below it, where the toolbar sits at the bottom of the screen.
+const SCREEN_MARGIN := 8.0
+const TOOLBAR_ROOM := 30.0
+## The right margin that keeps a scroll bar off the text when a window's page scrolls.
+var _scroll_gap: MarginContainer
 
 
 func _init(title := "") -> void:
@@ -30,20 +35,21 @@ func _init(title := "") -> void:
 
 
 func _ready() -> void:
+	# The page scrolls inside the window: at a fixed size, so the window is the same size on every tab, or otherwise
+	# only once it is taller than the screen, so a long page never runs off the bottom.
+	_scroll = ScrollContainer.new()
+	UiKit.touch_scroll(_scroll)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_col.remove_child(body)
+	_col.add_child(_scroll)
+	_scroll_gap = MarginContainer.new()
+	_scroll_gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(_scroll_gap)
+	_scroll_gap.add_child(body)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if fixed_size != Vector2.ZERO:
-		# A page longer than the window scrolls inside it, so the window is the same size on every tab.
-		_scroll = ScrollContainer.new()
-		UiKit.touch_scroll(_scroll)
 		_scroll.custom_minimum_size = fixed_size
-		_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		_col.remove_child(body)
-		_col.add_child(_scroll)
-		var gap := MarginContainer.new()
-		gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		gap.add_theme_constant_override("margin_right", 8)
-		_scroll.add_child(gap)
-		gap.add_child(body)
-		body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_scroll_gap.add_theme_constant_override("margin_right", 8)
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	grow_horizontal = Control.GROW_DIRECTION_BOTH
 	grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -75,6 +81,8 @@ func close() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	if fixed_size == Vector2.ZERO:
+		_fit_to_screen()
 	_refresh_timer -= delta
 	if _refresh_timer <= 0.0:
 		_refresh_timer = 0.25
@@ -100,6 +108,28 @@ func refresh() -> void:
 	else:
 		_restore_scroll.call_deferred(scrolled)
 	UiKit.pad_focus.call_deferred(self)
+
+
+## Sizes the page to its contents, but no taller than the screen allows; a taller page scrolls, with room kept for
+## the scroll bar.
+func _fit_to_screen() -> void:
+	var page := body.get_combined_minimum_size()
+	var chrome := _col.get_combined_minimum_size().y - _scroll.custom_minimum_size.y + 12.0
+	var screen := get_parent_area_size()
+	var room := maxf(40.0, screen.y - SCREEN_MARGIN - TOOLBAR_ROOM - chrome)
+	var scrolls := page.y > room
+	var gap := 8 if scrolls else 0
+	if _scroll_gap.get_theme_constant("margin_right") != gap:
+		_scroll_gap.add_theme_constant_override("margin_right", gap)
+	var want := Vector2(page.x + gap, minf(page.y, room))
+	if _scroll.custom_minimum_size != want:
+		_scroll.custom_minimum_size = want
+		reset_size()
+	# Centred in the space between the top of the screen and the toolbar, so a tall window clears both.
+	var spot := Vector2(roundf((screen.x - size.x) / 2.0), roundf(SCREEN_MARGIN + (screen.y - SCREEN_MARGIN - TOOLBAR_ROOM - size.y) / 2.0))
+	spot.y = maxf(SCREEN_MARGIN, spot.y)
+	if position != spot:
+		position = spot
 
 
 func _scrolls() -> Array[Node]:
