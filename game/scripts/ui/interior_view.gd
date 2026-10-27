@@ -221,7 +221,9 @@ func ruined() -> bool:
 
 ## Shows the ruin or the restored room, the furnishings bought so far, and the pets napping in their places.
 func _dress_room() -> void:
-	_base.texture = load(DIR + ("ruin.png" if ruined() else "empty.png"))
+	# From the villa rustica on, the walls are freshly painted rather than worn.
+	var room := "ruin.png" if ruined() else ("painted.png" if Game.villa_stage >= 3 else "empty.png")
+	_base.texture = load(DIR + room)
 	for id in _sprites:
 		_sprites[id].visible = not ruined() and Game.furnishings.has(id)
 	for pet in [_dog, _cat, _dog_shadow, _cat_shadow]:

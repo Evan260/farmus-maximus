@@ -112,7 +112,7 @@ FURNISHINGS = [
      "an empty wooden shelf against a worn red plaster wall, nothing on the shelves", "amphorae"),
     ("amphorae", lambda room: shapes(rects=[(208, 43, 293, 77)]),
      "an empty wooden shelf against a worn red plaster wall, nothing on the shelves", "amphorae"),
-    ("panel", lambda room: shapes(rects=[(141, 11, 198, 87)]),
+    ("panel", lambda room: shapes(rects=[(144, 13, 196, 85)]),
      "a plain worn red plaster wall with faded patches, no painting"),
     ("water", water,
      "an empty dry stone basin sunk in the floor, dusty grey flagstones, no water"),
@@ -158,9 +158,18 @@ def _shared_mask(room, step):
 def tidy_rug(img):
     """The repainted rug leaves a sliver of stripes past its fringed left edge; the floor just beside it covers it."""
     a = np.array(img.convert("RGB"))
-    sliver = shapes(polys=[[(22, 212), (46, 206), (33, 230), (28, 234), (22, 234)]])
+    sliver = shapes(polys=[[(18, 210), (38, 206), (31, 226), (27, 234), (18, 234)]])
     for y, x in zip(*np.nonzero(sliver)):
         a[y, x] = a[y, x - 18]
+    # Its top left corner was cut square by the area it was painted in: the fringe is carried on to the corner, and a
+    # woven binding runs down the left side, so the rug ends in a proper edge.
+    a[200:206, 43:50] = a[200:206, 50:57]
+    side = [(43, 205), (43, 210), (37, 220), (35, 230), (39, 240), (44, 250)]
+    for (x0, y0), (x1, y1) in zip(side, side[1:]):
+        for y in range(y0, y1):
+            x = round(x0 + (x1 - x0) * (y - y0) / (y1 - y0))
+            a[y, x - 1] = (86, 52, 34)
+            a[y, x] = (196, 160, 112) if y % 3 else (150, 96, 60)
     return Image.fromarray(a)
 
 
@@ -308,6 +317,41 @@ def ruin_room(empty):
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
+# The red walls as freshly repainted once the villa is improved: each worn patch is covered with plaster copied from
+# nearby sound wall, a small square at a time, so the texture carries on rather than being smeared.
+WALLS = [(0, 0, 42, 62), (130, 0, 202, 60), (154, 60, 202, 86), (202, 0, 306, 36), (303, 0, 338, 100), (446, 0, 480, 96)]
+
+
+def repaint_walls(img):
+    from scipy import ndimage
+    a = np.array(img.convert("RGBA"))
+    rgb = a[..., :3].astype(float)
+    red = (rgb[..., 0] > rgb[..., 1] * 1.75) & (rgb[..., 0] > 50)
+    wall = shapes(rects=WALLS) & (a[..., 3] > 0)
+    worn = ndimage.binary_closing(wall & ~red, np.ones((3, 3))) & wall
+    worn = ndimage.binary_dilation(worn, iterations=1) & wall
+    ys, xs = np.mgrid[0:H, 0:W]
+    squares = np.where(worn, (ys // 10) * 100 + xs // 10 + 1, 0)
+    out = rgb.copy()
+    offsets = [(dx, dy) for r in range(4, 90, 2) for dx, dy in [(r, 0), (-r, 0), (0, r), (0, -r), (r, r), (-r, -r), (r, -r), (-r, r)]]
+    for k in np.unique(squares[squares > 0]):
+        py, px = np.nonzero(squares == k)
+        best = None
+        for dx, dy in offsets:
+            sy, sx = py + dy, px + dx
+            if sy.min() < 0 or sx.min() < 0 or sy.max() >= H or sx.max() >= W:
+                continue
+            score = red[sy, sx].mean()
+            if best is None or score > best[0]:
+                best = (score, dx, dy)
+            if score > 0.97:
+                break
+        if best:
+            out[py, px] = rgb[py + best[2], px + best[1]]
+    a[..., :3] = out.astype(np.uint8)
+    return Image.fromarray(a)
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "build"
     room = load("room", 70)
@@ -350,6 +394,11 @@ def main():
         own = mask.copy()
         for later in masks[k + 1:]:
             own &= ~later
+        # Only the furnishing itself, not the wall or floor around it, so it sits on the walls however they are painted.
+        from scipy import ndimage
+        changed = own & (np.abs(a.astype(int) - empty.astype(int)).sum(axis=2) > 30)
+        # Solid shapes: specks of changed wall dropped, and the holes left where a colour happened to match filled in.
+        own &= ndimage.binary_fill_holes(ndimage.binary_opening(changed, np.ones((2, 2))))
         layer = np.zeros((H, W, 4), np.uint8)
         layer[own, :3] = a[own]
         layer[own, 3] = 255
@@ -358,6 +407,7 @@ def main():
         Image.fromarray(layer[box[1]:box[3], box[0]:box[2]]).save(OUT / f"{name}.png")
         spots[name] = box
     open_sky(Image.fromarray(empty), ROOM_SKY, False).save(OUT / "empty.png")
+    repaint_walls(open_sky(Image.fromarray(empty), ROOM_SKY, False)).save(OUT / "painted.png")
     ruin_room(open_sky(Image.fromarray(empty), ROOM_SKY, False)).save(OUT / "ruin.png")
     (OUT / "furnishings.json").write_text(json.dumps(spots, indent="\t") + "\n", encoding="utf-8")
     print("wrote", OUT)

@@ -322,3 +322,4 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-10-26T22:07:34,inpaint,tools\art\sources\interior\steps\ruin_rubble.png,0.0309,0,3.0078
 2026-10-26T22:08:03,inpaint,tools\art\sources\interior\steps\ruin_basin.png,0.0303,0,2.9774
 2026-10-26T22:08:23,inpaint,tools\art\sources\interior\steps\ruin_debris.png,0.0227,0,2.9548
+2026-10-26T22:22:06,inpaint,tools\art\sources\interior\steps\without_panel.png,0.0226,0,2.9322
