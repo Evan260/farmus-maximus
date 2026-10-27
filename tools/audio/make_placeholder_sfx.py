@@ -223,13 +223,6 @@ def hammer():
     return np.concatenate([out, silence(0.05)])
 
 
-def villa_complete():
-    out = silence(1.6)
-    for i, f in enumerate([523, 659, 784, 1047]):
-        place(out, tone(f, 1.0, decay=3.5, harmonics=(1, 0.4, 0.15)) * 0.3, i * 0.12)
-    return out
-
-
 def thump():
     """A rabbit's alarm: a hind foot stamped once on the earth, a dull low thud with a little soil in it."""
     x = t(0.35)
@@ -281,7 +274,7 @@ def main():
     out = Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
     for name, fn in [("plant", plant), ("harvest", harvest), ("coins", coins), ("cart", cart), ("unlock", unlock),
-                     ("pet", pet), ("hammer", hammer), ("villa_complete", villa_complete), ("click", click), ("nope", nope), ("purr", purr), ("tab", tab)]:
+                     ("pet", pet), ("hammer", hammer), ("click", click), ("nope", nope), ("purr", purr), ("tab", tab)]:
         write(out / f"{name}.wav", fn())
         print("wrote", name)
 
