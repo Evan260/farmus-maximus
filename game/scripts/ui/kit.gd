@@ -111,6 +111,12 @@ static func fade_in(item: CanvasItem, seconds := 0.18) -> void:
 
 
 static func section(parent: Node, text: String) -> Label:
+	# A gap above the heading shows it starts something new rather than finishing what came before.
+	if parent.get_child_count() > 0:
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 6)
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(gap)
 	var l := label(parent, text)
 	l.add_theme_color_override("font_color", HEADING)
 	var rule := ColorRect.new()
