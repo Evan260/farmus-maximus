@@ -116,6 +116,7 @@ var _channels: Node2D
 var _stone_donkey: AnimatedSprite2D
 ## Scaffolding stood in front of the farmhouse while it is being restored.
 var _villa_scaffold: Node2D
+var _villa_bar_up := false
 var _villa_hovered := false
 var _stork: Sprite2D
 ## The stork's poses by name, and how long until it changes pose.
@@ -431,8 +432,10 @@ func go_to_town() -> void:
 
 
 func _process(delta: float) -> void:
-	if Game.villa_build["active"]:
+	# The progress bar is redrawn while the builders work, and once more when they finish, so it is taken away.
+	if Game.villa_build["active"] or _villa_bar_up:
 		_villa_outline.queue_redraw()
+	_villa_bar_up = Game.villa_build["active"]
 	var night := Lighting.night_amount(Game.day_time)
 	var light: Color = Lighting.color_at(Game.day_time) * SEASON_TINT.get(Game.calendar.season_id(), Color.WHITE)
 	if Game.calendar.weather in ["cloudy", "rain"]:
