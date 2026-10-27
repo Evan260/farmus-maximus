@@ -442,7 +442,16 @@ func _draw_marks() -> void:
 		return
 	for id in Balance.get_value("interior.furnishings", {}):
 		var rects: Array = Game.furnishing_info(id).get("rects", [])
-		if id == _hovered:
+		var shape := _shape(id)
+		if id == _hovered and not shape.is_empty():
+			# A furnishing with a shape of its own, such as the pool, is outlined along that shape.
+			for e in shape.size():
+				var a: Vector2 = shape[e]
+				var b: Vector2 = shape[(e + 1) % shape.size()]
+				var steps := int(maxf(absf(b.x - a.x), absf(b.y - a.y)) / DETAIL) + 1
+				for n in steps + 1:
+					_dot(_marks, a.lerp(b, float(n) / steps), Vector2.ONE, MARK)
+		elif id == _hovered:
 			for r in rects:
 				var box := Rect2(r[0], r[1], r[2] - r[0], r[3] - r[1])
 				_dot(_marks, box.position - Vector2(DETAIL, DETAIL), Vector2(box.size.x / DETAIL + 2, 1), MARK)
@@ -531,10 +540,23 @@ func _picture_point(ui_point: Vector2) -> Vector2:
 	return (ui_point * Windowing.ui_scale - _display.position) / _display.scale.x * DETAIL - _origin
 
 
+## A furnishing's own outline, as points, for one whose spot is not a simple box.
+func _shape(id: String) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for pt in Game.furnishing_info(id).get("shape", []):
+		points.append(Vector2(pt[0], pt[1]))
+	return points
+
+
 func _spot_at(point: Vector2) -> String:
 	if ruined():
 		return ""
 	for id in Balance.get_value("interior.furnishings", {}):
+		var shape := _shape(id)
+		if not shape.is_empty():
+			if Geometry2D.is_point_in_polygon(point, shape):
+				return String(id)
+			continue
 		for r in Game.furnishing_info(id).get("rects", []):
 			if Rect2(r[0], r[1], r[2] - r[0], r[3] - r[1]).has_point(point):
 				return String(id)
