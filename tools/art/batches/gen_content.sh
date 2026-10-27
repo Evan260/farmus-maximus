@@ -1,9 +1,9 @@
 #!/bin/bash
 # Generates the art for the full game's content; run from the project root. Finished files are skipped, so it can be rerun after a failure.
 P="timeout 600 python tools/art/pixellab.py"
-BUILDING="design/Art tests/estate/style_building64.png"
-TREE="design/Art tests/estate/style_tree48.png"
-CROP="design/Art tests/phase1/style_lavender_ref.png"
+BUILDING="tools/art/reference/style_building64.png"
+TREE="tools/art/reference/style_tree48.png"
+CROP="tools/art/reference/style_lavender_ref.png"
 CREATURE="game/assets/sprites/dog/east.png"
 S=game/assets/sprites
 RUIN="turn it into the same building as an abandoned ruin: crumbling cracked walls, collapsed roof with many missing terracotta tiles, broken wood, overgrown with weeds and ivy, same size and same position"
