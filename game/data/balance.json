@@ -2,6 +2,7 @@
 	"start": {
 		"coins": 20,
 		"unlocked_plots": 4,
+		"seed": "lavender",
 		"rescue_coins": 10
 	},
 	"crops": {

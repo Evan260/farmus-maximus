@@ -777,18 +777,22 @@ func advance(dt: float) -> Dictionary:
 	return result
 
 
-## A farm with no coins for a seed, nothing growing, nothing to sell and nothing on its way could never earn again,
-## so Uncle Marcus sends a few sestertii to start over. In ordinary play this never happens.
-func _rescue_if_stranded() -> void:
-	var cheapest := INF
-	for id in Balance.get_value("crops", {}):
-		if crop_unlocked(id):
-			cheapest = minf(cheapest, float(crop_info(id).get("plant_cost", 0)))
-	if coins >= cheapest or stored_total() > 0 or cart["away"]:
-		return
+## True when the purse cannot pay for the farm's first crop, lavender, and nothing is planted anywhere. A cheaper seed
+## such as wheat may still be affordable, but a new player thinks of lavender, so this is when they feel stuck.
+func short_of_seed() -> bool:
+	if coins >= int(crop_info(String(Balance.get_value("start.seed", "lavender"))).get("plant_cost", 0)):
+		return false
 	for p in plots:
 		if p["crop"] != "":
-			return
+			return false
+	return true
+
+
+## A farm short of a seed with nothing to sell and nothing on its way could never earn again, so Uncle Marcus gives a
+## few sestertii to start over. In ordinary play this never happens.
+func _rescue_if_stranded() -> void:
+	if not short_of_seed() or stored_total() > 0 or cart["away"]:
+		return
 	for id in buildings:
 		if buildings[id].get("busy", false):
 			return

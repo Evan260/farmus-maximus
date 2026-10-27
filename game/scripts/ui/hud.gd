@@ -48,6 +48,8 @@ var _toast_tween: Tween
 var _toast_queue: Array = []
 var _achievements: Control
 var _uncle: Control
+## Something Uncle Marcus has to say outside the tutorial, such as the coins he gives a stranded farm, as an id and text.
+var _notice := {}
 var _tip: Label
 var _debug: PanelContainer
 var _stats_panel: PanelContainer
@@ -133,7 +135,10 @@ func _ready() -> void:
 	Game.festival_started.connect(_on_festival)
 	Game.season_changed.connect(func(_s): toast(tr("%s has come to the estate") % tr(Game.calendar.season_name())))
 	Game.dog_found.connect(func(_id, text): toast(tr(text)))
-	Game.rescued.connect(func(gift): toast(tr("Uncle Marcus sends %d sestertii to start again. Plant something, and mind the shovel!") % gift); Sfx.play("coins"))
+	Game.rescued.connect(func(gift):
+		_notice = {"id": "rescue %d" % Time.get_ticks_msec(), "text": tr("Here are %d sestertii to start again, my dear heir. Plant something, and mind the shovel!") % gift}
+		Sfx.play("coins"))
+	Game.planted.connect(func(_i): _notice = {})
 	Game.blessing_started.connect(func(god): Sfx.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % Game.helper_info(id).get("name", "")))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
@@ -371,14 +376,25 @@ func _apply_text_size() -> void:
 
 
 ## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
-## and never over the title screen or the strip. When every step is done he says goodbye, once.
+## and never over the title screen or the strip. When every step is done he says goodbye, once. At any time, even
+## after the tutorial, he comes back when the farm is short of money: with coins if it has no way to earn, or with
+## a word to sell what is in the storehouse first.
 func _update_tip() -> void:
 	_tip.visible = false
 	_uncle.position = Vector2.ZERO
-	var ready := Settings.show_tutorial and not Windowing.strip and _title == null and Game.pets_chosen
+	var settled := not Windowing.strip and _title == null and Game.pets_chosen
+	var ready := settled and Settings.show_tutorial
 	# He steps aside while a window is open, so his advice never covers it, and returns without sliding in again.
-	if ready and window_open():
+	if settled and window_open():
 		_uncle.visible = false
+		return
+	if not _notice.is_empty() and _uncle.dismissed() == String(_notice["id"]):
+		_notice = {}
+	var notice := _notice
+	if notice.is_empty() and ready and Game.short_of_seed() and Game.stored_total() > 0 and not Game.cart["away"]:
+		notice = {"id": "sell first", "text": tr("Your purse is empty, but the storehouse is not. Send the cart to market, then plant again.")}
+	if settled and not notice.is_empty():
+		_uncle.show_advice(String(notice["id"]), String(notice["text"]))
 		return
 	var step: Dictionary = Game.journal.tutorial_step() if ready else {}
 	if not step.is_empty():

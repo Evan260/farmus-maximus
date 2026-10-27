@@ -77,6 +77,11 @@ func show_advice(id: String, text: String) -> void:
 	Sfx.play("advice", -3.0)
 
 
+## The advice the player last closed with OK.
+func dismissed() -> String:
+	return _dismissed_id
+
+
 ## The advice he is on, even while it is tucked away behind a window or closed with OK.
 func showing() -> String:
 	return _shown_id

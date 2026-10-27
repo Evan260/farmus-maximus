@@ -69,6 +69,14 @@ func _run() -> void:
 	game.coins = 0
 	game.advance(1.0)
 	_check(game.coins == 0, "a farm with something growing is left to earn its own way")
+	game.dig_up(0)
+	game.coins = int(data_file.get_value("crops.wheat.plant_cost", 2))
+	game.advance(1.0)
+	_check(game.coins > int(data_file.get_value("crops.lavender.plant_cost", 3)), "a farm that can only afford wheat is helped too, since a new player looks for lavender")
+	game.coins = 0
+	game.add_item("lavender", 1, true)
+	game.advance(1.0)
+	_check(game.coins == 0 and game.short_of_seed(), "a farm with goods to sell is told to sell them rather than given coins")
 
 	# Growth depends on the season, water and manure.
 	game.new_game()
