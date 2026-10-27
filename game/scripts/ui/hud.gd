@@ -582,10 +582,22 @@ func _build_compact() -> void:
 
 
 func _build_debug() -> void:
+	# The debug panel has a layer of its own above everything, so it also opens inside the farmhouse and in the town,
+	# where the rest of the interface is hidden.
+	var layer := CanvasLayer.new()
+	layer.layer = 30
+	add_child.call_deferred(layer)
+	var holder := Control.new()
+	holder.theme = UiKit.make_theme()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(holder)
+	var scale_to_ui := func(): layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
+	scale_to_ui.call()
+	Windowing.view_changed.connect(scale_to_ui)
 	_debug = PanelContainer.new()
 	_debug.position = Vector2(4, 70)
 	_debug.visible = false
-	_root.add_child(_debug)
+	holder.add_child(_debug)
 	var col := UiKit.column(_debug)
 	UiKit.label(col, "Debug (F1)")
 	for s in [1, 10, 60]:

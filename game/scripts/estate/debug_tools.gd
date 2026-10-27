@@ -101,6 +101,8 @@ func load_demo_state() -> void:
 					break
 				if step["done"].has("stat"):
 					Game.stats[step["done"]["stat"]] = int(step["done"].get("at", 1))
+		elif arg == "--debug-panel":
+			(func() -> void: m.hud._debug.visible = true).call_deferred()
 		elif arg == "--galaxy":
 			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
 		elif arg == "--rainbow":
