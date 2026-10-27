@@ -127,6 +127,20 @@ static func section(parent: Node, text: String) -> Label:
 	return l
 
 
+## A thin line with space above and below, between items of a list that each run to several lines.
+static func divider(parent: Node) -> void:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(box)
+	for part in [Vector2(0, 5), Vector2(0, 1), Vector2(0, 5)]:
+		var c := ColorRect.new()
+		c.custom_minimum_size = part
+		c.color = Color(0.55, 0.27, 0.18, 0.35) if part.y == 1 else Color(0, 0, 0, 0)
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(c)
+
+
 ## A checklist of what something costs, one line per thing with its icon and how many you have of how many it needs.
 ## Returns the lines so update_costs can refresh the counts without rebuilding.
 static func cost_list(parent: Node, cost: Dictionary) -> Array:

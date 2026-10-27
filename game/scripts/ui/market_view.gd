@@ -635,6 +635,8 @@ func _build_orders() -> void:
 	if Game.market.orders.is_empty():
 		UiKit.para(_list, tr("No requests today. New ones are pinned up through the day."), 280)
 	for i in Game.market.orders.size():
+		if i > 0:
+			UiKit.divider(_list)
 		var o: Dictionary = Game.market.orders[i]
 		var box := UiKit.column(_list)
 		UiKit.para(box, "%s (%s): \"%s\"" % [o["who"], UiKit.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
