@@ -83,6 +83,8 @@ func _ready() -> void:
 	add_child(_light)
 	_base = Sprite2D.new()
 	_base.centered = false
+	# Past the painting's edges its walls and floor carry on, mirrored.
+	_base.texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
 	_scene.add_child(_base)
 	for id in Balance.get_value("interior.furnishings", {}):
 		if not _spots.has(id) or not ResourceLoader.exists(DIR + id + ".png"):
@@ -176,13 +178,18 @@ func _build_ui() -> void:
 		_scroll = _scroll.get_parent()
 
 
-## The room is scaled up by a whole number until it covers the window, like the market town.
+## The room is drawn at the estate's own pixel scale, so its pixels are the same size as everywhere else in the game;
+## a window of another shape shows more of the room's walls and floor, the painting carried on past its edges.
 func _fit() -> void:
 	var view := get_viewport().get_visible_rect().size
-	var cover := ceili(maxf(view.x / 480.0, view.y / 270.0))
+	var cover := Windowing.scale
+	var spare := ((view / cover - Vector2(480, 270)) / 2.0).ceil().max(Vector2.ZERO)
 	for node in [_scene, _glow]:
 		node.scale = Vector2(cover, cover)
 		node.position = ((view - Vector2(480, 270) * cover) / 2.0).round()
+	_base.region_enabled = true
+	_base.region_rect = Rect2(-spare, Vector2(480, 270) + spare * 2.0)
+	_base.position = -spare
 	var at: Array = SKY_AT["ruin" if ruined() else "room"]
 	_sky.scale = Vector2(cover, cover)
 	_sky.position = _scene.position + (at[0] - at[1]) * cover
