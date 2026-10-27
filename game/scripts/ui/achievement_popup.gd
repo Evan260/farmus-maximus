@@ -1,11 +1,14 @@
 extends Control
-## Earned achievements slide in from the bottom-right corner on a small parchment card with a laurel wreath, one after
-## another, and slide away again after a few seconds; clicking a card sends it away early.
+## Earned achievements slide in from the right edge on a small parchment card with a laurel wreath, one after another,
+## and slide away again after a few seconds; clicking a card sends it away early. The card stands in the sky just below
+## the buttons in the top-right corner, where it never covers the cart, the fields or Uncle Marcus.
 
 const LAUREL := preload("res://assets/sprites/icons32/laurel.png")
 const MARGIN := 6.0
 const HOLD := 5.0
 
+## The interface element the card stands below; without one it sits at the top edge.
+var below: Control
 ## While true, cards wait in the queue, such as while the title screen is up.
 var hold := false:
 	set(value):
@@ -20,9 +23,6 @@ var _tween: Tween
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	resized.connect(func():
-		if _card:
-			_card.position.y = size.y - _card.size.y - MARGIN)
 
 
 func add(a: Dictionary) -> void:
@@ -73,9 +73,7 @@ func _next() -> void:
 	await get_tree().process_frame
 	card.reset_size()
 	var w := card.size.x
-	card.position.y = roundf(size.y - card.size.y - MARGIN)
-	# Wrapped text can settle its height a little later, so the card stays standing on its bottom edge as it does.
-	card.resized.connect(func(): card.position.y = roundf(size.y - card.size.y - MARGIN))
+	card.position.y = _top()
 	card.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and card == _card:
 			_leave())
@@ -100,3 +98,15 @@ func _leave() -> void:
 		_card = null)
 	_tween.tween_interval(0.25)
 	_tween.tween_callback(_next)
+
+
+func _process(_delta: float) -> void:
+	# The buttons above can change size with the interface size setting, so the card keeps to just below them.
+	if _card:
+		_card.position.y = _top()
+
+
+func _top() -> float:
+	if below and below.visible:
+		return roundf(below.position.y + below.size.y + MARGIN)
+	return MARGIN

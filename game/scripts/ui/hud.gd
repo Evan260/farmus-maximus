@@ -122,6 +122,7 @@ func _ready() -> void:
 	_uncle = UncleGuide.new()
 	_root.add_child(_uncle)
 	_achievements = AchievementPopup.new()
+	_achievements.below = _buttons
 	_root.add_child(_achievements)
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
