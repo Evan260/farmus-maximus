@@ -19,9 +19,23 @@ const LAND := Rect2(366, 56, 66, 78)
 const RUIN_LAND := LAND
 ## Which part of the estate's sky shows through the doorway: the room's pixel at the doorway's horizon, and the sky's.
 const SKY_AT := {"room": [Vector2(399, 57), Vector2(230, 170)], "ruin": [Vector2(399, 57), Vector2(230, 170)]}
-## The loom, and the line its shuttle runs along between the warp threads.
+## The loom, and where its working parts are on the room's half-detail grid: the warp threads run from WARP_LEFT to
+## WARP_RIGHT, the shed opens between them at SHED_Y, the heddle bar sits at HEDDLE_Y and the woven edge at FELL_Y.
 const LOOM := Rect2(155, 84, 85, 80)
-const SHED := [178.0, 226.0, 111.0]
+const WARP_LEFT := 88
+const WARP_RIGHT := 114
+const SHED_Y := 56
+const HEDDLE_Y := 51
+const FELL_Y := 60
+const PASS_SECONDS := 0.8
+const PASSES := 5
+const WOOD_DARK := Color8(66, 38, 24)
+const WOOD := Color8(146, 88, 46)
+const WOOD_LIGHT := Color8(206, 150, 90)
+const THREAD := Color8(226, 206, 172)
+const THREAD_SHADE := Color8(150, 128, 104)
+const WEFT := Color8(176, 146, 204)
+const WEFT_SHADE := Color8(116, 92, 156)
 ## The room is drawn with half as many pixels as its painting, the same coarseness as the farm's own art: everything
 ## is placed in the painting's 480 by 270 but drawn onto a canvas of half that, and each of its pixels shown at twice
 ## the estate's pixel size. The pets keep their farm pictures, one of their pixels to one of the room's.
@@ -45,6 +59,8 @@ var _sky_layer: CanvasLayer
 var _sky: Node2D
 var _loom: Node2D
 var _weaving := 0.0
+## How much the rows just woven still show, fading from 1 to 0 after the weaving stops.
+var _woven := 0.0
 var _hearts: Array = []
 var _base: Sprite2D
 ## Above the painting on a tall window, its top strip of wall and beams repeated upwards.
@@ -330,7 +346,11 @@ func _process(delta: float) -> void:
 		# Indoors the room is never as dark as the night outside, and the fire and lamps warm it further.
 		warmth = 0.08 + (0.14 if Game.furnishings.has("fire") else 0.0) + (0.1 if Game.furnishings.has("lamps") else 0.0)
 	_light.color = day.lerp(Color(1.0, 0.86, 0.68), warmth * night).lerp(Color(1.0, 0.97, 0.92), 0.4 * (1.0 - night))
-	_weaving = maxf(0.0, _weaving - delta)
+	if _weaving > 0.0:
+		_weaving = maxf(0.0, _weaving - delta)
+		_woven = 1.0
+	else:
+		_woven = maxf(0.0, _woven - delta * 0.5)
 	_loom.queue_redraw()
 	for h in _hearts:
 		h["age"] += delta
@@ -437,19 +457,59 @@ func _draw_marks() -> void:
 				_dot(_marks, c + d * DETAIL, Vector2.ONE, Color(MARK, a))
 
 
-## While weaving, the shuttle runs back and forth between the warp threads, and the heddle bar lifts and drops
-## alternate threads at each pass.
+## While weaving, the heddle lifts every other warp thread so the shed opens, the shuttle carries the lavender weft
+## through it, and the beater swings down to pack the new row against the cloth; the next pass crosses the threads
+## the other way. The rows woven this time show along the cloth's edge, and fade once the weaving stops.
 func _draw_loom() -> void:
-	if _weaving <= 0.0 or ruined():
+	if ruined() or (_weaving <= 0.0 and _woven <= 0.0):
 		return
-	var pass_time := 0.55
-	var k := int(floorf(_weaving / pass_time))
-	var along := fposmod(_weaving, pass_time) / pass_time
-	var x := lerpf(SHED[0], SHED[1], along if k % 2 == 0 else 1.0 - along)
-	_dot(_loom, Vector2(x - 4, SHED[2]), Vector2(4, 1), Color8(92, 56, 34))
-	_dot(_loom, Vector2(x - 2, SHED[2]), Vector2(2, 1), Color8(196, 150, 96))
-	var lift := DETAIL if k % 2 == 0 else -DETAIL
-	_dot(_loom, Vector2(176, 102 + lift), Vector2(27, 1), Color8(214, 176, 120))
+	var g := func(x: float, y: float, w: float, h: float, colour: Color) -> void:
+		_loom.draw_rect(Rect2(Vector2(floorf(x), floorf(y)) * DETAIL, Vector2(w, h) * DETAIL), colour)
+	var elapsed := PASSES * PASS_SECONDS - _weaving
+	var k := int(clampf(floorf(elapsed / PASS_SECONDS), 0, PASSES - 1))
+	var t := fposmod(elapsed, PASS_SECONDS) / PASS_SECONDS if _weaving > 0.0 else 1.0
+	# The rows woven so far: a band of lavender weft over and under the warp, brightest where newest.
+	var rows := mini(k + (1 if t > 0.75 else 0), PASSES) if _weaving > 0.0 else PASSES
+	var fade := 1.0 if _weaving > 0.0 else _woven
+	for r in rows:
+		var y := FELL_Y - r % 3
+		for x in range(WARP_LEFT, WARP_RIGHT, 1):
+			var over := (x + r) % 2 == 0
+			g.call(x, y, 1, 1, Color(WEFT if over else WEFT_SHADE, fade * (0.75 + 0.25 * float(r == rows - 1))))
+	if _weaving <= 0.0:
+		return
+	# The shed: the raised threads light, the lowered ones in shadow, crossing over the open gap.
+	var lift := 1 if k % 2 == 0 else 0
+	for x in range(WARP_LEFT, WARP_RIGHT, 2):
+		var up := ((x - WARP_LEFT) / 2 + lift) % 2 == 0
+		g.call(x, SHED_Y - (2 if up else -1), 1, 2, THREAD if up else THREAD_SHADE)
+		g.call(x, SHED_Y, 1, 1, Color(0.1, 0.06, 0.05, 0.6))
+	# The heddle bar, lifted or lowered with the threads it carries.
+	var hy := HEDDLE_Y - lift
+	g.call(WARP_LEFT - 3, hy, WARP_RIGHT - WARP_LEFT + 6, 1, WOOD_LIGHT)
+	g.call(WARP_LEFT - 3, hy + 1, WARP_RIGHT - WARP_LEFT + 6, 1, WOOD_DARK)
+	# The shuttle crosses in the first part of the pass, trailing its weft; the beater swings in the last part.
+	var going_right := k % 2 == 0
+	var across := clampf(t / 0.7, 0.0, 1.0)
+	across = across * across * (3.0 - 2.0 * across)
+	var start := float(WARP_LEFT - 6) if going_right else float(WARP_RIGHT + 6)
+	var finish := float(WARP_RIGHT + 6) if going_right else float(WARP_LEFT - 6)
+	var sx := lerpf(start, finish, across)
+	var from := minf(start, sx)
+	var to := maxf(start, sx)
+	g.call(maxf(from, WARP_LEFT - 1), SHED_Y + 1, minf(to, WARP_RIGHT + 1) - maxf(from, WARP_LEFT - 1), 1, WEFT)
+	if t < 0.7:
+		# A little boat of wood with pointed ends, its bobbin of lavender yarn showing in the middle.
+		g.call(sx - 3, SHED_Y, 7, 1, WOOD_DARK)
+		g.call(sx - 2, SHED_Y - 1, 5, 1, WOOD_LIGHT)
+		g.call(sx - 2, SHED_Y, 5, 1, WOOD)
+		g.call(sx - 1, SHED_Y + 1, 3, 1, WOOD_DARK)
+		g.call(sx, SHED_Y, 1, 1, WEFT)
+	else:
+		var swing := sin(clampf((t - 0.7) / 0.3, 0.0, 1.0) * PI)
+		var by := lerpf(SHED_Y - 3, FELL_Y - 1, swing)
+		g.call(WARP_LEFT - 2, by, WARP_RIGHT - WARP_LEFT + 4, 1, WOOD_LIGHT)
+		g.call(WARP_LEFT - 2, by + 1, WARP_RIGHT - WARP_LEFT + 4, 1, WOOD_DARK)
 
 
 func _pet_at(point: Vector2) -> AnimatedSprite2D:
@@ -572,9 +632,11 @@ func _wake_dog() -> void:
 func _weave() -> void:
 	if _weaving > 0.0:
 		return
-	_weaving = 0.55 * 4
-	for k in 4:
-		get_tree().create_timer(0.55 * (k + 1)).timeout.connect(func(): Sfx.play("made", -16.0, 0.1))
+	_weaving = PASSES * PASS_SECONDS
+	# The shuttle hisses through, then the beater knocks the row home.
+	for k in PASSES:
+		get_tree().create_timer(PASS_SECONDS * k + 0.1).timeout.connect(func(): Sfx.play("rustle", -18.0, 0.15))
+		get_tree().create_timer(PASS_SECONDS * (k + 0.85)).timeout.connect(func(): Sfx.play("made", -14.0, 0.1))
 
 
 func _unhandled_input(event: InputEvent) -> void:

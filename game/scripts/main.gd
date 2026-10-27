@@ -1268,11 +1268,11 @@ func _on_building_changed(id: String) -> void:
 				hud.toast(tr("Builders are improving the %s") % name)
 			"working":
 				if _building_states.get(id, "") == "upgrading":
-					Sfx.play("villa_complete")
+					Sfx.play("built")
 					_dust(v.position, 24)
 					hud.toast(tr("The %s is now level %d") % [name, int(Game.buildings[id]["level"]) + 1])
 				elif int(Game.buildings[id]["level"]) == 0 and not Game.buildings[id]["busy"] and Game.buildings[id]["queue"].is_empty():
-					Sfx.play("villa_complete")
+					Sfx.play("built")
 					_dust(v.position, 24)
 					hud.toast(tr("The %s is working again!") % name)
 
@@ -1371,7 +1371,7 @@ func _on_villa_finished() -> void:
 		_villa_scaffold.visible = false
 	else:
 		_villa_scaffold.sink().tween_callback(func(): _villa_scaffold.visible = Game.villa_build["active"])
-	Sfx.play("villa_complete")
+	Sfx.play("built")
 	hud.toast(tr("The villa has been restored: %s!") % tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"])).to_lower())
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
 	_villa.modulate = Color(1.6, 1.5, 1.3)
@@ -1449,7 +1449,7 @@ func _on_upgrade_bought(id: String) -> void:
 	if id == "storage" and _store_scaffold.visible:
 		_store_scaffold.sink().tween_callback(func(): _store_scaffold.visible = Game.projects.has("storage"))
 	if id in Game.BUILT_UPGRADES:
-		Sfx.play("villa_complete")
+		Sfx.play("built")
 		hud.toast(tr("The work is finished"))
 	if id == "cart_speed":
 		road.pave_road()

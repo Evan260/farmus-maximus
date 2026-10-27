@@ -26,7 +26,8 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `salve_woman` | A woman greeting the player when clicked: a warm "Salve!" | No |
 | `salve_man` | A man greeting the player when clicked: a friendly "Salve!" | No |
 | `hammer` | Repairs and villa building | Yes |
-| `villa_complete` | A building or villa stage finished, a deed bought, an achievement | Yes |
+| `built` | Building work finished: a building repaired or improved, a villa stage, a farm improvement. Made from `hammer` and `made` by `tools/audio/compose_sounds.py` | Yes |
+| `villa_complete` | A deed bought, an achievement | Yes |
 | `triumph` | Earning the Triumph, the achievement for all the others: a brass fanfare | Yes |
 | `nope` | Something cannot be done (not enough coins, no room) | Yes |
 | `made` | A workshop finishes a batch | Yes |

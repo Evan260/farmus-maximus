@@ -24,6 +24,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `tools/art/make_working_frames.py` | Make the loops that play while the mill and the presses work, from their working pictures |
 | `tools/art/make_laurel.py` | Draw the golden laurel wreath given for the Triumph achievement |
 | `tools/art/make_room_pets.py` | Paint each dog and cat breed asleep at the farmhouse room's own detail and style (`game/assets/sprites/room_pets/`), with PixelLab |
+| `tools/audio/compose_sounds.py` | Make sounds out of ones already cut, such as `built` (the last hammer blows and a mallet set down) |
 | `tools/art/make_interior.py` | Make the farmhouse interior (`game/assets/backgrounds/interior/`) from the two paintings in `tools/art/sources/interior/`: the ruin, the empty restored room, and each buyable furnishing cut out as its own layer. Repaints with PixelLab are cached in `steps/`, so a rebuild is free unless `--redo NAME` |
 | `tools/art/make_town_trees.py` | Lift the market town's cypresses into their own pictures so they sway in the wind; rerun after `split_town_sky.py` |
 | `tools/art/make_stork_poses.py` | Make the stork's look-back, blink and nod poses from its picture on the nest |

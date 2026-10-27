@@ -88,7 +88,9 @@ func load_demo_state() -> void:
 			(func() -> void:
 				m.hud.visible = false
 				m.interior.enter()
-				if open == "pet":
+				if open == "weave":
+					m.interior._weave()
+				elif open == "pet":
 					m.interior.get_tree().create_timer(1.0).timeout.connect(func(): m.interior._stroke(m.interior._dog))
 				elif open != "-":
 					m.interior._open("" if open == "list" else open)).call_deferred()
