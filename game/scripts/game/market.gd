@@ -139,12 +139,11 @@ func add_order() -> bool:
 	var reward := int(round(base_price * n * _game.rng.randf_range(float(bonus_range[0]), float(bonus_range[1]))))
 	var aureus_chance := float(_cfg("orders.aureus_chance", 0.12)) * (2.0 if not festival.is_empty() else 1.0)
 	var aureus := 1 if _game.rng.randf() < aureus_chance else 0
-	var name := UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item))))
 	# Now and then a regular offers something money cannot buy: the rare white lavender.
 	var seed := "lavender_white" if not _game.crop_unlocked("lavender_white") and _game.rng.randf() < float(_cfg("orders.rare_seed_chance", 0.06)) else ""
 	orders.append({
 		"who": who.get("name", ""), "role": who.get("role", ""), "item": item, "amount": n, "coins": reward, "aureus": aureus, "seed": seed,
-		"text": tr(String(who.get("line", "{n} {item}"))).format({"n": n, "item": name}),
+		"text": tr(String(who.get("line", "{n} {item}"))).format({"n": n, "item": UiKit.item_words(item, n)}),
 	})
 	if not _game.quiet:
 		_game.order_added.emit()

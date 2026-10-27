@@ -284,8 +284,7 @@ func missing(cost: Dictionary) -> String:
 			continue
 		var short := int(cost[key]) - count_item(String(key))
 		if short > 0:
-			var name := "bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key))
-			return tr("Needs %d more %s") % [short, UiKit.mid(tr(name))]
+			return tr("Needs %d more %s") % [short, UiKit.item_words(String(key), short)]
 	return ""
 
 

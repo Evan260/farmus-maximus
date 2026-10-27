@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "game"
 OUT = ROOT / "translations" / "strings.csv"
-DATA_FIELDS = {"name", "role", "does", "about", "text", "desc", "line", "unlocks", "quote"}
+DATA_FIELDS = {"name", "plural", "role", "does", "about", "text", "desc", "line", "unlocks", "quote"}
 
 
 LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')

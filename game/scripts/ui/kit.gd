@@ -265,17 +265,27 @@ static func cost_text(cost: Dictionary) -> String:
 	for key in cost:
 		if key in ["coins", "aureus"] or int(cost[key]) <= 0:
 			continue
-		var name: String = TranslationServer.translate("bread or wine") if key == "provisions" else mid(TranslationServer.translate(String(Balance.get_value("items.%s.name" % key, key))))
-		parts.append("%d %s" % [int(cost[key]), name])
+		parts.append("%d %s" % [int(cost[key]), item_words(key, int(cost[key]))])
 	return ", ".join(parts) if not parts.is_empty() else TranslationServer.translate("free")
 
 
-## Goods as words, such as "2 lavender bundle + 1 olive oil".
+## Goods as words, such as "2 lavender bundles + 1 olive oil".
 static func goods_text(goods: Dictionary) -> String:
 	var parts := []
 	for item in goods:
-		parts.append("%d %s" % [int(goods[item]), mid(TranslationServer.translate(String(Balance.get_value("items.%s.name" % item, item))))])
+		parts.append("%d %s" % [int(goods[item]), item_words(item, int(goods[item]))])
 	return " + ".join(parts)
+
+
+## A good's name as it reads after a number in the middle of a sentence: "1 lavender bundle", "10 lavender bundles".
+## Each language translates the plural in the form its own sentences need, which in some is the singular.
+static func item_words(key: String, n: int) -> String:
+	if key == "provisions":
+		return TranslationServer.translate("bread or wine")
+	var name := String(Balance.get_value("items.%s.name" % key, key))
+	if n != 1:
+		name = String(Balance.get_value("items.%s.plural" % key, name))
+	return mid(TranslationServer.translate(name))
 
 
 ## A translated name as it reads in the middle of a sentence: lowercased, except in German, where nouns keep their capital.

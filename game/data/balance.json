@@ -163,6 +163,7 @@
 	"items": {
 		"lavender": {
 			"name": "Lavender bundle",
+			"plural": "Lavender bundles",
 			"price": 6,
 			"seasons": {
 				"spring": 1.1,
@@ -177,6 +178,7 @@
 		},
 		"wheat": {
 			"name": "Wheat sheaf",
+			"plural": "Wheat sheaves",
 			"price": 3
 		},
 		"olives": {
@@ -212,6 +214,7 @@
 		},
 		"bread": {
 			"name": "Bread",
+			"plural": "Loaves of bread",
 			"price": 26,
 			"seasons": {
 				"spring": 1,
@@ -222,6 +225,7 @@
 		},
 		"herb_bread": {
 			"name": "Herb bread",
+			"plural": "Loaves of herb bread",
 			"price": 40,
 			"seasons": {
 				"spring": 1,
@@ -279,6 +283,7 @@
 		},
 		"cheese": {
 			"name": "Cheese",
+			"plural": "Cheeses",
 			"price": 30
 		},
 		"manure": {
@@ -307,6 +312,7 @@
 		},
 		"truffle": {
 			"name": "Truffle",
+			"plural": "Truffles",
 			"price": 90,
 			"no_quality": true
 		}
