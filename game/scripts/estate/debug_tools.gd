@@ -225,8 +225,7 @@ func demo_maxed() -> void:
 	# The trader would carry the full storehouse off at once, so every good starts marked to keep.
 	for item in Balance.get_value("items", {}):
 		Game.keep_goods[item] = true
-	# A finished farm has earned every achievement but the Triumph already, so none chimes in once play starts.
+	# A finished farm has earned every achievement already, the Triumph too, so none chimes in once play starts.
 	for ach in Balance.get_value("achievements", []):
-		if not ach.get("special", false):
-			Game.journal.achievements[ach["id"]] = true
+		Game.journal.achievements[ach["id"]] = true
 	Game.quiet = false
