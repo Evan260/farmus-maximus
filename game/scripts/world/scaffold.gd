@@ -9,6 +9,12 @@ const PLANK_TOP := Color8(184, 140, 86)
 const PLANK := Color8(140, 100, 58)
 const PLANK_UNDER := Color8(92, 62, 40)
 const BRACE := Color8(118, 82, 50)
+const BRACE_DARK := Color8(84, 58, 36)
+const GRAIN := Color8(122, 86, 50)
+const KNOT := Color8(78, 52, 32)
+const NAIL := Color8(64, 58, 56)
+const ROPE := Color8(204, 180, 128)
+const ROPE_DARK := Color8(152, 124, 84)
 const RAIL := Color8(126, 88, 52)
 
 ## The building's outline in estate pixels; the scaffold stands on its bottom edge.
@@ -62,12 +68,13 @@ func _draw() -> void:
 			var high := levels[l + 1] + 3.0 if l + 1 < levels.size() else top + 2.0
 			_brace(poles[k] + 2.0, poles[k + 1], low, high, drop, ground, (k + l) % 2 == 0)
 	for p in poles:
-		_rect(Rect2(p, top, 1, height), POLE, drop, ground)
-		_rect(Rect2(p + 1, top, 1, height), POLE_DARK, drop, ground)
+		_pole(p, top, height, drop, ground)
 	for l in levels:
-		_rect(Rect2(left - 2, l, right - left + 6, 1), PLANK_TOP, drop, ground)
-		_rect(Rect2(left - 2, l + 1, right - left + 6, 1), PLANK, drop, ground)
-		_rect(Rect2(left - 2, l + 2, right - left + 6, 1), PLANK_UNDER, drop, ground)
+		_plank(left - 2, right + 4, l, drop, ground)
+		# Rope lashings tie each floor to the poles just above and below the planks.
+		for p in poles:
+			for y in [l - 1, l + 3]:
+				_rect(Rect2(p - 1, y, 4, 1), ROPE if int(p + y) % 2 == 0 else ROPE_DARK, drop, ground)
 	for at in ladders:
 		var lx := rect.position.x + float(at) - 5.0
 		_rect(Rect2(lx, top - 4, 1, height + 4), RAIL, drop, ground)
@@ -94,13 +101,50 @@ static func plank_rows(r: Rect2, floors := 0) -> Array[float]:
 	return rows
 
 
-## A diagonal brace from one pole to the next across one storey, one pixel at a time.
+## A pole: a lit side and a shaded side, with short streaks of grain and now and then a knot.
+func _pole(x: float, top: float, height: float, drop: float, ground: float) -> void:
+	_rect(Rect2(x, top, 1, height), POLE, drop, ground)
+	_rect(Rect2(x + 1, top, 1, height), POLE_DARK, drop, ground)
+	for y in range(int(top), int(top + height)):
+		if _speck(x, floorf(y / 3.0), 1) < 0.2:
+			_rect(Rect2(x, y, 1, 1), GRAIN, drop, ground)
+		if _speck(x, y, 2) < 0.012:
+			_rect(Rect2(x, y, 2, 2), KNOT, drop, ground)
+
+
+## A floor of planks: boards of uneven length laid end to end, with dark joints, a nail at each end and grain along
+## their length.
+func _plank(from_x: float, to_x: float, y: float, drop: float, ground: float) -> void:
+	_rect(Rect2(from_x, y, to_x - from_x, 1), PLANK_TOP, drop, ground)
+	_rect(Rect2(from_x, y + 1, to_x - from_x, 1), PLANK, drop, ground)
+	_rect(Rect2(from_x, y + 2, to_x - from_x, 1), PLANK_UNDER, drop, ground)
+	for x in range(int(from_x), int(to_x)):
+		var streak := _speck(floorf(x / 4.0), y, 3)
+		if streak < 0.25:
+			_rect(Rect2(x, y + 1, 1, 1), GRAIN, drop, ground)
+		elif streak > 0.88:
+			_rect(Rect2(x, y, 1, 1), PLANK_TOP.lightened(0.12), drop, ground)
+	var joint := from_x + 10.0 + roundf(_speck(from_x, y, 4) * 8.0)
+	while joint < to_x - 4.0:
+		_rect(Rect2(joint, y, 1, 2), PLANK_UNDER, drop, ground)
+		_rect(Rect2(joint - 2, y + 1, 1, 1), NAIL, drop, ground)
+		_rect(Rect2(joint + 2, y + 1, 1, 1), NAIL, drop, ground)
+		joint += 14.0 + roundf(_speck(joint, y, 5) * 9.0)
+
+
+## A diagonal brace from one pole to the next across one storey, two pixels thick with a darker underside.
 func _brace(from_x: float, to_x: float, low: float, high: float, drop: float, ground: float, rising: bool) -> void:
 	var steps := int(to_x - from_x)
 	for i in steps:
 		var t := float(i) / maxf(1.0, steps - 1)
 		var yy := roundf(lerpf(low, high, t if rising else 1.0 - t))
 		_rect(Rect2(from_x + i, yy, 1, 1), BRACE, drop, ground)
+		_rect(Rect2(from_x + i, yy + 1, 1, 1), BRACE_DARK if _speck(from_x + i, yy, 6) > 0.15 else BRACE, drop, ground)
+
+
+## A fixed pseudo-random number from 0 to 1 for a spot, so the wood's grain stays put every time it is drawn.
+static func _speck(x: float, y: float, salt: int) -> float:
+	return fposmod(sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453, 1.0)
 
 
 func _rect(r: Rect2, colour: Color, drop: float, ground: float) -> void:
