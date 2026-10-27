@@ -1544,6 +1544,8 @@
 		"mist_chance": 0.5,
 		"aurora_chance": 0.07,
 		"aurora_sure_after_days": 30,
+		"milky_way_chance": 0.5,
+		"milky_way_sure_after_days": 20,
 		"dry_growth": 0.8,
 		"manure_growth": 1.25,
 		"festival_bonus": 1.5,
@@ -1819,7 +1821,8 @@
 			"cat_and_dog": "The cat and dog asleep together",
 			"hoopoe": "The hoopoe",
 			"mist": "Morning mist over the fields",
-			"aurora": "The northern lights"
+			"aurora": "The northern lights",
+			"milky_way": "The Milky Way"
 		},
 		"milestones": {
 			"all_zones": "Every zone of the estate is yours",
@@ -1857,6 +1860,7 @@
 			"sighting:hoopoe": "The hoopoe lands in the fields for a moment, then is gone.",
 			"sighting:mist": "Early mornings sometimes bring mist over the fields.",
 			"sighting:aurora": "On a rare clear night, curtains of green and violet light ripple over the hills.",
+			"sighting:milky_way": "On a clear night with no moon, the Via Lactea, the road of milk, arches over the farm from hill to hill.",
 			"milestone:all_zones": "Every field, grove and pasture is yours.",
 			"milestone:all_buildings": "Every ruin on the estate is working again.",
 			"milestone:grand_estate": "The villa is restored to its full glory.",

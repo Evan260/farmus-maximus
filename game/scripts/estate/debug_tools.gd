@@ -76,6 +76,8 @@ func load_demo_state() -> void:
 		elif arg.begins_with("--aurora"):
 			var shape := arg.trim_prefix("--aurora=") if "=" in arg else ""
 			(func() -> void: m._sky_view.force_aurora = true; m._sky_view.aurora_shape = shape).call_deferred()
+		elif arg == "--galaxy":
+			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
 		elif arg == "--rainbow":
 			(func() -> void: m._sky_view.fx.show_rainbow(40.0)).call_deferred()
 		elif arg.begins_with("--weather="):
