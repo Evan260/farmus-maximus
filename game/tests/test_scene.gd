@@ -123,6 +123,13 @@ func _run() -> void:
 				empty_corner = at if empty_corner == Vector2.INF else empty_corner
 	_check(solid != Vector2.INF and main._animal_at(solid) == "donkey", "the donkey answers a click on itself")
 	_check(empty_corner != Vector2.INF and main._animal_at(empty_corner) != "donkey", "the donkey ignores a click on the empty corner of its picture")
+	game.villa_stage = 3
+	main.go_inside()
+	await create_timer(1.0).timeout
+	_check(main.interior.visible and not main.hud.visible, "the farmhouse door leads inside")
+	main.interior.leave()
+	await create_timer(1.0).timeout
+	_check(not main.interior.visible and main.hud.visible, "and back out to the farm")
 	var rain: Node2D = load("res://scripts/world/rain_fx.gd").new()
 	main.add_child(rain)
 	await process_frame

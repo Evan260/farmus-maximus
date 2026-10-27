@@ -23,6 +23,7 @@ const Cat := preload("res://scripts/world/cat.gd")
 const Scaffold := preload("res://scripts/world/scaffold.gd")
 const Hud := preload("res://scripts/ui/hud.gd")
 const MarketView := preload("res://scripts/ui/market_view.gd")
+const InteriorView := preload("res://scripts/ui/interior_view.gd")
 const DebugTools := preload("res://scripts/estate/debug_tools.gd")
 const Scenery := preload("res://scripts/estate/scenery.gd")
 const RoadWorks := preload("res://scripts/estate/road_works.gd")
@@ -76,6 +77,7 @@ var road: RoadWorks
 var rig: CartRig
 var villa: VillaView
 var market: CanvasLayer
+var interior: CanvasLayer
 var dog: Node2D
 var cat: Node2D
 ## The left edge of the view in estate pixels.
@@ -336,6 +338,10 @@ func _ready() -> void:
 	market = MarketView.new()
 	market.left_town.connect(_back_from_market)
 	add_child(market)
+	interior = InteriorView.new()
+	interior.left_house.connect(func(): hud.visible = true)
+	add_child(interior)
+	hud.house_requested.connect(go_inside)
 
 	Game.planted.connect(func(i): Sfx.play("plant"); _view(i).bounce())
 	Game.dug_up.connect(func(i): Sfx.play("plant", -4.0); _dust(_view(i).position + Vector2(15, -2), 10))
@@ -403,6 +409,15 @@ func _back_from_market() -> void:
 		rig.park_rig()
 
 
+func go_inside() -> void:
+	if Windowing.strip:
+		return
+	Dissolve.play(self, func() -> void:
+		hud.close_windows()
+		hud.visible = false
+		interior.enter())
+
+
 func go_to_town() -> void:
 	if Windowing.strip:
 		return
@@ -430,7 +445,7 @@ func _process(delta: float) -> void:
 		PlotView.wind.set_shader_parameter("strength", 0.0 if Settings.reduced_motion else windy)
 	var typing := get_viewport().gui_get_focus_owner() is LineEdit
 	var keys := 0.0 if typing else Input.get_axis("pan_left", "pan_right") + Input.get_joy_axis(0, JOY_AXIS_RIGHT_X) * float(absf(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)) > 0.2)
-	if keys != 0.0 and not market.visible:
+	if keys != 0.0 and not market.visible and not interior.visible:
 		_pan_by(keys * PAN_SPEED * delta)
 	# Behind the title screen the view drifts slowly along the estate and back.
 	if hud.title_open() and not Settings.reduced_motion:
@@ -840,7 +855,7 @@ func _click_area() -> PackedVector2Array:
 
 func _world_input(event: InputEvent) -> void:
 	# Letters typed into a name field are not commands for the estate.
-	if market.visible or hud.modal_open() or (event is InputEventKey and get_viewport().gui_get_focus_owner() is LineEdit):
+	if market.visible or interior.visible or hud.modal_open() or (event is InputEventKey and get_viewport().gui_get_focus_owner() is LineEdit):
 		return
 	if event.is_action_pressed("prev_zone"):
 		_step_zone(-1)

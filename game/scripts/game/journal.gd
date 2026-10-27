@@ -93,6 +93,8 @@ func met(cond: Dictionary) -> bool:
 		return entries.has(cond["journal"])
 	if cond.has("decorations"):
 		return _game.decorations.size() >= int(cond["decorations"])
+	if cond.has("furnishings"):
+		return _game.furnishings.size() >= int(cond["furnishings"])
 	if cond.has("journal_share"):
 		return share() >= float(cond["journal_share"]) - 0.0001
 	if cond.has("achievements"):
@@ -120,6 +122,8 @@ func progress(cond: Dictionary) -> Array:
 		return [_game.helpers.size(), int(cond["helpers"])]
 	if cond.has("decorations"):
 		return [_game.decorations.size(), int(cond["decorations"])]
+	if cond.has("furnishings"):
+		return [_game.furnishings.size(), int(cond["furnishings"])]
 	if cond.has("journal_share"):
 		return [int(round(share() * 100.0)), int(round(float(cond["journal_share"]) * 100.0))]
 	if cond.has("achievements"):

@@ -265,6 +265,13 @@ func _run() -> void:
 	game.coins = 9000
 	_check(game.buy_decoration("statue") and game.decorations.has("statue"), "buys a decoration")
 	_check(not game.buy_decoration("golden_statue"), "the golden statue waits for the grand estate")
+	var plain: float = game.helper_interval("farmhand")
+	_check(game.buy_furnishing("fire") and game.furnishings.has("fire"), "buys a furnishing for the farmhouse")
+	_check(not game.buy_furnishing("fire"), "a furnishing is bought only once")
+	_check(game.helper_interval("farmhand") < plain, "a more comfortable home makes the helpers quicker")
+	game.villa_stage = 1
+	_check(game.furnishing_block("rug") != "", "a ruined farmhouse cannot be furnished")
+	game.villa_stage = 4
 	game.dog_timer = 0.0
 	var find: String = game.dog_dig()
 	_check(find != "" and game.journal.has("find:" + find), "the dog digs something up now and then")
@@ -297,6 +304,7 @@ func _run() -> void:
 	game.from_dict(named)
 	_check(game.intro_seen, "a farm saved before letters were kept per farm counts its letter as read")
 	_check(game.calendar.day == 9 and game.helpers.has("miller") and game.decorations.has("statue"), "calendar, helpers and decorations round-trip")
+	_check(game.furnishings.has("fire"), "the farmhouse's furnishings round-trip")
 	_check(game.buildings["cellar"]["casks"].size() == 1 and game.journal.has("find:" + find), "casks and the journal round-trip")
 	var old := {"levels": {"farmhand": 2}, "coins": 5}
 	game.from_dict(old)

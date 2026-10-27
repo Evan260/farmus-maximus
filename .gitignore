@@ -16,3 +16,6 @@ Thumbs.db
 
 # Steam upload tool and its login cache
 tools/steam/steamcmd/
+
+# Brainstorming mockups
+.superpowers/

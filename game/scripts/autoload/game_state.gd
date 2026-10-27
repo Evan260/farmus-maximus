@@ -28,6 +28,7 @@ signal dog_found(find_id: String, text: String)
 signal blessing_started(god: String)
 signal helper_hired(helper_id: String)
 signal decoration_bought(decoration_id: String)
+signal furnishing_bought(furnishing_id: String)
 signal animal_added(kind: String)
 signal pets_changed
 signal upgrade_bought(upgrade_id: String)
@@ -60,6 +61,8 @@ var helper_timers := {}
 ## Helpers walking about on screen, who harvest the plant they actually reach instead of on a timer.
 var live_helpers := {}
 var decorations := {}
+## The furnishings bought for the inside of the farmhouse.
+var furnishings := {}
 ## The farm's dog and cat: the names and coats the player chose for them.
 var pets := {}
 ## What the player named their farm.
@@ -141,6 +144,7 @@ func new_game() -> void:
 	helpers = {}
 	helper_timers = {}
 	decorations = {}
+	furnishings = {}
 	pets = default_pets()
 	blessing = {}
 	use_manure = true
@@ -1331,7 +1335,7 @@ func _advance_helpers(dt: float) -> int:
 			helper_timers[id] = 0.0
 			continue
 		var intervals: Array = info.get("intervals", [5])
-		var interval := float(intervals[mini(int(helpers[id]) - 1, intervals.size() - 1)])
+		var interval := float(intervals[mini(int(helpers[id]) - 1, intervals.size() - 1)]) / comfort_factor()
 		helper_timers[id] = float(helper_timers.get(id, 0.0)) - dt
 		while float(helper_timers[id]) <= 0.0:
 			var i := _ready_plot_for(info)
@@ -1371,7 +1375,7 @@ func helper_harvest(id: String, i: int) -> String:
 ## How long a helper takes over each plant, from their level.
 func helper_interval(id: String) -> float:
 	var intervals: Array = helper_info(id).get("intervals", [5])
-	return float(intervals[mini(int(helpers.get(id, 1)) - 1, intervals.size() - 1)])
+	return float(intervals[mini(int(helpers.get(id, 1)) - 1, intervals.size() - 1)]) / comfort_factor()
 
 
 func _ready_plot_for(info: Dictionary) -> int:
@@ -1413,6 +1417,40 @@ func decoration_block(id: String) -> String:
 	if d.has("festival") and calendar.festival().get("id", "") != d["festival"] and not journal.has("festival:" + String(d["festival"])):
 		return "Sold during %s" % String(d["festival"]).capitalize()
 	return ""
+
+
+## The farmhouse's furnishings ------------------------------------------
+
+func furnishing_info(id: String) -> Dictionary:
+	return Balance.get_value("interior.furnishings." + id, {})
+
+
+## Why a furnishing cannot be bought, or "" when it can.
+func furnishing_block(id: String) -> String:
+	var f := furnishing_info(id)
+	if furnishings.has(id):
+		return "Already in the house"
+	if villa_stage < int(f.get("requires_villa", 2)):
+		return "Restore the villa first: %s" % String(villa_stages()[int(f.get("requires_villa", 2)) - 1]["name"]).to_lower()
+	return ""
+
+
+func buy_furnishing(id: String) -> bool:
+	var block := furnishing_block(id)
+	if block != "":
+		message.emit(block)
+		return false
+	if not pay({"coins": int(furnishing_info(id).get("price", 0))}):
+		return false
+	furnishings[id] = true
+	furnishing_bought.emit(id)
+	check_achievements()
+	return true
+
+
+## How much quicker the helpers work for a comfortable home: each furnishing adds a little.
+func comfort_factor() -> float:
+	return 1.0 + float(Balance.get_value("interior.comfort_speed", 0.02)) * furnishings.size()
 
 
 func buy_decoration(id: String) -> bool:
@@ -1496,7 +1534,7 @@ func to_dict() -> Dictionary:
 		"coins": coins, "aureus": aureus, "selected_seed": selected_seed, "storage": storage, "plots": plots, "levels": levels,
 		"crops_unlocked": crops_unlocked, "villa_stage": villa_stage, "villa_build": villa_build, "day_time": day_time,
 		"cart": cart, "zones_owned": zones_owned, "buildings": buildings, "helpers": helpers, "helper_timers": helper_timers,
-		"decorations": decorations, "pets": pets, "blessing": blessing, "use_manure": use_manure, "stats": stats, "dog_timer": dog_timer,
+		"decorations": decorations, "furnishings": furnishings, "pets": pets, "blessing": blessing, "use_manure": use_manure, "stats": stats, "dog_timer": dog_timer,
 		"calendar": calendar.to_dict(), "market": market.to_dict(), "journal": journal.to_dict(),
 	}
 
@@ -1572,6 +1610,7 @@ func from_dict(d: Dictionary) -> void:
 	for id in d.get("helper_timers", {}):
 		helper_timers[id] = float(d["helper_timers"][id])
 	decorations = Dictionary(d.get("decorations", {}))
+	furnishings = Dictionary(d.get("furnishings", {}))
 	for kind in d.get("pets", {}):
 		pets[kind] = {"name": String(d["pets"][kind].get("name", "")), "coat": String(d["pets"][kind].get("coat", "")),
 			"breed": String(d["pets"][kind].get("breed", "hound" if kind == "dog" else "tabby"))}

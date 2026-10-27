@@ -15,6 +15,7 @@ keys,en
 %s the dog and %s the cat keep the farm company.,%s the dog and %s the cat keep the farm company.
 "%s, day %d","%s, day %d"
 %s: click for details,%s: click for details
+%s: click to furnish,%s: click to furnish
 %s: done,%s: done
 (level %d),(level %d)
 ", then again every %s.",", then again every %s."
@@ -23,16 +24,21 @@ keys,en
 A drop of lavender oil and even a senator smiles.,A drop of lavender oil and even a senator smiles.
 "A farmhand to hire, and land deeds on sale","A farmhand to hire, and land deeds on sale"
 A fine portico,A fine portico
+A fire in the hearth,A fire in the hearth
+"A framed panel painted with a winding maze, the kind the Romans called a labyrinth.","A framed panel painted with a winding maze, the kind the Romans called a labyrinth."
 A full household of helpers.,A full household of helpers.
 A goat,A goat
 A hen,A hen
+A home again,A home again
 A letter from your uncle Marcus,A letter from your uncle Marcus
+"A little library: Cato and Varro on farming, and Virgil's Georgics for the evenings.","A little library: Cato and Varro on farming, and Virgil's Georgics for the evenings."
 A new request is pinned to the market's notice board,A new request is pinned to the market's notice board
 "A prize from the dog's nose, worth a great deal at market.","A prize from the dog's nose, worth a great deal at market."
 A rainbow,A rainbow
 A rare bird with a crown of feathers. It never stays long.,A rare bird with a crown of feathers. It never stays long.
 A rare white lavender seed,A rare white lavender seed
 A roof again,A roof again
+A ruin,A ruin
 "A ruin, for sale.","A ruin, for sale."
 A ruin. %s.,A ruin. %s.
 A second cart and a trader,A second cart and a trader
@@ -51,7 +57,10 @@ Achievement: %s,Achievement: %s
 Achievements: %d of %d,Achievements: %d of %d
 After the rain,After the rain
 Aged wine,Aged wine
+"Aloe and rosemary in terracotta pots, by the door and along the walls.","Aloe and rosemary in terracotta pots, by the door and along the walls."
+Amphorae,Amphorae
 An empty bed: choose a seed in the toolbar,An empty bed: choose a seed in the toolbar
+An empty house: nothing to make it a home yet,An empty house: nothing to make it a home yet
 An excellent aged wine,An excellent aged wine
 An extra pair of hands,An extra pair of hands
 An old coin,An old coin
@@ -68,6 +77,7 @@ Autumn,Autumn
 Ave!,Ave!
 Bacchus,Bacchus
 Back,Back
+Back outside,Back outside
 Back to the estate,Back to the estate
 Back to work,Back to work
 Baker,Baker
@@ -112,6 +122,7 @@ Buy,Buy
 Buy 5,Buy 5
 Buy and repair the beehives in the grove,Buy and repair the beehives in the grove
 Buy cuttings for this land at the market,Buy cuttings for this land at the market
+Buy for %d sestertii,Buy for %d sestertii
 Buy the %s deed: %d sestertii,Buy the %s deed: %d sestertii
 Buy the deed,Buy the deed
 Buy the olive grove: click its sign,Buy the olive grove: click its sign
@@ -136,6 +147,7 @@ Change their names and coats,Change their names and coats
 Cheese,Cheese
 "Choose a bookmark, then a page. Pages still to be found are dark shapes: keep farming and keep watching.","Choose a bookmark, then a page. Pages still to be found are dark shapes: keep farming and keep watching."
 Choose a seed in the toolbar to plant here,Choose a seed in the toolbar to plant here
+"Clay lamps on the mantel and the tables, lit every evening.","Clay lamps on the mantel and the tables, lit every evening."
 Clear,Clear
 Click a plot with a lock to dig a new bed,Click a plot with a lock to dig a new bed
 Click an empty plot to plant lavender,Click an empty plot to plant lavender
@@ -144,6 +156,7 @@ Click the cart to sell,Click the cart to sell
 Click the cart to send your goods to market,Click the cart to send your goods to market
 "Click the farmhouse, then gather what it needs to be restored","Click the farmhouse, then gather what it needs to be restored"
 Comes out to cross the paths after rain.,Comes out to cross the paths after rain.
+Comfort %d: helpers work %d%% faster,Comfort %d: helpers work %d%% faster
 Common,Common
 Continue,Continue
 Cornelia,Cornelia
@@ -233,10 +246,14 @@ Fountain,Fountain
 Fruit is more often fine or excellent,Fruit is more often fine or excellent
 Full window  (%s),Full window  (%s)
 Fully restored. The grand estate is complete.,Fully restored. The grand estate is complete.
+Furnish,Furnish
+Furnish every corner of the farmhouse,Furnish every corner of the farmhouse
+Furnish the house,Furnish the house
 Gaius,Gaius
 Garland arch,Garland arch
 "Gifts, feasting and lanterns: food and fine oils sell well","Gifts, feasting and lanterns: food and fine oils sell well"
 "Gives milk for the dairy, and eats everything else.","Gives milk for the dairy, and eats everything else."
+Go inside,Go inside
 Goats,Goats
 Gold!,Gold!
 Golden statue,Golden statue
@@ -281,10 +298,12 @@ Hot baths,Hot baths
 House proud,House proud
 I know which stall pays best on any day of the week.,I know which stall pays best on any day of the week.
 Idle: load it from the storehouse,Idle: load it from the storehouse
+In place,In place
 In the storehouse,In the storehouse
 Innkeeper,Innkeeper
 Interface size,Interface size
 Ivy column,Ivy column
+Jars of the estate's own oil and wine along the shelves.,Jars of the estate's own oil and wine along the shelves.
 Journal,Journal
 Julia,Julia
 Julia keeps the troughs full.,Julia keeps the troughs full.
@@ -310,6 +329,7 @@ Livia,Livia
 Load from the storehouse,Load from the storehouse
 Loaded: %d of %d batches,Loaded: %d of %d batches
 Loading,Loading
+Logs crackling in the old hearth. The house is warm again.,Logs crackling in the old hearth. The house is warm again.
 Lovely,Lovely
 Made by,Made by
 Made in the %s.,Made in the %s.
@@ -379,6 +399,7 @@ Nothing left in ruins,Nothing left in ruins
 Off,Off
 Offer,Offer
 Offerings,Offerings
+Oil lamps,Oil lamps
 Old Tullia,Old Tullia
 Olive grove,Olive grove
 Olive oil,Olive oil
@@ -395,6 +416,7 @@ Open folder,Open folder
 Own 5 decorations,Own 5 decorations
 Own every zone,Own every zone
 Pages filled: %d%%,Pages filled: %d%%
+Painted panel,Painted panel
 Painted sky,Painted sky
 Pasture,Pasture
 Path lantern,Path lantern
@@ -417,6 +439,7 @@ Plant %s: %d sestertii,Plant %s: %d sestertii
 "Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping.","Plant a little, sell a little, and mend what you can. Rome was not built in a day, and neither was any farm worth keeping."
 Play,Play
 Pomona,Pomona
+Potted plants,Potted plants
 Press a key...,Press a key...
 Presser,Presser
 Prosperous,Prosperous
@@ -424,6 +447,7 @@ Prosperous,Prosperous
 Quit,Quit
 Rabbits,Rabbits
 Rain is falling: the fields are watered,Rain is falling: the fields are watered
+Rain pool,Rain pool
 Ready as %s wine: %d,Ready as %s wine: %d
 Receive a blessing at the lararium,Receive a blessing at the lararium
 Repairs,Repairs
@@ -453,8 +477,10 @@ Saturnalia,Saturnalia
 Saturnalia lamps,Saturnalia lamps
 "Save 250 sestertii, then click the farmhouse to restore it","Save 250 sestertii, then click the farmhouse to restore it"
 Say cheese,Say cheese
+Scrolls,Scrolls
 See a rainbow,See a rainbow
 See a shooting star,See a shooting star
+See everything,See everything
 Seed: %s,Seed: %s
 Sell,Sell
 Sell 1,Sell 1
@@ -467,6 +493,7 @@ Send the cart 10 times,Send the cart 10 times
 Send the cart 100 times,Send the cart 100 times
 Septimus,Septimus
 Sestertii  %d,Sestertii  %d
+Sestertii %d,Sestertii %d
 Sestertii %d   Aurei %d,Sestertii %d   Aurei %d
 Sets milestones along the road in %s.,Sets milestones along the road in %s.
 Settings,Settings
@@ -509,6 +536,7 @@ Strip scale: %s,Strip scale: %s
 Strip size,Strip size
 Strip: painted sky,Strip: painted sky
 Strip: transparent,Strip: transparent
+Striped wool from the market weavers. The dog has already claimed it.,Striped wool from the market weavers. The dog has already claimed it.
 Suggest another name,Suggest another name
 Summer,Summer
 Sundial,Sundial
@@ -557,6 +585,7 @@ The hoopoe,The hoopoe
 "The hoopoe lands in the fields for a moment, then is gone.","The hoopoe lands in the fields for a moment, then is gone."
 The household,The household
 The household gods watch over the estate.,The household gods watch over the estate.
+"The impluvium filled again, cool and still, catching the light.","The impluvium filled again, cool and still, catching the light."
 "The lararium, the pasture deed and decorations","The lararium, the pasture deed and decorations"
 The northern lights,The northern lights
 "The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom.","The old farm is yours now. The house is a ruin and the fields are bare, but the soil is good and the lavender still remembers how to bloom."
@@ -628,6 +657,7 @@ While you were away,While you were away
 White lavender,White lavender
 "White lavender, found by the dog or given by a grateful regular.","White lavender, found by the dog or given by a grateful regular."
 Who made the game,Who made the game
+"Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room.","Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room."
 Wine ages twice as fast and presses work faster,Wine ages twice as fast and presses work faster
 Wine press,Wine press
 Wine rested long enough to be excellent.,Wine rested long enough to be excellent.
@@ -641,6 +671,7 @@ Works %s times as fast,Works %s times as fast
 Workshop yard,Workshop yard
 Workshops work faster,Workshops work faster
 Worth about %d sestertii at market.,Worth about %d sestertii at market.
+Woven rug,Woven rug
 You have %d,You have %d
 You have %d / %d,You have %d / %d
 You own the %s. Repair it to put it to work.,You own the %s. Repair it to put it to work.

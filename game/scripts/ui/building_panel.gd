@@ -311,6 +311,8 @@ func _build_villa() -> void:
 	set_title(tr(String(stages[stage]["name"])) + "   " + tr("Stage %d of %d") % [Game.villa_stage, stages.size()])
 	_status = UiKit.para(body, "", WIDTH)
 	_status.add_theme_color_override("font_color", UiKit.FADED)
+	if not Windowing.strip:
+		UiKit.button(body, tr("Go inside"), func(): get_tree().call_group("hud", "request_house"))
 	if Game.villa_build["active"]:
 		_bar = UiKit.progress(body)
 		return

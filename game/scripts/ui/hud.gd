@@ -3,6 +3,7 @@ extends CanvasLayer
 
 signal zone_chosen(zone_id: String)
 signal town_requested
+signal house_requested
 
 const WindowPanel := preload("res://scripts/ui/window_panel.gd")
 const TitleScreen := preload("res://scripts/ui/title_screen.gd")
@@ -261,6 +262,12 @@ func show_journal_entry(id: String) -> void:
 	_journal.section = sections.get(id.get_slice(":", 0), "Crops")
 	_journal.selected = id
 	_journal.refresh()
+
+
+## Steps inside the farmhouse, from its window.
+func request_house() -> void:
+	close_windows()
+	house_requested.emit()
 
 
 func open_window(name: String) -> void:

@@ -63,6 +63,9 @@ func _act() -> void:
 		game.do_building_action(id)
 	for id in root.get_node("Balance").get_value("decorations", {}):
 		game.buy_decoration(id)
+	for id in root.get_node("Balance").get_value("interior.furnishings", {}):
+		if game.furnishing_block(id) == "" and game.coins >= int(game.furnishing_info(id).get("price", 0)):
+			game.buy_furnishing(id)
 	# A player stops to pet the dog every so often.
 	if randf() < 0.002:
 		game.add_stat("pets", 1)

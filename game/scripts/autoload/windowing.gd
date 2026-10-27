@@ -40,6 +40,9 @@ func _ready() -> void:
 	if "--strip" in OS.get_cmdline_user_args():
 		strip = true
 		transparent = not "--solid" in OS.get_cmdline_user_args()
+	# A test run at a set window size is always the full window, whatever the player last left it as.
+	elif Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
+		strip = false
 	get_window().size_changed.connect(_on_resized)
 	Settings.changed.connect(_on_resized)
 	_apply.call_deferred()

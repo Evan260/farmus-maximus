@@ -76,6 +76,19 @@ func load_demo_state() -> void:
 		elif arg.begins_with("--aurora"):
 			var shape := arg.trim_prefix("--aurora=") if "=" in arg else ""
 			(func() -> void: m._sky_view.force_aurora = true; m._sky_view.aurora_shape = shape).call_deferred()
+		elif arg.begins_with("--furnish="):
+			var which := arg.trim_prefix("--furnish=")
+			for id in Balance.get_value("interior.furnishings", {}):
+				if which == "all" or id in which.split(","):
+					Game.furnishings[id] = true
+		elif arg.begins_with("--inside"):
+			# "--inside=list" or "--inside=rug" opens the furnishing window too.
+			var open := arg.trim_prefix("--inside=") if "=" in arg else "-"
+			(func() -> void:
+				m.hud.visible = false
+				m.interior.enter()
+				if open != "-":
+					m.interior._open("" if open == "list" else open)).call_deferred()
 		elif arg == "--galaxy":
 			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
 		elif arg == "--rainbow":

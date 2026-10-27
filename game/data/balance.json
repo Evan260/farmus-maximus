@@ -1658,6 +1658,159 @@
 			}
 		}
 	},
+	"interior": {
+		"comfort_speed": 0.02,
+		"furnishings": {
+			"fire": {
+				"name": "A fire in the hearth",
+				"desc": "Logs crackling in the old hearth. The house is warm again.",
+				"price": 300,
+				"requires_villa": 2,
+				"rects": [
+					[
+						80,
+						96,
+						122,
+						156
+					]
+				]
+			},
+			"lamps": {
+				"name": "Oil lamps",
+				"desc": "Clay lamps on the mantel and the tables, lit every evening.",
+				"price": 800,
+				"requires_villa": 2,
+				"rects": [
+					[
+						58,
+						36,
+						82,
+						72
+					],
+					[
+						122,
+						42,
+						142,
+						70
+					],
+					[
+						8,
+						102,
+						36,
+						148
+					],
+					[
+						296,
+						92,
+						316,
+						120
+					]
+				]
+			},
+			"rug": {
+				"name": "Woven rug",
+				"desc": "Striped wool from the market weavers. The dog has already claimed it.",
+				"price": 1500,
+				"requires_villa": 2,
+				"rects": [
+					[
+						14,
+						194,
+						197,
+						265
+					]
+				]
+			},
+			"plants": {
+				"name": "Potted plants",
+				"desc": "Aloe and rosemary in terracotta pots, by the door and along the walls.",
+				"price": 2500,
+				"requires_villa": 2,
+				"rects": [
+					[
+						0,
+						220,
+						44,
+						270
+					],
+					[
+						434,
+						110,
+						480,
+						178
+					],
+					[
+						426,
+						206,
+						480,
+						270
+					]
+				]
+			},
+			"amphorae": {
+				"name": "Amphorae",
+				"desc": "Jars of the estate's own oil and wine along the shelves.",
+				"price": 4000,
+				"requires_villa": 3,
+				"rects": [
+					[
+						240,
+						2,
+						293,
+						37
+					],
+					[
+						208,
+						43,
+						293,
+						77
+					]
+				]
+			},
+			"scrolls": {
+				"name": "Scrolls",
+				"desc": "A little library: Cato and Varro on farming, and Virgil's Georgics for the evenings.",
+				"price": 6000,
+				"requires_villa": 3,
+				"rects": [
+					[
+						204,
+						10,
+						240,
+						37
+					]
+				]
+			},
+			"panel": {
+				"name": "Painted panel",
+				"desc": "A framed panel painted with a winding maze, the kind the Romans called a labyrinth.",
+				"price": 10000,
+				"requires_villa": 4,
+				"rects": [
+					[
+						141,
+						11,
+						199,
+						88
+					]
+				]
+			},
+			"water": {
+				"name": "Rain pool",
+				"desc": "The impluvium filled again, cool and still, catching the light.",
+				"price": 15000,
+				"requires_villa": 4,
+				"rects": [
+					[
+						186,
+						178,
+						351,
+						233
+					]
+				]
+			}
+		}
+	},
 	"decorations": {
 		"column": {
 			"name": "Ivy column",
@@ -2236,6 +2389,14 @@
 			"desc": "Fill the whole farmer's journal",
 			"when": {
 				"journal_share": 1.0
+			}
+		},
+		{
+			"id": "homely",
+			"name": "A home again",
+			"desc": "Furnish every corner of the farmhouse",
+			"when": {
+				"furnishings": 8
 			}
 		},
 		{

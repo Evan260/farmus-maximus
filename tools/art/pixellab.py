@@ -197,6 +197,19 @@ def tiles(box, limit=256):
     return [(x, y) for y in ys for x in xs]
 
 
+def context_around(image, rect):
+    """The surroundings sent with a tile: PixelLab takes at most three times the tile on each side, so larger
+    pictures are cropped around the tile, never rescaled."""
+    W, H = image.size
+    tx, ty, x1, y1 = rect
+    tw, th = x1 - tx, y1 - ty
+    cw, ch = min(W, 3 * tw), min(H, 3 * th)
+    cx = min(max(0, tx + tw // 2 - cw // 2), W - cw)
+    cy = min(max(0, ty + th // 2 - ch // 2), H - ch)
+    return {"context_image": png_b64(image.crop((cx, cy, cx + cw, cy + ch))),
+            "bounding_box": {"x": tx - cx, "y": ty - cy, "width": tw, "height": th}}
+
+
 def cmd_inpaint(a):
     before = balance()
     image = Image.open(ROOT / a.image).convert("RGBA")
@@ -220,8 +233,7 @@ def cmd_inpaint(a):
             "image": png_b64(image.crop(rect)), "mask_image": png_b64(tile_mask),
             "description": a.description, "no_background": a.transparent,
             "output_method": "Modify current layer",
-            **({} if a.no_context else {"context_image": png_b64(image),
-                                        "bounding_box": {"x": tx, "y": ty, "width": tw, "height": th}})})
+            **({} if a.no_context else context_around(image, rect))})
         job = wait(r["background_job_id"]) if "background_job_id" in r else r
         data = first_image(job.get("last_response", job))
         if not data:
