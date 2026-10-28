@@ -11,14 +11,19 @@ var _bar: ProgressBar
 var _costs: Array = []
 var _action: Button
 var _note: Label
-var _queue: Label
 var _load: Button
 var _casks: Label
 var _feed: Label
 var _offer_buttons := {}
 var _blessing: Label
-## How much of each ingredient and product the storehouse holds, by item, kept up to date while the window is open.
-var _stock := {}
+## The furnace-style workshop view: the counts in its slots, the arrow that fills as a batch is made, the boxes for
+## batches waiting, the upgrade's cost chips, and a line shown only when the workshop is paused or blocked.
+var _in_counts := {}
+var _out_counts := {}
+var _arrow: WorkshopParts.Arrow
+var _queue_boxes: Array = []
+var _cost_chips: Array = []
+var _state_note: Label
 
 
 func signature() -> String:
@@ -32,8 +37,13 @@ func signature() -> String:
 func build() -> void:
 	_offer_buttons = {}
 	_costs = []
-	_stock = {}
-	for field in ["_bar", "_action", "_note", "_queue", "_load", "_casks", "_feed", "_blessing"]:
+	_in_counts = {}
+	_out_counts = {}
+	_arrow = null
+	_queue_boxes = []
+	_cost_chips = []
+	_state_note = null
+	for field in ["_bar", "_action", "_note", "_load", "_casks", "_feed", "_blessing"]:
 		set(field, null)
 	if id == VILLA:
 		_build_villa()
@@ -41,6 +51,10 @@ func build() -> void:
 	var info := Game.building_info(id)
 	var b: Dictionary = Game.buildings[id]
 	var levels: Array = info.get("levels", [])
+	if b["state"] == "working" and Game.building_kind(id) == "workshop":
+		set_title(tr(String(info.get("name", id))))
+		_build_workshop_view()
+		return
 	var level := ("   " + tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]) if b["state"] == "working" and not levels.is_empty() else ""
 	set_title(tr(String(info.get("name", id))) + level)
 	_status = UiKit.para(body, "", WIDTH)
@@ -63,18 +77,11 @@ func build() -> void:
 					_build_barn()
 				"shrine":
 					_build_shrine()
-				_:
-					_build_workshop()
 			var act := Game.building_action(id)
-			var buttons: HBoxContainer = null
 			if not act.is_empty():
 				UiKit.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
 				UiKit.para(body, _upgrade_text(levels[int(b["level"])]) + " " + tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH)
-				buttons = _next_step(act["cost"], tr("Upgrade"))
-			if Game.building_kind(id) == "workshop":
-				# Pausing sits beside the upgrade button rather than on a line of its own.
-				var pause := UiKit.button(buttons if buttons else UiKit.row(body), tr("Resume work") if b["paused"] else tr("Pause work"), func(): Game.set_building_paused(id, not b["paused"]))
-				pause.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				_next_step(act["cost"], tr("Upgrade"))
 
 
 ## A checklist of what the next step needs, and the button that takes it, on a row other buttons can join.
@@ -103,6 +110,9 @@ func tick() -> void:
 	if id == VILLA:
 		_tick_villa()
 		return
+	if _arrow:
+		_tick_workshop_view()
+		return
 	var b: Dictionary = Game.buildings[id]
 	var info := Game.building_info(id)
 	match b["state"]:
@@ -126,12 +136,6 @@ func tick() -> void:
 				_bar.visible = b["busy"]
 				_bar.value = float(b["progress"]) / float(Game.current_recipe(id).get("seconds", 30)) if b["busy"] else 0.0
 	_tick_action(Game.building_action(id).get("cost", {}), Game.building_block(id))
-	if _queue:
-		_queue.text = tr("Batches waiting: %d of %d") % [b["queue"].size(), Game.building_queue_max(id)]
-	if not _stock.is_empty():
-		_tick_stock()
-	if _load:
-		_load.disabled = b["queue"].size() >= Game.building_queue_max(id)
 	if _casks:
 		_casks.text = _cask_text()
 	if _feed:
@@ -177,86 +181,6 @@ func _working_status() -> String:
 	if Game.current_recipe(id).get("in", {}).is_empty():
 		return tr("The bees are out among the flowers")
 	return tr("Idle: load it from the storehouse")
-
-
-func _build_workshop() -> void:
-	UiKit.section(body, tr("Makes"))
-	var list := Game.recipes(id)
-	if list.size() > 1:
-		var r := UiKit.row(body)
-		for k in list.size():
-			var outs: Dictionary = list[k]["out"]
-			var choice := UiKit.button(r, tr(String(Balance.get_value("items.%s.name" % outs.keys()[0], ""))), func(): Game.set_recipe(id, k))
-			choice.toggle_mode = true
-			choice.button_pressed = int(Game.buildings[id]["recipe"]) == k
-	var recipe := Game.current_recipe(id)
-	var line := UiKit.row(body)
-	var ins: Dictionary = recipe.get("in", {})
-	for item in ins:
-		UiKit.icon(line, item)
-	UiKit.label(line, (UiKit.goods_text(_scaled(ins)) if not ins.is_empty() else tr("Flowers nearby")) + "  >")
-	for item in recipe.get("out", {}):
-		UiKit.icon(line, item)
-	UiKit.label(line, UiKit.goods_text(_scaled(recipe.get("out", {}))))
-	UiKit.label(body, tr("Each batch takes %s") % UiKit.duration(float(recipe.get("seconds", 30)) / Game.building_speed(id))).add_theme_color_override("font_color", UiKit.FADED)
-	_bar = UiKit.progress(body)
-	if recipe.get("lavender_honey", false):
-		UiKit.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), WIDTH)
-	_build_stock(ins, recipe.get("out", {}))
-	if ins.is_empty():
-		return
-	# Loading sits right under the stock it draws on: the button and how many batches wait, on one line.
-	var load_row := UiKit.row(body)
-	var helper := String(Game.building_info(id).get("helper", ""))
-	if Game.helpers.has(helper):
-		_queue = UiKit.label(load_row)
-		UiKit.para(body, tr("%s keeps it loaded from the storehouse.") % Game.helper_info(helper).get("name", ""), WIDTH)
-	else:
-		_load = UiKit.button(load_row, tr("Load from the storehouse"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
-		_queue = UiKit.label(load_row)
-		_queue.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		if helper != "":
-			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), UiKit.mid(tr(String(Game.helper_info(helper).get("role", ""))))], WIDTH).add_theme_color_override("font_color", UiKit.FADED)
-
-
-## What the storehouse holds of everything this workshop uses and makes, so the player can see at a glance how many
-## batches are left before it runs dry.
-func _build_stock(ins: Dictionary, outs: Dictionary) -> void:
-	UiKit.section(body, tr("In the storehouse"))
-	# The goods run along one line and wrap only when they run out of room.
-	var grid := HFlowContainer.new()
-	grid.add_theme_constant_override("h_separation", 10)
-	body.add_child(grid)
-	for item in ins.keys() + outs.keys():
-		if _stock.has(item):
-			continue
-		var r := UiKit.row(grid)
-		UiKit.icon(r, item)
-		var l := UiKit.label(r)
-		l.set_meta("per_batch", int(ins.get(item, 0)) * Game.building_batch(id))
-		_stock[item] = l
-	_tick_stock()
-
-
-func _tick_stock() -> void:
-	for item in _stock:
-		var l: Label = _stock[item]
-		var have := Game.count_item(item)
-		var per := int(l.get_meta("per_batch"))
-		var name := tr(Game.item_name(item))
-		if per > 0:
-			var batches := floori(float(have) / per)
-			l.text = "%s  %d  (%s)" % [name, have, UiKit.plural(batches, "batch", "batches")]
-			l.add_theme_color_override("font_color", UiKit.INK if have >= per else UiKit.SHORT)
-		else:
-			l.text = "%s  %d" % [name, have]
-
-
-func _scaled(goods: Dictionary) -> Dictionary:
-	var out := {}
-	for item in goods:
-		out[item] = int(goods[item]) * Game.building_batch(id)
-	return out
 
 
 func _build_cellar() -> void:
@@ -363,3 +287,164 @@ func _tick_villa() -> void:
 	else:
 		_status.text = tr("Your home. Each improvement changes how the villa looks and opens up more of the estate.")
 	_tick_action(Game.villa_next_price(), "")
+
+
+## A workshop at work, drawn like a furnace screen: what goes in on the left, an arrow that fills as a batch is made,
+## what comes out on the right, the batches waiting underneath, and the next upgrade along the bottom. Words are kept
+## for the hover text, so the window itself is mostly pictures and numbers.
+func _build_workshop_view() -> void:
+	var b: Dictionary = Game.buildings[id]
+	var levels: Array = Game.building_info(id).get("levels", [])
+	var list := Game.recipes(id)
+	# A choice of products shows as their pictures, the chosen one pressed in.
+	if list.size() > 1:
+		var choices := UiKit.row(body)
+		choices.alignment = BoxContainer.ALIGNMENT_CENTER
+		for k in list.size():
+			var outs: Dictionary = list[k]["out"]
+			var item := String(outs.keys()[0])
+			var pick := Button.new()
+			var path := WorkshopParts.ICONS32 + Game.item_base(item) + ".png"
+			pick.icon = load(path) if ResourceLoader.exists(path) else null
+			pick.toggle_mode = true
+			pick.button_pressed = int(b["recipe"]) == k
+			pick.tooltip_text = tr(String(Balance.get_value("items.%s.name" % item, item)))
+			pick.pressed.connect(func(): Sfx.play("click", -8.0); Game.set_recipe(id, k))
+			choices.add_child(pick)
+	var recipe := Game.current_recipe(id)
+	var ins: Dictionary = recipe.get("in", {})
+	var outs: Dictionary = recipe.get("out", {})
+	var batch := Game.building_batch(id)
+	var line := UiKit.row(body)
+	line.alignment = BoxContainer.ALIGNMENT_CENTER
+	line.add_theme_constant_override("separation", 6)
+	if ins.is_empty():
+		# Bees need no loading: their slot shows the flowers they visit.
+		var bloom := WorkshopParts.slot_with_caption(line, "lavender", "")
+		bloom.get_parent().tooltip_text = tr("Flowers nearby")
+	for item in ins:
+		_in_counts[item] = [WorkshopParts.slot_with_caption(line, item, "x%d" % (int(ins[item]) * batch)), int(ins[item]) * batch]
+	_arrow = WorkshopParts.Arrow.new()
+	_arrow.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_arrow.custom_minimum_size.y = 40
+	_arrow.tooltip_text = tr("Each batch takes %s") % UiKit.duration(float(recipe.get("seconds", 30)) / Game.building_speed(id))
+	line.add_child(_arrow)
+	for item in outs:
+		_out_counts[item] = WorkshopParts.slot_with_caption(line, item, "x%d" % (int(outs[item]) * batch))
+	if not ins.is_empty():
+		var feed := UiKit.row(body)
+		feed.alignment = BoxContainer.ALIGNMENT_CENTER
+		var helper := String(Game.building_info(id).get("helper", ""))
+		if Game.helpers.has(helper):
+			# The helper who keeps it loaded stands in for the load button.
+			WorkshopParts.face(feed, helper).tooltip_text = tr("%s keeps it loaded from the storehouse.") % Game.helper_info(helper).get("name", "")
+		else:
+			_load = UiKit.button(feed, tr("Load"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
+			_load.tooltip_text = tr("Load from the storehouse") + ("\n" + tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), UiKit.mid(tr(String(Game.helper_info(helper).get("role", ""))))] if helper != "" else "")
+		var boxes := UiKit.row(feed)
+		boxes.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		boxes.tooltip_text = tr("Batches waiting: %d of %d") % [b["queue"].size(), Game.building_queue_max(id)]
+		boxes.mouse_filter = Control.MOUSE_FILTER_PASS
+		var first := String(ins.keys()[0])
+		for k in Game.building_queue_max(id):
+			var box := PanelContainer.new()
+			var style := StyleBoxFlat.new()
+			style.bg_color = WorkshopParts.SLOT_FILL
+			style.border_color = WorkshopParts.SLOT_EDGE
+			style.set_border_width_all(1)
+			box.add_theme_stylebox_override("panel", style)
+			box.custom_minimum_size = Vector2(16, 16)
+			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var pic := TextureRect.new()
+			pic.texture = load(UiKit.ICONS + Game.item_base(first) + ".png") if ResourceLoader.exists(UiKit.ICONS + Game.item_base(first) + ".png") else null
+			pic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+			pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.add_child(pic)
+			boxes.add_child(box)
+			_queue_boxes.append(pic)
+	elif recipe.get("lavender_honey", false):
+		UiKit.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+	_state_note = UiKit.label(body)
+	_state_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_state_note.add_theme_color_override("font_color", UiKit.SHORT)
+	UiKit.divider(body)
+	# The level, what the next one brings as small pictures, its cost, and the buttons, in two short rows.
+	var top := UiKit.row(body)
+	var pips := WorkshopParts.Pips.new(int(b["level"]) + 1, levels.size() + 1)
+	pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pips.tooltip_text = tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]
+	top.add_child(pips)
+	var act := Game.building_action(id)
+	if not act.is_empty():
+		var next: Dictionary = levels[int(b["level"])]
+		var gains := UiKit.row(top)
+		gains.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gains.alignment = BoxContainer.ALIGNMENT_END
+		gains.add_theme_constant_override("separation", 8)
+		gains.tooltip_text = _upgrade_text(next)
+		gains.mouse_filter = Control.MOUSE_FILTER_PASS
+		WorkshopParts.chip(gains, "speed", "x%s" % str(next.get("speed", 1)))
+		if next.has("queue"):
+			WorkshopParts.chip(gains, "slots", str(int(next["queue"])))
+		if int(next.get("batch", 1)) > 1:
+			WorkshopParts.chip(gains, "slots", "x%d" % int(next["batch"]))
+		if int(next.get("quality", 0)) > 0:
+			WorkshopParts.chip(gains, "quality", "+")
+	var bottom := UiKit.row(body)
+	bottom.add_theme_constant_override("separation", 6)
+	if not act.is_empty():
+		for key in act["cost"]:
+			if int(act["cost"][key]) <= 0:
+				continue
+			var c := UiKit.row(bottom)
+			c.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			UiKit.icon(c, {"coins": "sestertius", "aureus": "aureus", "provisions": "bread"}.get(key, key))
+			var n := UiKit.label(c, str(int(act["cost"][key])))
+			n.set_meta("key", key)
+			n.set_meta("need", int(act["cost"][key]))
+			_cost_chips.append(n)
+		var spacer := Control.new()
+		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bottom.add_child(spacer)
+		_action = UiKit.button(bottom, tr("Upgrade"), _do_action)
+		_action.tooltip_text = _upgrade_text(levels[int(b["level"])]) + "\n" + tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed)
+	else:
+		var spacer := Control.new()
+		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bottom.add_child(spacer)
+	var pause := UiKit.button(bottom, ">" if b["paused"] else "||", func(): Game.set_building_paused(id, not b["paused"]))
+	pause.tooltip_text = tr("Resume work") if b["paused"] else tr("Pause work")
+	_tick_workshop_view()
+
+
+func _tick_workshop_view() -> void:
+	var b: Dictionary = Game.buildings[id]
+	var recipe := Game.current_recipe(id)
+	_arrow.value = float(b["progress"]) / float(recipe.get("seconds", 30)) if b["busy"] else 0.0
+	for item in _in_counts:
+		var have := Game.count_item(item)
+		var l: Label = _in_counts[item][0]
+		l.text = str(have)
+		# Too little for a batch shows in red, the same warning colour as a short cost.
+		l.add_theme_color_override("font_color", UiKit.CREAM if have >= int(_in_counts[item][1]) else Color(1.0, 0.55, 0.45))
+	for item in _out_counts:
+		_out_counts[item].text = str(Game.count_item(item))
+	for k in _queue_boxes.size():
+		_queue_boxes[k].visible = k < b["queue"].size()
+	if _load:
+		_load.disabled = b["queue"].size() >= Game.building_queue_max(id)
+	var note := ""
+	if b["paused"]:
+		note = tr("Paused")
+	elif b["busy"] and float(b["progress"]) >= float(recipe.get("seconds", 30)):
+		note = tr("Done, waiting for room in the storehouse")
+	_state_note.text = note
+	_state_note.visible = note != ""
+	for n in _cost_chips:
+		var key := String(n.get_meta("key"))
+		var need := int(n.get_meta("need"))
+		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
+		n.add_theme_color_override("font_color", UiKit.INK if have >= need else UiKit.SHORT)
+	if _action:
+		var block := Game.building_block(id)
+		_action.disabled = block != "" or Game.missing(Game.building_action(id).get("cost", {})) != ""
