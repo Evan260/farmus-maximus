@@ -137,7 +137,7 @@ func make_windows(tex: Texture2D, used: Rect2i) -> void:
 		changed = false
 		for i in boxes.size():
 			for j in boxes.size():
-				if group[i] != group[j] and boxes[i].grow(3).intersects(boxes[j]):
+				if group[i] != group[j] and boxes[i].grow(4).intersects(boxes[j]):
 					var keep := mini(group[i], group[j])
 					var drop := maxi(group[i], group[j])
 					for k in group.size():
