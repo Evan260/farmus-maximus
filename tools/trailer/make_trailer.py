@@ -5,6 +5,7 @@ Usage:
   python tools/trailer/make_trailer.py              records any shot not yet recorded, then renders the trailer
   python tools/trailer/make_trailer.py shots hook   records just those shots again
   python tools/trailer/make_trailer.py render       renders the trailer from the shots already recorded
+  python tools/trailer/make_trailer.py render 70    renders a preview from 70 seconds in, into preview.avi
 
 The shots are scripted in game/tools/trailer/shots.gd and the edit, with its cards and music, in
 game/tools/trailer/edit.gd. Every shot plays a demo farm, so the real save is never touched.
@@ -40,7 +41,7 @@ SHOTS = {
     "inside": (6, ["--maxed", "--furnish=all", "--inside=pet", "--hour=21"]),
     "town": (6, ["--maxed", "--town", "--hour=11", *HUD_OFF]),
     "timelapse": (8, ["--maxed", "--zone=home", "--hour=1.2", *HUD_OFF]),
-    "night": (9, ["--maxed", "--zone=home", "--hour=22", "--galaxy", *HUD_OFF]),
+    "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora", *HUD_OFF]),
     "endcard": (9, ["--maxed", "--zone=vineyard", "--hour=19.6", *HUD_OFF]),
 }
 
@@ -68,10 +69,12 @@ def record(name):
            "--", "--demo", "--no-music", "--window=1920x1080", f"--trailer-shot={name}", *flags, "--quiet-start"])
 
 
-def render():
-    godot(["--write-movie", str(OUT / "trailer.avi"), "--fixed-fps", str(FPS), "res://tools/trailer/edit.tscn",
-           "--", "--readonly", "--window=1920x1080", f"--shots={OUT / 'shots'}"])
-    print(f"trailer ready: {OUT / 'trailer.avi'}")
+def render(start=0.0):
+    """Renders the trailer, or with a start time a preview from that moment on into preview.avi."""
+    out = OUT / ("preview.avi" if start else "trailer.avi")
+    godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "res://tools/trailer/edit.tscn",
+           "--", "--readonly", "--window=1920x1080", f"--shots={OUT / 'shots'}", f"--from={start}"])
+    print(f"trailer ready: {out}")
 
 
 def main():
@@ -84,7 +87,7 @@ def main():
         for name in SHOTS:
             if not (OUT / "shots" / name / "f.wav").exists():
                 record(name)
-    render()
+    render(float(args[1]) if args[:1] == ["render"] and len(args) > 1 else 0.0)
 
 
 if __name__ == "__main__":

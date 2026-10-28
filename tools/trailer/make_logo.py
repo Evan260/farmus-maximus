@@ -150,26 +150,85 @@ def shade(mask):
     return Image.fromarray(out, "RGBA")
 
 
-def scroll(width=270, height=30, roll=8):
-    """A parchment band between two rolled ends, outlined in the interface's ink."""
-    img = np.zeros((height + 2, width, 4), np.uint8)
-    top, bottom = 3, height - 2
-    img[top:bottom, roll:width - roll] = (*PARCHMENT, 255)
-    img[top:top + 1, roll:width - roll] = (*PARCHMENT_LIGHT, 255)
-    img[bottom - 2:bottom, roll:width - roll] = (*PARCHMENT_SHADE, 255)
-    img[top - 1, roll:width - roll] = (*OUTLINE, 255)
-    img[bottom, roll:width - roll] = (*OUTLINE, 255)
-    for x0 in (0, width - roll):
-        # Each rolled end is a short cylinder standing a little taller than the band, lit down its middle.
-        img[0:height + 1, x0:x0 + roll] = (*ROLL, 255)
-        img[0:height + 1, x0 + roll // 2 - 1:x0 + roll // 2 + 1] = (*ROLL_LIGHT, 255)
-        img[0:height + 1, x0 + roll - 2:x0 + roll - 1] = (*ROLL_SHADE, 255)
-        img[0, x0:x0 + roll] = (*OUTLINE, 255)
-        img[height + 1, x0:x0 + roll] = (*OUTLINE, 255)
-        img[:, x0] = (*OUTLINE, 255)
-        img[:, x0 + roll - 1] = (*OUTLINE, 255)
-        img[0, x0] = img[height + 1, x0] = img[0, x0 + roll - 1] = img[height + 1, x0 + roll - 1] = 0
-    return Image.fromarray(img, "RGBA")
+def scroll(width=286, height=44, roll=13, sheet_inset=7):
+    """A parchment scroll: a toned sheet between two rolled ends, each a shaded cylinder whose spiral shows at its
+    top and bottom, with a fine inner border, ink outline and a soft shadow beneath."""
+    W, H = width, height
+    img = np.zeros((H + 3, W, 4), np.uint8)
+
+    def put(x, y, c, a=255):
+        if 0 <= x < W and 0 <= y < H + 3:
+            img[y, x] = (*c, a)
+
+    top, bottom = sheet_inset, H - sheet_inset
+    left, right = roll - 3, W - roll + 3
+    # The sheet: lightest across its middle, deepening towards its rolled-in edges, with faint fibres in the paper.
+    tones = [(214, 186, 140), (232, 210, 168), (244, 228, 194), (251, 241, 216), (253, 246, 226)]
+    rng = np.random.default_rng(7)
+    for y in range(top, bottom + 1):
+        for x in range(left, right + 1):
+            t = 1.0 - abs((y - top) / max(1, bottom - top) - 0.5) * 2.0
+            edge = min(x - left, right - x)
+            t = min(t, edge / 5.0)
+            c = tones[min(len(tones) - 1, int(t * len(tones)))]
+            if rng.random() < 0.05 and 1 < y - top < bottom - top - 1:
+                c = tuple(max(0, v - 14) for v in c)
+            put(x, y, c)
+    for x in range(left, right + 1):
+        put(x, top - 1, OUTLINE)
+        put(x, bottom + 1, OUTLINE)
+        # A soft shadow falls below the sheet.
+        put(x, bottom + 2, (40, 24, 18), 90)
+        put(x, bottom + 3, (40, 24, 18), 40)
+    # A fine inner border, drawn in faded ink, with a small diamond at each end.
+    border = (170, 120, 76)
+    for x in range(left + 14, right - 13):
+        put(x, top + 3, border)
+        put(x, bottom - 3, border)
+    mid = (top + bottom) // 2
+    for cx in (left + 9, right - 9):
+        for dy in range(-2, 3):
+            w = 2 - abs(dy)
+            for dx in range(-w, w + 1):
+                put(cx + dx, mid + dy, (226, 160, 60) if abs(dx) + abs(dy) < 2 else (150, 92, 44))
+    # The rolled ends: cylinders lit down their left third, standing taller than the sheet, with a spiral at each cap.
+    shades = [(120, 80, 48), (176, 132, 86), (222, 190, 140), (240, 216, 172), (226, 198, 152), (204, 170, 122),
+              (186, 148, 102), (168, 128, 84), (150, 110, 70), (134, 94, 58), (120, 80, 48)]
+    for x0 in (0, W - roll):
+        for y in range(2, H - 1):
+            for i in range(roll):
+                put(x0 + i, y, shades[int(i * len(shades) / roll)])
+        for y in range(2, H - 1):
+            put(x0, y, OUTLINE)
+            put(x0 + roll - 1, y, OUTLINE)
+        for cap_y, step in ((2, 1), (H - 2, -1)):
+            # Each cap is a flat ellipse of rolled paper with its spiral drawn in.
+            for i in range(1, roll - 1):
+                put(x0 + i, cap_y - step, OUTLINE)
+                put(x0 + i, cap_y, (244, 228, 194))
+                put(x0 + i, cap_y + step, (214, 186, 140))
+            put(x0, cap_y, (0, 0, 0), 0)
+            put(x0 + roll - 1, cap_y, (0, 0, 0), 0)
+        for i in range(roll):
+            put(x0 + i, H + 1, (40, 24, 18), 80)
+    # Gold knobs crown the rod at both ends of each roll, as on a Roman scroll.
+    knob_rows = ["...X...", "..XaX..", ".XabbX.", "XabbbcX", ".XbccX.", "..XXX.."]
+    knob_colours = {"X": OUTLINE, "a": (255, 240, 186), "b": (240, 186, 82), "c": (196, 120, 40)}
+    knob = len(knob_rows) - 1
+    out = np.zeros((H + 3 + 2 * knob, W, 4), np.uint8)
+    out[knob:knob + H + 3] = img
+    for x0 in (0, W - roll):
+        cx = x0 + roll // 2 - 3
+        for k, row in enumerate(knob_rows):
+            for i, ch in enumerate(row):
+                if ch == ".":
+                    continue
+                c = knob_colours[ch]
+                out[k + 2, cx + i] = (*c, 255)
+                # The lower knob is the same one turned over, lit the same way from above.
+                below = knob + H - 3 + (len(knob_rows) - 1 - k)
+                out[below, cx + i] = (*(knob_colours["b"] if ch == "a" else c), 255)
+    return Image.fromarray(out, "RGBA")
 
 
 def main():

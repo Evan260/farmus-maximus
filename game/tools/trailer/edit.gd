@@ -11,6 +11,9 @@ const MUSIC := "res://assets/audio/music/solitary_expedition.ogg"
 const MUSIC_DB := -4.0
 const SOUND_DB := 9.0
 const INK := Color(0.29, 0.18, 0.14)
+## Where the scroll's line of text sits, from the top of its picture, so it is centred on the sheet between the rolls.
+const SCROLL_TEXT_TOP := -1
+const SCROLL_TEXT_HEIGHT := 54
 const CREAM := Color(0.99, 0.95, 0.86)
 ## The cut list. A shot plays from `from` seconds into its recording; a card is black with one line of text.
 const EDIT := [
@@ -28,11 +31,11 @@ his farm.", "beats": 3},
 	{"shot": "pasture", "from": 1.5, "beats": 3},
 	{"shot": "vineyard", "from": 1.5, "beats": 3},
 	{"shot": "grove", "from": 1.5, "beats": 3},
-	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(1040, 810)},
+	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(960, 810)},
 	{"shot": "hoopoe", "from": 1.8, "beats": 5, "zoom": 2.0, "centre": Vector2(960, 810)},
 	{"shot": "inside", "from": 1.5, "beats": 3},
 	{"shot": "town", "from": 1.5, "beats": 3},
-	{"shot": "timelapse", "from": 1.5, "beats": 6, "caption": "Your helpers work while you rest."},
+	{"shot": "timelapse", "from": 1.5, "beats": 6, "caption": "Your helpers work while you rest.", "mute": true},
 	{"card": "Make it the finest estate
 in the hills.", "beats": 3},
 	{"shot": "night", "from": 1.5, "beats": 7},
@@ -63,9 +66,12 @@ func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color.BLACK)
 	for bus in ["Music", "Ambience", "Effects"]:
 		AudioServer.set_bus_mute(AudioServer.get_bus_index(bus), true)
+	var from := 0.0
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--shots="):
 			_shots_dir = arg.trim_prefix("--shots=")
+		elif arg.begins_with("--from="):
+			from = float(arg.trim_prefix("--from="))
 	var t := 0
 	for seg in EDIT:
 		_starts.append(t)
@@ -77,7 +83,9 @@ func _ready() -> void:
 	add_child(_music)
 	_sound = AudioStreamPlayer.new()
 	add_child(_sound)
-	_music.play()
+	# A preview can start part way through, to look at one moment without rendering the whole trailer.
+	_frame = int(from * FPS)
+	_music.play(from)
 
 
 func _build() -> void:
@@ -116,7 +124,7 @@ func _build() -> void:
 	_scroll.texture = load("res://tools/trailer/scroll.png")
 	_scroll.position = Vector2(roundf((480 - _scroll.texture.get_width()) / 2.0), 134)
 	_overlay.add_child(_scroll)
-	_wishlist = _label(_scroll.position + Vector2(0, 2), _scroll.texture.get_width(), _scroll.texture.get_height() - 2)
+	_wishlist = _label(_scroll.position + Vector2(0, SCROLL_TEXT_TOP), _scroll.texture.get_width(), SCROLL_TEXT_HEIGHT)
 	_wishlist.text = "Wishlist now on Steam"
 	_wishlist.add_theme_color_override("font_color", INK)
 
@@ -163,7 +171,8 @@ func _start_segment(seg: Dictionary) -> void:
 	if name == "":
 		return
 	var wav := _shots_dir.path_join(name).path_join("f.wav")
-	if FileAccess.file_exists(wav):
+	# A time-lapse plays its day's sounds many times over, so it is left to the music alone.
+	if FileAccess.file_exists(wav) and not seg.get("mute", false):
 		_sound.stream = AudioStreamWAV.load_from_file(wav)
 		_sound.play(float(seg["from"]))
 

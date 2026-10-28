@@ -139,15 +139,7 @@ func _shot_hoopoe() -> void:
 	bird.position = Vector2(m.cam_x + 240, 277)
 	bird.flip_h = false
 	await _wait(1.2)
-	_pointer.visible = true
-	var at := bird.position + Vector2(-2, -8)
-	_pointer.position = _screen(at + Vector2(-34, -16))
-	await _move_to(at)
-	await _press()
-	m._click(at)
-	# The pointer drifts aside after the click, so it never covers what happens next.
-	await _wait(0.15)
-	_move_to(at + Vector2(-22, 16))
+	await _click_on(bird.position + Vector2(-2, -8))
 
 
 ## Inside the farmhouse by night, the fire lit and the dog stroked; the house's own top bar is hidden.
@@ -162,19 +154,12 @@ func _shot_town() -> void:
 	m.market._ui_root.get_child(0).modulate.a = 0.0
 
 
-## The cat on the farm is stroked, and hearts rise.
+## The dog on the path is petted, and hearts rise. The camera finds the dog before the part the trailer uses.
 func _shot_pet() -> void:
-	_look_at(Estate.HOME + 400)
-	await _wait(2.0)
-	_pointer.visible = true
-	var at: Vector2 = m.cat.position + Vector2(0, -6)
-	_pointer.position = _screen(at + Vector2(30, -20))
-	await _move_to(at)
-	await _press()
-	m._click(at)
-	# The pointer drifts aside after the click, so it never covers what happens next.
-	await _wait(0.15)
-	_move_to(at + Vector2(-22, 16))
+	await _wait(1.4)
+	_look_at(m.dog.position.x)
+	await _wait(0.6)
+	await _click_on(m.dog.position + Vector2(0, -8))
 
 
 ## A whole day passes in a few seconds while the helpers keep at it.
@@ -211,7 +196,7 @@ func _wait(seconds: float) -> void:
 
 
 func _screen(world: Vector2) -> Vector2:
-	return ((world - m._camera.position) * Windowing.scale).round()
+	return ((world - Vector2(m.cam_x, m._camera.position.y)) * Windowing.scale).round()
 
 
 ## Beds in the middle of the view whose state matches, front row first, from left to right.
@@ -221,6 +206,18 @@ func _beds_in_view(wanted: Callable) -> Array:
 	var beds: Array = m.plot_views.filter(func(v): return v.position.x > left and v.position.x < right and wanted.call(v.index))
 	beds.sort_custom(func(a, b): return a.position.y > b.position.y if a.position.y != b.position.y else a.position.x < b.position.x)
 	return beds
+
+
+## The pointer comes in along the path from the lower left, clicks, then drifts back down out of the way, so it never
+## passes over the beds or covers what the click sets off.
+func _click_on(at: Vector2) -> void:
+	_pointer.visible = true
+	_pointer.position = _screen(at + Vector2(-40, 10))
+	await _move_to(at)
+	await _press()
+	m._click(at)
+	await _wait(0.15)
+	_move_to(at + Vector2(-26, 12))
 
 
 func _click_plot(v: Node2D) -> void:
@@ -249,26 +246,30 @@ func _press() -> void:
 	_pointer.position.y -= Windowing.scale
 
 
-## A small pixel arrow in the interface's ink and parchment.
+## The familiar arrow pointer, drawn in the interface's ink and parchment.
 static func _arrow() -> Texture2D:
 	var rows := [
-		"X.......",
-		"XX......",
-		"XoX.....",
-		"XooX....",
-		"XoooX...",
-		"XooooX..",
-		"XoooooX.",
-		"XooooooX",
-		"XoooXXXX",
-		"XoXooX..",
-		"XX.XooX.",
-		"X...XoX.",
-		".....X..",
+		"X.........",
+		"XX........",
+		"XoX.......",
+		"XooX......",
+		"XoooX.....",
+		"XooooX....",
+		"XoooooX...",
+		"XooooooX..",
+		"XoooooooX.",
+		"XooooooooX",
+		"XoooooXXXX",
+		"XooXooX...",
+		"XoX.XooX..",
+		"XX..XooX..",
+		"X....XooX.",
+		".....XooX.",
+		"......XX..",
 	]
-	var img := Image.create(8, rows.size(), false, Image.FORMAT_RGBA8)
+	var img := Image.create(10, rows.size(), false, Image.FORMAT_RGBA8)
 	for y in rows.size():
-		for x in 8:
+		for x in 10:
 			var c: String = rows[y][x]
 			if c == "X":
 				img.set_pixel(x, y, Color(0.29, 0.18, 0.14))
