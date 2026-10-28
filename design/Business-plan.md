@@ -40,7 +40,7 @@ After the Steam page and 3 months of clips:
 
 ## The Steam page and clips
 
-- **Trailer:** about 75 seconds; the first 5 seconds show the lavender, the villa and the dog. `python tools/trailer/make_trailer.py` records every scripted shot and renders the finished trailer, cards, end card and music included, to `recordings/trailer/trailer.avi`. The shots are in `game/tools/trailer/shots.gd`, the cut list, captions and music in `game/tools/trailer/edit.gd`, and the logo is drawn by `tools/trailer/make_logo.py`.
+- **Trailer:** about 75 seconds; the first 5 seconds show the lavender, the villa and the dog. `python tools/trailer/make_trailer.py` records every scripted shot and renders the finished trailer, cards, end card and music included, to `recordings/trailer/trailer.avi`. The shots are in `game/tools/trailer/shots.gd`, the cut list, captions and music in `game/tools/trailer/edit.gd`, and the logo is drawn by `tools/trailer/make_logo.py`. `make_trailer.py --short` makes the 34-second vertical cut for YouTube Shorts, Reels and TikTok, recorded close up at 1080x1920 into `recordings/short/short.avi`.
 - **Store page:** capsule images, at least 5 in-game screenshots (Steam expects the real game, not concept art), the description, and the tags Cozy, Idler, Farming Sim, Relaxing, Pixel Graphics, Simulation and Casual.
 - **Clips,** 3 to 5 a week, recorded with Godot's movie mode by `python tools/record_clip.py NAME SECONDS [flags]`, which writes a 1080p `.avi` with sound to `recordings/` (add `--no-hud` for shots without the interface):
   - wind rolling through the lavender at golden hour

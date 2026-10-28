@@ -60,6 +60,10 @@ func _rescale() -> void:
 		scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
 		# A tall narrow window crops a little off each side rather than shrinking the estate under a sea of sky.
 		scale = maxi(scale, mini(size.x / NARROWEST, size.y / BASE.y))
+		# Recordings for phones choose their own scale, so a portrait frame shows the estate close up.
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--scale="):
+				scale = maxi(1, int(arg.trim_prefix("--scale=")))
 	# The money panel and the zone buttons need about 560 interface pixels side by side, and the windows about 225 down.
 	var most := maxi(1, mini(size.x / 560, size.y / 225))
 	# One step under what fits the window itself, rather than the estate's scale, so a tall narrow window stays readable.

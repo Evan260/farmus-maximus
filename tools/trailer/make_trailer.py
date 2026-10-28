@@ -1,14 +1,16 @@
-"""Make the Steam trailer: record each scripted shot in movie mode, then cut them together with the caption cards,
-the end card and the music, all in Godot, into recordings/trailer/trailer.avi.
+"""Make the Steam trailer, or with --short the vertical cut for YouTube Shorts, Reels and TikTok: record each scripted
+shot in movie mode, then cut them together with the captions, the end card and the music, all in Godot.
 
 Usage:
   python tools/trailer/make_trailer.py              records any shot not yet recorded, then renders the trailer
   python tools/trailer/make_trailer.py shots hook   records just those shots again
-  python tools/trailer/make_trailer.py render       renders the trailer from the shots already recorded
+  python tools/trailer/make_trailer.py render       renders from the shots already recorded
   python tools/trailer/make_trailer.py render 70    renders a preview from 70 seconds in, into preview.avi
+  Add --short to any of these for the vertical cut, which is recorded close up at 1080x1920 into recordings/short/.
 
-The shots are scripted in game/tools/trailer/shots.gd and the edit, with its cards and music, in
-game/tools/trailer/edit.gd. Every shot plays a demo farm, so the real save is never touched.
+The trailer goes to recordings/trailer/trailer.avi and the short to recordings/short/short.avi. The shots are scripted
+in game/tools/trailer/shots.gd and both edits, with their captions and music, in game/tools/trailer/edit.gd. Every
+shot plays a demo farm, so the real save is never touched.
 """
 import shutil
 import subprocess
@@ -16,11 +18,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tools"))
-from record_clip import GODOT, OVERRIDE  # noqa: E402
 
 FPS = 30
-OUT = ROOT / "recordings" / "trailer"
+GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe"
+         / "Godot_v4.7.2-stable_win64_console.exe")
 HUD_OFF = ["--no-hud"]
 # name: (seconds to record, game flags). The edit takes its part of each from edit.gd; a shot starts a moment early
 # so pets and helpers have walked into place before the part that is used.
@@ -44,50 +45,71 @@ SHOTS = {
     "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora", *HUD_OFF]),
     "endcard": (9, ["--maxed", "--zone=vineyard", "--hour=19.6", *HUD_OFF]),
 }
+# The short uses fewer shots, all without the interface, since its panels are laid out for a wide screen.
+SHORT_SHOTS = ["ruin", "villa", "plant", "helper", "bakery", "pasture", "vineyard", "pet", "hoopoe", "timelapse", "night",
+               "endcard"]
+# Each cut's frame, and the estate's pixel scale in it: the short's narrow frame shows the estate close up.
+FORMATS = {
+    "trailer": {"out": ROOT / "recordings" / "trailer", "size": (1920, 1080), "scale": 4, "file": "trailer.avi"},
+    "short": {"out": ROOT / "recordings" / "short", "size": (1080, 1920), "scale": 6, "file": "short.avi"},
+}
 
 
-def godot(args):
-    """Runs Godot at 1920x1080, which movie mode takes from the project's window setting when the game starts."""
+def godot(args, size):
+    """Runs Godot at the cut's size, which movie mode takes from the project's window setting when the game starts."""
     override = ROOT / "game" / "override.cfg"
     if override.exists():
         sys.exit(f"{override} already exists; move it aside first")
-    override.write_text(OVERRIDE)
+    override.write_text(f"[display]\n\nwindow/size/window_width_override={size[0]}\nwindow/size/window_height_override={size[1]}\n\n"
+                        "[editor]\n\nmovie_writer/mjpeg_quality=0.95\n")
     try:
         subprocess.run([str(GODOT), "--path", str(ROOT / "game"), *args], check=True)
     finally:
         override.unlink()
 
 
-def record(name):
+def window(fmt):
+    return [f"--window={fmt['size'][0]}x{fmt['size'][1]}", f"--scale={fmt['scale']}"]
+
+
+def record(name, fmt):
     seconds, flags = SHOTS[name]
-    folder = OUT / "shots" / name
+    if fmt is FORMATS["short"] and "--no-hud" not in flags:
+        flags = flags + HUD_OFF
+    folder = fmt["out"] / "shots" / name
     if folder.exists():
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
     # A .png movie is written as numbered frames with the sound beside them in a .wav of the same name.
     godot(["--write-movie", str(folder / "f.png"), "--fixed-fps", str(FPS), "--quit-after", str(seconds * FPS),
-           "--", "--demo", "--no-music", "--window=1920x1080", f"--trailer-shot={name}", *flags, "--quiet-start"])
+           "--", "--demo", "--no-music", *window(fmt), f"--trailer-shot={name}", *flags, "--quiet-start"], fmt["size"])
 
 
-def render(start=0.0):
-    """Renders the trailer, or with a start time a preview from that moment on into preview.avi."""
-    out = OUT / ("preview.avi" if start else "trailer.avi")
-    godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "res://tools/trailer/edit.tscn",
-           "--", "--readonly", "--window=1920x1080", f"--shots={OUT / 'shots'}", f"--from={start}"])
-    print(f"trailer ready: {out}")
+def render(fmt, cut, start=0.0):
+    """Renders the cut, or with a start time a preview from that moment on into preview.avi."""
+    out = fmt["out"] / ("preview.avi" if start else fmt["file"])
+    # The edit quits when it ends; the frame limit only stops a run whose script failed to load from going on forever.
+    godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "--quit-after", str(200 * FPS), "res://tools/trailer/edit.tscn",
+           "--", "--readonly", *window(fmt), f"--shots={fmt['out'] / 'shots'}", f"--cut={cut}", f"--from={start}"],
+          fmt["size"])
+    print(f"ready: {out}")
 
 
 def main():
     args = sys.argv[1:]
+    cut = "short" if "--short" in args else "trailer"
+    args = [a for a in args if a != "--short"]
+    fmt = FORMATS[cut]
+    names = SHORT_SHOTS if cut == "short" else list(SHOTS)
     if args[:1] == ["shots"]:
-        for name in args[1:] or SHOTS:
-            record(name)
+        for name in args[1:] or names:
+            record(name, fmt)
         return
     if args[:1] != ["render"]:
-        for name in SHOTS:
-            if not (OUT / "shots" / name / "f.wav").exists():
-                record(name)
-    render(float(args[1]) if args[:1] == ["render"] and len(args) > 1 else 0.0)
+        for name in names:
+            if not (fmt["out"] / "shots" / name / "f.wav").exists():
+                record(name, fmt)
+    render(fmt, cut, float(args[1]) if args[:1] == ["render"] and len(args) > 1 else 0.0)
 
 
 if __name__ == "__main__":
