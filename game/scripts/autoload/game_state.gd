@@ -136,6 +136,7 @@ func new_game() -> void:
 		buildings[id] = _new_building()
 	levels = {"storage": 0, "cart_capacity": 0, "cart_speed": 0, "channels": 0}
 	projects = {}
+	keep_goods = {}
 	selected_seed = "lavender"
 	crops_unlocked = {}
 	for c in Balance.get_value("crops", {}):
@@ -819,7 +820,7 @@ func _rescue_if_stranded() -> void:
 
 ## Catches up on time the game was closed, in small steps so every rule applies in order.
 func simulate_offline(seconds: float) -> Dictionary:
-	var remaining := minf(seconds, float(Balance.get_value("offline.max_hours", 72)) * 3600.0)
+	var remaining := minf(seconds, float(Balance.get_value("offline.max_hours", 12)) * 3600.0)
 	var step := float(Balance.get_value("offline.step_seconds", 5))
 	var start_coins := coins
 	var summary := {"seconds": remaining, "harvested": 0, "earned": 0, "made": 0}
@@ -1059,21 +1060,51 @@ func set_for_sale(key: String, sell: bool) -> void:
 		keep_goods[item_base(key)] = true
 
 
-## Goods the trader may take, by storage key: goods marked for sale, less what the workshops keep back.
+## Goods the player has a use for, which the hired trader leaves at home: the provisions for the villa's next stage, one
+## of each offering once the shrine stands, and what the open market orders ask for. "provisions" is any bread or wine.
+## Before the trader is hired the player loads the cart themselves, so nothing is held back from what they send.
+func needed_goods() -> Dictionary:
+	var need := {}
+	if not helpers.has("trader"):
+		return need
+	var provisions := int(villa_next_price().get("provisions", 0))
+	if provisions > 0:
+		need["provisions"] = provisions
+	if buildings.get("lararium", {}).get("state", "") == "working":
+		for god in gods().values():
+			for item in god.get("offering", {}):
+				need[item] = maxi(int(need.get(item, 0)), int(god["offering"][item]))
+	for o in market.orders:
+		need[o["item"]] = int(need.get(o["item"], 0)) + int(o["amount"])
+	return need
+
+
+## Goods the trader may take, by storage key: goods marked for sale, less what the workshops and the player need.
 ## The plainest units are the ones kept, since workshops use those first, so the better ones go to market.
 func sellable_goods() -> Dictionary:
-	# A nearly full storehouse sells everything, so goods kept for workshops can never jam the farm.
+	# A nearly full storehouse sells the workshops' share too, so goods kept for them can never jam the farm.
 	var keep := reserved_amounts() if stored_total() < storage_capacity() * 0.9 else {}
+	var need := needed_goods()
+	# What the player needs is held back up to half the storehouse, so it cannot fill the storehouse either.
+	var room := storage_capacity() / 2
+	var provision_bases: Array = Balance.get_value("provisions", [])
 	var out := {}
 	for q in 3:
 		for key in storage.keys():
 			if item_quality(key) != q or Balance.get_value("items.%s.kind" % item_base(key), "good") != "good" or not for_sale(key):
 				continue
 			var base := item_base(key)
-			var kept := mini(int(keep.get(base, 0)), int(storage[key]))
+			var left := int(storage[key])
+			var kept := mini(int(keep.get(base, 0)), left)
 			keep[base] = int(keep.get(base, 0)) - kept
-			if int(storage[key]) - kept > 0:
-				out[key] = int(storage[key]) - kept
+			left -= kept
+			for pool in [base, "provisions"] if base in provision_bases else [base]:
+				var held := mini(mini(int(need.get(pool, 0)), left), room)
+				need[pool] = int(need.get(pool, 0)) - held
+				room -= held
+				left -= held
+			if left > 0:
+				out[key] = left
 	return out
 
 

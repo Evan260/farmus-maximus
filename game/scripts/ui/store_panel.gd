@@ -11,13 +11,14 @@ func _init() -> void:
 
 
 func signature() -> String:
-	return JSON.stringify(Game.storage) + str(Game.use_manure) + str(Game.reserved_items()) + str(Game.levels.get("storage", 0)) + JSON.stringify(Game.keep_goods)
+	return JSON.stringify(Game.storage) + str(Game.use_manure) + JSON.stringify(Game.sellable_goods()) + str(Game.levels.get("storage", 0)) + JSON.stringify(Game.keep_goods)
 
 
 func build() -> void:
 	_grow = null
 	_capacity = UiKit.label(body)
-	UiKit.para(body, tr("The trader takes goods marked for sale to market. Mark the ones you want to keep."), 250).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(body, tr("The trader sells only the extras, leaving at home what the villa, the shrine, market orders and workshops need. Mark a good Keep to keep all of it."), 250).add_theme_color_override("font_color", UiKit.FADED)
+	var selling_now := Game.sellable_goods()
 	var list := UiKit.scroll(body, Vector2(250, 140))
 	var keys := Game.storage.keys()
 	keys.sort_custom(func(a, b): return Game.item_name(a) < Game.item_name(b))
@@ -30,6 +31,9 @@ func build() -> void:
 		if kind == "good":
 			# The trader only takes goods marked for sale; a click keeps a good at home instead.
 			var selling := Game.for_sale(key)
+			var kept := int(Game.storage[key]) - int(selling_now.get(key, 0))
+			if selling and kept > 0:
+				UiKit.label(r, tr("%d kept") % kept).add_theme_color_override("font_color", UiKit.FADED)
 			var mark := UiKit.button(r, tr("For sale") if selling else tr("Keep"), func(): Game.set_for_sale(key, not selling); refresh())
 			mark.custom_minimum_size = Vector2(56, 0)
 			continue

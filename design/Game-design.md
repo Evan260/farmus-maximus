@@ -152,7 +152,7 @@ Every good has more than one use, so a full storehouse is full of choices.
 | **Offerings** | Honey at the lararium earns a blessing |
 | **Collect** | The first of each good and quality fills a page in the journal |
 
-Nothing spoils. Keeping goods is always safe; it only uses storehouse space, which can be upgraded. While the cart is parked at the farm, goods waiting for market are loaded on it, so its space adds to the storehouse's; a bigger cart holds more as well as carrying more.
+Nothing spoils. Keeping goods is always safe; it only uses storehouse space, which can be upgraded. The trader sells only the extras: they leave at home the provisions for the villa's next stage, one of each offering once the lararium stands, what the open market orders ask for and what the workshops need next, and a good marked Keep stays home entirely. While the cart is parked at the farm, goods waiting for market are loaded on it, so its space adds to the storehouse's; a bigger cart holds more as well as carrying more.
 
 ---
 
@@ -185,7 +185,7 @@ Each has a name, a small portrait and a little personality. The estate is run by
 
 ### While you are away
 
-Everything keeps going: crops grow, helpers work, buildings process, the cart makes trips, repairs finish and wine ages. A "while you were away" summary greets you. Progress pauses only when the storehouse and the parked cart are both full. An option turns offline progress off.
+Everything keeps going: crops grow, helpers work, buildings process, the cart makes trips, repairs finish and wine ages. A "while you were away" summary greets you. Up to 12 hours away count, so a night's sleep pays in full but a long absence is no better than a day's. Progress pauses only when the storehouse and the parked cart are both full. An option turns offline progress off.
 
 ---
 

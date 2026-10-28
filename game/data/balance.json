@@ -529,7 +529,7 @@
 		]
 	},
 	"offline": {
-		"max_hours": 72,
+		"max_hours": 12,
 		"step_seconds": 5,
 		"min_seconds_for_summary": 30
 	},

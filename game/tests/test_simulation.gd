@@ -49,6 +49,24 @@ func _run() -> void:
 	_check(game.count_item("bread") == 3 and game.count_item("lavender") == 0, "the trader leaves goods marked to keep in the storehouse")
 	game.advance(60.0)
 
+	# The trader sells only the extras: provisions for the villa's next stage and what open orders ask for stay home.
+	game.new_game()
+	game.day_time = 8.0
+	game.villa_stage = 3
+	game.levels["storage"] = 3
+	game.helpers["trader"] = 1
+	game.add_item("bread", 6, true)
+	game.add_item("honey", 5, true)
+	game.add_item("lavender", 2, true)
+	game.market.orders = [{"who": "", "role": "", "item": "honey", "amount": 3, "coins": 10, "aureus": 0, "seed": "", "text": ""}]
+	game.send_cart()
+	_check(game.count_item("bread") == int(game.villa_next_price()["provisions"]), "the trader leaves the villa's provisions at home")
+	_check(game.count_item("honey") == 3 and game.count_item("lavender") == 0, "the trader leaves what an order asks for and sells the rest")
+	game.advance(60.0)
+	game.market.orders = [{"who": "", "role": "", "item": "honey", "amount": 999, "coins": 10, "aureus": 0, "seed": "", "text": ""}]
+	game.add_item("honey", game.storage_capacity(), true)
+	_check(game.sellable_goods().get("honey", 0) >= game.count_item("honey") - game.storage_capacity() / 2, "what the player needs never holds back more than half the storehouse")
+
 	# Qualities: each quality is its own storage key, recipes take the plainest first.
 	game.new_game()
 	game.day_time = 8.0
