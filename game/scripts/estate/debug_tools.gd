@@ -105,6 +105,9 @@ func load_demo_state() -> void:
 					Game.stats[step["done"]["stat"]] = int(step["done"].get("at", 1))
 		elif arg == "--debug-panel":
 			(func() -> void: m.hud._debug.visible = true).call_deferred()
+		elif arg == "--no-hud":
+			# The estate alone, with no buttons, windows or messages, for trailer shots.
+			(func() -> void: m.hud.visible = false).call_deferred()
 		elif arg == "--galaxy":
 			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
 		elif arg == "--hoopoe":

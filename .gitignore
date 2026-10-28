@@ -20,3 +20,7 @@ tools/steam/steamcmd/
 # Brainstorming mockups
 .superpowers/
 tools/engine/bin/
+
+# Trailer and social clips from tools/record_clip.py, and the window size it sets while recording
+recordings/
+game/override.cfg

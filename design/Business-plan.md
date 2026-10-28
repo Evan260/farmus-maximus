@@ -42,7 +42,7 @@ After the Steam page and 3 months of clips:
 
 - **Trailer:** 30 to 60 seconds; the first 5 seconds show the lavender, the villa and the dog.
 - **Store page:** capsule images, at least 5 in-game screenshots (Steam expects the real game, not concept art), the description, and the tags Cozy, Idler, Farming Sim, Relaxing, Pixel Graphics, Simulation and Casual.
-- **Clips,** 3 to 5 a week, recorded with Godot's movie mode:
+- **Clips,** 3 to 5 a week, recorded with Godot's movie mode by `python tools/record_clip.py NAME SECONDS [flags]`, which writes a 1080p `.avi` with sound to `recordings/` (add `--no-hud` for shots without the interface):
   - wind rolling through the lavender at golden hour
   - the villa going from ruin to the next stage
   - the game running as a strip along the bottom of a real work desktop
