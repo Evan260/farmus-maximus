@@ -69,6 +69,9 @@ var _light: CanvasModulate
 var _glow_layer: CanvasLayer
 var _glow: Node2D
 var _land: Node2D
+## The light the fire throws on the room around it, and each oil lamp's.
+var _fire_light: Lamp
+var _lamp_lights: Array[Lamp] = []
 var _sprites := {}
 var _marks: Node2D
 var _dog: AnimatedSprite2D
@@ -165,6 +168,18 @@ func _ready() -> void:
 	_marks = Node2D.new()
 	_marks.draw.connect(_draw_marks)
 	_scene.add_child(_marks)
+	_fire_light = Lamp.new()
+	_fire_light.position = FIRE_GLOW
+	_fire_light.radius = 220.0
+	_fire_light.colour = Color(1.0, 0.62, 0.3)
+	_scene.add_child(_fire_light)
+	for at in LAMP_FLAMES:
+		var lamp := Lamp.new()
+		lamp.position = at
+		lamp.radius = 60.0
+		lamp.power = 0.7
+		_scene.add_child(lamp)
+		_lamp_lights.append(lamp)
 	# Fire, lamplight and stars are added on their own layer, so the room's dimming at night does not dim them too.
 	_glow_layer = CanvasLayer.new()
 	_glow_layer.layer = 1
@@ -300,6 +315,7 @@ func _dress_room() -> void:
 		_sprites[id].visible = not ruined() and Game.furnishings.has(id)
 	for pet in [_dog, _cat, _dog_shadow, _cat_shadow]:
 		pet.visible = not ruined()
+		pet.modulate.a = 1.0 if Game.is_night() else 0.0
 	if ruined():
 		return
 	var dog: Dictionary = Game.pets.get("dog", {})
@@ -344,8 +360,16 @@ func _process(delta: float) -> void:
 	var warmth := 0.0
 	if not ruined():
 		# Indoors the room is never as dark as the night outside, and the fire and lamps warm it further.
-		warmth = 0.08 + (0.14 if Game.furnishings.has("fire") else 0.0) + (0.1 if Game.furnishings.has("lamps") else 0.0)
+		warmth = 0.08 + (0.05 if Game.furnishings.has("fire") else 0.0) + (0.03 if Game.furnishings.has("lamps") else 0.0)
 	_light.color = day.lerp(Color(1.0, 0.86, 0.68), warmth * night).lerp(Color(1.0, 0.97, 0.92), 0.4 * (1.0 - night))
+	var fire := 0.8 + 0.2 * sin(_t * 7.0) * sin(_t * 2.3)
+	_fire_light.shine((0.25 + 0.75 * night) * fire if Game.furnishings.has("fire") and not ruined() else 0.0)
+	for lamp in _lamp_lights:
+		var lit := Game.furnishings.has("lamps") and not ruined()
+		lamp.shine(night * (0.85 + 0.15 * sin(_t * 6.0 + lamp.position.x)) if lit else 0.0)
+	# The dog and cat sleep indoors only at night; by day they are out on the farm.
+	for pet in [_dog, _cat, _dog_shadow, _cat_shadow]:
+		pet.modulate.a = move_toward(pet.modulate.a, 1.0 if Game.is_night() else 0.0, delta)
 	if _weaving > 0.0:
 		_weaving = maxf(0.0, _weaving - delta)
 		_woven = 1.0
@@ -525,7 +549,7 @@ func _pet_at(point: Vector2) -> AnimatedSprite2D:
 	if ruined():
 		return null
 	for pet in [_cat, _dog]:
-		if pet.sprite_frames == null or not pet.sprite_frames.has_animation(pet.animation):
+		if pet.modulate.a < 0.5 or pet.sprite_frames == null or not pet.sprite_frames.has_animation(pet.animation):
 			continue
 		var tex: Texture2D = pet.sprite_frames.get_frame_texture(pet.animation, pet.frame)
 		var used := Rect2(tex.get_image().get_used_rect())

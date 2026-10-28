@@ -27,6 +27,7 @@ func _run() -> void:
 	_check(main._plot_at(empty.position + Vector2(14, -20)) != empty, "an empty plot does not respond above its soil")
 	main.hud.select_tool("seed:lavender")
 	var spot: Node2D = main._view(1)
+	main.dog.modulate.a = 1.0
 	main.dog.position = spot.position + Vector2(20, -6)
 	var pick: Vector2 = spot.position + Vector2(14, -1)
 	if main.dog.contains(pick):
@@ -169,11 +170,16 @@ func _run() -> void:
 	_check(main.interior.visible and not main.hud.visible, "the farmhouse door leads inside")
 	var inside: CanvasLayer = main.interior
 	var stroked: int = game.stats.get("pets", 0)
-	_check(inside._pet_at(inside._dog.position + Vector2(0, -8)) == inside._dog, "the sleeping dog can be clicked inside")
+	_check(inside._pet_at(inside._dog.position + Vector2(0, -8)) == null, "by day the dog is out on the farm, not indoors")
+	var hour: float = game.day_time
+	game.day_time = 23.0
+	inside._dress_room()
+	_check(inside._pet_at(inside._dog.position + Vector2(0, -8)) == inside._dog, "the sleeping dog can be clicked inside at night")
 	inside._stroke(inside._dog)
 	_check(int(game.stats.get("pets", 0)) == stroked + 1, "stroking a pet inside counts like petting it outside")
 	inside._weave()
 	_check(inside._weaving > 0.0, "clicking the loom sets it weaving")
+	game.day_time = hour
 	main.interior.leave()
 	await create_timer(1.0).timeout
 	_check(not main.interior.visible and main.hud.visible, "and back out to the farm")

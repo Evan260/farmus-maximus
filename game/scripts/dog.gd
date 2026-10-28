@@ -1,5 +1,5 @@
 extends Node2D
-## The farm dog: trots along the front of the field, sits, naps (more often at night), and wags happily when petted.
+## The farm dog: trots along the front of the field, sits, naps, wags happily when petted, and sleeps indoors at night.
 
 ## Sent when the dog is stroked; sleepy is true when it was asleep, so it stirs quietly instead of barking.
 signal petted(sleepy: bool)
@@ -11,6 +11,8 @@ const SPEED := 15.0
 ## The stretch of ground the dog wanders, set by the scene.
 var min_x := 10.0
 var max_x := 456.0
+## Where the farmhouse door is: the dog goes in there at nightfall and comes out again in the morning.
+var door_x := NAN
 ## Coat colour chosen by the player, applied to every frame.
 var coat := ""
 var sprite: AnimatedSprite2D
@@ -22,7 +24,6 @@ var _target_x := 0.0
 
 func _ready() -> void:
 	modulate.a = 0.0
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	_shadow = Sprite2D.new()
 	_shadow.texture = Lighting.ellipse_texture(23, 5, Color(0.16, 0.11, 0.12, 0.3))
 	_shadow.position = Vector2(0, -1)
@@ -34,10 +35,17 @@ func _ready() -> void:
 	sprite.offset = Vector2(-30, -feet)
 	sprite.animation_finished.connect(_on_animation_finished)
 	add_child(sprite)
+	if _sleeps_in():
+		_state = "inside"
+		sprite.play("sit")
+		return
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	_sit()
 
 
 func _process(delta: float) -> void:
+	if _night_check(delta):
+		return
 	_timer -= delta
 	if _state == "walk":
 		var step := SPEED * delta
@@ -62,6 +70,50 @@ func pet() -> void:
 	petted.emit(sleepy)
 
 
+## Takes the dog indoors at nightfall, getting up first if it is lying down, and lets it out at daybreak. True while
+## it is going in, inside or coming out, so nothing else happens.
+func _night_check(delta: float) -> bool:
+	var night := _sleeps_in()
+	match _state:
+		"inside":
+			if not night:
+				_state = "coming_out"
+				sprite.play("sit")
+				var out := create_tween()
+				out.tween_property(self, "modulate:a", 1.0, 0.8)
+				out.tween_callback(_choose_next)
+			return true
+		"coming_out", "rising_home":
+			return true
+		"homeward":
+			position.x = move_toward(position.x, door_x, SPEED * delta)
+			if is_equal_approx(position.x, door_x):
+				_state = "inside"
+				sprite.play("sit")
+				create_tween().tween_property(self, "modulate:a", 0.0, 0.8)
+			return true
+	if not night:
+		return false
+	if _state in ["sit_down", "sit", "lie_down", "sleep"]:
+		_state = "rising_home"
+		sprite.play_backwards("lie_down" if sprite.animation in ["lie_down", "sleep"] else "sit_down")
+	else:
+		_go_home()
+	return true
+
+
+## Whether it is a night spent indoors; a ruined farmhouse has no room to sleep in, so until it is restored the pets
+## stay out under the stars.
+func _sleeps_in() -> bool:
+	return Game.is_night() and not is_nan(door_x) and Game.villa_stage >= 2
+
+
+func _go_home() -> void:
+	_state = "homeward"
+	sprite.flip_h = door_x < position.x
+	sprite.play("walk")
+
+
 func _wag() -> void:
 	_state = "happy"
 	_timer = 2.6
@@ -73,7 +125,7 @@ func is_asleep() -> bool:
 
 
 func contains(point: Vector2) -> bool:
-	return Hit.frame_has_pixel(self, sprite, point)
+	return modulate.a > 0.5 and Hit.frame_has_pixel(self, sprite, point)
 
 
 func _choose_next() -> void:
@@ -104,6 +156,9 @@ func _sit() -> void:
 
 
 func _on_animation_finished() -> void:
+	if _state == "rising_home":
+		_go_home()
+		return
 	if _state == "getting_up":
 		_wag()
 		return

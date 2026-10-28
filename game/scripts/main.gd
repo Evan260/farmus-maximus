@@ -575,7 +575,7 @@ func _update_life(delta: float) -> void:
 		if view.has_point(cat.position):
 			Game.discover("sighting:cat_and_dog")
 	var view_rect := Rect2(_camera.position, _view_size())
-	if cat and view_rect.has_point(cat.position):
+	if cat and cat.modulate.a > 0.5 and view_rect.has_point(cat.position):
 		Game.discover("animal:cat")
 	if _stork.visible and view_rect.has_point(_stork.position):
 		Game.discover("animal:stork")
@@ -1612,6 +1612,8 @@ func _spawn_pets() -> void:
 	dog.max_x = HOME + 456
 	dog.petted.connect(_on_dog_petted)
 	world.add_child(dog)
+	cat.door_x = VILLA_BASE.x
+	dog.door_x = VILLA_BASE.x
 	# Both stand behind the cart, which parks on the road in front of them.
 	if _cart_load:
 		world.move_child(cat, _cart_load.get_index())
