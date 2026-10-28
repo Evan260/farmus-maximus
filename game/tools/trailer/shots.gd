@@ -7,6 +7,7 @@ extends Node
 var m: Node
 var shot := ""
 var _pointer: Sprite2D
+var _young := false
 var _ring: Sprite2D
 
 
@@ -28,6 +29,11 @@ func _ready() -> void:
 	# The estate's own setup runs first, then the shot takes over.
 	await get_tree().process_frame
 	await get_tree().process_frame
+	# The Triumph's wreath and the enlarged storehouse belong on the finished estate, not on the young farm.
+	_young = Game.villa_stage < Game.villa_stages().size()
+	if _young:
+		Game.levels["storage"] = 1
+		m._dress_storehouse()
 	# Where the interface shows, the storehouse holds what a young farm would, not the demo's piles of everything.
 	if m.hud.visible:
 		Game.levels["storage"] = 1
@@ -39,6 +45,12 @@ func _ready() -> void:
 	# Shots such as the town or the house are set up wholly by their launch flags and have no script of their own.
 	if has_method("_shot_" + shot):
 		call("_shot_" + shot)
+
+
+## The wreath is hidden rather than the Triumph taken away, which the game would award again with a fanfare.
+func _process(_delta: float) -> void:
+	if _young and m.villa._wreath:
+		m.villa._wreath.visible = false
 
 
 # Shots -------------------------------------------------------------------
