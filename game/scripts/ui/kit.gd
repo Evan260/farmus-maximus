@@ -446,8 +446,9 @@ static func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> Sty
 
 
 ## A speech bubble over someone's head: a small parchment note with a tail pointing down at them, which fades after
-## a few seconds. One person speaks at a time, so a new bubble replaces any still showing.
-static func speech(parent: Control, at: Vector2, text: String) -> void:
+## a few seconds. One person speaks at a time, so a new bubble replaces any still showing. With `follow`, which returns
+## where the speaker is now, the bubble stays over them as they walk or the view scrolls, and hides while they are out of view.
+static func speech(parent: Control, at: Vector2, text: String, follow := Callable()) -> void:
 	if text == "":
 		return
 	for old in parent.get_children():
@@ -473,20 +474,26 @@ static func speech(parent: Control, at: Vector2, text: String) -> void:
 			tail.draw_rect(Rect2(-4 + k, k, 1, 1), INK)
 			tail.draw_rect(Rect2(3 - k, k, 1, 1), INK))
 	bubble.add_child(tail)
+	var place := func(_t := 0.0) -> void:
+		var spot: Vector2 = follow.call() if follow.is_valid() else at
+		bubble.visible = Rect2(Vector2.ZERO, parent.size).has_point(spot)
+		var pos := (spot - Vector2(bubble.size.x / 2.0, bubble.size.y + 4)).round()
+		bubble.position = pos.clamp(Vector2(2, 2), parent.size - bubble.size - Vector2(2, 2))
+		tail.position = Vector2(roundf(spot.x - bubble.position.x), bubble.size.y - 1)
 	# The bubble's size settles once its text is laid out, so it is placed a frame later.
 	(func() -> void:
 		await parent.get_tree().process_frame
 		if not is_instance_valid(bubble):
 			return
 		bubble.reset_size()
-		var pos := (at - Vector2(bubble.size.x / 2.0, bubble.size.y + 4)).round()
-		bubble.position = pos.clamp(Vector2(2, 2), parent.size - bubble.size - Vector2(2, 2))
-		tail.position = Vector2(roundf(at.x - bubble.position.x), bubble.size.y - 1)).call()
+		place.call()).call()
 	fade_in(bubble, 0.15)
 	var tween := bubble.create_tween()
 	tween.tween_interval(3.5)
 	tween.tween_property(bubble, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(bubble.queue_free)
+	if follow.is_valid():
+		bubble.create_tween().tween_method(place, 0.0, 1.0, 4.0)
 
 
 ## A 1px frame just outside a shape; drawn as four filled strips because an unfilled rect straddles pixel edges.

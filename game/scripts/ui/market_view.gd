@@ -381,8 +381,10 @@ func _on_picture_input(event: InputEvent) -> void:
 		return
 	if person and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		person.greet()
-		var head: Vector2 = (person.position + Vector2(0, -46)) * _scene.scale.x + _scene.position
-		UiKit.speech(_ui_root, head / Windowing.ui_scale, person.saying())
+		var head := func() -> Vector2:
+			var at: Vector2 = person.position if is_instance_valid(person) else Vector2.INF
+			return ((at + Vector2(0, -46)) * _scene.scale.x + _scene.position) / Windowing.ui_scale
+		UiKit.speech(_ui_root, head.call(), person.saying(), head)
 		return
 	if event is InputEventMouseMotion:
 		var spot := _spot_at(event.position)

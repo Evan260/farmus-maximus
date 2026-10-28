@@ -337,9 +337,11 @@ func _show_toast(text: String) -> void:
 	_toast_tween.tween_callback(func(): if not _toast_queue.is_empty(): _show_toast(_toast_queue.pop_front()))
 
 
-## A speech bubble above someone on the estate; pos is in estate pixels relative to the view's corner.
-func say(pos: Vector2, text: String) -> void:
-	UiKit.speech(_root, (pos * Windowing.scale / Windowing.ui_scale).round(), text)
+## A speech bubble above someone on the estate, which stays over them; spot returns where it points, in estate pixels
+## relative to the view's corner.
+func say(spot: Callable, text: String) -> void:
+	var on_screen := func() -> Vector2: return (spot.call() * Windowing.scale / Windowing.ui_scale).round()
+	UiKit.speech(_root, on_screen.call(), text, on_screen)
 
 
 ## Text that floats up from a spot on screen; pos is in estate pixels relative to the view's corner.

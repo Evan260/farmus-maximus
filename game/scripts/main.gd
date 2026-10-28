@@ -658,6 +658,8 @@ func _spawn_helper(id: String) -> void:
 		w.carry_drawn = id in DRAWN_LOADS
 		Game.live_helpers[id] = true
 	world.add_child(w)
+	# Helpers walk the path behind the parked cart and its donkey, so they are drawn before them.
+	world.move_child(w, _cart_back.get_index())
 	_helpers[id] = w
 
 
@@ -1023,6 +1025,8 @@ func _animal_at(point: Vector2) -> String:
 		return "rabbit"
 	if _wildlife.fox_at(point):
 		return "fox"
+	if _wildlife.hoopoe_at(point):
+		return "hoopoe"
 	return ""
 
 
@@ -1033,6 +1037,9 @@ func _call_out(animal: String, point: Vector2) -> void:
 		return
 	if animal == "fox":
 		_wildlife.startle_fox(point)
+		return
+	if animal == "hoopoe":
+		_wildlife.call_hoopoe(point)
 		return
 	if grazing:
 		grazing.react()
@@ -1074,7 +1081,7 @@ func _click(point: Vector2) -> void:
 			pet.pet()
 		else:
 			pet.greet()
-			hud.say(pet.position + Vector2(0, -46) - _camera.position, pet.saying())
+			hud.say(func() -> Vector2: return (pet.position if is_instance_valid(pet) else Vector2.INF) + Vector2(0, -46) - _camera.position, pet.saying())
 		return
 	if view:
 		_click_plot(view.index)
@@ -1233,7 +1240,7 @@ func _update_hover(point: Vector2) -> void:
 	elif pet:
 		hud.set_info(tr("Pet %s") % Game.pet_name("dog" if pet_hit == dog else "cat") if pet_hit in [cat, dog] else pet_hit.display_name)
 	elif animal != "":
-		hud.set_info(tr({"hen": "A hen", "goat": "A goat", "stork": "The stork on its nest", "donkey": "The donkey", "rabbit": "A rabbit"}.get(animal, "")))
+		hud.set_info(tr({"hen": "A hen", "goat": "A goat", "stork": "The stork on its nest", "donkey": "The donkey", "rabbit": "A rabbit", "hoopoe": "The hoopoe"}.get(animal, "")))
 	elif building:
 		hud.set_info(tr("%s: click for details") % tr(String(Game.building_info(building.id).get("name", ""))))
 	elif _villa_hovered:

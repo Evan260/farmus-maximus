@@ -19,6 +19,7 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `cat` | Petting the cat: a purr, or now and then a contented chirp (3 takes) | Yes |
 | `cluck` | Clicking a hen, and a new hen arriving (3 takes) | Yes |
 | `stork` | Clicking the stork on the villa roof: its bill clattering | Yes |
+| `hoopoe` | Clicking the hoopoe: its soft "oop-oop-oop-oop" call before it flies off | Yes |
 | `donkey` | Clicking the donkey: a bray | Yes |
 | `cart_dirt` | Riding the cart to market along the dirt road: hooves, gravel and creaking wood | Yes |
 | `cart_stone` | Riding the cart to market along the paved road: hooves and wheels knocking over the stones | Yes |
@@ -57,7 +58,7 @@ Each loops without a gap, so the end must join the start smoothly.
 
 ## Recordings
 
-The animal calls and the other recorded effects come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork, which is CC BY 4.0 and must be credited as shown.
+The animal calls and the other recorded effects come from these Freesound recordings. All are CC0 (free for any use, no credit needed) except the stork and the hoopoe, which are CC BY 4.0 and must be credited as shown.
 
 Every recording below is also named in `Credits and licences.txt`, which ships beside the game and is written from `game/data/credits.json` by `game/tools/write_credits.gd`; add a line to `credits.json` whenever a recording is added. A CC BY recording must be credited there in the form its licence asks.
 
@@ -67,6 +68,7 @@ Every recording below is also named in `Credits and licences.txt`, which ships b
 | `goat` | [Bleating Goat](https://freesound.org/people/aisselles/sounds/722658/) by aisselles | CC0 |
 | `donkey` | [Donkey braying in the early morning in South of France](https://freesound.org/people/felix.blume/sounds/170483/) by felix.blume | CC0 |
 | `stork` | [20200624.stork.nest.01.wav](https://freesound.org/people/dobroide/sounds/525217/) by dobroide | CC BY 4.0: credit "Stork bill clattering by dobroide (freesound.org), CC BY 4.0" |
+| `hoopoe` | [20070407.morning.hoopoe.flac](https://freesound.org/people/dobroide/sounds/33792/) by dobroide | CC BY 4.0: credit "Hoopoe call from 20070407.morning.hoopoe by dobroide (freesound.org), CC BY 4.0" |
 | `cat` | [Cat purr.wav](https://freesound.org/people/Trautwein/sounds/260881/) by Trautwein, [cat chirp.wav](https://freesound.org/people/dreamstobecome/sounds/451250/) by dreamstobecome | CC0 |
 | `rooster` | [Chickens clucking and rooster](https://freesound.org/people/evsecrets/sounds/346961/) by evsecrets | CC0 |
 | `dog` | [Single Dog Bark](https://freesound.org/people/kwahmah_02/sounds/277058/) by kwahmah_02 | CC0 |

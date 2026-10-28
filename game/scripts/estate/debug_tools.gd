@@ -107,6 +107,10 @@ func load_demo_state() -> void:
 			(func() -> void: m.hud._debug.visible = true).call_deferred()
 		elif arg == "--galaxy":
 			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
+		elif arg == "--hoopoe":
+			# The hoopoe lands in view and is clicked a moment later, to see its call and flight.
+			get_tree().create_timer(1.0).timeout.connect(func(): m._wildlife.land_hoopoe(m._wildlife._view()))
+			get_tree().create_timer(3.0).timeout.connect(func(): m._click(m._wildlife._hoopoe.position + Vector2(0, -8)))
 		elif arg == "--rainbow":
 			(func() -> void: m._sky_view.fx.show_rainbow(40.0)).call_deferred()
 		elif arg.begins_with("--weather="):
@@ -146,7 +150,7 @@ func load_demo_state() -> void:
 				var view := Rect2(m._camera.position, m._view_size())
 				for w in m._people():
 					if view.has_point(w.position):
-						m.hud.say(w.position + Vector2(0, -46) - m._camera.position, w.saying())
+						m.hud.say(func() -> Vector2: return w.position + Vector2(0, -46) - m._camera.position, w.saying())
 						break)
 		elif arg.begins_with("--achievement"):
 			# The named achievements, or the next two not yet earned, to see their cards slide in one after the other.

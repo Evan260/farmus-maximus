@@ -3,6 +3,8 @@ extends Node2D
 ## rabbits at dawn and dusk, and the rare fox, hoopoe and white butterfly. Each is recorded in the journal the first time it is seen.
 
 const ANIMALS := "res://assets/sprites/animals/"
+## When each note of the hoopoe's recorded call begins, in seconds.
+const HOOPOE_NOTES := [0.09, 0.27, 0.45, 0.64]
 
 ## Supplied by the scene: a sunny wall where the lizard basks, as a rectangle in estate pixels.
 var lizard_wall := Rect2(690, 200, 40, 24)
@@ -17,6 +19,14 @@ var _fox_dir := 1.0
 var _fox_fleeing := 0.0
 var _hoopoe: Sprite2D
 var _hoopoe_left := 0.0
+## The hoopoe's poses: crest folded at rest, fanned while it calls or now and then, and two wingbeats for flying off.
+var _hoopoe_poses := {}
+## Seconds since a clicked hoopoe began its call, or below zero while it is not calling.
+var _hoopoe_call := -1.0
+## Seconds the hoopoe has been flying away, or zero while it is on the ground.
+var _hoopoe_flight := 0.0
+var _hoopoe_dir := 1.0
+var _hoopoe_crest := 0.0
 var _white := {}
 var _t := 0.0
 var _rare_timer := 90.0
@@ -38,8 +48,10 @@ func _ready() -> void:
 		_fox.visible = false
 		add_child(_fox)
 	if ResourceLoader.exists(ANIMALS + "hoopoe/stand.png"):
+		for pose in ["stand", "crest_flat", "fly_up", "fly_down"]:
+			_hoopoe_poses[pose] = load(ANIMALS + "hoopoe/" + pose + ".png")
 		_hoopoe = Sprite2D.new()
-		_hoopoe.texture = load(ANIMALS + "hoopoe/stand.png")
+		_hoopoe.texture = _hoopoe_poses["crest_flat"]
 		_hoopoe.offset = Vector2(0, -12)
 		_hoopoe.visible = false
 		add_child(_hoopoe)
@@ -153,14 +165,22 @@ func _start_rare(hour: float, night: float, view: Rect2) -> void:
 		_fox.visible = true
 		_fox.play()
 	elif night < 0.2 and r < 0.3 and _hoopoe and not _hoopoe.visible:
-		_hoopoe.position = Vector2(randf_range(view.position.x + 40, view.end.x - 40), 258)
-		_hoopoe.flip_h = randf() < 0.5
-		_hoopoe.visible = true
-		_hoopoe.modulate.a = 0.0
-		create_tween().tween_property(_hoopoe, "modulate:a", 1.0, 0.6)
-		_hoopoe_left = randf_range(12, 25)
+		land_hoopoe(view)
 	elif night < 0.2 and r < 0.45 and _white.is_empty():
 		_white = {"pos": Vector2(view.position.x - 5, 220), "life": 25.0}
+
+
+## The hoopoe drops into the fields somewhere in view for a short while.
+func land_hoopoe(view: Rect2) -> void:
+	_hoopoe.position = Vector2(randf_range(view.position.x + 40, view.end.x - 40), 258)
+	_hoopoe.flip_h = randf() < 0.5
+	_hoopoe.texture = _hoopoe_poses["crest_flat"]
+	_hoopoe_call = -1.0
+	_hoopoe_flight = 0.0
+	_hoopoe.visible = true
+	_hoopoe.modulate.a = 0.0
+	create_tween().tween_property(_hoopoe, "modulate:a", 1.0, 0.6)
+	_hoopoe_left = randf_range(12, 25)
 
 
 func _update_fox(delta: float, view: Rect2) -> void:
@@ -183,10 +203,45 @@ func _update_hoopoe(delta: float, view: Rect2) -> void:
 	if view.has_point(_hoopoe.position + Vector2(0, -6)):
 		Game.discover("animal:hoopoe")
 		Game.discover("sighting:hoopoe")
+	if _hoopoe_flight > 0.0:
+		_fly_hoopoe(delta, view)
+		return
+	if _hoopoe_call >= 0.0:
+		_hoopoe_call += delta
+		# It bows and fans its crest on each of the four notes of its call, then takes off.
+		var note := HOOPOE_NOTES.any(func(n): return _hoopoe_call >= n and _hoopoe_call < n + 0.1)
+		_hoopoe.texture = _hoopoe_poses["stand" if note else "crest_flat"]
+		_hoopoe.offset.y = -11.0 if note else -12.0
+		if _hoopoe_call > HOOPOE_NOTES[-1] + 0.3:
+			_hoopoe_call = -1.0
+			_hoopoe.offset.y = -12.0
+			_hoopoe_flight = delta
+			# In the air it passes in front of everything standing on the ground.
+			_hoopoe.z_index = 1
+		return
+	# Resting, it raises its crest for a moment every so often.
+	_hoopoe_crest -= delta
+	if _hoopoe_crest <= 0.0:
+		_hoopoe_crest = randf_range(2.5, 6.0)
+	_hoopoe.texture = _hoopoe_poses["stand" if _hoopoe_crest < 0.6 else "crest_flat"]
 	if _hoopoe_left <= 0.0:
 		_hoopoe.modulate.a = clampf(_hoopoe.modulate.a - delta / 0.6, 0.0, 1.0)
 		if _hoopoe.modulate.a <= 0.0:
 			_hoopoe.visible = false
+
+
+## A hoopoe flies off in the bounding way hoopoes do, a few quick wingbeats then a dip, climbing until it is out of sight.
+func _fly_hoopoe(delta: float, view: Rect2) -> void:
+	_hoopoe_flight += delta
+	var flapping := fmod(_hoopoe_flight, 0.5) < 0.3
+	_hoopoe.texture = _hoopoe_poses["fly_up" if flapping and fmod(_hoopoe_flight, 0.1) < 0.05 else "fly_down"]
+	_hoopoe.position += Vector2(_hoopoe_dir * 60.0, -22.0 if flapping else 6.0) * delta
+	if _hoopoe_flight > 1.5:
+		_hoopoe.modulate.a = clampf(_hoopoe.modulate.a - delta / 0.6, 0.0, 1.0)
+	if _hoopoe.modulate.a <= 0.0 or not view.grow(40).has_point(_hoopoe.position):
+		_hoopoe.visible = false
+		_hoopoe_flight = 0.0
+		_hoopoe.z_index = 0
 
 
 func _update_white(delta: float, view: Rect2) -> void:
@@ -224,6 +279,21 @@ func startle_fox(from: Vector2) -> void:
 	_fox_fleeing = 6.0
 	Sfx.play("thump", -6.0, 0.15)
 	Sfx.play("rustle", -8.0, 0.1)
+
+
+## The hoopoe under the pointer, while it stands on the ground in plain sight.
+func hoopoe_at(point: Vector2) -> bool:
+	if not _hoopoe or not _hoopoe.visible or _hoopoe_flight > 0.0 or _hoopoe_call >= 0.0 or _hoopoe.modulate.a < 0.5:
+		return false
+	return Hit.texture_has_pixel(_hoopoe.texture, _hoopoe.position + _hoopoe.offset - _hoopoe.texture.get_size() / 2.0, point, _hoopoe.flip_h)
+
+
+## A clicked hoopoe calls its soft "oop-oop-oop-oop", then flies off away from the click.
+func call_hoopoe(from: Vector2) -> void:
+	_hoopoe_dir = 1.0 if _hoopoe.position.x >= from.x else -1.0
+	_hoopoe.flip_h = _hoopoe_dir < 0
+	_hoopoe_call = 0.0
+	Sfx.play("hoopoe", -4.0, 0.0)
 
 
 ## Thumps a hind foot in alarm and bounds away from the click.

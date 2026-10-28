@@ -23,6 +23,7 @@ CUTS = [
     ("goat_3", "722658_3200333", 17.6, 19.4),
     ("donkey_1", "170483_1661766", 27.2, 29.8),
     ("stork_1", "525217_8043", 4.6, 7.0),
+    ("hoopoe_1", "33792_8043", 6.2, 7.05),
     ("cat_1", "260881", 5.0, 7.2),
     ("cat_2", "260881", 20.0, 22.2),
     ("cat_3", "451250", 0.25, 0.9),
@@ -72,6 +73,8 @@ LOOP_BLEND = 2.0
 # The day and night recordings carry a loud band of hiss and high insect noise above the birds and crickets, which
 # plays as static; everything above these frequencies (Hz) is filtered away.
 LOWPASS = {"day": 9000, "night": 8000}
+# The hoopoe calls over a morning chorus of smaller birds singing far higher, so only the band of its call is kept (Hz).
+BANDPASS = {"hoopoe_1": (300, 2000)}
 
 
 def save_ogg(path, clip, rate):
@@ -110,6 +113,8 @@ def main():
             save_ogg(out.parent / "ambience" / f"{name}.ogg", clip, rate)
             print("wrote loop", name, round(len(clip) / rate, 2), "s")
             continue
+        if name in BANDPASS:
+            clip = sosfiltfilt(butter(4, BANDPASS[name], "bandpass", fs=rate, output="sos"), clip)
         # A purr swells in and dies away; everything else starts on its first sound.
         soft = name.startswith("cat") and b - a > 1.0
         fade_in, fade_out = int((0.2 if soft else 0.01) * rate), int((fade[0] if fade else 0.5 if soft else 0.12) * rate)
