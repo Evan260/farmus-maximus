@@ -60,6 +60,8 @@ const MILESTONES := [330, 930, 1530, 2130]
 const PAN_SPEED := 260.0
 ## Helpers whose carrying animation draws the load itself.
 const DRAWN_LOADS := ["miller"]
+## How far in front of their feet a helper's hands are while picking; the farmhand stoops to the ground to pick.
+const PICK_REACH := {"farmhand": 12.0}
 ## Where each helper spends their day, in estate pixels.
 const HELPER_GROUNDS := {
 	"farmhand": [490.0, 930.0], "miller": [1130.0, 1400.0], "beekeeper": [150.0, 300.0], "perfumer": [990.0, 1610.0],
@@ -73,6 +75,8 @@ var plot_views: Array = []
 var building_views: Array = []
 ## Goods each helper is on their way to fetch, by helper: the item and the workshop door it goes to.
 var _fetches := {}
+## The plot each helper is on their way to pick, by helper.
+var _picks := {}
 var signs: Array = []
 var hud: CanvasLayer
 var debug_tools: DebugTools
@@ -645,10 +649,11 @@ func _spawn_helper(id: String) -> void:
 	var runs_workshops := Game.buildings.keys().any(func(b): return Game.building_info(b).get("helper", "") == id)
 	if harvests or runs_workshops:
 		w.find_work = func() -> float: return _helper_job(id, w)
-		w.work_done = func(x: float) -> String: return String(_fetches[id]["item"]) if _fetches.has(id) else Game.helper_harvest(id, _plot_near(x))
+		w.work_done = func(_x: float) -> String: return String(_fetches[id]["item"]) if _fetches.has(id) else Game.helper_harvest(id, _picked(id))
 		w.carry_to = func(item: String, from_x: float) -> float: return float(_fetches[id]["to"]) if _fetches.has(id) else _drop_spot(item, from_x)
 		w.can_drop = _can_drop
 		w.dropped = func(at: float) -> void: _delivered(id, at)
+		w.into_field = func(inside: bool) -> void: _into_field(w, inside)
 		w.work_seconds = clampf(Game.helper_interval(id) * 0.6, 0.8, 4.0) if harvests else 1.0
 		w.carry_drawn = id in DRAWN_LOADS
 		Game.live_helpers[id] = true
@@ -659,11 +664,24 @@ func _spawn_helper(id: String) -> void:
 ## A helper's next job: a ripe plant to pick or, by day, goods to fetch for one of their workshops. NAN when idle.
 func _helper_job(id: String, w: Walker) -> float:
 	_fetches.erase(id)
+	_picks.erase(id)
 	w.work_anim = "work"
+	w.work_facing = NAN
+	w.work_depth = 0.0
 	var info := Game.helper_info(id)
-	var plant := _ready_plot_x(info) if info.has("zones") or info.has("crops") else NAN
-	if not is_nan(plant) or Game.is_night():
-		return plant
+	var plot := _ready_plot(info) if info.has("zones") or info.has("crops") else null
+	if plot:
+		# The helper stops short of the plant on the side they come from, so their hands, not their feet, are on it.
+		var plant: float = plot.position.x + 15.0
+		var reach: float = PICK_REACH.get(id, 8.0)
+		_picks[id] = plot.index
+		w.work_facing = plant
+		# They step up from the path until their feet are just in front of the plant: clear of the water channel for
+		# the front row, and in among the beds for the back row.
+		w.work_depth = maxf(0.0, w.position.y - (plot.position.y + 3.0))
+		return plant - reach if w.position.x < plant else plant + reach
+	if Game.is_night():
+		return NAN
 	for v in building_views:
 		if Game.building_info(v.id).get("helper", "") != id:
 			continue
@@ -725,16 +743,13 @@ func _can_drop(at: float) -> bool:
 	return not Game.cart["away"] and absf(_cart.position.x - _cart_park_x) < 1.0
 
 
-## The plot whose plant stands at this spot, as a helper reaching it sees it.
-func _plot_near(x: float) -> int:
-	var best := -1
-	for v in plot_views:
-		if absf(v.position.x + 15.0 - x) < 2.0 and Game.is_ready(v.index):
-			best = v.index
-	return best
+## The plot a helper has reached to pick, or -1 when it was picked or dug up in the meantime.
+func _picked(id: String) -> int:
+	var i: int = _picks.get(id, -1)
+	_picks.erase(id)
+	return i if i >= 0 and Game.is_ready(i) else -1
 
 
-## Where a helper would find a ripe plant to pick, or NAN when there is none.
 ## One of the estate's parts, given this scene to work on.
 func _part(script: GDScript) -> Node:
 	var part: Node = script.new()
@@ -743,12 +758,24 @@ func _part(script: GDScript) -> Node:
 	return part
 
 
-func _ready_plot_x(info: Dictionary) -> float:
+## A helper picking in the back row is drawn behind the front row's plants, so they stand among the beds.
+func _into_field(w: Walker, inside: bool) -> void:
+	if inside and w.work_depth > (FRONT_ROW - BACK_ROW) / 2.0:
+		var front: Array = plot_views.filter(func(v): return v.position.y > (FRONT_ROW + BACK_ROW) / 2.0)
+		w.set_meta("path_index", w.get_index())
+		world.move_child(w, front.map(func(v): return v.get_index()).min())
+	elif not inside and w.has_meta("path_index"):
+		world.move_child(w, mini(int(w.get_meta("path_index")), world.get_child_count() - 1))
+		w.remove_meta("path_index")
+
+
+## A ripe plant a helper looks after, or null when there is none.
+func _ready_plot(info: Dictionary) -> PlotView:
 	for v in plot_views:
 		var p: Dictionary = Game.plots[v.index]
 		if Game.is_ready(v.index) and ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
-			return v.position.x + 15.0
-	return NAN
+			return v
+	return null
 
 
 func _build_plots() -> void:

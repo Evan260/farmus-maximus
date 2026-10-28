@@ -20,6 +20,15 @@ var dropped: Callable
 var work_seconds := 3.0
 ## The animation played at the next stop: "work" for picking plants, "lift" for picking up goods to fetch.
 var work_anim := "work"
+## The spot the next stop's work is done on, such as the plant beside where they stand, which they turn to face.
+var work_facing := NAN
+## How far up into the field from the path the next stop's work is, such as a plant in the back row.
+var work_depth := 0.0
+## Called with true as they step into the field to work and false as they step back onto the path, so the scene can
+## draw them among the plants.
+var into_field: Callable
+## Where they walk, while they are stepped into the field.
+var _path_y := NAN
 ## True when the carrying animation draws the load itself, such as the miller's sack, so no icon is held up.
 var carry_drawn := false
 var idle_anim := ""
@@ -94,13 +103,14 @@ func _process(delta: float) -> void:
 					_timer = 0.0
 					_play("carry_still")
 				elif _working_next:
-					_state = "work"
-					_timer = work_seconds
-					if work_anim != "work" and has_animation(work_anim):
-						_timer = _seconds(work_anim)
-					_play(work_anim)
+					if work_depth > 0.0:
+						_step(-work_depth)
+					else:
+						_start_work()
 				else:
 					_rest()
+		"step":
+			pass
 		"wait":
 			# Holding the load until the spot can take it, then setting it down.
 			if _timer <= 0.0:
@@ -109,19 +119,61 @@ func _process(delta: float) -> void:
 					_set_down()
 		_:
 			if _timer <= 0.0:
+				if _state == "work":
+					if is_nan(_path_y):
+						_finish_work()
+					else:
+						_step(_path_y - position.y)
+					return
 				if _state == "drop":
 					_carry.visible = false
 					_delivering = false
 					if dropped.is_valid():
 						dropped.call(_target)
-				elif _state == "work" and work_done.is_valid():
-					var picked: Variant = work_done.call(_target)
-					if picked is String and picked != "" and carry_to.is_valid():
-						var to: float = carry_to.call(picked, position.x)
-						if not is_nan(to):
-							_carry_away(picked, to)
-							return
 				_choose()
+
+
+func _start_work() -> void:
+	_state = "work"
+	_timer = work_seconds
+	if not is_nan(work_facing):
+		sprite.flip_h = work_facing < position.x
+	if work_anim != "work" and has_animation(work_anim):
+		_timer = _seconds(work_anim)
+	_play(work_anim)
+
+
+## Hands over what the work produced and walks off with it, or else chooses what to do next.
+func _finish_work() -> void:
+	if work_done.is_valid():
+		var picked: Variant = work_done.call(_target)
+		if picked is String and picked != "" and carry_to.is_valid():
+			var to: float = carry_to.call(picked, position.x)
+			if not is_nan(to):
+				_carry_away(picked, to)
+				return
+	_choose()
+
+
+## Steps up into the field to work, or back down onto the path afterwards, then carries on.
+func _step(dy: float) -> void:
+	var stepping_in := is_nan(_path_y)
+	if stepping_in:
+		_path_y = position.y
+		if into_field.is_valid():
+			into_field.call(true)
+	_state = "step"
+	_play("walk")
+	var t := create_tween()
+	t.tween_property(self, "position:y", position.y + dy, absf(dy) / speed)
+	t.tween_callback(func():
+		if stepping_in:
+			_start_work()
+			return
+		_path_y = NAN
+		if into_field.is_valid():
+			into_field.call(false)
+		_finish_work())
 
 
 ## Walks off with what was just picked, held up in front, to wherever it belongs.
@@ -167,7 +219,7 @@ func _night_check() -> bool:
 		_timer = randf_range(0.5, 2.0)
 		create_tween().tween_property(self, "modulate:a", 1.0, 0.8)
 		return false
-	if night and not _homeward and not _delivering and _state in ["idle", "walk", "work"]:
+	if night and not _homeward and not _delivering and is_nan(_path_y) and _state in ["idle", "walk", "work"]:
 		_homeward = true
 		_working_next = false
 		_target = home_x if not is_nan(home_x) else position.x
@@ -186,7 +238,7 @@ func _fade_out() -> void:
 
 ## Answers a click: stops where it is and plays its reaction once, then carries on. False when it is busy or has none.
 func react() -> bool:
-	if not has_animation("react") or _state not in ["idle", "walk", "work"] or _homeward or _delivering:
+	if not has_animation("react") or _state not in ["idle", "walk", "work"] or _homeward or _delivering or not is_nan(_path_y):
 		return false
 	_state = "react"
 	_working_next = false
