@@ -818,7 +818,8 @@ func _rescue_if_stranded() -> void:
 		rescued.emit(gift)
 
 
-## Catches up on time the game was closed, in small steps so every rule applies in order.
+## Catches up on time the game was closed, in small steps so every rule applies in order. The farm runs as usual, but
+## only a share of what it earns is kept, so coming back is a welcome bonus rather than a way to skip the game.
 func simulate_offline(seconds: float) -> Dictionary:
 	var remaining := minf(seconds, float(Balance.get_value("offline.max_hours", 12)) * 3600.0)
 	var step := float(Balance.get_value("offline.step_seconds", 5))
@@ -832,6 +833,11 @@ func simulate_offline(seconds: float) -> Dictionary:
 		summary["made"] += r["made"]
 		remaining -= dt
 	quiet = false
+	var earned := coins - start_coins
+	if earned > 0:
+		var forgone := earned - int(earned * float(Balance.get_value("offline.earnings_share", 0.25)))
+		coins -= forgone
+		stats["earned"] = int(stats.get("earned", 0)) - forgone
 	summary["earned"] = coins - start_coins
 	summary["ready"] = 0
 	for i in plots.size():

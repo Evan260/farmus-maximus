@@ -161,6 +161,12 @@ func _run() -> void:
 	_check(game.holding_capacity() == game.storage_capacity(), "while the cart is on the road only the storehouse holds goods")
 	_check(game.on_cart() == 0, "nothing waits on a cart that is away")
 	_check(bool(summary["storage_full"]), "summary reports the full storehouse")
+	game.new_game()
+	game.day_time = 8.0
+	game.coins = 0
+	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 400, "load": []}
+	summary = game.simulate_offline(20.0)
+	_check(game.coins == 100 and int(summary["earned"]) == 100, "time away keeps a quarter of what the farm earns")
 
 	# The estate: deeds need the villa, buildings need materials, and workshops refine goods once loaded.
 	game.new_game()

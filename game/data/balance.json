@@ -530,6 +530,7 @@
 	},
 	"offline": {
 		"max_hours": 12,
+		"earnings_share": 0.25,
 		"step_seconds": 5,
 		"min_seconds_for_summary": 30
 	},

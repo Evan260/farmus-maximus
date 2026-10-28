@@ -185,7 +185,7 @@ Each has a name, a small portrait and a little personality. The estate is run by
 
 ### While you are away
 
-Everything keeps going: crops grow, helpers work, buildings process, the cart makes trips, repairs finish and wine ages. A "while you were away" summary greets you. Up to 12 hours away count, so a night's sleep pays in full but a long absence is no better than a day's. Progress pauses only when the storehouse and the parked cart are both full. An option turns offline progress off.
+Everything keeps going: crops grow, helpers work, buildings process, the cart makes trips, repairs finish and wine ages. A "while you were away" summary greets you. Up to 12 hours away count, and the farm keeps a quarter of what it earns in that time: a full 12 hours comes to about an hour and a half of active play, so coming back is a welcome bonus but never a way to buy everything at once. Progress pauses only when the storehouse and the parked cart are both full. An option turns offline progress off.
 
 ---
 
