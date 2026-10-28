@@ -391,7 +391,8 @@ func _ready() -> void:
 
 ## The donkey sets off down the road with the cart before the market town comes into view.
 func _ride_to_market() -> void:
-	if _riding:
+	# The trip counts as over before the cart has driven back into view and parked, so a ride waits until it has.
+	if _riding or _cart_returning:
 		return
 	if Settings.reduced_motion or Windowing.strip or _donkey_night != "":
 		go_to_town()
@@ -1161,7 +1162,7 @@ func _update_hover(point: Vector2) -> void:
 	elif Rect2(_storehouse.position, _storehouse.region_rect.size).has_point(point):
 		hud.set_info(tr("Storehouse: %d / %d") % [Game.in_storehouse(), Game.storage_capacity()])
 	elif _cart_rect().has_point(point):
-		hud.set_info(tr("The trader is away at market") if Game.cart["away"] else tr("Ride the cart to market"))
+		hud.set_info(tr("The trader is away at market") if Game.cart["away"] else (tr("The cart is on its way home") if _cart_returning else tr("Ride the cart to market")))
 	else:
 		hud.set_info("")
 
@@ -1328,6 +1329,8 @@ func _on_cart_left(_items: int, value: int) -> void:
 		_harness.visible = true
 	Sfx.play("cart")
 	hud.toast(tr("The cart heads to market with %d sestertii of goods") % value)
+	# A trader can send the cart off again while it is still driving home; it turns round, and is no longer returning.
+	_cart_returning = false
 	rig.face_rig(false)
 	_donkey.play("walk")
 	# The road to town runs off the right edge of the estate, so the cart travels the whole way there.
