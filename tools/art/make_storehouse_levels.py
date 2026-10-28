@@ -14,7 +14,9 @@ from PIL import Image
 DIR = Path(__file__).resolve().parents[2] / "game" / "assets" / "sprites" / "farm"
 SIZE = (112, 92)
 HOUSE_AT = (46, 28)
-LOFT = 12
+# Rows of plain plaster just under the eaves, above the window and the door, which the loft repeats.
+PLAIN = (24, 34)
+LOFT = PLAIN[1] - PLAIN[0]
 WOOD = [(92, 62, 40), (124, 88, 56), (156, 116, 74)]
 TILE = [(150, 62, 36), (196, 90, 46), (226, 122, 62)]
 CLAY = [(150, 82, 52), (184, 108, 66), (214, 140, 90)]
@@ -34,27 +36,34 @@ def rect(a, x, y, w, h, c):
 
 
 def house(loft):
-    """The original storehouse, with a loft storey of wall slipped in under the roof when it has one."""
+    """The original storehouse, with a loft storey slipped in under the roof when it has one: the plain plaster just
+    below the eaves is repeated, quoins and all, so the loft wall carries on the wall's own texture."""
     base = np.array(Image.open(DIR / "storehouse.png").convert("RGBA"))
     if not loft:
         return base
-    cut = 24
-    upper, lower = base[:cut], base[cut:]
-    wall = np.repeat(base[31:32], LOFT, axis=0)
-    # The wall rows repeat the plaster under the eaves, with a few patches so it is not a flat band.
-    tall = np.concatenate([upper, wall, lower], axis=0)
-    for y in range(cut, cut + LOFT):
-        for x in range(6, 58):
-            if tall[y, x, 3] and (x * 7 + y * 3) % 23 == 0:
-                tall[y, x, :3] = (tall[y, x, :3] * 0.93).astype(np.uint8)
-    # The loft hatch, a dark doorway framed in timber, with the hoist beam above it.
-    hx, hy = 26, cut + 2
-    rect(tall, hx - 1, hy - 1, 12, 10, WOOD[0])
-    rect(tall, hx, hy, 10, 8, (46, 32, 30))
-    rect(tall, hx, hy + 7, 10, 1, WOOD[1])
-    # The hoist beam juts out from under the eaves above the hatch, for hauling goods up on a rope.
-    rect(tall, hx + 3, hy - 2, 16, 2, WOOD[0])
-    rect(tall, hx + 3, hy - 2, 16, 1, WOOD[1])
+    cut = PLAIN[1]
+    tall = np.concatenate([base[:cut], base[PLAIN[0]:PLAIN[1]], base[cut:]], axis=0)
+    # The loft hatch: a dark opening framed in timber, its plank shutters folded back to the wall.
+    hx, hy = 27, PLAIN[0] + 3
+    rect(tall, hx - 1, hy - 1, 11, 11, WOOD[0])
+    rect(tall, hx, hy, 9, 9, (46, 32, 30))
+    # A straw bale stands just inside, lit along its top and bound with cord.
+    rect(tall, hx + 1, hy + 5, 7, 4, (176, 146, 80))
+    rect(tall, hx + 1, hy + 5, 7, 1, (214, 186, 110))
+    rect(tall, hx + 1, hy + 8, 7, 1, (140, 112, 60))
+    rect(tall, hx + 3, hy + 5, 1, 4, (120, 92, 50))
+    rect(tall, hx + 6, hy + 5, 1, 4, (120, 92, 50))
+    rect(tall, hx - 1, hy + 9, 11, 1, WOOD[1])
+    rect(tall, hx - 1, hy - 1, 11, 1, WOOD[2])
+    for sx in (hx - 4, hx + 10):
+        rect(tall, sx, hy, 3, 9, WOOD[1])
+        rect(tall, sx + 1, hy, 1, 9, WOOD[0])
+        put(tall, sx, hy, WOOD[2])
+        put(tall, sx + 2, hy, WOOD[2])
+    # The hoist beam juts out from above the hatch, its end capped, for hauling goods up on a rope.
+    rect(tall, hx + 2, hy - 3, 16, 2, WOOD[1])
+    rect(tall, hx + 2, hy - 3, 16, 1, WOOD[2])
+    rect(tall, hx + 17, hy - 4, 2, 4, WOOD[0])
     return tall
 
 
@@ -130,13 +139,17 @@ def build(level):
         for side in (-3, 8):
             rect(a, hx + 18 + side, hy + (LOFT if level >= 3 else 0) + 34, 2, 9, WOOD[1])
     if level >= 3:
-        # The hoist rope hangs from the beam with a hook at its end.
-        rope_x = hx + 26 + 17
-        top = hy + 24 + 2
-        rect(a, rope_x, top, 1, 16, (190, 170, 130))
-        put(a, rope_x, top + 16, (90, 90, 96))
-        put(a, rope_x + 1, top + 17, (90, 90, 96))
-        put(a, rope_x - 1, top + 17, (90, 90, 96))
+        # The hoist rope hangs from the beam's end, twisted, with a sack on its way up.
+        rope_x = hx + 27 + 17
+        top = hy + PLAIN[0] + 3 - 1
+        for k in range(11):
+            put(a, rope_x, top + k, (150, 120, 80) if k % 2 else (176, 146, 100))
+        put(a, rope_x - 1, top + 11, WOOD[0])
+        put(a, rope_x + 1, top + 11, WOOD[0])
+        for r, row in enumerate([".##.", "####", "####", ".##."]):
+            for c, ch in enumerate(row):
+                if ch == "#":
+                    put(a, rope_x - 1 + c - 1 + 1, top + 12 + r, SACK[1] if c < 2 else SACK[0])
     if level >= 4:
         lean_to(a, wall_left - 24, 20, floor, floor - 24)
         dolium(a, wall_left - 37, floor + 1)
