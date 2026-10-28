@@ -118,7 +118,7 @@ static func section(parent: Node, text: String) -> Label:
 	# A gap above the heading shows it starts something new rather than finishing what came before.
 	if parent.get_child_count() > 0:
 		var gap := Control.new()
-		gap.custom_minimum_size = Vector2(0, 6)
+		gap.custom_minimum_size = Vector2(0, 4)
 		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(gap)
 	var l := label(parent, text)

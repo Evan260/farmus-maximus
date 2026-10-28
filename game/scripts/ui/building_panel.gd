@@ -66,21 +66,26 @@ func build() -> void:
 				_:
 					_build_workshop()
 			var act := Game.building_action(id)
+			var buttons: HBoxContainer = null
 			if not act.is_empty():
 				UiKit.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
-				UiKit.para(body, _upgrade_text(levels[int(b["level"])]), WIDTH)
-				UiKit.para(body, tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
-				_next_step(act["cost"], tr("Upgrade"))
+				UiKit.para(body, _upgrade_text(levels[int(b["level"])]) + " " + tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH)
+				buttons = _next_step(act["cost"], tr("Upgrade"))
 			if Game.building_kind(id) == "workshop":
-				UiKit.button(body, tr("Resume work") if b["paused"] else tr("Pause work"), func(): Game.set_building_paused(id, not b["paused"]))
+				# Pausing sits beside the upgrade button rather than on a line of its own.
+				var pause := UiKit.button(buttons if buttons else UiKit.row(body), tr("Resume work") if b["paused"] else tr("Pause work"), func(): Game.set_building_paused(id, not b["paused"]))
+				pause.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 
-## A checklist of what the next step needs, and the button that takes it.
-func _next_step(cost: Dictionary, verb: String) -> void:
+## A checklist of what the next step needs, and the button that takes it, on a row other buttons can join.
+func _next_step(cost: Dictionary, verb: String) -> HBoxContainer:
 	_costs = UiKit.cost_list(body, cost)
-	_action = UiKit.button(body, verb, _do_action)
+	var row := UiKit.row(body)
+	_action = UiKit.button(row, verb, _do_action)
+	_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_note = UiKit.label(body)
 	_note.add_theme_color_override("font_color", UiKit.SHORT)
+	return row
 
 
 func _upgrade_text(next: Dictionary) -> String:
@@ -200,13 +205,16 @@ func _build_workshop() -> void:
 	_build_stock(ins, recipe.get("out", {}))
 	if ins.is_empty():
 		return
-	UiKit.section(body, tr("Loading"))
-	_queue = UiKit.label(body)
+	# Loading sits right under the stock it draws on: the button and how many batches wait, on one line.
+	var load_row := UiKit.row(body)
 	var helper := String(Game.building_info(id).get("helper", ""))
 	if Game.helpers.has(helper):
+		_queue = UiKit.label(load_row)
 		UiKit.para(body, tr("%s keeps it loaded from the storehouse.") % Game.helper_info(helper).get("name", ""), WIDTH)
 	else:
-		_load = UiKit.button(body, tr("Load from the storehouse"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
+		_load = UiKit.button(load_row, tr("Load from the storehouse"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
+		_queue = UiKit.label(load_row)
+		_queue.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if helper != "":
 			UiKit.para(body, tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), UiKit.mid(tr(String(Game.helper_info(helper).get("role", ""))))], WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 
@@ -215,8 +223,8 @@ func _build_workshop() -> void:
 ## batches are left before it runs dry.
 func _build_stock(ins: Dictionary, outs: Dictionary) -> void:
 	UiKit.section(body, tr("In the storehouse"))
-	var grid := GridContainer.new()
-	grid.columns = 2
+	# The goods run along one line and wrap only when they run out of room.
+	var grid := HFlowContainer.new()
 	grid.add_theme_constant_override("h_separation", 10)
 	body.add_child(grid)
 	for item in ins.keys() + outs.keys():
