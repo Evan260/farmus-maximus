@@ -1105,6 +1105,43 @@ func _helper_runs(id: String) -> bool:
 	return helper != "" and helpers.has(helper)
 
 
+## Whether a building's helper loads it on their own now: only by day, and not while they are on screen carrying the
+## goods there by hand.
+func _helper_loads(id: String) -> bool:
+	return _helper_runs(id) and not is_night() and not (live_helpers.has(String(building_info(id).get("helper", ""))) and not quiet)
+
+
+## What a helper would carry to this building now, or "" when it needs nothing the storehouse has.
+func load_need(id: String) -> String:
+	var b: Dictionary = buildings[id]
+	if b["state"] != "working" or b["paused"]:
+		return ""
+	match building_kind(id):
+		"cellar":
+			return "young_wine" if b["casks"].size() < cellar_capacity(id) and count_item("young_wine") > 0 else ""
+		"barn":
+			if int(b["feed"]) >= feed_capacity(id) / 2:
+				return ""
+			for feed in building_info(id).get("feed", ["straw", "wheat"]):
+				if count_item(String(feed)) > 0:
+					return String(feed)
+			return ""
+		"shrine":
+			return ""
+	var r := current_recipe(id)
+	var needs := {}
+	for item in r.get("in", {}):
+		needs[item] = int(r["in"][item]) * building_batch(id)
+	if needs.is_empty() or b["queue"].size() >= building_queue_max(id) or not has_items(needs):
+		return ""
+	# The ingredient most of the batch is made of is the one seen being carried.
+	var main := ""
+	for item in needs:
+		if main == "" or int(needs[item]) > int(needs[main]):
+			main = String(item)
+	return main
+
+
 func _advance_buildings(dt: float) -> int:
 	var made := 0
 	for id in buildings:
@@ -1142,7 +1179,7 @@ func _advance_buildings(dt: float) -> int:
 			# Bees need nobody: hives fill their own queue.
 			while b["queue"].size() < building_queue_max(id):
 				b["queue"].append(0.0)
-		elif _helper_runs(id) and b["queue"].size() < building_queue_max(id):
+		elif _helper_loads(id) and b["queue"].size() < building_queue_max(id):
 			load_building(id)
 		if not b["busy"]:
 			if b["queue"].is_empty():
@@ -1235,8 +1272,9 @@ func _advance_cellar(id: String, dt: float) -> int:
 	for k in b["casks"].size():
 		b["casks"][k] = float(b["casks"][k]) + dt * rate
 	if _helper_runs(id):
-		_fill_casks(id)
-		return draw_wine(id, true)
+		if _helper_loads(id):
+			_fill_casks(id)
+		return draw_wine(id, true) if not is_night() else 0
 	return 0
 
 
@@ -1280,7 +1318,7 @@ func _feed_barn(id: String) -> int:
 
 func _advance_barn(id: String, dt: float) -> int:
 	var b: Dictionary = buildings[id]
-	if _helper_runs(id) and int(b["feed"]) < feed_capacity(id) / 2:
+	if _helper_loads(id) and int(b["feed"]) < feed_capacity(id) / 2:
 		_feed_barn(id)
 	var herd := 0
 	for kind in b["animals"]:

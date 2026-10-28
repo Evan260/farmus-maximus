@@ -214,6 +214,19 @@ func _run() -> void:
 	game.hire_helper("miller")
 	game.simulate_offline(8.0 * secs.call("buildings.mill.recipes.0.seconds"))
 	_check(game.count_item("wheat") == 0 and game.count_item("flour") >= 6, "the miller keeps the mill going")
+	game.storage = {"wheat": 3}
+	game.buildings["mill"]["queue"] = []
+	game.buildings["mill"]["busy"] = false
+	game.day_time = 23.0
+	game.advance(1.0)
+	_check(game.buildings["mill"]["queue"].is_empty(), "nothing is loaded at night while the miller is indoors")
+	game.day_time = 8.0
+	game.live_helpers["miller"] = true
+	game.advance(1.0)
+	_check(game.buildings["mill"]["queue"].is_empty() and game.load_need("mill") == "wheat", "the miller on screen carries the wheat over by hand")
+	game.live_helpers = {}
+	game.advance(1.0)
+	_check(game.buildings["mill"]["busy"] and game.count_item("wheat") == 0, "out of sight, the miller loads the mill at once")
 
 	# The cellar ages wine, and the barn turns feed into eggs, milk and manure.
 	game.new_game()

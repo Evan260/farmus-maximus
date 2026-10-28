@@ -58,6 +58,8 @@ const STORE_HOUSE_AT := Vector2(47, 88)
 ## Where milestones stand along the road, in estate pixels.
 const MILESTONES := [330, 930, 1530, 2130]
 const PAN_SPEED := 260.0
+## Helpers whose carrying animation draws the load itself.
+const DRAWN_LOADS := ["miller"]
 ## Where each helper spends their day, in estate pixels.
 const HELPER_GROUNDS := {
 	"farmhand": [490.0, 930.0], "miller": [1130.0, 1400.0], "beekeeper": [150.0, 300.0], "perfumer": [990.0, 1610.0],
@@ -69,6 +71,8 @@ const SEASON_TINT := {"spring": Color(0.98, 1.02, 0.98), "summer": Color(1.03, 1
 var estate_width := 2400.0
 var plot_views: Array = []
 var building_views: Array = []
+## Goods each helper is on their way to fetch, by helper: the item and the workshop door it goes to.
+var _fetches := {}
 var signs: Array = []
 var hud: CanvasLayer
 var debug_tools: DebugTools
@@ -637,15 +641,63 @@ func _spawn_helper(id: String) -> void:
 	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), UiKit.mid(tr(String(info.get("role", ""))))]
 	w.voice = "salve_woman" if id in WOMEN else "salve_man"
 	w.sayings = id
-	if info.has("zones") or info.has("crops"):
-		w.find_work = func() -> float: return _ready_plot_x(info)
-		w.work_done = func(x: float) -> String: return Game.helper_harvest(id, _plot_near(x))
-		w.carry_to = _drop_spot
+	var harvests := info.has("zones") or info.has("crops")
+	var runs_workshops := Game.buildings.keys().any(func(b): return Game.building_info(b).get("helper", "") == id)
+	if harvests or runs_workshops:
+		w.find_work = func() -> float: return _helper_job(id, w)
+		w.work_done = func(x: float) -> String: return String(_fetches[id]["item"]) if _fetches.has(id) else Game.helper_harvest(id, _plot_near(x))
+		w.carry_to = func(item: String, from_x: float) -> float: return float(_fetches[id]["to"]) if _fetches.has(id) else _drop_spot(item, from_x)
 		w.can_drop = _can_drop
-		w.work_seconds = clampf(Game.helper_interval(id) * 0.6, 0.8, 4.0)
+		w.dropped = func(at: float) -> void: _delivered(id, at)
+		w.work_seconds = clampf(Game.helper_interval(id) * 0.6, 0.8, 4.0) if harvests else 1.0
+		w.carry_drawn = id in DRAWN_LOADS
 		Game.live_helpers[id] = true
 	world.add_child(w)
 	_helpers[id] = w
+
+
+## A helper's next job: a ripe plant to pick or, by day, goods to fetch for one of their workshops. NAN when idle.
+func _helper_job(id: String, w: Walker) -> float:
+	_fetches.erase(id)
+	w.work_anim = "work"
+	var info := Game.helper_info(id)
+	var plant := _ready_plot_x(info) if info.has("zones") or info.has("crops") else NAN
+	if not is_nan(plant) or Game.is_night():
+		return plant
+	for v in building_views:
+		if Game.building_info(v.id).get("helper", "") != id:
+			continue
+		var item := Game.load_need(v.id)
+		if item != "":
+			_fetches[id] = {"item": item, "to": _door_x(v)}
+			w.work_anim = "lift"
+			return _fetch_spot(id, item, v)
+	return NAN
+
+
+## Where a helper picks up goods for a workshop: at their own workshop that makes them, such as flour at the mill,
+## else from the cart while it stands at home and is the nearer, else from the storehouse.
+func _fetch_spot(id: String, item: String, target: BuildingView) -> float:
+	for v in building_views:
+		if v != target and Game.building_info(v.id).get("helper", "") == id and Game.current_recipe(v.id).get("out", {}).has(item):
+			return _door_x(v)
+	var store := _storehouse.position.x + _storehouse.region_rect.size.x / 2.0
+	if _can_drop(_cart_side()) and absf(_cart_side() - _door_x(target)) < absf(store - _door_x(target)):
+		return _cart_side()
+	return store
+
+
+func _door_x(v: BuildingView) -> float:
+	return roundf(v.world_rect().get_center().x)
+
+
+## Goods set down at a workshop go straight into it when the workshop has its helper.
+func _delivered(id: String, at: float) -> void:
+	_fetches.erase(id)
+	for v in building_views:
+		var helper := String(Game.building_info(v.id).get("helper", ""))
+		if (at == _door_x(v) or at == v.position.x) and Game.helpers.has(helper):
+			Game.load_building(v.id)
 
 
 ## Where a helper takes what they picked: into the cart when it is home and near, to a nearby workshop that uses it,

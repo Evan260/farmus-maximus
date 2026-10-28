@@ -14,8 +14,14 @@ var work_done: Callable
 var carry_to: Callable
 ## Called with the drop-off spot; false while it cannot take the load yet, such as the cart being away at market.
 var can_drop: Callable
+## Called with the drop-off spot once the load is set down there.
+var dropped: Callable
 ## Seconds of the work animation at each stop.
 var work_seconds := 3.0
+## The animation played at the next stop: "work" for picking plants, "lift" for picking up goods to fetch.
+var work_anim := "work"
+## True when the carrying animation draws the load itself, such as the miller's sack, so no icon is held up.
+var carry_drawn := false
 var idle_anim := ""
 ## For passers-by: the spot where they leave the estate; they walk straight there and are gone.
 var leave_at := NAN
@@ -90,7 +96,9 @@ func _process(delta: float) -> void:
 				elif _working_next:
 					_state = "work"
 					_timer = work_seconds
-					_play("work")
+					if work_anim != "work" and has_animation(work_anim):
+						_timer = _seconds(work_anim)
+					_play(work_anim)
 				else:
 					_rest()
 		"wait":
@@ -104,6 +112,8 @@ func _process(delta: float) -> void:
 				if _state == "drop":
 					_carry.visible = false
 					_delivering = false
+					if dropped.is_valid():
+						dropped.call(_target)
 				elif _state == "work" and work_done.is_valid():
 					var picked: Variant = work_done.call(_target)
 					if picked is String and picked != "" and carry_to.is_valid():
@@ -118,7 +128,7 @@ func _process(delta: float) -> void:
 func _carry_away(item: String, to: float) -> void:
 	var path := "res://assets/sprites/icons/%s.png" % item
 	_carry.texture = load(path) if ResourceLoader.exists(path) else null
-	_carry.visible = _carry.texture != null
+	_carry.visible = _carry.texture != null and not carry_drawn
 	_delivering = true
 	_working_next = false
 	_target = to
@@ -137,7 +147,7 @@ func _set_down() -> void:
 		# The placing animation shows the load going in, so the carried icon steps aside for it.
 		_carry.visible = false
 		_play("place")
-		_timer = sprite.sprite_frames.get_frame_count("place") / sprite.sprite_frames.get_animation_speed("place")
+		_timer = _seconds("place")
 		return
 	_play("stand")
 	var reach := -1.0 if sprite.flip_h else 1.0
@@ -181,8 +191,13 @@ func react() -> bool:
 	_state = "react"
 	_working_next = false
 	_play("react")
-	_timer = sprite.sprite_frames.get_frame_count("react") / sprite.sprite_frames.get_animation_speed("react")
+	_timer = _seconds("react")
 	return true
+
+
+## How long a one-off animation lasts.
+func _seconds(anim: String) -> float:
+	return sprite.sprite_frames.get_frame_count(anim) / sprite.sprite_frames.get_animation_speed(anim)
 
 
 func contains(point: Vector2) -> bool:
@@ -285,6 +300,14 @@ func _frames() -> SpriteFrames:
 			var pace := natural_pace(f, anim)
 			if pace > 0.0:
 				_stride[anim] = pace
+	# Picking goods up is setting them down played backwards.
+	if f.has_animation("place"):
+		f.add_animation("lift")
+		f.set_animation_speed("lift", f.get_animation_speed("place"))
+		f.set_animation_loop("lift", false)
+		for k in range(f.get_frame_count("place") - 1, -1, -1):
+			f.add_frame("lift", f.get_frame_texture("place", k))
+		_offsets["lift"] = _offsets["place"]
 	return f
 
 
