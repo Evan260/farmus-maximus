@@ -369,27 +369,23 @@ func _build_workshop_view() -> void:
 	_state_note.add_theme_color_override("font_color", UiKit.SHORT)
 	UiKit.divider(body)
 	# The level, what the next one brings as small pictures, its cost, and the buttons, in two short rows.
-	var top := UiKit.row(body)
-	var pips := WorkshopParts.Pips.new(int(b["level"]) + 1, levels.size() + 1)
-	pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pips.tooltip_text = tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]
-	top.add_child(pips)
+	UiKit.label(body, tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]).add_theme_color_override("font_color", UiKit.HEADING)
 	var act := Game.building_action(id)
 	if not act.is_empty():
+		# What the next level brings, as short tags that wrap onto a second line if the window is narrow.
 		var next: Dictionary = levels[int(b["level"])]
-		var gains := UiKit.row(top)
-		gains.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		gains.alignment = BoxContainer.ALIGNMENT_END
-		gains.add_theme_constant_override("separation", 8)
-		gains.tooltip_text = _upgrade_text(next)
-		gains.mouse_filter = Control.MOUSE_FILTER_PASS
-		WorkshopParts.chip(gains, "speed", "x%s" % str(next.get("speed", 1)))
+		var gains := HFlowContainer.new()
+		gains.add_theme_constant_override("h_separation", 4)
+		gains.add_theme_constant_override("v_separation", 3)
+		body.add_child(gains)
+		UiKit.label(gains, tr("Next level:")).add_theme_color_override("font_color", UiKit.FADED)
+		WorkshopParts.tag(gains, tr("%s× speed") % str(next.get("speed", 1)))
 		if next.has("queue"):
-			WorkshopParts.chip(gains, "slots", str(int(next["queue"])))
+			WorkshopParts.tag(gains, tr("%d batch slots") % int(next["queue"]))
 		if int(next.get("batch", 1)) > 1:
-			WorkshopParts.chip(gains, "slots", "x%d" % int(next["batch"]))
+			WorkshopParts.tag(gains, tr("%d per batch") % int(next["batch"]))
 		if int(next.get("quality", 0)) > 0:
-			WorkshopParts.chip(gains, "quality", "+")
+			WorkshopParts.tag(gains, tr("Better goods"))
 	var bottom := UiKit.row(body)
 	bottom.add_theme_constant_override("separation", 6)
 	if not act.is_empty():

@@ -1,7 +1,6 @@
 class_name WorkshopParts
 ## The picture pieces a workshop window is made of, in the manner of a furnace screen: framed slots that hold a good
-## with a count, an arrow that fills as a batch is made, small boxes for batches waiting, level pips, and little
-## drawn symbols for what an upgrade brings.
+## with a count, an arrow that fills as a batch is made, and small tags for what an upgrade brings.
 
 const ICONS32 := "res://assets/sprites/icons32/"
 const SLOT_FILL := Color(0.83, 0.71, 0.52)
@@ -104,56 +103,16 @@ class Arrow extends Control:
 			draw_rect(Rect2(x, mid - half, 1, half * 2.0 + 1.0), c)
 
 
-class Pips extends Control:
-	var filled := 0
-	var total := 1
-
-	func _init(have: int, of: int) -> void:
-		filled = have
-		total = of
-		custom_minimum_size = Vector2(of * 7 - 2, 5)
-		mouse_filter = Control.MOUSE_FILTER_PASS
-
-	func _draw() -> void:
-		for k in total:
-			if k < filled:
-				draw_rect(Rect2(k * 7, 0, 5, 5), UiKit.HEADING)
-			else:
-				# The outline is drawn around the rectangle, so the rectangle sits a pixel inside the pip.
-				UiKit.outline(self, Rect2(k * 7 + 1, 1, 3, 3), WorkshopParts.SLOT_SHADE)
-
-
-class Symbol extends Control:
-	## Which little picture to draw: "speed" (two chevrons), "slots" (stacked boxes) or "quality" (a star).
-	var kind := ""
-
-	func _init(what: String) -> void:
-		kind = what
-		custom_minimum_size = Vector2(9, 9)
-		size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _draw() -> void:
-		var ink := UiKit.HEADING
-		match kind:
-			"speed":
-				for off in [0, 4]:
-					for k in 4:
-						draw_rect(Rect2(off + k, k, 1, 1), ink)
-						draw_rect(Rect2(off + k, 7 - k, 1, 1), ink)
-			"slots":
-				for k in 3:
-					UiKit.outline(self, Rect2(k * 3 + 1, 5 - k * 2, 3, 3), ink)
-			"quality":
-				var star := ["....#....", "...###...", "#########", ".#######.", "..#####..", ".###.###.", ".##...##."]
-				for y in star.size():
-					for x in star[y].length():
-						if star[y][x] == "#":
-							draw_rect(Rect2(x, y + 1, 1, 1), Color(0.86, 0.62, 0.2))
-
-
-## A small picture with a number beside it, such as two chevrons and "x1.5" for a faster workshop.
-static func chip(parent: Node, symbol: String, text: String) -> void:
-	var r := UiKit.row(parent)
-	r.add_child(Symbol.new(symbol))
-	UiKit.label(r, text)
+## A short word or two on a small tinted plate, such as what the next level brings.
+static func tag(parent: Node, text: String) -> Label:
+	var plate := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = SLOT_FILL
+	style.border_color = SLOT_SHADE
+	style.set_border_width_all(1)
+	style.content_margin_left = 3
+	style.content_margin_right = 3
+	plate.add_theme_stylebox_override("panel", style)
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(plate)
+	return UiKit.label(plate, text)
