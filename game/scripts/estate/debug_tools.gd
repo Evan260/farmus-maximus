@@ -2,6 +2,8 @@ extends Node
 ## The development-only side of the estate: demo farms, screenshots, bursts of frames and opening a panel from the
 ## command line, so screenshots and checks never touch a real save.
 
+const TRAILER_SHOTS := "res://tools/trailer/shots.gd"
+
 ## The estate scene this works for.
 var m: Estate
 
@@ -108,6 +110,25 @@ func load_demo_state() -> void:
 		elif arg == "--no-hud":
 			# The estate alone, with no buttons, windows or messages, for trailer shots.
 			(func() -> void: m.hud.visible = false).call_deferred()
+		elif arg == "--quiet-start":
+			# Every journal page and achievement is already found, so no news pops up over a recorded shot.
+			Game.quiet = true
+			for entry in Game.journal.catalogue():
+				Game.discover(String(entry["id"]))
+			for ach in Balance.get_value("achievements", []):
+				Game.journal.achievements[ach["id"]] = true
+			Game.quiet = false
+		elif arg.begins_with("--coins="):
+			Game.coins = int(arg.trim_prefix("--coins="))
+		elif arg == "--no-music":
+			AudioServer.set_bus_mute(AudioServer.get_bus_index("Music"), true)
+		elif arg.begins_with("--trailer-shot="):
+			# The trailer's scripted shots live with the trailer tools, which are left out of the exported game.
+			if ResourceLoader.exists(TRAILER_SHOTS):
+				var shot: Node = load(TRAILER_SHOTS).new()
+				shot.m = m
+				shot.shot = arg.trim_prefix("--trailer-shot=")
+				m.add_child.call_deferred(shot)
 		elif arg == "--galaxy":
 			(func() -> void: m._sky_view.force_galaxy = true).call_deferred()
 		elif arg == "--hoopoe":
