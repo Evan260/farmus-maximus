@@ -27,11 +27,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# The rooster greets the morning, and now and then a goat has something to say.
-	if not _hens.is_empty() and _last_hour < 6.0 and Game.day_time >= 6.0:
+	# The rooster greets the morning, and now and then a goat has something to say, heard only near the pasture.
+	var near := _within_earshot()
+	if near and not _hens.is_empty() and _last_hour < 6.0 and Game.day_time >= 6.0:
 		Sfx.play("rooster", -6.0)
 	_last_hour = Game.day_time
-	if not _goats.is_empty() and randf() < delta / 90.0:
+	if near and not _goats.is_empty() and randf() < delta / 90.0:
 		Sfx.play("goat", -10.0)
 	_sync -= delta
 	if _sync <= 0.0:
@@ -43,6 +44,12 @@ func _process(delta: float) -> void:
 ## The fence, painted once: a weathered rail fence along the back of the pasture that stops at the barn's walls so
 ## its doorway opens onto the field, and a stretch running from the back of the field to the front between the
 ## pasture and the vineyard, its posts growing as they come nearer. Long uncut grass grows along its foot.
+## True while the pasture is on screen or just beyond its edge.
+func _within_earshot() -> bool:
+	var view := get_viewport().get_canvas_transform().affine_inverse() * get_viewport_rect()
+	return view.position.x < right + 120.0 and view.end.x > left - 120.0
+
+
 func _paint_fence() -> Texture2D:
 	var w := int(FENCE_RIGHT - FENCE_LEFT) + 1
 	var img := Image.create(w, 74, false, Image.FORMAT_RGBA8)

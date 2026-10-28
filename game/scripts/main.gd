@@ -854,9 +854,12 @@ func _update_view() -> void:
 	if not resized:
 		_centre = cam_x + view.x / 2.0
 	cam_x = clampf(cam_x, 0.0, maxf(0.0, estate_width - view.x))
-	_camera.position = Vector2(round(cam_x), BOTTOM - view.y)
-	var left := roundf(cam_x)
+	_camera.position = Vector2(floorf(cam_x), BOTTOM - view.y)
+	var left := floorf(cam_x)
 	var s := float(Windowing.scale)
+	# The estate is drawn in whole pixels of its own, so the rest of the pan slides its picture by whole screen pixels
+	# and a slow pan glides instead of stepping a full estate pixel at a time.
+	_container.position.x = -roundf((cam_x - left) * s)
 	# The sky is drawn at screen resolution, so it follows the unrounded pan and slides smoothly.
 	_sky_view.scale = Vector2(s, s)
 	_sky_view.position = Vector2(-cam_x * PARALLAX["sky"] * s, -(BOTTOM - view.y) * s)
@@ -879,8 +882,9 @@ func _apply_scale() -> void:
 	# The estate's picture is resized in the same frame as the window, rather than when the container next lays out,
 	# so dragging the window's edge never shows a stretched or lagging frame.
 	var window := get_viewport().get_visible_rect().size
-	_container.size = window
-	_viewport.size = Vector2i((window / Windowing.scale).ceil())
+	# One estate pixel wider than the window, so the picture still fills it while slid part of a pixel to the left.
+	_container.size = window + Vector2(Windowing.scale, 0)
+	_viewport.size = Vector2i((window / Windowing.scale).ceil()) + Vector2i(1, 0)
 	_update_view()
 
 
