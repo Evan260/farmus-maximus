@@ -584,7 +584,7 @@ func _build_debug() -> void:
 	for s in [1, 10, 60]:
 		UiKit.button(col, "Speed x%d" % s, func(): Game.speed = s; toast("Time speed x%d" % s))
 	UiKit.button(col, "Skip 1 hour", func(): _show_away(Game.simulate_offline(3600)))
-	UiKit.button(col, "+1000 sestertii", func(): Game.coins += 1000)
+	UiKit.button(col, "+10000 sestertii", func(): Game.coins += 10000)
 	UiKit.button(col, "+10 materials", func(): for m in ["stone", "timber", "tiles", "bread"]: Game.add_item(m, 10, true))
 	UiKit.button(col, "Rain", func(): Game.calendar.weather_left = 0.0; Game.calendar.weather = "rain"; Game.calendar.wet_left = 240.0)
 	UiKit.button(col, "Next day", func(): Game.calendar.next_day(); Game.market.new_day())

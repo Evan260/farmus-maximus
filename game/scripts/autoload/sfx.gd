@@ -116,6 +116,9 @@ func tail_thumps(count := 3) -> void:
 
 
 func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamPlayer:
+	# While time is caught up all at once, an hour's worth of carts, plantings and finds would sound together as a roar.
+	if Game.quiet:
+		return null
 	var stream: AudioStream = null
 	if _takes.has(sound):
 		stream = _takes[sound][randi() % _takes[sound].size()]

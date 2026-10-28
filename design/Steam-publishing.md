@@ -20,6 +20,8 @@ wsl -u root -- bash tools/steam/wsl_setup.sh
 
 It installs steamcmd and rcodesign inside WSL and prints the rcodesign version when it is done.
 
+The Windows build uses a trimmed Godot engine, built once with `python tools/engine/build_template.py` (it needs the Godot source, SCons and Visual Studio, listed at the top of that script). It lands in `tools/engine/bin/`, which is not in git, so build it again on a new computer and after every Godot update.
+
 ## One-time setup on Steamworks
 
 These steps need you, because they involve your Steam account, payment and tax details.
