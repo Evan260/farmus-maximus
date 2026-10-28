@@ -170,6 +170,8 @@ var _scenery: Array = []
 var _click_area_timer := 0.0
 ## The spot chosen with the keyboard or a gamepad, or Vector2.INF when the mouse is in use.
 var _pad_point := Vector2.INF
+## True once the hover has been cleared for a pointer resting on the interface, so it is cleared only once.
+var _hover_cleared := false
 var _drag_from := Vector2.ZERO
 var _drag_start_cam := 0.0
 var _dragging := false
@@ -432,6 +434,16 @@ func go_to_town() -> void:
 
 
 func _process(delta: float) -> void:
+	# A window takes the pointer's movement before the estate sees it, so the estate's hover text and highlight are
+	# cleared here once the pointer moves onto any part of the interface.
+	# The estate itself is drawn in a container that also counts as under the pointer, so it is left out.
+	var over := get_viewport().gui_get_hovered_control()
+	if over != null and over != _container:
+		if not _hover_cleared:
+			_update_hover(Vector2(-INF, -INF))
+			_hover_cleared = true
+	else:
+		_hover_cleared = false
 	# Time skipped all at once finishes the work quietly, so the finish is shown here: scaffold down, word of it.
 	if Game.villa_stage != villa.shown_stage and villa.shown_stage > 0:
 		_on_villa_finished()
