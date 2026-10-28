@@ -34,6 +34,13 @@ func _ready() -> void:
 	if _young:
 		Game.levels["storage"] = 1
 		m._dress_storehouse()
+	# Every working building has a batch on, so the mill turns, the presses work and the oven burns while in view.
+	if not m.hud.visible:
+		for id in Game.buildings:
+			if Game.buildings[id]["state"] == "working":
+				for item in Game.current_recipe(id).get("in", {}):
+					Game.add_item(String(item), 40, true)
+				Game.load_building(id)
 	# Where the interface shows, the storehouse holds what a young farm would, not the demo's piles of everything.
 	if m.hud.visible:
 		Game.levels["storage"] = 1
@@ -115,6 +122,8 @@ func _shot_helper() -> void:
 ## The yard at dusk, the bakery's ovens alight.
 func _shot_bakery() -> void:
 	Game.buildings["bakery"]["state"] = "working"
+	Game.add_item("flour", 40, true)
+	Game.load_building("bakery")
 	Game.building_changed.emit("bakery")
 	_look_at(Game.zone_info("yard")["x"] + 240)
 
