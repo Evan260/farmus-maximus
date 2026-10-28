@@ -34,8 +34,10 @@ func _ready() -> void:
 	_narrow = m._view_size().x < 300
 	# The Triumph's wreath and the enlarged storehouse belong on the finished estate, not on the young farm.
 	_young = Game.villa_stage < Game.villa_stages().size()
+	# Its storehouse is the small first one, holding what a young farm would, so it has room for the harvest.
 	if _young:
 		Game.levels["storage"] = 1
+		Game.storage = {"lavender": 7, "bread": 4, "olive_oil": 2, "dried_lavender": 3, "stone": 4, "timber": 2}
 		m._dress_storehouse()
 	# Every working building has a batch on, so the mill turns, the presses work and the oven burns while in view.
 	if not m.hud.visible:
@@ -44,10 +46,7 @@ func _ready() -> void:
 				for item in Game.current_recipe(id).get("in", {}):
 					Game.add_item(String(item), 40, true)
 				Game.load_building(id)
-	# Where the interface shows, the storehouse holds what a young farm would, not the demo's piles of everything.
 	if m.hud.visible:
-		Game.levels["storage"] = 1
-		Game.storage = {"lavender": 7, "bread": 4, "olive_oil": 2, "dried_lavender": 3, "stone": 4, "timber": 2}
 		Game.aureus = 0
 		# The cart parks along the bottom edge, where the toolbar would hide it; the interface shows it again each frame.
 		if shot != "plant":
@@ -122,7 +121,17 @@ func _shot_helper() -> void:
 	_look_at(Estate.HOME + 240)
 	if _narrow and m._helpers.has("farmhand"):
 		await _wait(1.3)
-		_look_at(m._helpers["farmhand"].position.x)
+		var hand: Node2D = m._helpers["farmhand"]
+		_look_at(hand.position.x)
+		# Close up there is no room for the pets to wander past her: the dog sits a little behind her, on the side she
+		# is walking away from, and the cat is out of sight.
+		var behind := 1.0 if hand.sprite.flip_h else -1.0
+		m.dog.position.x = hand.position.x + 46.0 * behind
+		m.dog.sprite.flip_h = behind > 0.0
+		m.dog._state = "sit"
+		m.dog._timer = 60.0
+		m.dog.sprite.play("sit")
+		m.cat.position.x = m.cam_x - 80.0
 
 
 ## The yard at dusk, the bakery's ovens alight.
