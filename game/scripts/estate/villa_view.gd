@@ -106,13 +106,14 @@ func make_windows(tex: Texture2D, used: Rect2i) -> void:
 	var img := tex.get_image()
 	img.convert(Image.FORMAT_RGBA8)
 	var glass := {}
-	var boxes: Array[Rect2i] = []
-	var panes: Array[Sprite2D] = []
 	for x in range(used.position.x, used.end.x):
 		for y in range(used.position.y, used.end.y):
 			var c := img.get_pixel(x, y)
 			if c.a > 0.5 and c.b > c.r + 0.08 and c.b > c.g + 0.02:
 				glass[Vector2i(x, y)] = true
+	# Each pane of glass, however small, as a list of its pixels and its bounding box.
+	var panes: Array = []
+	var boxes: Array[Rect2i] = []
 	while not glass.is_empty():
 		var pane: Array = [glass.keys()[0]]
 		glass.erase(pane[0])
@@ -124,18 +125,11 @@ func make_windows(tex: Texture2D, used: Rect2i) -> void:
 				if glass.has(p + d):
 					glass.erase(p + d)
 					pane.append(p + d)
-		if pane.size() < 4:
-			continue
 		var box := Rect2i(pane[0], Vector2i.ONE)
 		for p in pane:
 			box = box.expand(p).expand(p + Vector2i.ONE)
-		var light := Image.create(box.size.x, box.size.y, false, Image.FORMAT_RGBA8)
-		for p in pane:
-			light.set_pixelv(p - box.position, Color(1.0, 0.8, 0.42, 0.95))
-		var sprite := m._add_texture(ImageTexture.create_from_image(light), m._villa.position + Vector2(box.position - used.position), m._glow_layer)
-		sprite.modulate.a = 0.0
+		panes.append(pane)
 		boxes.append(box)
-		panes.append(sprite)
 	# Panes a few pixels apart, split only by glazing bars or a frame, belong to the same window.
 	var group := range(boxes.size())
 	var changed := true
@@ -152,17 +146,34 @@ func make_windows(tex: Texture2D, used: Rect2i) -> void:
 					changed = true
 	for g in range(boxes.size()):
 		var members := range(boxes.size()).filter(func(k): return group[k] == g)
-		if members.is_empty():
+		var pixels := {}
+		for k in members:
+			for p in panes[k]:
+				pixels[p] = true
+		# A speck of blue on its own is a fleck in the stone, not a window.
+		if pixels.size() < 6:
 			continue
 		var outline := boxes[members[0]]
 		for k in members:
 			outline = outline.merge(boxes[k])
+		# Inside a window's outline, the darkest glass in the arches can be too dark to read as blue, so any dark,
+		# bluish pixel there counts as glass too, and the whole window lights as one.
+		for x in range(outline.position.x, outline.end.x):
+			for y in range(outline.position.y, outline.end.y):
+				var c := img.get_pixel(x, y)
+				if c.a > 0.5 and c.b >= c.r and (c.r + c.g + c.b) / 3.0 < 0.4:
+					pixels[Vector2i(x, y)] = true
+		var light := Image.create(outline.size.x, outline.size.y, false, Image.FORMAT_RGBA8)
+		for p in pixels:
+			light.set_pixelv(p - outline.position, Color(1.0, 0.8, 0.42, 0.95))
+		var sprite := m._add_texture(ImageTexture.create_from_image(light), m._villa.position + Vector2(outline.position - used.position), m._glow_layer)
+		sprite.modulate.a = 0.0
 		var lamp := Lamp.new()
 		lamp.position = m._villa.position + Vector2(outline.position - used.position) + Vector2(outline.size) / 2.0 + Vector2(0, 3)
 		lamp.radius = clampf(outline.size.x * 2.2, 18.0, 34.0)
 		lamp.power = 0.9
 		m.world.add_child(lamp)
-		_windows.append({"panes": members.map(func(k): return panes[k]), "lamp": lamp, "phase": randf() * TAU, "speed": randf_range(0.8, 1.3)})
+		_windows.append({"panes": [sprite], "lamp": lamp, "phase": randf() * TAU, "speed": randf_range(0.8, 1.3)})
 
 
 ## Each evening some windows are lit, one after another as dusk falls, and go out at different hours; a few light again before dawn.
