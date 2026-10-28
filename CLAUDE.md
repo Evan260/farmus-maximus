@@ -34,6 +34,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `tools/art/make_clouds.py` | Paint the estate sky's drifting cumulus clouds, lumpy and lit from the upper left |
 | `tools/art/make_cart_levels.py` | Draw the trader's cart at each upgrade: stakes, a wicker rail, then a four-wheeled wagon |
 | `tools/art/scale_breeds.py` | Size freshly generated dog and cat breeds to one another, and make the half-size cats |
+| `tools/audio/shrink_music.py` | Re-encode music tracks above 180 kbps at about 130 kbps; run it on any new track, since the music is most of the download |
 | `tools/audio/cut_recordings.py` | Cut the animal calls and other recorded sounds out of their Freesound recordings; sources and licences are in `design/Sound-list.md` |
 | `tools/steam/publish.py` | Build the game for Windows, Mac and Linux and upload it to Steam, live on the test branch; ids in `tools/steam/steam.json`, setup in `design/Steam-publishing.md`. The Mac and Linux half runs in WSL (`wsl_build.sh`): a Mac app copied through Windows loses its file permissions, and the Mac app is signed and notarized there with rcodesign |
 | `.env` | `PIXELLAB_TOKEN` (git-ignored) |
