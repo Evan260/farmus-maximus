@@ -34,8 +34,12 @@ var carry_drawn := false
 var idle_anim := ""
 ## For passers-by: the spot where they leave the estate; they walk straight there and are gone.
 var leave_at := NAN
-## People go indoors for the night: they walk to this spot, fade away, and come back out in the morning.
+## People go indoors for the night: they walk to their door, step in and fade away, and come back out in the morning.
 var rests_at_night := false
+## The doorstep they step up to from the path to go indoors, as a height on the estate; NAN to fade where they stop.
+var door_y := NAN
+## The height of the path they left to go indoors, which they step back down to in the morning.
+var _street_y := NAN
 ## Optional: changes each picture as it is loaded, for animals in different coats.
 var dress: Callable
 ## The folder of walking frames to use instead of walk_east, such as a woman carrying her baby; its first frame is
@@ -78,9 +82,17 @@ func _ready() -> void:
 	_carry.visible = false
 	add_child(_carry)
 	modulate.a = 0.0
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	_timer = randf_range(1.0, 4.0)
 	_play("stand")
+	# A farm opened at night finds them already indoors, rather than outside and walking off to vanish.
+	if rests_at_night and Game.is_night():
+		_state = "home"
+		position.x = home_x if not is_nan(home_x) else position.x
+		if not is_nan(door_y):
+			_street_y = position.y
+			position.y = door_y
+		return
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 
 
 func _process(delta: float) -> void:
@@ -93,9 +105,7 @@ func _process(delta: float) -> void:
 			if is_equal_approx(position.x, _target):
 				if _homeward:
 					_homeward = false
-					_state = "home"
-					_play("stand")
-					create_tween().tween_property(self, "modulate:a", 0.0, 0.8)
+					_go_in()
 				elif not is_nan(leave_at):
 					_fade_out()
 				elif _delivering:
@@ -215,9 +225,7 @@ func _night_check() -> bool:
 	if _state == "home":
 		if night:
 			return true
-		_state = "idle"
-		_timer = randf_range(0.5, 2.0)
-		create_tween().tween_property(self, "modulate:a", 1.0, 0.8)
+		_come_out()
 		return false
 	if night and not _homeward and not _delivering and is_nan(_path_y) and _state in ["idle", "walk", "work"]:
 		_homeward = true
@@ -227,6 +235,36 @@ func _night_check() -> bool:
 		sprite.flip_h = _target < position.x
 		_play("walk")
 	return false
+
+
+## Steps up off the path to the door, fading as they go in.
+func _go_in() -> void:
+	_state = "home"
+	if is_nan(door_y):
+		_play("stand")
+		create_tween().tween_property(self, "modulate:a", 0.0, 0.8)
+		return
+	_street_y = position.y
+	_play("walk")
+	var seconds := maxf(0.4, absf(position.y - door_y) / speed)
+	var t := create_tween()
+	t.tween_property(self, "position:y", door_y, seconds)
+	t.parallel().tween_property(self, "modulate:a", 0.0, seconds * 0.6).set_delay(seconds * 0.4)
+	t.tween_callback(_play.bind("stand"))
+
+
+## Comes out of the door in the morning and steps back down onto the path before carrying on.
+func _come_out() -> void:
+	_state = "step"
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 1.0, 0.8)
+	if not is_nan(door_y) and not is_nan(_street_y):
+		_play("walk")
+		t.parallel().tween_property(self, "position:y", _street_y, maxf(0.4, absf(_street_y - door_y) / speed))
+	t.tween_callback(func():
+		_state = "idle"
+		_timer = randf_range(0.5, 2.0)
+		_play("stand"))
 
 
 func _fade_out() -> void:

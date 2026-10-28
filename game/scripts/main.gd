@@ -63,6 +63,8 @@ const DRAWN_LOADS := ["miller"]
 ## How far in front of their feet a helper's hands are while picking; the farmhand stoops to the ground to pick.
 const PICK_REACH := {"farmhand": 12.0}
 ## Where each helper spends their day, in estate pixels.
+## Workshops with no door to go into at night: the hives and the open-sided presses and shed.
+const OPEN_SIDED := ["beehives", "olive_press", "wine_press", "drying_shed"]
 const HELPER_GROUNDS := {
 	"farmhand": [490.0, 930.0], "miller": [1130.0, 1400.0], "beekeeper": [150.0, 300.0], "perfumer": [990.0, 1610.0],
 	"presser": [360.0, 1900.0], "stablehand": [1940.0, 2380.0], "trader": [1080.0, 1120.0],
@@ -648,9 +650,10 @@ func _spawn_helper(id: String) -> void:
 	w.min_x = float(ground[0])
 	w.max_x = float(ground[1])
 	w.position = Vector2(randf_range(w.min_x, w.max_x), 269)
-	# At night helpers go indoors: the farmhouse for those working near it, otherwise the end of their own patch.
 	w.rests_at_night = true
-	w.home_x = clampf(VILLA_BASE.x, w.min_x, w.max_x)
+	var door := _home_door(id, (w.min_x + w.max_x) / 2.0)
+	w.home_x = door.x
+	w.door_y = door.y
 	var info := Game.helper_info(id)
 	w.react_folder = "greet"
 	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), UiKit.mid(tr(String(info.get("role", ""))))]
@@ -672,6 +675,19 @@ func _spawn_helper(id: String) -> void:
 	# Helpers walk the path behind the parked cart and its donkey, so they are drawn before them.
 	world.move_child(w, _cart_back.get_index())
 	_helpers[id] = w
+
+
+## Where a helper goes indoors at night: the door of the workshop they run nearest their patch, or the villa's.
+func _home_door(id: String, near: float) -> Vector2:
+	var best: BuildingView = null
+	for v in building_views:
+		if v.id in OPEN_SIDED or Game.building_info(v.id).get("helper", "") != id:
+			continue
+		if best == null or absf(_door_x(v) - near) < absf(_door_x(best) - near):
+			best = v
+	if best:
+		return Vector2(_door_x(best), best.world_rect().end.y + 1.0)
+	return Vector2(VILLA_BASE.x, VILLA_BASE.y + 4.0)
 
 
 ## A helper's next job: a ripe plant to pick or, by day, goods to fetch for one of their workshops. NAN when idle.
