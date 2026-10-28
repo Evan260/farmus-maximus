@@ -216,6 +216,11 @@ func _shot_endcard() -> void:
 	_look_at(Game.zone_info("vineyard")["x"] + 240)
 
 
+## The square picture for the game's social media profiles: the finished villa centred, as it shows in a circle.
+func _shot_profile() -> void:
+	_look_at(Estate.VILLA_BASE.x)
+
+
 # Camera and pointer ------------------------------------------------------
 
 ## The middle of a building's doorway, for framing it in the narrow view.
