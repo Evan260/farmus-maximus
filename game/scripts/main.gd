@@ -101,6 +101,8 @@ var _land: Sprite2D
 ## Mirrored copies of the far layers to their right, so a very wide window never sees past the painting's edge.
 var _mountains_far: Sprite2D
 var _land_far: Sprite2D
+## Holds the far mountains and fields, at screen resolution outside the estate's picture.
+var _far_view: Node2D
 var _villa: Sprite2D
 var _villa_shadow: Sprite2D
 var _villa_outline: Node2D
@@ -227,11 +229,18 @@ func _ready() -> void:
 	_glow_layer.layer = 1
 	_glow_layer.follow_viewport_enabled = true
 	world.add_child(_glow_layer)
-	_mountains = _add_texture(load(BG + "layer_mountains.png"), Vector2.ZERO)
-	_mountains_far = _add_texture(_mountains.texture, Vector2.ZERO)
+	# The far mountains and fields are drawn at screen resolution behind the estate, like the sky, so their slower
+	# parallax pans smoothly instead of sliding with the estate's picture and stepping back a pixel at a time.
+	var far_layer := CanvasLayer.new()
+	far_layer.layer = -1
+	add_child(far_layer)
+	_far_view = Node2D.new()
+	far_layer.add_child(_far_view)
+	_mountains = _add_texture(load(BG + "layer_mountains.png"), Vector2.ZERO, _far_view)
+	_mountains_far = _add_texture(_mountains.texture, Vector2.ZERO, _far_view)
 	_mountains_far.flip_h = true
-	_land = _add_texture(load(BG + "layer_land.png"), Vector2.ZERO)
-	_land_far = _add_texture(_land.texture, Vector2.ZERO)
+	_land = _add_texture(load(BG + "layer_land.png"), Vector2.ZERO, _far_view)
+	_land_far = _add_texture(_land.texture, Vector2.ZERO, _far_view)
 	_land_far.flip_h = true
 	_scenery.append_array([_mountains, _land, _mountains_far, _land_far])
 
@@ -465,6 +474,8 @@ func _process(delta: float) -> void:
 	if Game.calendar.weather in ["cloudy", "rain"]:
 		light = light.darkened(0.12)
 	_daylight.color = Color(light, 1.0)
+	# The far scenery is outside the estate's picture, so the daylight tint is given to it directly.
+	_far_view.modulate = _daylight.color
 	# At night the far mountains become dark shapes against the starry sky instead of glowing blue.
 	var far := Color.WHITE.lerp(Color(0.62, 0.6, 0.7), night)
 	_mountains.modulate = far
@@ -863,8 +874,10 @@ func _update_view() -> void:
 	# The sky is drawn at screen resolution, so it follows the unrounded pan and slides smoothly.
 	_sky_view.scale = Vector2(s, s)
 	_sky_view.position = Vector2(-cam_x * PARALLAX["sky"] * s, -(BOTTOM - view.y) * s)
-	_mountains.position.x = round(left * (1.0 - PARALLAX["mountains"]))
-	_land.position.x = round(left * (1.0 - PARALLAX["land"]))
+	_far_view.scale = Vector2(s, s)
+	_far_view.position = Vector2(0, -(BOTTOM - view.y) * s)
+	_mountains.position.x = roundf(-cam_x * PARALLAX["mountains"] * s) / s
+	_land.position.x = roundf(-cam_x * PARALLAX["land"] * s) / s
 	_mountains_far.position.x = _mountains.position.x + 768.0
 	_land_far.position.x = _land.position.x + 768.0
 	var see_scenery := not (Windowing.strip and Windowing.transparent)

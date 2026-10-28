@@ -67,8 +67,8 @@ func place_villa() -> void:
 		m._stork.position = Vector2(m._villa.position.x + used.size.x * 0.68, m._villa.position.y - m._stork.texture.get_height() + 12)
 
 
-## Once the Triumph is earned, a golden laurel wreath hangs over the villa's front door, found as the top of the
-## door's dark wood in the middle of the house.
+## Once the Triumph is earned, a golden laurel wreath hangs centred on the villa's front door, near its top. The door is
+## found as the rows of dark wood up from the doorstep; a gap of a row or two is a light panel, not the door's end.
 func hang_wreath(tex: Texture2D, used: Rect2i) -> void:
 	if _wreath == null:
 		_wreath = m._add_texture(load("res://assets/sprites/decorations/laurel_wreath.png"), Vector2.ZERO)
@@ -79,16 +79,38 @@ func hang_wreath(tex: Texture2D, used: Rect2i) -> void:
 		return
 	var img := tex.get_image()
 	var mid := used.position.x + used.size.x / 2
-	var door := func(y: int) -> bool:
-		var c := img.get_pixel(mid, y)
-		return c.a > 0.5 and c.v < 0.42 and c.s > 0.3
-	var top := used.end.y - 1
-	while top > used.position.y and not door.call(top):
-		top -= 1
-	while top > used.position.y and door.call(top - 1):
-		top -= 1
+	var wood := func(x: int, y: int) -> bool:
+		var c := img.get_pixel(x, y)
+		return c.a > 0.5 and c.v < 0.5 and c.s > 0.35
+	var rows: Array[int] = []
+	var gap := 0
+	for y in range(used.end.y - 1, used.position.y, -1):
+		var n := 0
+		for x in range(mid - 14, mid + 15):
+			if wood.call(x, y):
+				n += 1
+		if n >= 8:
+			rows.append(y)
+			gap = 0
+		elif not rows.is_empty():
+			gap += 1
+			if gap > 2:
+				break
+	if rows.is_empty():
+		return
+	var left := mid + 20
+	var right := mid - 20
+	for x in range(mid - 20, mid + 21):
+		var n := 0
+		for y in rows:
+			if wood.call(x, y):
+				n += 1
+		if n >= rows.size() / 2:
+			left = mini(left, x)
+			right = maxi(right, x)
 	var size := _wreath.texture.get_size()
-	_wreath.position = m._villa.position + Vector2(mid - used.position.x, top - used.position.y) - Vector2(roundf(size.x / 2.0), size.y + 1)
+	var centre := (left + right + 1) / 2.0
+	_wreath.position = m._villa.position + Vector2(roundf(centre - size.x / 2.0) - used.position.x, rows.back() + 2 - used.position.y)
 
 
 ## Finds the villa's windows (its glass-blue pixels, grouped into panes, and panes close together into one window) and
