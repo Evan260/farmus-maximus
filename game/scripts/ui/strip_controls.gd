@@ -77,7 +77,7 @@ func _icon_button(parent: Node, icon: String, action: Callable) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	b.expand_icon = false
 	# A little larger than the icon needs, so the buttons are easy to hit on a strip along the screen's edge.
-	b.custom_minimum_size = Vector2(15, 15)
+	b.custom_minimum_size = Vector2(19, 19)
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if action.is_valid():
 		b.pressed.connect(func(): Sfx.play("click", -8.0))
