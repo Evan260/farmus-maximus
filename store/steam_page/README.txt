@@ -43,8 +43,9 @@ app_icon.ico                 Client icon (also usable as the game's own Windows 
 
 SCREENSHOTS (Screenshots tab)
 
-screenshots/01 to 10, all 1920x1080. Upload them in this order; the first four show in the store page's sidebar and
-in search, so they lead with the estate, a workshop window, the vineyard and the animals.
+screenshots/01 to 11, all 1920x1080 except 02, the farm along the bottom of a desktop, which is 2560x1440 so the
+strip keeps its pixels crisp. Upload them in this order; the first four show in the store page's sidebar and in
+search, so they lead with the estate, the desktop strip, a workshop window and the vineyard.
 
 
 TRAILER (Trailers tab)

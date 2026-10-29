@@ -66,18 +66,22 @@ SHOTS = {
     "timelapse": (8, ["--maxed", "--zone=home", "--hour=1.2", *HUD_OFF]),
     "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal", *HUD_OFF]),
     "endcard": (9, ["--maxed", "--zone=vineyard", "--hour=19.6", *HUD_OFF]),
+    # The desktop strip, recorded on its own see-through background for the edit to lay over a made-up desktop.
+    "desk": (8, ["--maxed", "--strip", "--hour=10", "--coins=48250", "--aureus=12"]),
 }
 # The trailer's shots, and each vertical cut's. Vertical shots are all without the interface, since its panels are laid
 # out for a wide screen.
 CUT_SHOTS = {
     "trailer": ["ruin", "restore", "plant", "cart", "market_ui", "coins", "villa", "bakery_ui", "pasture", "vineyard", "grove",
-                "grand", "shrine_ui", "pet", "timelapse", "inside", "night", "endcard"],
+                "grand", "shrine_ui", "pet", "desk", "timelapse", "inside", "night", "endcard"],
     "ruin_to_life": ["ruin", "villa", "plant", "helper", "bakery", "pasture", "vineyard", "pet", "hoopoe", "timelapse",
                      "night", "endcard"],
     "day_1_vs_day_120": ["stages", "endcard"],
     "pet_the_dog": ["pet", "cat", "donkey", "goat", "stork", "hoopoe", "endcard"],
     "cozy_sounds": ["grove", "bakery", "plant", "pasture", "night", "endcard"],
 }
+# The desktop strip's size, the window strip mode makes at three screen pixels to the game pixel.
+STRIP_SIZE = (1536, 498)
 # Each format's frame, the estate's pixel scale in it, and where its shots are kept: the shorts' narrow frame shows the
 # estate close up.
 FORMATS = {
@@ -112,8 +116,11 @@ def record(name, fmt):
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
     # A .png movie is written as numbered frames with the sound beside them in a .wav of the same name.
+    strip = "--strip" in flags
+    size = STRIP_SIZE if strip else fmt["size"]
+    shape = ["--scale=3"] if strip else window(fmt)
     godot(["--write-movie", str(folder / "f.png"), "--fixed-fps", str(FPS), "--quit-after", str(seconds * FPS),
-           "--", "--demo", "--no-music", "--no-ambience", *window(fmt), f"--trailer-shot={name}", *flags, "--quiet-start"], fmt["size"])
+           "--", "--demo", "--no-music", "--no-ambience", *shape, f"--trailer-shot={name}", *flags, "--quiet-start"], size)
 
 
 def render(fmt, cut, start=0.0):

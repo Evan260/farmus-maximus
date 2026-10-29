@@ -40,7 +40,8 @@ const TRAILER := [
 	{"shot": "grand", "from": 0.8, "beats": 6},
 	{"shot": "shrine_ui", "from": 1.3, "beats": 5},
 	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(960, 810)},
-	{"shot": "timelapse", "from": 1.5, "beats": 5, "caption": "Your helpers work while you rest.", "mute": true},
+	{"desk": "desk", "from": 1.0, "beats": 7, "caption": "It keeps farming while you work."},
+	{"shot": "timelapse", "from": 1.5, "beats": 4, "mute": true},
 	{"shot": "inside", "from": 1.5, "beats": 3, "amb": "night"},
 	{"shot": "night", "from": 1.5, "beats": 6},
 	{"end": "endcard", "from": 1.0, "beats": 7},
@@ -113,6 +114,10 @@ var _starts: Array = []
 var _total_frames := 0
 var _picture: TextureRect
 var _texture: ImageTexture
+## The made-up desktop and the strip laid over it, for the shot of the farm along the bottom of a screen.
+var _desktop: Texture2D
+var _strip: TextureRect
+var _strip_texture: ImageTexture
 var _overlay: SubViewport
 var _black: ColorRect
 var _card_text: Label
@@ -185,6 +190,17 @@ func _build() -> void:
 	_picture.size = _size
 	_picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_picture)
+	var desk_path := "res://tools/trailer/desktop_%dx%d.png" % [int(_size.x), int(_size.y)]
+	if ResourceLoader.exists(desk_path):
+		_desktop = load(desk_path)
+	_strip_texture = ImageTexture.create_from_image(Image.create(1536, 498, false, Image.FORMAT_RGBA8))
+	_strip = TextureRect.new()
+	_strip.texture = _strip_texture
+	_strip.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# The strip sits centred along the bottom of the desktop, just above its taskbar.
+	_strip.position = Vector2(roundf((_size.x - 1536.0) / 2.0), _size.y - roundf(48.0 * _size.y / 1080.0) - 498.0)
+	_strip.visible = false
+	add_child(_strip)
 	# Cards, captions and the end card are drawn in big pixels and scaled up, like the game.
 	var area := _size / float(_cut["pixel"])
 	_overlay = SubViewport.new()
@@ -266,7 +282,7 @@ func _process(_delta: float) -> void:
 
 func _start_segment(seg: Dictionary) -> void:
 	_sound.stop()
-	var name := String(seg.get("shot", seg.get("end", "")))
+	var name := String(seg.get("shot", seg.get("end", seg.get("desk", ""))))
 	if name == "":
 		return
 	var wav := _shots_dir.path_join(name).path_join("f.wav")
@@ -290,13 +306,19 @@ func _draw_segment(seg: Dictionary, local: float, length: float) -> void:
 		# The line fades in and out on the black, so cards never jump.
 		_card_text.modulate.a = clampf(minf(local / 0.35, (length - local) / 0.35), 0.0, 1.0)
 		return
-	var name := String(seg.get("shot", seg.get("end", "")))
+	var name := String(seg.get("shot", seg.get("end", seg.get("desk", ""))))
 	var index := int(round((float(seg["from"]) + local) * FPS))
 	var path := _shots_dir.path_join(name).path_join("f%08d.png" % index)
+	_strip.visible = seg.has("desk")
+	_picture.texture = _desktop if seg.has("desk") and _desktop else _texture
 	if FileAccess.file_exists(path):
 		var img := Image.load_from_file(path)
-		img.convert(Image.FORMAT_RGB8)
-		_texture.update(img)
+		if seg.has("desk"):
+			img.convert(Image.FORMAT_RGBA8)
+			_strip_texture.update(img)
+		else:
+			img.convert(Image.FORMAT_RGB8)
+			_texture.update(img)
 	# Small moments are shown twice as large, a whole number of times so the pixels stay square.
 	var zoom := float(seg.get("zoom", 1.0))
 	var centre: Vector2 = seg.get("centre", _size / 2.0)

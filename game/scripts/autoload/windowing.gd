@@ -201,6 +201,10 @@ func _place_strip() -> void:
 	var max_scale := maxi(1, int(usable.size.y * 0.4) / STRIP_ROWS)
 	scale = clampi([2, 3, 4][size_index], 1, max_scale)
 	scale = mini(scale, maxi(1, usable.size.x / BASE.x))
+	# Recordings choose the strip's size, so it comes out the same on any screen.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--scale="):
+			scale = maxi(1, int(arg.trim_prefix("--scale=")))
 	# As wide as the painted background, which extends 16 pixels past each side of the main view.
 	var width := mini(usable.size.x, (BASE.x + 32) * scale)
 	win.size = Vector2i(width, STRIP_ROWS * scale)

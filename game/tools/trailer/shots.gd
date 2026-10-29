@@ -230,6 +230,11 @@ func _shot_endcard() -> void:
 	_look_at(Game.zone_info("vineyard")["x"] + 240)
 
 
+## The farm as a strip along the bottom of a desktop, the villa in the middle and the helpers at work around it.
+func _shot_desk() -> void:
+	_look_at(Estate.VILLA_BASE.x)
+
+
 ## The square picture for the game's social media profiles: the finished villa centred, as it shows in a circle.
 func _shot_profile() -> void:
 	_look_at(Estate.VILLA_BASE.x)

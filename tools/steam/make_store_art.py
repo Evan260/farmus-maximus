@@ -40,16 +40,19 @@ SCENES = {
 # name: flags. Screenshots are taken at 1920x1080 as the game draws them, most with the interface showing.
 SCREENSHOTS = {
     "01_estate_golden_hour": ["--maxed", "--zone=home", "--hour=17.6", *EARNED],
-    "02_workshop_window": ["--maxed", "--zone=yard", "--hour=10.5", *EARNED, "--panel=bakery"],
-    "03_vineyard": ["--maxed", "--zone=vineyard", "--hour=15", *EARNED],
-    "04_pasture": ["--maxed", "--zone=pasture", "--hour=9", "--no-hud"],
-    "05_olive_grove_in_rain": ["--maxed", "--zone=grove", "--hour=13", "--weather=rain", "--no-hud"],
-    "06_market_town": ["--maxed", "--town", "--hour=11", *EARNED],
-    "07_farmhouse_at_night": ["--maxed", "--furnish=all", "--inside", "--hour=21", *EARNED],
-    "08_northern_lights": ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal", "--no-hud"],
-    "09_where_it_begins": ["--villa=1", "--zone=home", "--hour=9", "--coins=240", "--aureus=0", "--trailer-shot=ruin"],
-    "10_helpers": ["--maxed", "--zone=home", "--hour=10", *EARNED, "--panel=helpers"],
+    "03_workshop_window": ["--maxed", "--zone=yard", "--hour=10.5", *EARNED, "--panel=bakery"],
+    "04_vineyard": ["--maxed", "--zone=vineyard", "--hour=15", *EARNED],
+    "05_pasture": ["--maxed", "--zone=pasture", "--hour=9", "--no-hud"],
+    "06_olive_grove_in_rain": ["--maxed", "--zone=grove", "--hour=13", "--weather=rain", "--no-hud"],
+    "07_market_town": ["--maxed", "--town", "--hour=11", *EARNED],
+    "08_farmhouse_at_night": ["--maxed", "--furnish=all", "--inside", "--hour=21", *EARNED],
+    "09_northern_lights": ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal", "--no-hud"],
+    "10_where_it_begins": ["--villa=1", "--zone=home", "--hour=9", "--coins=240", "--aureus=0", "--trailer-shot=ruin"],
+    "11_helpers": ["--maxed", "--zone=home", "--hour=10", *EARNED, "--panel=helpers"],
 }
+# The second screenshot is the farm as a strip along the bottom of a made-up desktop, the game's way of being played.
+DESKTOP = ROOT / "game" / "tools" / "trailer" / "desktop_2560x1440.png"
+DESKTOP_SHOT = "02_on_your_desktop"
 
 
 def shoot(path, size, flags, scale=None):
@@ -68,6 +71,8 @@ def render_all():
         shoot(RENDERS / f"{name}.png", size, flags + ["--no-hud"], scale=1)
     for name, flags in SCREENSHOTS.items():
         shoot(RENDERS / f"shot_{name}.png", (1920, 1080), flags)
+    # The strip comes out on a see-through background at three screen pixels to the game pixel.
+    shoot(RENDERS / "strip.png", (1536, 498), ["--maxed", "--strip", "--hour=10", *EARNED, "--trailer-shot=profile"], scale=3)
 
 
 def camera_left(render, centre_x):
@@ -130,8 +135,15 @@ def layout():
     icon = Image.open(PROFILE).convert("RGB")
     icon.resize((184, 184), Image.LANCZOS).save(OUT / "community_icon_184x184.jpg", quality=95)
     icon.save(OUT / "app_icon.ico", sizes=[(16, 16), (32, 32), (48, 48), (256, 256)])
+    for old in (OUT / "screenshots").glob("*.png"):
+        old.unlink()
     for name in SCREENSHOTS:
         Image.open(RENDERS / f"shot_{name}.png").convert("RGB").save(OUT / "screenshots" / f"{name}.png")
+    desk = Image.open(DESKTOP).convert("RGBA")
+    strip = Image.open(RENDERS / "strip.png").convert("RGBA")
+    taskbar = round(48 * desk.height / 1080)
+    desk.alpha_composite(strip, ((desk.width - strip.width) // 2, desk.height - taskbar - strip.height))
+    desk.convert("RGB").save(OUT / "screenshots" / f"{DESKTOP_SHOT}.png")
     print("laid out", OUT)
 
 
