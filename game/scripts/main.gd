@@ -242,8 +242,10 @@ func _ready() -> void:
 	_mountains_far = _add_texture(_mountains.texture, Vector2.ZERO, _far_view)
 	_mountains_far.flip_h = true
 	_land = _add_texture(load(BG + "layer_land.png"), Vector2.ZERO, _far_view)
+	# Wide views run past the painting's end. The mountains carry on mirrored, which joins their ridge smoothly, but the
+	# hills repeat unmirrored: mirrored they show a hill and its reflection, and repeated the cypresses at the
+	# painting's left edge stand over the join.
 	_land_far = _add_texture(_land.texture, Vector2.ZERO, _far_view)
-	_land_far.flip_h = true
 	_scenery.append_array([_mountains, _land, _mountains_far, _land_far])
 
 	var pine := _add_trimmed(load("res://assets/sprites/trees/umbrella_pine_1.png"), Vector2(HOME - 60, 0), true, 240)

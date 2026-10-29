@@ -32,6 +32,10 @@ func _ready() -> void:
 	_ring.scale = Vector2.ONE * Windowing.scale
 	_ring.modulate.a = 0.0
 	layer.add_child(_ring)
+	# The real mouse plays no part: wherever it rests on the desktop would otherwise light up what it is over. The
+	# estate's hover is pinned off the map, so a click's own hover check finds nothing under it either.
+	get_tree().root.set_disable_input(true)
+	m._pad_point = Vector2(-INF, -INF)
 	# The estate's own setup runs first, then the shot takes over.
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -166,7 +170,7 @@ func _shot_villa() -> void:
 		Game.add_item(item, 30, true)
 	await _wait(1.0)
 	Game.upgrade_villa()
-	Game.villa_build["time_left"] = 2.4
+	Game.build_speed = float(Game.villa_build["time_left"]) / 2.4
 
 
 func _shot_pasture() -> void:
@@ -442,8 +446,9 @@ func _town_screen(at: Vector2) -> Vector2:
 	return (at * m.market._scene.scale.x + m.market._scene.position).round()
 
 
+## A bed in bloom is clicked on its flowers, an empty one on the soil of the bed itself.
 func _click_plot(v: Node2D) -> void:
-	await _move_to(v.position + Vector2(15, -6))
+	await _move_to(v.position + Vector2(15, -6 if Game.plot_visual(v.index) == "bloom" else -1))
 	await _tap()
 	m._click_plot(v.index)
 	await _wait(0.25)

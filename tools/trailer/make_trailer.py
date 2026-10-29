@@ -64,7 +64,7 @@ SHOTS = {
     "hoopoe": (7, ["--maxed", "--zone=home", "--hour=10", *HUD_OFF]),
     "inside": (6, ["--maxed", "--furnish=all", "--inside=pet", "--hour=21"]),
     "timelapse": (8, ["--maxed", "--zone=home", "--hour=1.2", *HUD_OFF]),
-    "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora", *HUD_OFF]),
+    "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal", *HUD_OFF]),
     "endcard": (9, ["--maxed", "--zone=vineyard", "--hour=19.6", *HUD_OFF]),
 }
 # The trailer's shots, and each vertical cut's. Vertical shots are all without the interface, since its panels are laid

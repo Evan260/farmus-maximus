@@ -35,7 +35,7 @@ SCENES = {
     "vineyard_gold": ((1600, 450), ["--maxed", "--zone=vineyard", "--hour=18.2"]),
     "home_gold": ((1400, 700), ["--maxed", "--zone=home", "--hour=18.2"]),
     "hero": ((960, 310), ["--maxed", "--zone=home", "--hour=18.2"]),
-    "night": ((719, 405), ["--maxed", "--zone=home", "--hour=22", "--aurora"]),
+    "night": ((719, 405), ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal"]),
 }
 # name: flags. Screenshots are taken at 1920x1080 as the game draws them, most with the interface showing.
 SCREENSHOTS = {
@@ -46,7 +46,7 @@ SCREENSHOTS = {
     "05_olive_grove_in_rain": ["--maxed", "--zone=grove", "--hour=13", "--weather=rain", "--no-hud"],
     "06_market_town": ["--maxed", "--town", "--hour=11", *EARNED],
     "07_farmhouse_at_night": ["--maxed", "--furnish=all", "--inside", "--hour=21", *EARNED],
-    "08_northern_lights": ["--maxed", "--zone=home", "--hour=22", "--aurora", "--no-hud"],
+    "08_northern_lights": ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal", "--no-hud"],
     "09_where_it_begins": ["--villa=1", "--zone=home", "--hour=9", "--coins=240", "--aureus=0", "--trailer-shot=ruin"],
     "10_helpers": ["--maxed", "--zone=home", "--hour=10", *EARNED, "--panel=helpers"],
 }
