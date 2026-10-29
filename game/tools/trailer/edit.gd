@@ -10,34 +10,38 @@ const MUSIC := "res://assets/audio/music/solitary_expedition.ogg"
 ## The game records its effects and ambience quietly beside the music, so they are raised to be heard under it.
 const MUSIC_DB := -4.0
 const SOUND_DB := 9.0
+## The ambience runs unbroken under the whole cut, about as far beneath the music as in the game.
+const AMBIENCE_DB := -4.0
+## Seconds the ambience takes to blend from one loop into the next, such as day into night.
+const AMBIENCE_BLEND := 1.2
 const INK := Color(0.29, 0.18, 0.14)
 ## Where the scroll's line of text sits, from the top of its picture, so it is centred on the sheet between the rolls.
 const SCROLL_TEXT_TOP := -1
 const SCROLL_TEXT_HEIGHT := 54
 const CREAM := Color(0.99, 0.95, 0.86)
-## The trailer's cut list. A shot plays from `from` seconds into its recording; a card is black with one line of text.
+## The trailer's cut list, told in order: the farm as it was left, then the farmhouse restored stage by stage to the
+## grand estate. A shot plays from `from` seconds into its recording; a card is black with one line of text. `amb` is
+## the ambience from then on: day, night or rain.
 const TRAILER := [
-	{"shot": "hook", "from": 1.5, "beats": 8, "fade_in": 0.8},
-	{"card": "Uncle Marcus has left you
-his farm.", "beats": 3},
-	{"shot": "ruin", "from": 1.0, "beats": 4},
+	{"card": "Uncle Marcus has left you\nhis farm.", "beats": 4, "amb": "day"},
+	{"shot": "ruin", "from": 1.0, "beats": 5, "fade_in": 0.8},
 	{"card": "It has seen better days.", "beats": 3},
 	{"shot": "plant", "from": 1.5, "beats": 6},
 	{"shot": "cart", "from": 1.4, "beats": 3},
 	{"shot": "coins", "from": 14.0, "beats": 4},
-	{"shot": "helper", "from": 1.5, "beats": 3},
-	{"shot": "bakery", "from": 1.5, "beats": 3},
 	{"shot": "villa", "from": 0.8, "beats": 6},
-	{"shot": "pasture", "from": 1.5, "beats": 3},
+	{"shot": "helper", "from": 1.5, "beats": 3},
+	{"shot": "bakery", "from": 1.5, "beats": 3, "amb": "night"},
+	{"shot": "pasture", "from": 1.5, "beats": 3, "amb": "day"},
 	{"shot": "vineyard", "from": 1.5, "beats": 3},
-	{"shot": "grove", "from": 1.5, "beats": 3},
+	{"shot": "grove", "from": 1.5, "beats": 3, "amb": "rain"},
+	{"card": "Make it the finest estate\nin the hills.", "beats": 3, "amb": "day"},
+	{"shot": "grand", "from": 0.8, "beats": 6},
+	{"shot": "hook", "from": 1.5, "beats": 5},
 	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(960, 810)},
 	{"shot": "hoopoe", "from": 1.8, "beats": 5, "zoom": 2.0, "centre": Vector2(960, 810)},
-	{"shot": "inside", "from": 1.5, "beats": 3},
-	{"shot": "town", "from": 1.5, "beats": 3},
 	{"shot": "timelapse", "from": 1.5, "beats": 6, "caption": "Your helpers work while you rest.", "mute": true},
-	{"card": "Make it the finest estate
-in the hills.", "beats": 3},
+	{"shot": "inside", "from": 1.5, "beats": 3, "amb": "night"},
 	{"shot": "night", "from": 1.5, "beats": 7},
 	{"end": "endcard", "from": 1.0, "beats": 8},
 ]
@@ -45,19 +49,19 @@ in the hills.", "beats": 3},
 const SHORT := [
 	{"shot": "ruin", "from": 1.0, "beats": 4, "caption": "POV: your uncle
 left you a ruined
-Roman farm", "caption_at": 0.0},
+Roman farm", "caption_at": 0.0, "amb": "day"},
 	{"shot": "villa", "from": 0.8, "beats": 6, "caption": "so you bring it
 back to life"},
 	{"shot": "plant", "from": 1.6, "beats": 3},
 	{"shot": "helper", "from": 1.5, "beats": 2},
-	{"shot": "bakery", "from": 1.5, "beats": 2},
-	{"shot": "pasture", "from": 1.5, "beats": 2},
+	{"shot": "bakery", "from": 1.5, "beats": 2, "amb": "night"},
+	{"shot": "pasture", "from": 1.5, "beats": 2, "amb": "day"},
 	{"shot": "vineyard", "from": 1.5, "beats": 2},
 	{"shot": "pet", "from": 1.6, "beats": 3},
 	{"shot": "hoopoe", "from": 2.2, "beats": 3},
 	{"shot": "timelapse", "from": 1.5, "beats": 4, "caption": "it keeps working
 while you sleep", "mute": true},
-	{"shot": "night", "from": 1.5, "beats": 3},
+	{"shot": "night", "from": 1.5, "beats": 3, "amb": "night"},
 	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## How each cut is laid out: its frame, how many screen pixels make one overlay pixel, its caption size, where its text
@@ -86,6 +90,10 @@ var _wishlist: Label
 var _music: AudioStreamPlayer
 var _sound: AudioStreamPlayer
 var _current := -1
+## The day, night and rain loops, all playing from the start, and how loud each is now, from 0 to 1.
+var _beds := {}
+var _bed_gain := {}
+var _bed := "day"
 
 
 func _ready() -> void:
@@ -115,9 +123,25 @@ func _ready() -> void:
 	add_child(_music)
 	_sound = AudioStreamPlayer.new()
 	add_child(_sound)
+	for name in ["day", "night", "rain"]:
+		var loop: AudioStream = load("res://assets/audio/ambience/%s.ogg" % name).duplicate()
+		loop.loop = true
+		var bed := AudioStreamPlayer.new()
+		bed.stream = loop
+		bed.volume_db = -80.0
+		add_child(bed)
+		_beds[name] = bed
+		_bed_gain[name] = 0.0
 	# A preview can start part way through, to look at one moment without rendering the whole trailer.
 	_frame = int(from * FPS)
 	_music.play(float(_cut["music_from"]) + from)
+	for name in _beds:
+		_beds[name].play(from)
+	# A preview starts in the ambience set last before it.
+	for k in _starts.size():
+		if _starts[k] <= _frame and _edit[k].has("amb"):
+			_bed = String(_edit[k]["amb"])
+	_bed_gain[_bed] = 1.0
 
 
 func _build() -> void:
@@ -194,9 +218,15 @@ func _process(_delta: float) -> void:
 		_current = k
 		_start_segment(seg)
 	_draw_segment(seg, local, length)
-	# The music fades away over the end card's last seconds.
+	# The music and the ambience fade away together over the end card's last seconds.
 	var left := float(_total_frames - _frame) / FPS
-	_music.volume_db = MUSIC_DB + linear_to_db(clampf(left / 3.0, 0.0001, 1.0))
+	var ending := clampf(left / 3.0, 0.0001, 1.0)
+	_music.volume_db = MUSIC_DB + linear_to_db(ending)
+	if seg.has("amb"):
+		_bed = String(seg["amb"])
+	for name in _beds:
+		_bed_gain[name] = move_toward(_bed_gain[name], 1.0 if name == _bed else 0.0, 1.0 / (AMBIENCE_BLEND * FPS))
+		_beds[name].volume_db = AMBIENCE_DB + linear_to_db(maxf(_bed_gain[name] * ending, 0.0001))
 	_frame += 1
 
 

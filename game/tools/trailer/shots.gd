@@ -143,6 +143,11 @@ func _shot_bakery() -> void:
 	_look_at(_building_x("bakery") if _narrow else Game.zone_info("yard")["x"] + 240)
 
 
+## The last stage: the scaffold comes down on the grand estate.
+func _shot_grand() -> void:
+	_shot_villa()
+
+
 ## The villa grows: the scaffold goes up, and comes down on the next stage.
 func _shot_villa() -> void:
 	_look_at(Estate.VILLA_BASE.x)

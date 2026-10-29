@@ -24,16 +24,18 @@ GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.Godo
          / "Godot_v4.7.2-stable_win64_console.exe")
 HUD_OFF = ["--no-hud"]
 # name: (seconds to record, game flags). The edit takes its part of each from edit.gd; a shot starts a moment early
-# so pets and helpers have walked into place before the part that is used.
+# so pets and helpers have walked into place before the part that is used. A --villa= stage comes after --maxed, which
+# builds the villa to the top. Shots are recorded without ambience, which the edit plays unbroken under the cuts.
 SHOTS = {
     "hook": (10, ["--maxed", "--zone=home", "--hour=18.2", *HUD_OFF]),
     "ruin": (7, ["--villa=1", "--zone=home", "--hour=8.5", *HUD_OFF]),
     "plant": (7, ["--villa=2", "--zone=home", "--hour=9.5", "--coins=240"]),
     "cart": (6, ["--villa=3", "--zone=home", "--hour=10", "--coins=1840"]),
     "coins": (19, ["--villa=3", "--zone=home", "--hour=10", "--coins=1840"]),
-    "helper": (6, ["--maxed", "--zone=home", "--hour=9", *HUD_OFF]),
+    "helper": (6, ["--maxed", "--villa=4", "--zone=home", "--hour=9", *HUD_OFF]),
     "bakery": (6, ["--estate", "--zone=yard", "--hour=19.3", *HUD_OFF]),
     "villa": (7, ["--villa=3", "--zone=home", "--hour=11", *HUD_OFF]),
+    "grand": (7, ["--maxed", "--villa=6", "--zone=home", "--hour=16", *HUD_OFF]),
     "pasture": (6, ["--maxed", "--zone=pasture", "--hour=10", *HUD_OFF]),
     "vineyard": (6, ["--maxed", "--zone=vineyard", "--hour=16.5", *HUD_OFF]),
     "grove": (6, ["--maxed", "--zone=grove", "--hour=14", "--weather=rain", *HUD_OFF]),
@@ -82,7 +84,7 @@ def record(name, fmt):
     folder.mkdir(parents=True)
     # A .png movie is written as numbered frames with the sound beside them in a .wav of the same name.
     godot(["--write-movie", str(folder / "f.png"), "--fixed-fps", str(FPS), "--quit-after", str(seconds * FPS),
-           "--", "--demo", "--no-music", *window(fmt), f"--trailer-shot={name}", *flags, "--quiet-start"], fmt["size"])
+           "--", "--demo", "--no-music", "--no-ambience", *window(fmt), f"--trailer-shot={name}", *flags, "--quiet-start"], fmt["size"])
 
 
 def render(fmt, cut, start=0.0):
