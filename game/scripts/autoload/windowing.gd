@@ -9,11 +9,17 @@ const BASE := Vector2i(480, 270)
 const NARROWEST := 300
 ## How many rows of the scene the strip shows, counted up from the bottom: enough for the field, the villa and the storehouse.
 const STRIP_ROWS := 166
-const SIZES := ["Small", "Medium", "Large"]
+## The strip's narrowest and widest view in estate pixels: room for its controls at one end, and no wider than the
+## painted sky behind it reaches.
+const STRIP_MIN_VIEW := 200
+const STRIP_MAX_VIEW := 1440
 
 var strip := false
 var transparent := true
-var size_index := 0
+## Screen pixels per estate pixel the player has chosen for the strip; a smaller screen may hold fewer.
+var strip_scale := 2
+## The strip's width in screen pixels, set by dragging it wider or narrower; 0 until the player first does.
+var strip_width := 0
 ## Where the strip sits on the screen: "bottom" or "top".
 var dock := "bottom"
 ## Focus mode makes the strip quieter and slower, for long stretches of work.
@@ -56,14 +62,17 @@ func _on_resized() -> void:
 ## Picks the pixel scales from the window's size; the estate's viewport is then the window divided by that scale, so it always fills the window.
 func _rescale() -> void:
 	var size := get_window().size
-	if not strip:
-		scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
-		# A tall narrow window crops a little off each side rather than shrinking the estate under a sea of sky.
-		scale = maxi(scale, mini(size.x / NARROWEST, size.y / BASE.y))
-		# Recordings for phones choose their own scale, so a portrait frame shows the estate close up.
-		for arg in OS.get_cmdline_user_args():
-			if arg.begins_with("--scale="):
-				scale = maxi(1, int(arg.trim_prefix("--scale=")))
+	# In the strip the interface keeps pace with the farm, one step smaller, so its bar stays readable on a big screen.
+	if strip:
+		ui_scale = clampi(scale - 1 + Settings.ui_scale_step, 1, maxi(1, scale))
+		return
+	scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
+	# A tall narrow window crops a little off each side rather than shrinking the estate under a sea of sky.
+	scale = maxi(scale, mini(size.x / NARROWEST, size.y / BASE.y))
+	# Recordings for phones choose their own scale, so a portrait frame shows the estate close up.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--scale="):
+			scale = maxi(1, int(arg.trim_prefix("--scale=")))
 	# The money panel and the zone buttons need about 560 interface pixels side by side, and the windows about 225 down.
 	var most := maxi(1, mini(size.x / 560, size.y / 225))
 	# One step under what fits the window itself, rather than the estate's scale, so a tall narrow window stays readable.
@@ -116,9 +125,36 @@ func set_transparent(on: bool) -> void:
 	_strip_changed()
 
 
-func cycle_size() -> void:
-	size_index = (size_index + 1) % SIZES.size()
+func change_strip_scale(step: int) -> void:
+	var was := scale
+	strip_scale = clampi(scale + step, 1, max_strip_scale())
+	# The strip keeps the same stretch of the estate in view as it grows or shrinks.
+	if strip_width > 0 and was > 0:
+		strip_width = strip_width * strip_scale / was
 	_strip_changed()
+
+
+## The largest strip the screen holds: at most 40% of its height.
+func max_strip_scale() -> int:
+	var usable := DisplayServer.screen_get_usable_rect(get_window().current_screen)
+	return mini(maxi(1, int(usable.size.y * 0.4) / STRIP_ROWS), maxi(1, usable.size.x / BASE.x))
+
+
+## Moves the strip along the screen while it is dragged; how far is kept when the drag ends.
+func move_strip(offset: int) -> void:
+	offset_x = offset
+	_place_strip()
+
+
+## Makes the strip wider or narrower while it is dragged; the width is kept when the drag ends.
+func set_strip_width(width: int) -> void:
+	strip_width = width
+	_place_strip()
+	view_changed.emit()
+
+
+func finish_strip_drag() -> void:
+	_save()
 
 
 func toggle_dock() -> void:
@@ -198,18 +234,20 @@ func _place_strip() -> void:
 	var win := get_window()
 	var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
 	# The strip may take at most 40% of the screen's height; larger sizes shrink to fit smaller screens.
-	var max_scale := maxi(1, int(usable.size.y * 0.4) / STRIP_ROWS)
-	scale = clampi([2, 3, 4][size_index], 1, max_scale)
-	scale = mini(scale, maxi(1, usable.size.x / BASE.x))
+	scale = clampi(strip_scale, 1, max_strip_scale())
 	# Recordings choose the strip's size, so it comes out the same on any screen.
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scale="):
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
-	# As wide as the painted background, which extends 16 pixels past each side of the main view.
-	var width := mini(usable.size.x, (BASE.x + 32) * scale)
+	# Until the player sets a width it is the main view's, with 16 pixels to spare at each side.
+	var width := strip_width if strip_width > 0 else (BASE.x + 32) * scale
+	width = clampi(width, STRIP_MIN_VIEW * scale, mini(usable.size.x, STRIP_MAX_VIEW * scale))
+	strip_width = width if strip_width > 0 else 0
 	win.size = Vector2i(width, STRIP_ROWS * scale)
-	var x := usable.position.x + (usable.size.x - width) / 2 + offset_x
-	x = clampi(x, usable.position.x, usable.position.x + usable.size.x - width)
+	# The strip never slides off the screen, and its offset is held to what fits so a later drag starts from there.
+	var room := (usable.size.x - width) / 2
+	offset_x = clampi(offset_x, -room, room)
+	var x := usable.position.x + room + offset_x
 	# The usable rect already leaves out the taskbar, wherever it sits, so the strip never covers it.
 	var y := usable.position.y if dock == "top" else usable.position.y + usable.size.y - win.size.y
 	win.position = Vector2i(x, y)
@@ -233,7 +271,9 @@ func _load() -> void:
 		return
 	strip = bool(d.get("strip", false))
 	transparent = bool(d.get("transparent", true))
-	size_index = clampi(int(d.get("size_index", 0)), 0, SIZES.size() - 1)
+	# Older settings kept one of three sizes, 2, 3 or 4 screen pixels to the estate pixel.
+	strip_scale = int(d.get("strip_scale", [2, 3, 4][clampi(int(d.get("size_index", 0)), 0, 2)]))
+	strip_width = int(d.get("strip_width", 0))
 	offset_x = int(d.get("offset_x", 0))
 	dock = String(d.get("dock", "bottom"))
 	focus_mode = bool(d.get("focus_mode", false))
@@ -242,7 +282,11 @@ func _load() -> void:
 
 
 func _save() -> void:
+	# Demo farms, test runs and recordings never change the player's own window settings.
+	for flag in ["--demo", "--new-farm", "--readonly"]:
+		if flag in OS.get_cmdline_user_args():
+			return
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "size_index": size_index, "offset_x": offset_x,
-			"dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))
+		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "strip_scale": strip_scale,
+			"strip_width": strip_width, "offset_x": offset_x, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))

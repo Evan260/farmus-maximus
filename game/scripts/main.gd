@@ -357,6 +357,7 @@ func _ready() -> void:
 	_apply_scale()
 	hud = Hud.new()
 	hud.zone_chosen.connect(pan_to_zone)
+	hud.strip_pan_requested.connect(_step_zone)
 	hud.town_requested.connect(go_to_town)
 	add_child(hud)
 	market = MarketView.new()
@@ -957,7 +958,8 @@ func _step_zone(step: int) -> void:
 	pan_to_zone(ids[clampi(now + step, 0, ids.size() - 1)])
 
 
-## The outline of everything visible in the transparent strip, so clicks anywhere else fall through to the desktop.
+## The outline of everything visible in the transparent strip, so clicks anywhere else fall through to the desktop: the
+## farm along the bottom, every building, sign and bar rising above it, as one skyline across the strip.
 func _click_area() -> PackedVector2Array:
 	var view := _view_size()
 	var top := view.y - (BOTTOM - 214.0)
@@ -967,29 +969,26 @@ func _click_area() -> PackedVector2Array:
 	for s in signs:
 		if s.visible:
 			tall.append(s.world_rect())
-	var in_view := []
-	for r in tall:
-		var moved := Rect2(r.position - _camera.position, r.size)
-		if moved.end.x > 0 and moved.position.x < view.x:
-			in_view.append(moved)
-	in_view.sort_custom(func(a, b): return a.position.x < b.position.x)
-	var points := PackedVector2Array([Vector2(0, view.y), Vector2(0, top)])
-	var last_x := 0.0
-	for r in in_view:
-		var x0 := clampf(maxf(r.position.x, last_x), 0, view.x)
-		var x1 := clampf(r.end.x, 0, view.x)
-		if x1 <= x0:
-			continue
-		var y := minf(r.position.y, top)
-		points.append_array([Vector2(x0, top), Vector2(x0, y), Vector2(x1, y), Vector2(x1, top)])
-		last_x = x1
-	points.append_array([Vector2(view.x, top), Vector2(view.x, view.y)])
-	var bar: Rect2 = hud.compact_rect()
-	bar = Rect2(bar.position * Windowing.ui_scale / Windowing.scale, bar.size * Windowing.ui_scale / Windowing.scale)
-	if bar.has_area():
-		# The bar floats in the top-left corner, so the outline detours up around it before following the skyline.
-		var detour := PackedVector2Array([Vector2(0, view.y), Vector2(0, bar.position.y), Vector2(bar.end.x, bar.position.y), Vector2(bar.end.x, top)])
-		points = detour + points.slice(2)
+	var rects := tall.map(func(r: Rect2) -> Rect2: return Rect2(r.position - _camera.position, r.size))
+	for bar in hud.strip_bar_rects():
+		rects.append(Rect2(bar.position * Windowing.ui_scale / Windowing.scale, bar.size * Windowing.ui_scale / Windowing.scale))
+	# The skyline's height in each column of the view: the farm's top line, raised wherever something stands over it.
+	var width := int(ceilf(view.x))
+	var heights := PackedFloat32Array()
+	heights.resize(width)
+	heights.fill(top)
+	for r in rects:
+		for x in range(maxi(0, int(floorf(r.position.x))), mini(width, int(ceilf(r.end.x)))):
+			heights[x] = minf(heights[x], r.position.y)
+	var points := PackedVector2Array([Vector2(0, view.y)])
+	var x := 0
+	while x < width:
+		var end := x
+		while end < width and heights[end] == heights[x]:
+			end += 1
+		points.append_array([Vector2(x, heights[x]), Vector2(end, heights[x])])
+		x = end
+	points.append(Vector2(view.x, view.y))
 	return points
 
 

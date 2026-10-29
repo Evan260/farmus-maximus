@@ -4,6 +4,8 @@ extends CanvasLayer
 signal zone_chosen(zone_id: String)
 signal town_requested
 signal house_requested
+## The strip's controls ask the estate to look one zone along, -1 to the left and 1 to the right.
+signal strip_pan_requested(step: int)
 
 const WindowPanel := preload("res://scripts/ui/window_panel.gd")
 const TitleScreen := preload("res://scripts/ui/title_screen.gd")
@@ -16,6 +18,7 @@ const UpgradesPanel := preload("res://scripts/ui/upgrades_panel.gd")
 const CompanionsPanel := preload("res://scripts/ui/companions_panel.gd")
 const AchievementPopup := preload("res://scripts/ui/achievement_popup.gd")
 const UncleGuide := preload("res://scripts/ui/uncle_guide.gd")
+const StripControls := preload("res://scripts/ui/strip_controls.gd")
 ## The id the building panel uses for the farmhouse.
 const VILLA := "villa"
 ## Lavender varieties share one icon, so each seed slot is tinted towards its flower colour.
@@ -56,6 +59,7 @@ var _debug: PanelContainer
 var _stats_panel: PanelContainer
 var _buttons: VBoxContainer
 var _compact: PanelContainer
+var _strip_controls: PanelContainer
 var _compact_label: Label
 var _zone_bar: HBoxContainer
 var _zone_buttons := {}
@@ -120,6 +124,9 @@ func _ready() -> void:
 	_companions = _add_window(CompanionsPanel.new())
 	add_to_group("hud")
 	_build_compact()
+	_strip_controls = StripControls.new()
+	_strip_controls.pan_requested.connect(func(step): strip_pan_requested.emit(step))
+	_root.add_child(_strip_controls)
 	_build_toolbar()
 	_build_debug()
 	_uncle = UncleGuide.new()
@@ -236,9 +243,15 @@ func _fit() -> void:
 	_root.size = (get_viewport().get_visible_rect().size / Windowing.ui_scale).floor()
 
 
-## The compact bar's area in the strip, which must stay clickable when the rest of the sky lets clicks through.
-func compact_rect() -> Rect2:
-	return _compact.get_global_rect() if _compact.visible else Rect2()
+## The strip's bars, the purse at the top left and the controls while they show, which must stay clickable when the
+## rest of the sky lets clicks through.
+func strip_bar_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	if _compact.visible:
+		rects.append(_compact.get_global_rect())
+	if _strip_controls.area().has_area():
+		rects.append(_strip_controls.area())
+	return rects
 
 
 ## True while a window covers the estate, so clicks there do not reach the farm.

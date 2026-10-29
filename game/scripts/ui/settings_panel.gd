@@ -15,7 +15,7 @@ func _init() -> void:
 
 
 func signature() -> String:
-	return "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.size_index,
+	return "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.strip_scale,
 		Windowing.dock, str(Windowing.focus_mode) + str(Windowing.follow), Settings.offline_progress, Settings.notifications, Settings.large_text, Settings.reduced_motion,
 		Settings.strong_cues, Settings.low_power, str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
 
@@ -45,13 +45,10 @@ func build() -> void:
 			var sizes := {-1: "Smaller", 0: "Normal", 1: "Larger", 2: "Largest"}
 			UiKit.setting(body, tr("Interface size"), tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))
 			_toggle(tr("Desktop strip (%s)") % _key_name("toggle_strip"), Windowing.strip, func(_v): Windowing.toggle_strip())
-			UiKit.setting(body, tr("Strip background"), tr("Clear") if Windowing.transparent else tr("Painted sky"), func(): Windowing.set_transparent(not Windowing.transparent))
-			UiKit.setting(body, tr("Strip size"), tr(Windowing.SIZES[Windowing.size_index]), func(): Windowing.cycle_size())
-			UiKit.setting(body, tr("Where the strip sits"), tr("Top") if Windowing.dock == "top" else tr("Bottom"), func(): Windowing.toggle_dock())
 			_toggle("Focus mode: a quieter, slower strip", Windowing.focus_mode, func(v): Windowing.set_focus_mode(v))
 			_toggle("Strip follows the busiest zone", Windowing.follow, func(v): Windowing.set_follow(v))
 			_toggle("Low power", Settings.low_power, func(v): Settings.set_value("low_power", v); Windowing._update_fps())
-			UiKit.para(body, tr("Drag the strip with the right mouse button. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.para(body, tr("Point at the strip to change its size, width, place and sky. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Gameplay":
 			var locales := TranslationServer.get_loaded_locales()
 			if locales.size() > 1:
