@@ -96,6 +96,7 @@ func _grip(b: Button, kind: String) -> void:
 				_drag = kind
 				_drag_from = DisplayServer.mouse_get_position()
 				_drag_start = Windowing.strip_offset() if kind == "move" else Vector2i(get_window().size.x, 0)
+				Windowing.start_strip_drag()
 			elif _drag != "":
 				_drag = ""
 				Windowing.finish_strip_drag()
@@ -104,8 +105,7 @@ func _grip(b: Button, kind: String) -> void:
 			if kind == "move":
 				Windowing.move_strip(_drag_start + moved)
 			else:
-				# The strip grows from its middle, so the edge under the pointer follows it.
-				Windowing.set_strip_width(_drag_start.x + moved.x * 2))
+				Windowing.set_strip_width(_drag_start.x + moved.x))
 
 
 static var _textures := {}

@@ -33,6 +33,8 @@ var offset_x := 0
 var offset_y := 0
 ## The narrowest the strip may be, in screen pixels, so its two bars always fit side by side; the interface sets it.
 var strip_min_width := 0
+## True while the strip is being dragged along the screen or wider; see start_strip_drag.
+var strip_dragging := false
 ## Screen pixels per estate pixel: the largest whole number that still shows the full height of the scene.
 var scale := 1
 ## Screen pixels per interface pixel, which the player can set larger or smaller than the estate's.
@@ -165,13 +167,28 @@ func strip_offset() -> Vector2i:
 
 
 ## Makes the strip wider or narrower while it is dragged; the width is kept when the drag ends.
+## Makes the strip wider or narrower from its right edge while it is dragged, its left edge staying where it is, so
+## the window only changes size and never jumps along the screen as well.
 func set_strip_width(width: int) -> void:
+	var left := get_window().position.x
 	strip_width = width
+	_place_strip()
+	var usable := DisplayServer.screen_get_usable_rect(get_window().current_screen)
+	offset_x = left - usable.position.x - (usable.size.x - get_window().size.x) / 2
 	_place_strip()
 	view_changed.emit()
 
 
+## While the strip is dragged it lets no clicks through: on Windows the outline that does so also cuts away what the
+## strip draws, and redrawing it on every step of the drag makes the strip flicker. It is drawn afresh once the drag ends.
+func start_strip_drag() -> void:
+	strip_dragging = true
+	DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
+
+
 func finish_strip_drag() -> void:
+	strip_dragging = false
+	view_changed.emit()
 	_save()
 
 
@@ -200,6 +217,8 @@ func set_follow(on: bool) -> void:
 
 ## The strip window's polygon of clickable area, in game pixels of the visible view; everything outside lets clicks through to the desktop.
 func set_click_area(points: PackedVector2Array) -> void:
+	if strip_dragging:
+		return
 	if not (strip and transparent):
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 		return
