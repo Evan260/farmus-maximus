@@ -6,9 +6,10 @@ Usage:
   python tools/trailer/make_trailer.py shots hook   records just those shots again
   python tools/trailer/make_trailer.py render       renders from the shots already recorded
   python tools/trailer/make_trailer.py render 70    renders a preview from 70 seconds in, into preview.avi
-  Add --short to any of these for the vertical cut, which is recorded close up at 1080x1920 into recordings/short/.
+  Add --short to any of these for the vertical cut, which is recorded close up at 1080x1920 into recordings/short/,
+  or --cut=transform, --cut=pets or --cut=asmr for the other vertical cuts, which share its shots.
 
-The trailer goes to recordings/trailer/trailer.avi and the short to recordings/short/short.avi. The shots are scripted
+The trailer goes to recordings/trailer/trailer.avi and each vertical cut to recordings/short/<cut>.avi. The shots are scripted
 in game/tools/trailer/shots.gd and both edits, with their captions and music, in game/tools/trailer/edit.gd. Every
 shot plays a demo farm, so the real save is never touched.
 """
@@ -36,6 +37,14 @@ SHOTS = {
     "bakery": (6, ["--estate", "--zone=yard", "--hour=19.3", *HUD_OFF]),
     "villa": (7, ["--villa=3", "--zone=home", "--hour=11", *HUD_OFF]),
     "grand": (7, ["--maxed", "--villa=6", "--zone=home", "--hour=16", *HUD_OFF]),
+    "bakery_ui": (8, ["--estate", "--zone=yard", "--hour=10", "--coins=2400", "--aureus=0"]),
+    "market_ui": (8, ["--maxed", "--town", "--hour=11", "--coins=48250", "--aureus=12"]),
+    "shrine_ui": (7, ["--maxed", "--zone=home", "--hour=16", "--coins=48250", "--aureus=12"]),
+    "stages": (16, ["--villa=1", "--zone=home", "--hour=10", "--scale=5", *HUD_OFF]),
+    "cat": (5, ["--maxed", "--zone=home", "--hour=11", *HUD_OFF]),
+    "donkey": (5, ["--maxed", "--zone=home", "--hour=11", *HUD_OFF]),
+    "goat": (5, ["--maxed", "--zone=pasture", "--hour=10", *HUD_OFF]),
+    "stork": (5, ["--maxed", "--zone=home", "--hour=11", *HUD_OFF]),
     "pasture": (6, ["--maxed", "--zone=pasture", "--hour=10", *HUD_OFF]),
     "vineyard": (6, ["--maxed", "--zone=vineyard", "--hour=16.5", *HUD_OFF]),
     "grove": (6, ["--maxed", "--zone=grove", "--hour=14", "--weather=rain", *HUD_OFF]),
@@ -47,13 +56,21 @@ SHOTS = {
     "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora", *HUD_OFF]),
     "endcard": (9, ["--maxed", "--zone=vineyard", "--hour=19.6", *HUD_OFF]),
 }
-# The short uses fewer shots, all without the interface, since its panels are laid out for a wide screen.
-SHORT_SHOTS = ["ruin", "villa", "plant", "helper", "bakery", "pasture", "vineyard", "pet", "hoopoe", "timelapse", "night",
-               "endcard"]
+# The trailer's shots, and each vertical cut's. Vertical shots are all without the interface, since its panels are laid
+# out for a wide screen.
+CUT_SHOTS = {
+    "trailer": ["ruin", "plant", "cart", "coins", "villa", "bakery_ui", "pasture", "vineyard", "grove", "market_ui", "grand",
+                "shrine_ui", "pet", "timelapse", "inside", "night", "endcard"],
+    "short": ["ruin", "villa", "plant", "helper", "bakery", "pasture", "vineyard", "pet", "hoopoe", "timelapse", "night",
+              "endcard"],
+    "transform": ["stages", "endcard"],
+    "pets": ["pet", "cat", "donkey", "goat", "stork", "hoopoe", "endcard"],
+    "asmr": ["grove", "bakery", "plant", "pasture", "night", "endcard"],
+}
 # Each cut's frame, and the estate's pixel scale in it: the short's narrow frame shows the estate close up.
 FORMATS = {
-    "trailer": {"out": ROOT / "recordings" / "trailer", "size": (1920, 1080), "scale": 4, "file": "trailer.avi"},
-    "short": {"out": ROOT / "recordings" / "short", "size": (1080, 1920), "scale": 6, "file": "short.avi"},
+    "trailer": {"out": ROOT / "recordings" / "trailer", "size": (1920, 1080), "scale": 4},
+    "short": {"out": ROOT / "recordings" / "short", "size": (1080, 1920), "scale": 6},
 }
 
 
@@ -89,7 +106,7 @@ def record(name, fmt):
 
 def render(fmt, cut, start=0.0):
     """Renders the cut, or with a start time a preview from that moment on into preview.avi."""
-    out = fmt["out"] / ("preview.avi" if start else fmt["file"])
+    out = fmt["out"] / ("preview.avi" if start else ("trailer.avi" if cut == "trailer" else f"{cut}.avi"))
     # The edit quits when it ends; the frame limit only stops a run whose script failed to load from going on forever.
     godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "--quit-after", str(200 * FPS), "res://tools/trailer/edit.tscn",
            "--", "--readonly", *window(fmt), f"--shots={fmt['out'] / 'shots'}", f"--cut={cut}", f"--from={start}"],
@@ -99,10 +116,15 @@ def render(fmt, cut, start=0.0):
 
 def main():
     args = sys.argv[1:]
-    cut = "short" if "--short" in args else "trailer"
-    args = [a for a in args if a != "--short"]
-    fmt = FORMATS[cut]
-    names = SHORT_SHOTS if cut == "short" else list(SHOTS)
+    cut = "trailer"
+    for a in args:
+        if a == "--short":
+            cut = "short"
+        elif a.startswith("--cut="):
+            cut = a.split("=", 1)[1]
+    args = [a for a in args if a != "--short" and not a.startswith("--cut=")]
+    fmt = FORMATS["trailer" if cut == "trailer" else "short"]
+    names = CUT_SHOTS[cut]
     if args[:1] == ["shots"]:
         for name in args[1:] or names:
             record(name, fmt)

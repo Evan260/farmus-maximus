@@ -30,16 +30,15 @@ const TRAILER := [
 	{"shot": "cart", "from": 1.4, "beats": 3},
 	{"shot": "coins", "from": 14.0, "beats": 4},
 	{"shot": "villa", "from": 0.8, "beats": 6},
-	{"shot": "helper", "from": 1.5, "beats": 3},
-	{"shot": "bakery", "from": 1.5, "beats": 3, "amb": "night"},
-	{"shot": "pasture", "from": 1.5, "beats": 3, "amb": "day"},
+	{"shot": "bakery_ui", "from": 1.3, "beats": 6},
+	{"shot": "pasture", "from": 1.5, "beats": 3},
 	{"shot": "vineyard", "from": 1.5, "beats": 3},
 	{"shot": "grove", "from": 1.5, "beats": 3, "amb": "rain"},
-	{"card": "Make it the finest estate\nin the hills.", "beats": 3, "amb": "day"},
+	{"shot": "market_ui", "from": 0.9, "beats": 6, "amb": "day"},
+	{"card": "Make it the finest estate\nin the hills.", "beats": 3},
 	{"shot": "grand", "from": 0.8, "beats": 6},
-	{"shot": "hook", "from": 1.5, "beats": 5},
+	{"shot": "shrine_ui", "from": 1.3, "beats": 5},
 	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(960, 810)},
-	{"shot": "hoopoe", "from": 1.8, "beats": 5, "zoom": 2.0, "centre": Vector2(960, 810)},
 	{"shot": "timelapse", "from": 1.5, "beats": 6, "caption": "Your helpers work while you rest.", "mute": true},
 	{"shot": "inside", "from": 1.5, "beats": 3, "amb": "night"},
 	{"shot": "night", "from": 1.5, "beats": 7},
@@ -64,11 +63,44 @@ while you sleep", "mute": true},
 	{"shot": "night", "from": 1.5, "beats": 3, "amb": "night"},
 	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
+## Day 1 to the grand estate: one shot, the villa reaching a new stage every two beats, the day counting up.
+const TRANSFORM := [
+	{"shot": "stages", "from": 0.286, "beats": 2, "caption": "Day 1\nI inherited a ruin", "caption_at": 0.0, "amb": "day"},
+	{"shot": "stages", "from": 2.0, "beats": 2, "caption": "Day 3", "caption_at": 0.0},
+	{"shot": "stages", "from": 3.714, "beats": 2, "caption": "Day 9", "caption_at": 0.0},
+	{"shot": "stages", "from": 5.428, "beats": 2, "caption": "Day 30", "caption_at": 0.0},
+	{"shot": "stages", "from": 7.142, "beats": 2, "caption": "Day 60", "caption_at": 0.0},
+	{"shot": "stages", "from": 8.856, "beats": 2, "caption": "Day 90", "caption_at": 0.0},
+	{"shot": "stages", "from": 10.57, "beats": 4, "caption": "Day 120", "caption_at": 0.0},
+	{"end": "endcard", "from": 1.0, "beats": 5},
+]
+## Yes, you can pet the dog, and then everything else.
+const PETS := [
+	{"shot": "pet", "from": 1.6, "beats": 3, "caption": "Yes, you can\npet the dog", "caption_at": 0.0, "amb": "day"},
+	{"shot": "cat", "from": 1.6, "beats": 3, "caption": "and the cat", "caption_at": 0.0},
+	{"shot": "donkey", "from": 1.6, "beats": 3, "caption": "and the donkey", "caption_at": 0.0},
+	{"shot": "goat", "from": 1.6, "beats": 3, "caption": "and the goats", "caption_at": 0.0},
+	{"shot": "stork", "from": 1.6, "beats": 3, "caption": "and the stork?", "caption_at": 0.0},
+	{"shot": "hoopoe", "from": 2.0, "beats": 4, "caption": "and... whatever\nthis is", "caption_at": 0.0},
+	{"end": "endcard", "from": 1.0, "beats": 5},
+]
+## No music, only the farm: rain, the oven's fire, the harvest and the night.
+const ASMR := [
+	{"shot": "grove", "from": 1.0, "beats": 5, "caption": "turn your\nsound on", "caption_at": 0.0, "amb": "rain"},
+	{"shot": "bakery", "from": 1.5, "beats": 4, "amb": "night"},
+	{"shot": "plant", "from": 1.6, "beats": 5, "amb": "day"},
+	{"shot": "pasture", "from": 1.5, "beats": 4},
+	{"shot": "night", "from": 1.5, "beats": 6, "amb": "night"},
+	{"end": "endcard", "from": 1.0, "beats": 5},
+]
 ## How each cut is laid out: its frame, how many screen pixels make one overlay pixel, its caption size, where its text
-## and logo sit in overlay pixels, and where in the music it starts.
+## and logo sit in overlay pixels, where in the music it starts, and optionally no music and louder ambience.
 const CUTS := {
 	"trailer": {"edit": TRAILER, "size": Vector2i(1920, 1080), "pixel": 4, "caption_size": 16, "caption_y": 20, "logo_y": 30, "scroll_y": 134, "music_from": 0.0},
 	"short": {"edit": SHORT, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
+	"transform": {"edit": TRANSFORM, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
+	"pets": {"edit": PETS, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0},
+	"asmr": {"edit": ASMR, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0, "music": false, "ambience_db": 4.0},
 }
 
 var _shots_dir := ""
@@ -134,7 +166,8 @@ func _ready() -> void:
 		_bed_gain[name] = 0.0
 	# A preview can start part way through, to look at one moment without rendering the whole trailer.
 	_frame = int(from * FPS)
-	_music.play(float(_cut["music_from"]) + from)
+	if _cut.get("music", true):
+		_music.play(float(_cut["music_from"]) + from)
 	for name in _beds:
 		_beds[name].play(from)
 	# A preview starts in the ambience set last before it.
@@ -226,7 +259,7 @@ func _process(_delta: float) -> void:
 		_bed = String(seg["amb"])
 	for name in _beds:
 		_bed_gain[name] = move_toward(_bed_gain[name], 1.0 if name == _bed else 0.0, 1.0 / (AMBIENCE_BLEND * FPS))
-		_beds[name].volume_db = AMBIENCE_DB + linear_to_db(maxf(_bed_gain[name] * ending, 0.0001))
+		_beds[name].volume_db = float(_cut.get("ambience_db", AMBIENCE_DB)) + linear_to_db(maxf(_bed_gain[name] * ending, 0.0001))
 	_frame += 1
 
 

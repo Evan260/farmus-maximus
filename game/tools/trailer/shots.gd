@@ -8,6 +8,10 @@ var m: Node
 var shot := ""
 var _pointer: Sprite2D
 var _young := false
+## Seconds between the villa's stages in the quick ruin-to-estate shot: two beats of the trailer's music.
+const STAGE_SECONDS := 1.714
+## How far a building is framed to the left of the middle, in game pixels, so the window it opens does not hide it.
+const WINDOW_CLEARANCE := 115.0
 ## True in the narrow portrait view of the short cut, where each shot frames its subject rather than a whole zone.
 var _narrow := false
 var _ring: Sprite2D
@@ -226,6 +230,128 @@ func _shot_profile() -> void:
 	_look_at(Estate.VILLA_BASE.x)
 
 
+## The bakery by hand: the pointer opens its window, loads the flour, and the oven fires and turns out bread. The miller
+## is away, so the window shows its Load button rather than the helper who would keep it loaded.
+func _shot_bakery_ui() -> void:
+	Game.helpers.erase("miller")
+	if m._helpers.has("miller"):
+		m._helpers["miller"].queue_free()
+		m._helpers.erase("miller")
+	var b: Dictionary = Game.buildings["bakery"]
+	b["state"] = "working"
+	b["queue"] = []
+	b["busy"] = false
+	Game.building_changed.emit("bakery")
+	# A storehouse with room for the bread, and the oven framed to the left of the window that opens over the middle.
+	Game.levels["storage"] = 3
+	Game.add_item("flour", 16, true)
+	_look_at(_building_x("bakery") + WINDOW_CLEARANCE)
+	await _wait(1.6)
+	await _click_on(_building_centre("bakery"), false)
+	await _wait(0.7)
+	await _press(m.hud._building._load)
+	# A batch takes a minute; here it is all but baked once the oven is lit, so the bread comes out in view.
+	await _wait(1.2)
+	b["progress"] = float(Game.current_recipe("bakery").get("seconds", 60)) - 0.9
+
+
+## Selling at the market stalls by hand: each sale rings up its coins.
+func _shot_market_ui() -> void:
+	Game.keep_goods = {}
+	Game.market.pack_cart()
+	await _wait(1.2)
+	var stalls: Rect2 = m.market.SPOTS[0]["rect"]
+	_pointer.visible = true
+	_pointer.position = _town_screen(stalls.get_center() + Vector2(-40, 40))
+	await _move_screen(_town_screen(stalls.get_center()))
+	await _tap()
+	m.market._open("Stalls")
+	await _wait(0.8)
+	for k in 3:
+		var sell := _find_button(m.market._list, tr("Sell all"))
+		if sell == null:
+			break
+		await _press(sell)
+		await _wait(0.5)
+
+
+## An offering at the household shrine: the bell rings and a god blesses the estate.
+func _shot_shrine_ui() -> void:
+	Game.blessing = {}
+	_look_at(_building_x("lararium") + WINDOW_CLEARANCE)
+	await _wait(1.6)
+	await _click_on(_building_centre("lararium"), false)
+	await _wait(0.8)
+	await _press(_find_button(m.hud._building, tr("Offer")))
+
+
+## The farm from ruin to grand estate in a few seconds: each stage arrives with its dust, its flash and its sound,
+## and the beds fill and bloom as it grows.
+func _shot_stages() -> void:
+	for i in Game.plots.size():
+		if Game.plots[i]["zone"] == "home":
+			Game.plots[i]["crop"] = ""
+			Game.plots[i]["growth"] = 0.0
+	_look_at(Estate.VILLA_BASE.x)
+	await _wait(2.0)
+	var crops := ["lavender", "lavender_violet", "lavender", "lavender_white", "lavender_bluegrey", "wheat"]
+	var decor := {5: ["planters", "lanterns"], 6: ["bench", "birdbath"], 7: ["statue", "fountain"]}
+	for stage in range(2, Game.villa_stages().size() + 1):
+		Game.villa_stage = stage
+		var k := 0
+		for i in Game.plots.size():
+			var p: Dictionary = Game.plots[i]
+			if p["zone"] != "home":
+				continue
+			k += 1
+			# Each stage brings more of the beds into use, and the earlier ones closer to bloom.
+			if k % 7 < stage:
+				p["unlocked"] = true
+				if p["crop"] == "":
+					p["crop"] = crops[k % crops.size()]
+				p["growth"] = minf(1.0, float(stage - 1) / 5.0) * Game.time_to_ready(p)
+		for d in decor.get(stage, []):
+			Game.decorations[d] = true
+			Game.decoration_bought.emit(d)
+		m._on_villa_finished()
+		await _wait(STAGE_SECONDS)
+
+
+## Strokes the cat, brought onto the path where nothing stands in front of it.
+func _shot_cat() -> void:
+	await _wait(1.4)
+	m.cat.position = Vector2(Estate.VILLA_BASE.x - 34, 268)
+	_look_at(m.cat.position.x)
+	await _wait(0.4)
+	await _click_on(m.cat.position + Vector2(0, -6))
+
+
+## The donkey at the cart brays when patted.
+func _shot_donkey() -> void:
+	await _wait(1.4)
+	_look_at(m._donkey.position.x)
+	await _wait(0.4)
+	await _click_on(m._donkey.position + Vector2(4, -16))
+
+
+## A goat in the pasture bleats when patted.
+func _shot_goat() -> void:
+	await _wait(1.4)
+	var goat: Node2D = m._pasture._goats[0]
+	_look_at(goat.position.x)
+	await _wait(0.4)
+	await _click_on(goat.position + Vector2(0, -10))
+
+
+## The stork on the villa roof clatters its bill when clicked.
+func _shot_stork() -> void:
+	await _wait(1.4)
+	var middle: Vector2 = m._stork.position + m._stork.texture.get_size() / 2.0
+	_look_at(middle.x)
+	await _wait(0.4)
+	await _click_on(middle)
+
+
 # Camera and pointer ------------------------------------------------------
 
 ## The middle of a building's doorway, for framing it in the narrow view.
@@ -265,32 +391,69 @@ func _beds_in_view(wanted: Callable) -> Array:
 
 
 ## The pointer comes in along the path from the lower left, clicks, then drifts back down out of the way, so it never
-## passes over the beds or covers what the click sets off.
-func _click_on(at: Vector2) -> void:
-	_pointer.visible = true
-	_pointer.position = _screen(at + Vector2(-40, 10))
+## passes over the beds or covers what the click sets off. A click that opens a window leaves the pointer where it is.
+func _click_on(at: Vector2, drift := true) -> void:
+	if not _pointer.visible:
+		_pointer.visible = true
+		_pointer.position = _screen(at + Vector2(-40, 10))
 	await _move_to(at)
-	await _press()
+	await _tap()
 	m._click(at)
-	await _wait(0.15)
-	_move_to(at + Vector2(-26, 12))
+	if drift:
+		await _wait(0.15)
+		_move_to(at + Vector2(-26, 12))
+
+
+## Moves the pointer onto a button in a window and presses it, as a player would.
+func _press(button: BaseButton) -> void:
+	if button == null:
+		return
+	_pointer.visible = true
+	# The interface is drawn enlarged, so the button's centre is taken through its full transform to the screen.
+	await _move_screen((button.get_global_transform_with_canvas() * (button.size / 2.0)).round())
+	await _tap()
+	button.pressed.emit()
+
+
+## The first button under a node with the given label, or null.
+func _find_button(root: Node, label: String) -> Button:
+	for child in root.find_children("*", "Button", true, false):
+		if child is Button and child.text == label and child.is_visible_in_tree():
+			return child
+	return null
+
+
+func _building_centre(id: String) -> Vector2:
+	for v in m.building_views:
+		if v.id == id:
+			return v.world_rect().get_center()
+	return Vector2(m.cam_x, 200)
+
+
+## A point in the market town's painting, on screen.
+func _town_screen(at: Vector2) -> Vector2:
+	return (at * m.market._scene.scale.x + m.market._scene.position).round()
 
 
 func _click_plot(v: Node2D) -> void:
 	await _move_to(v.position + Vector2(15, -6))
-	await _press()
+	await _tap()
 	m._click_plot(v.index)
 	await _wait(0.25)
 
 
 func _move_to(world: Vector2) -> void:
+	await _move_screen(_screen(world))
+
+
+func _move_screen(to: Vector2) -> void:
 	var t := create_tween()
-	t.tween_property(_pointer, "position", _screen(world), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(_pointer, "position", to, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await t.finished
 
 
 ## The pointer dips a pixel and a small ring spreads from its tip, so a click reads on screen.
-func _press() -> void:
+func _tap() -> void:
 	_pointer.position.y += Windowing.scale
 	_ring.position = _pointer.position
 	_ring.scale = Vector2.ONE * Windowing.scale * 0.5
