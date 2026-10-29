@@ -42,13 +42,15 @@ SHOTS = {
     "ruin": (7, ["--villa=1", "--zone=home", "--hour=8.5", *HUD_OFF]),
     "plant": (7, ["--villa=2", "--zone=home", "--hour=9.5", "--coins=240"]),
     "cart": (6, ["--villa=3", "--zone=home", "--hour=10", "--coins=1840"]),
-    "coins": (19, ["--villa=3", "--zone=home", "--hour=10", "--coins=1840"]),
+    # The cart comes home after the trip to town, so its purse starts where the market's selling left it.
+    "coins": (19, ["--villa=3", "--zone=home", "--hour=10", "--coins=2036"]),
     "helper": (6, ["--maxed", "--villa=4", "--zone=home", "--hour=9", *HUD_OFF]),
     "bakery": (6, ["--estate", "--zone=yard", "--hour=19.3", *HUD_OFF]),
+    "restore": (7, ["--villa=1", "--zone=home", "--hour=9", *HUD_OFF]),
     "villa": (7, ["--villa=3", "--zone=home", "--hour=11", *HUD_OFF]),
     "grand": (7, ["--maxed", "--villa=6", "--zone=home", "--hour=16", *HUD_OFF]),
     "bakery_ui": (8, ["--estate", "--zone=yard", "--hour=10", "--coins=2400", "--aureus=0"]),
-    "market_ui": (8, ["--maxed", "--town", "--hour=11", "--coins=48250", "--aureus=12"]),
+    "market_ui": (8, ["--villa=3", "--town", "--hour=11", "--coins=1840", "--aureus=0"]),
     "shrine_ui": (7, ["--maxed", "--zone=home", "--hour=16", "--coins=48250", "--aureus=12"]),
     "stages": (16, ["--villa=1", "--zone=home", "--hour=10", "--scale=5", *HUD_OFF]),
     "cat": (5, ["--maxed", "--zone=home", "--hour=11", *HUD_OFF]),
@@ -68,8 +70,8 @@ SHOTS = {
 # The trailer's shots, and each vertical cut's. Vertical shots are all without the interface, since its panels are laid
 # out for a wide screen.
 CUT_SHOTS = {
-    "trailer": ["ruin", "plant", "cart", "coins", "villa", "bakery_ui", "pasture", "vineyard", "grove", "market_ui", "grand",
-                "shrine_ui", "pet", "timelapse", "inside", "night", "endcard"],
+    "trailer": ["ruin", "restore", "plant", "cart", "market_ui", "coins", "villa", "bakery_ui", "pasture", "vineyard", "grove",
+                "grand", "shrine_ui", "pet", "timelapse", "inside", "night", "endcard"],
     "ruin_to_life": ["ruin", "villa", "plant", "helper", "bakery", "pasture", "vineyard", "pet", "hoopoe", "timelapse",
                      "night", "endcard"],
     "day_1_vs_day_120": ["stages", "endcard"],

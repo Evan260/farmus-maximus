@@ -141,6 +141,15 @@ func _shot_bakery() -> void:
 	_look_at(_building_x("bakery") if _narrow else Game.zone_info("yard")["x"] + 240)
 
 
+## The first restoration: scaffold goes up round the ruin, among bare beds, and comes down on the restored farmhouse.
+func _shot_restore() -> void:
+	for i in Game.plots.size():
+		if Game.plots[i]["zone"] == "home":
+			Game.plots[i]["crop"] = ""
+			Game.plots[i]["growth"] = 0.0
+	_shot_villa()
+
+
 ## The last stage: the scaffold comes down on the grand estate.
 func _shot_grand() -> void:
 	_shot_villa()
@@ -151,6 +160,10 @@ func _shot_villa() -> void:
 	_look_at(Estate.VILLA_BASE.x)
 	# The demo farm builds five times faster than the game; here the scaffold has time to rise before the reveal.
 	Game.build_speed = 1.0
+	# The young farm's small storehouse holds no building materials, so the stage's stone, timber, tiles and bread are
+	# brought in for it.
+	for item in ["stone", "timber", "tiles", "bread"]:
+		Game.add_item(item, 30, true)
 	await _wait(1.0)
 	Game.upgrade_villa()
 	Game.villa_build["time_left"] = 2.4
