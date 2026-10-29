@@ -1,0 +1,12 @@
+For the Content Survey in Steamworks, which asks whether the game uses AI-generated content.
+
+Answer: yes, pre-generated content (made during development). No content is generated while the game is played.
+
+Text to paste into the description box:
+
+Most of the game's pixel art, including its characters, animals, buildings and scenery, was generated with PixelLab, an AI pixel-art tool, then cleaned up, edited and assembled for the game. The translations into 13 languages were made with machine translation. Much of the game's code was written with the help of an AI coding assistant. The music and the recorded sound effects are by human composers and sound recordists, credited in the game. No AI generates content while you play.
+
+Notes:
+- Read the survey's own wording when you fill it in. If it says code written with AI tools does not need declaring,
+  the sentence about the code can be left out.
+- Steam shows this text on the store page, so keep it accurate if more art is generated or replaced later.

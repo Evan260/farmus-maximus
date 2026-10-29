@@ -7,8 +7,8 @@ a carved edge, a dark outline and a little depth underneath, with a laurel sprig
 It also draws the parchment scroll the end card's "Wishlist" line is written on.
 
 Usage: python tools/trailer/make_logo.py
-Writes game/tools/trailer/logo.png and scroll.png at 1 pixel per game pixel; the trailer shows them 4 times larger,
-like the game.
+Writes game/tools/trailer/logo.png, logo_plain.png (the name without the laurel) and scroll.png at 1 pixel per game
+pixel; the trailer shows them 4 times larger, like the game.
 """
 import math
 from pathlib import Path
@@ -19,6 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 HERE = Path(__file__).resolve().parent
 OUT = HERE.parents[1] / "game" / "tools" / "trailer" / "logo.png"
 SCROLL_OUT = OUT.with_name("scroll.png")
+PLAIN_OUT = OUT.with_name("logo_plain.png")
 PARCHMENT, PARCHMENT_SHADE, PARCHMENT_LIGHT = (252, 242, 219), (226, 204, 166), (255, 250, 236)
 ROLL, ROLL_SHADE, ROLL_LIGHT = (214, 186, 140), (172, 136, 92), (240, 222, 186)
 CAP = 27
@@ -244,6 +245,8 @@ def main():
         logo.alpha_composite(l, ((total_w - l.width) // 2, y))
         tops.append((y, l))
         y += l.height + LINE_GAP
+    # The name alone, without the laurel, for pictures too narrow for it.
+    logo.crop(logo.getbbox()).save(PLAIN_OUT)
     # A sprig grows out from each side of the second line, the way a victor's laurel frames a name.
     y2, second = tops[1]
     left = sprig(sprig_len, True)

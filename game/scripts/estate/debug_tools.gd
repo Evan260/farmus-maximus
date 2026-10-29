@@ -120,8 +120,12 @@ func load_demo_state() -> void:
 			Game.quiet = false
 		elif arg.begins_with("--coins="):
 			Game.coins = int(arg.trim_prefix("--coins="))
+		elif arg.begins_with("--aureus="):
+			Game.aureus = int(arg.trim_prefix("--aureus="))
 		elif arg == "--no-music":
 			AudioServer.set_bus_mute(AudioServer.get_bus_index("Music"), true)
+		elif arg == "--no-ambience":
+			AudioServer.set_bus_mute(AudioServer.get_bus_index("Ambience"), true)
 		elif arg.begins_with("--trailer-shot="):
 			# The trailer's scripted shots live with the trailer tools, which are left out of the exported game.
 			if ResourceLoader.exists(TRAILER_SHOTS):
