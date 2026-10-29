@@ -97,10 +97,10 @@ const ASMR := [
 ## and logo sit in overlay pixels, where in the music it starts, and optionally no music and louder ambience.
 const CUTS := {
 	"trailer": {"edit": TRAILER, "size": Vector2i(1920, 1080), "pixel": 4, "caption_size": 16, "caption_y": 20, "logo_y": 30, "scroll_y": 134, "music_from": 0.0},
-	"short": {"edit": SHORT, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
-	"transform": {"edit": TRANSFORM, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
-	"pets": {"edit": PETS, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0},
-	"asmr": {"edit": ASMR, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0, "music": false, "ambience_db": 4.0},
+	"ruin_to_life": {"edit": SHORT, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
+	"day_1_vs_day_120": {"edit": TRANSFORM, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
+	"pet_the_dog": {"edit": PETS, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0},
+	"cozy_sounds": {"edit": ASMR, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0, "music": false, "ambience_db": 4.0},
 }
 
 var _shots_dir := ""

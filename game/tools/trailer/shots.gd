@@ -68,12 +68,6 @@ func _process(_delta: float) -> void:
 
 # Shots -------------------------------------------------------------------
 
-## Golden hour on the finished estate: a slow drift along the lavender towards the villa.
-func _shot_hook() -> void:
-	_look_at(Estate.HOME + 150)
-	_pan(70.0, 9.0)
-
-
 ## The farm as Uncle Marcus left it: the ruined farmhouse behind bare beds.
 func _shot_ruin() -> void:
 	for i in Game.plots.size():
@@ -192,12 +186,6 @@ func _shot_hoopoe() -> void:
 func _shot_inside() -> void:
 	await _wait(0.2)
 	m.interior._ui_root.get_child(0).modulate.a = 0.0
-
-
-## A morning in the market town; the market's own top bar is hidden.
-func _shot_town() -> void:
-	await _wait(0.6)
-	m.market._ui_root.get_child(0).modulate.a = 0.0
 
 
 ## The dog on the path is petted, and hearts rise. The camera finds the dog before the part the trailer uses.

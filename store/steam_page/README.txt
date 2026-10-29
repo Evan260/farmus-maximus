@@ -49,7 +49,7 @@ in search, so they lead with the estate, a workshop window, the vineyard and the
 
 TRAILER (Trailers tab)
 
-The trailer is rendered to recordings/trailer/trailer.avi (kept out of git because of its size) by
+The trailer is rendered to recordings/videos/steam_trailer.avi (kept out of git because of its size) by
 python tools/trailer/make_trailer.py. Steam wants an .mp4; once ffmpeg is installed (winget install Gyan.FFmpeg),
 Claude can add the conversion. Before uploading, confirm with the composer of the harp music (Mythago Music) that it
 may be used in a trailer.

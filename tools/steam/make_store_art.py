@@ -17,7 +17,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "store" / "steam_page"
-RENDERS = ROOT / "recordings" / "store_renders"
+RENDERS = ROOT / "recordings" / "work" / "store_renders"
 GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe"
          / "Godot_v4.7.2-stable_win64_console.exe")
 LOGO = ROOT / "game" / "tools" / "trailer" / "logo.png"
