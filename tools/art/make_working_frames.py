@@ -1,6 +1,6 @@
 """Make the short loops that play while a building works, from its working picture: the mill's upper stone turns,
 its furrows sliding past, with the sweep beam swinging round the shaft; the olive press turns its screw and swings the
-bar through its nut, and the wine press turns its screw and rocks its weighted beam;
+bar through its nut, and the wine press rocks its weighted beam;
 flames lick along the floor of the bakery oven.
 
 Usage: python tools/art/make_working_frames.py
@@ -123,17 +123,24 @@ def olive_press():
 
 
 def wine_press():
-    """The wine press: its screw turns while the long beam rocks on the press head, the hanging stone weight at its
-    far end sinking and rising a few pixels as the grapes are squeezed."""
+    """The wine press: the long beam rocks on the press head, the hanging stone weight at its far end sinking and
+    rising a few pixels as the grapes are squeezed. It has no screw showing, so nothing else turns."""
     base = load("wine_press")
     pivot_x, x0, y0, x1, y1 = 38, 38, 25, 82, 48
     stone = (68, 82)
-    moving = base[y0:y1, x0:x1].copy()
+    # Only the beam, the stone and its hook move: the vat's rim and the bracket under the roof share the area but stay.
+    keep = np.zeros(base.shape[:2], bool)
+    keep[38:, :54] = True
+    keep[:28, 78:] = True
+    part = np.zeros(base.shape[:2], bool)
+    part[y0:y1, x0:x1] = True
+    part &= ~keep
+    moving = np.where(part[..., None], base, 0)[y0:y1, x0:x1]
     empty = base.copy()
-    empty[y0:y1, x0:x1] = 0
+    empty[part] = 0
     frames = []
     for k in range(LEVER_FRAMES):
-        f = screw_frame(empty, (29, 17, 36, 30), 4, k)
+        f = empty.copy()
         tilt = 0.075 * math.sin(2 * math.pi * k / LEVER_FRAMES)
         drop_at_stone = round((sum(stone) / 2 - pivot_x) * tilt)
         for i in range(moving.shape[1]):
