@@ -159,6 +159,7 @@ func move_strip(offset: Vector2i) -> void:
 	# Dragged up a strip at the bottom moves in from its edge, and dragged down a strip at the top does.
 	offset_y = -offset.y if dock == "bottom" else offset.y
 	_place_strip()
+	_redraw_now()
 
 
 ## Where the strip is dragged from: across from the middle, and up or down from the bottom or down from the top.
@@ -177,17 +178,28 @@ func set_strip_width(width: int) -> void:
 	offset_x = left - usable.position.x - (usable.size.x - get_window().size.x) / 2
 	_place_strip()
 	view_changed.emit()
+	_redraw_now()
+
+
+## Windows shows a grown window's new edge blank until the game next draws, so during a drag it draws at once rather
+## than waiting for its next frame.
+func _redraw_now() -> void:
+	if strip_dragging:
+		RenderingServer.force_draw()
 
 
 ## While the strip is dragged it lets no clicks through: on Windows the outline that does so also cuts away what the
 ## strip draws, and redrawing it on every step of the drag makes the strip flicker. It is drawn afresh once the drag ends.
 func start_strip_drag() -> void:
 	strip_dragging = true
+	# The strip's usual low frame rate would leave each step of the drag on screen half drawn.
+	Engine.max_fps = 0
 	DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 
 
 func finish_strip_drag() -> void:
 	strip_dragging = false
+	_update_fps()
 	view_changed.emit()
 	_save()
 
