@@ -41,7 +41,7 @@ const TRAILER := [
 	{"shot": "shrine_ui", "from": 1.3, "beats": 5},
 	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(960, 810)},
 	{"desk": "desk", "from": 1.0, "beats": 7, "caption": "It keeps farming while you work."},
-	{"shot": "timelapse", "from": 1.5, "beats": 4, "mute": true},
+	{"shot": "timelapse", "from": 1.5, "beats": 5, "caption": "Your helpers work while you rest.", "mute": true},
 	{"shot": "inside", "from": 1.5, "beats": 3, "amb": "night"},
 	{"shot": "night", "from": 1.5, "beats": 6},
 	{"end": "endcard", "from": 1.0, "beats": 7},
@@ -114,8 +114,10 @@ var _starts: Array = []
 var _total_frames := 0
 var _picture: TextureRect
 var _texture: ImageTexture
-## The made-up desktop and the strip laid over it, for the shot of the farm along the bottom of a screen.
+## A real desktop's screenshot and the strip laid over it, for the shot of the farm along the bottom of a screen, and
+## how tall the desktop's taskbar is; without a screenshot that shot is left out of the cut.
 var _desktop: Texture2D
+var _taskbar := 0
 var _strip: TextureRect
 var _strip_texture: ImageTexture
 var _overlay: SubViewport
@@ -148,7 +150,15 @@ func _ready() -> void:
 			from = float(arg.trim_prefix("--from="))
 		elif arg.begins_with("--cut="):
 			_cut = CUTS[arg.trim_prefix("--cut=")]
+		elif arg.begins_with("--desktop="):
+			var shot := Image.load_from_file(arg.trim_prefix("--desktop="))
+			if shot:
+				_desktop = ImageTexture.create_from_image(shot)
+		elif arg.begins_with("--taskbar="):
+			_taskbar = int(arg.trim_prefix("--taskbar="))
 	_edit = _cut["edit"]
+	if _desktop == null:
+		_edit = _edit.filter(func(seg): return not seg.has("desk"))
 	_size = Vector2(_cut["size"])
 	var t := 0
 	for seg in _edit:
@@ -190,15 +200,12 @@ func _build() -> void:
 	_picture.size = _size
 	_picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_picture)
-	var desk_path := "res://tools/trailer/desktop_%dx%d.png" % [int(_size.x), int(_size.y)]
-	if ResourceLoader.exists(desk_path):
-		_desktop = load(desk_path)
 	_strip_texture = ImageTexture.create_from_image(Image.create(1536, 498, false, Image.FORMAT_RGBA8))
 	_strip = TextureRect.new()
 	_strip.texture = _strip_texture
 	_strip.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	# The strip sits centred along the bottom of the desktop, just above its taskbar.
-	_strip.position = Vector2(roundf((_size.x - 1536.0) / 2.0), _size.y - roundf(48.0 * _size.y / 1080.0) - 498.0)
+	_strip.position = Vector2(roundf((_size.x - 1536.0) / 2.0), _size.y - _taskbar - 498.0)
 	_strip.visible = false
 	add_child(_strip)
 	# Cards, captions and the end card are drawn in big pixels and scaled up, like the game.

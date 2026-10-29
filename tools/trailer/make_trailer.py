@@ -9,8 +9,9 @@ Usage:
   Add --cut=NAME to any of these for one of the shorts: ruin_to_life, day_1_vs_day_120, pet_the_dog or cozy_sounds.
   The shorts share their shots, recorded close up at 1080x1920.
 
-Finished videos go to recordings/videos/, named in VIDEOS below; the shot frames they are cut from are kept in
-recordings/work/ so a change to the edit renders again in a minute or two. The shots are scripted in
+Finished videos go to marketing/recordings/videos/, named in NAMES below; the shot frames they are cut from are kept in
+marketing/recordings/content/ so a change to the edit renders again in a minute or two. The farm along the bottom of a
+desktop is laid over marketing/desktop.png, a screenshot of a real desktop; without it that shot is left out. The shots are scripted in
 game/tools/trailer/shots.gd and the edits, with their captions and music, in game/tools/trailer/edit.gd. Every shot
 plays a demo farm, so the real save is never touched.
 """
@@ -20,8 +21,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-VIDEOS = ROOT / "recordings" / "videos"
-WORK = ROOT / "recordings" / "work"
+VIDEOS = ROOT / "marketing" / "recordings" / "videos"
+WORK = ROOT / "marketing" / "recordings" / "content"
+DESKTOP = ROOT / "marketing" / "desktop.png"
 # Each cut's finished file.
 NAMES = {
     "trailer": "steam_trailer.avi",
@@ -128,10 +130,41 @@ def render(fmt, cut, start=0.0):
     out = WORK / "preview.avi" if start else VIDEOS / NAMES[cut]
     out.parent.mkdir(parents=True, exist_ok=True)
     # The edit quits when it ends; the frame limit only stops a run whose script failed to load from going on forever.
+    desk = desktop_frame(fmt["size"], WORK / f"desktop_{fmt['size'][0]}x{fmt['size'][1]}.png")
+    desk_args = [f"--desktop={desk[0]}", f"--taskbar={desk[1]}"] if desk else []
     godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "--quit-after", str(200 * FPS), "res://tools/trailer/edit.tscn",
-           "--", "--readonly", *window(fmt), f"--shots={fmt['shots']}", f"--cut={cut}", f"--from={start}"],
+           "--", "--readonly", *window(fmt), f"--shots={fmt['shots']}", f"--cut={cut}", f"--from={start}", *desk_args],
           fmt["size"])
     print(f"ready: {out}")
+
+
+def desktop_frame(size, out):
+    """The player's own desktop screenshot, marketing/desktop.png, cut to the frame's shape from its bottom, where the
+    strip sits, and scaled to fit. Returns the path and how tall the taskbar is in it, or None without a screenshot."""
+    if not DESKTOP.exists():
+        return None
+    from PIL import Image
+    shot = Image.open(DESKTOP).convert("RGB")
+    tall = round(shot.width * size[1] / size[0])
+    if tall <= shot.height:
+        shot = shot.crop((0, shot.height - tall, shot.width, shot.height))
+    else:
+        wide = round(shot.height * size[0] / size[1])
+        shot = shot.crop(((shot.width - wide) // 2, 0, (shot.width - wide) // 2 + wide, shot.height))
+    factor = size[0] / shot.width
+    shot.resize(size, Image.LANCZOS).save(out)
+    return out, round(taskbar_height() * factor)
+
+
+def taskbar_height():
+    """How tall the Windows taskbar is on the main screen, in screen pixels: the screen's height less its work area's."""
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+    user32.SetProcessDPIAware()
+    area = wintypes.RECT()
+    user32.SystemParametersInfoW(0x30, 0, ctypes.byref(area), 0)
+    return user32.GetSystemMetrics(1) - (area.bottom - area.top)
 
 
 def main():

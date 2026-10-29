@@ -44,13 +44,13 @@ app_icon.ico                 Client icon (also usable as the game's own Windows 
 SCREENSHOTS (Screenshots tab)
 
 screenshots/01 to 11, all 1920x1080 except 02, the farm along the bottom of a desktop, which is 2560x1440 so the
-strip keeps its pixels crisp. Upload them in this order; the first four show in the store page's sidebar and in
+strip keeps its pixels crisp. 02 is made only once a screenshot of a real desktop is saved as marketing/desktop.png. Upload them in this order; the first four show in the store page's sidebar and in
 search, so they lead with the estate, the desktop strip, a workshop window and the vineyard.
 
 
 TRAILER (Trailers tab)
 
-The trailer is rendered to recordings/videos/steam_trailer.avi (kept out of git because of its size) by
+The trailer is rendered to marketing/recordings/videos/steam_trailer.avi (kept out of git because of its size) by
 python tools/trailer/make_trailer.py. Steam wants an .mp4; once ffmpeg is installed (winget install Gyan.FFmpeg),
 Claude can add the conversion. Before uploading, confirm with the composer of the harp music (Mythago Music) that it
 may be used in a trailer.

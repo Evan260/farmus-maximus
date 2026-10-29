@@ -17,7 +17,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "store" / "steam_page"
-RENDERS = ROOT / "recordings" / "work" / "store_renders"
+RENDERS = ROOT / "marketing" / "store_renders"
 GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe"
          / "Godot_v4.7.2-stable_win64_console.exe")
 LOGO = ROOT / "game" / "tools" / "trailer" / "logo.png"
@@ -50,8 +50,10 @@ SCREENSHOTS = {
     "10_where_it_begins": ["--villa=1", "--zone=home", "--hour=9", "--coins=240", "--aureus=0", "--trailer-shot=ruin"],
     "11_helpers": ["--maxed", "--zone=home", "--hour=10", *EARNED, "--panel=helpers"],
 }
-# The second screenshot is the farm as a strip along the bottom of a made-up desktop, the game's way of being played.
-DESKTOP = ROOT / "game" / "tools" / "trailer" / "desktop_2560x1440.png"
+# The second screenshot is the farm as a strip along the bottom of a real desktop, marketing/desktop.png, the game's
+# way of being played; without that screenshot it is left out.
+sys.path.insert(0, str(ROOT / "tools" / "trailer"))
+from make_trailer import desktop_frame  # noqa: E402
 DESKTOP_SHOT = "02_on_your_desktop"
 
 
@@ -139,11 +141,12 @@ def layout():
         old.unlink()
     for name in SCREENSHOTS:
         Image.open(RENDERS / f"shot_{name}.png").convert("RGB").save(OUT / "screenshots" / f"{name}.png")
-    desk = Image.open(DESKTOP).convert("RGBA")
-    strip = Image.open(RENDERS / "strip.png").convert("RGBA")
-    taskbar = round(48 * desk.height / 1080)
-    desk.alpha_composite(strip, ((desk.width - strip.width) // 2, desk.height - taskbar - strip.height))
-    desk.convert("RGB").save(OUT / "screenshots" / f"{DESKTOP_SHOT}.png")
+    frame = desktop_frame((2560, 1440), RENDERS / "desktop_2560x1440.png")
+    if frame:
+        desk = Image.open(frame[0]).convert("RGBA")
+        strip = Image.open(RENDERS / "strip.png").convert("RGBA")
+        desk.alpha_composite(strip, ((desk.width - strip.width) // 2, desk.height - frame[1] - strip.height))
+        desk.convert("RGB").save(OUT / "screenshots" / f"{DESKTOP_SHOT}.png")
     print("laid out", OUT)
 
 

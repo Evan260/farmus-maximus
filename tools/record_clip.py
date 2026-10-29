@@ -7,7 +7,7 @@ The clip always plays a demo farm, so the real save is never touched.
 Usage: python tools/record_clip.py NAME SECONDS [game flags ...]
   python tools/record_clip.py lavender 8 --estate --zone=home --hour=18 --no-hud
   python tools/record_clip.py hoopoe 6 --estate --zone=home --hour=10 --no-hud --hoopoe
-Writes recordings/clips/NAME.avi (kept out of git). Useful flags: --estate, --maxed, --zone=, --hour=, --weather=,
+Writes marketing/recordings/clips/NAME.avi (kept out of git). Useful flags: --estate, --maxed, --zone=, --hour=, --weather=,
 --no-hud, --galaxy, --rainbow, --hoopoe, --greet, --panel=, --inside (see game/scripts/estate/debug_tools.gd for all).
 """
 import subprocess
@@ -37,7 +37,7 @@ def main():
     override = ROOT / "game" / "override.cfg"
     if override.exists():
         sys.exit(f"{override} already exists; move it aside first")
-    out = ROOT / "recordings" / "clips" / f"{name}.avi"
+    out = ROOT / "marketing" / "recordings" / "clips" / f"{name}.avi"
     out.parent.mkdir(parents=True, exist_ok=True)
     if "--demo" not in flags:
         flags = ["--demo"] + flags
