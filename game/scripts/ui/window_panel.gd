@@ -102,6 +102,7 @@ func refresh() -> void:
 	UiKit.clear(body)
 	build()
 	tick()
+	_widen_paragraphs(self)
 	if fixed_size == Vector2.ZERO:
 		_fit_to_screen()
 	if scrolled.is_empty():
@@ -110,6 +111,21 @@ func refresh() -> void:
 	else:
 		_restore_scroll.call_deferred(scrolled)
 	UiKit.pad_focus.call_deferred(self)
+
+
+## A wrapped paragraph measures its height at its current width, which is none until the next layout, so the first
+## frame of a fresh page sees every word on its own line; it is given its set width now, and the window opens at size.
+func _widen_paragraphs(node: Node) -> void:
+	for child in node.get_children():
+		if child is Label and child.autowrap_mode != TextServer.AUTOWRAP_OFF:
+			# A paragraph in a column is stretched to the column's width, which is at least its widest part.
+			var width: float = child.custom_minimum_size.x
+			if node is VBoxContainer:
+				width = maxf(width, node.get_combined_minimum_size().x)
+			if child.size.x < width:
+				child.size.x = width
+				child.update_minimum_size()
+		_widen_paragraphs(child)
 
 
 ## Sizes the page to its contents, but no taller than the screen allows; a taller page scrolls, with room kept for
