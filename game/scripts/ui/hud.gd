@@ -246,14 +246,20 @@ func _fit() -> void:
 	_root.size = (get_viewport().get_visible_rect().size / Windowing.ui_scale).floor()
 
 
-## The strip's bars, the purse at the top left and the controls while they show, which must stay clickable when the
-## rest of the sky lets clicks through.
+## Everything of the interface showing over the strip: its bars, a message, a speech bubble or a window such as the
+## summary of time away. On Windows the outline that lets clicks through the see-through strip also cuts away what is
+## drawn outside it, so all of these must be inside it.
 func strip_bar_rects() -> Array[Rect2]:
 	var rects: Array[Rect2] = []
-	if _compact.visible:
-		rects.append(_compact.get_global_rect())
-	if _strip_controls.area().has_area():
-		rects.append(_strip_controls.area())
+	var whole := Rect2(Vector2.ZERO, _root.size)
+	for child in _root.get_children():
+		var c := child as Control
+		if c == null or not c.is_visible_in_tree() or c.modulate.a < 0.01:
+			continue
+		var r := c.get_global_rect()
+		# A full-screen layer, such as the title screen's, is not a piece of interface floating over the farm.
+		if r.has_area() and not r.encloses(whole):
+			rects.append(r)
 	return rects
 
 

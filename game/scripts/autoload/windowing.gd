@@ -54,6 +54,8 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
 		strip = false
 	get_window().size_changed.connect(_on_resized)
+	# Tooltips open in the main window, so they take its theme: the game's parchment rather than the engine's black.
+	get_window().theme = UiKit.make_theme()
 	Settings.changed.connect(_on_resized)
 	_apply.call_deferred()
 
@@ -283,8 +285,20 @@ func _update_fps() -> void:
 	Engine.max_fps = fps
 
 
+## Demo farms, test runs and recordings neither read nor change the player's own window settings, so they always start
+## the same way and never leave the player's window changed.
+func _trial_run() -> bool:
+	for arg in OS.get_cmdline_args():
+		if String(arg).begins_with("res://tests/"):
+			return true
+	for flag in ["--demo", "--new-farm", "--readonly"]:
+		if flag in OS.get_cmdline_user_args():
+			return true
+	return false
+
+
 func _load() -> void:
-	if not FileAccess.file_exists(SETTINGS_PATH):
+	if _trial_run() or not FileAccess.file_exists(SETTINGS_PATH):
 		return
 	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS_PATH))
 	if typeof(d) != TYPE_DICTIONARY:
@@ -303,10 +317,8 @@ func _load() -> void:
 
 
 func _save() -> void:
-	# Demo farms, test runs and recordings never change the player's own window settings.
-	for flag in ["--demo", "--new-farm", "--readonly"]:
-		if flag in OS.get_cmdline_user_args():
-			return
+	if _trial_run():
+		return
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "strip_scale": strip_scale,

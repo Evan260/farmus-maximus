@@ -21,6 +21,10 @@ const ICONS := {
 }
 
 var _scale_label: Label
+## The hint for the button under the pointer, shown under the buttons inside the bar itself, so it is never cut away by
+## the outline that lets clicks through the strip, as a separate tooltip would be.
+var _hint: Label
+var _hovered: Button
 var _dock_button: Button
 var _sky_button: Button
 ## The drag in progress: "move" or "width", where the pointer started on the screen, and the value it started from.
@@ -34,8 +38,14 @@ var _pinned := "--strip-controls" in OS.get_cmdline_user_args()
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	modulate.a = 0.0
-	var row := UiKit.row(self)
+	var col := UiKit.column(self)
+	var row := UiKit.row(col)
 	row.add_theme_constant_override("separation", 2)
+	_hint = UiKit.label(col)
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.visible = false
+	# A long hint wraps within the width of the buttons rather than stretching the bar.
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_icon_button(row, "left", tr("Look left"), func(): pan_requested.emit(-1))
 	_icon_button(row, "smaller", tr("Smaller"), func(): Windowing.change_strip_scale(-1))
 	_scale_label = UiKit.label(row)
@@ -60,9 +70,11 @@ func _process(delta: float) -> void:
 	_scale_label.text = "%dx" % Windowing.scale
 	var top := Windowing.dock == "top"
 	_dock_button.icon = _texture("to_bottom" if top else "to_top")
-	_dock_button.tooltip_text = tr("Move the strip to the bottom") if top else tr("Move the strip to the top")
+	_dock_button.set_meta("hint", tr("Move the strip to the bottom") if top else tr("Move the strip to the top"))
 	_sky_button.icon = _texture("no_sky" if Windowing.transparent else "sky")
-	_sky_button.tooltip_text = tr("Show the painted sky") if Windowing.transparent else tr("Show only the farm")
+	_sky_button.set_meta("hint", tr("Show the painted sky") if Windowing.transparent else tr("Show only the farm"))
+	_hint.text = String(_hovered.get_meta("hint")) if _hovered else ""
+	_hint.visible = _hint.text != ""
 	# Along the top right corner, clear of the purse bar at the top left.
 	var parent := get_parent() as Control
 	position = Vector2(roundf(parent.size.x - size.x - 4.0), 4.0)
@@ -77,8 +89,13 @@ func _icon_button(parent: Node, icon: String, tip: String, action: Callable) -> 
 	var b := Button.new()
 	b.icon = _texture(icon)
 	b.focus_mode = Control.FOCUS_NONE
-	b.tooltip_text = tip
+	b.set_meta("hint", tip)
+	b.mouse_entered.connect(func(): _hovered = b)
+	b.mouse_exited.connect(func(): if _hovered == b: _hovered = null)
 	b.expand_icon = false
+	# A little larger than the icon needs, so the buttons are easy to hit on a strip along the screen's edge.
+	b.custom_minimum_size = Vector2(15, 15)
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if action.is_valid():
 		b.pressed.connect(func(): Sfx.play("click", -8.0))
 		b.pressed.connect(action)
