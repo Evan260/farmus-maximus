@@ -317,13 +317,14 @@ func _shot_stages() -> void:
 		await _wait(STAGE_SECONDS)
 
 
-## Strokes the cat, brought onto the path where nothing stands in front of it.
+## Strokes the cat, brought onto the path clear of the dog, and drawn in front of the plants it now stands before.
 func _shot_cat() -> void:
 	await _wait(1.4)
-	m.cat.position = Vector2(Estate.VILLA_BASE.x - 34, 268)
+	m.cat.position = Vector2(Estate.VILLA_BASE.x - 80, 268)
+	m.world.move_child(m.cat, -1)
 	_look_at(m.cat.position.x)
 	await _wait(0.4)
-	await _click_on(m.cat.position + Vector2(0, -6))
+	await _click_on(m.cat.position + Vector2(0, -6), true, m.cat.pet)
 
 
 ## The donkey at the cart brays when patted.
@@ -340,7 +341,8 @@ func _shot_goat() -> void:
 	var goat: Node2D = m._pasture._goats[0]
 	_look_at(goat.position.x)
 	await _wait(0.4)
-	await _click_on(goat.position + Vector2(0, -10))
+	# The goat's body, not its feet, where a click would fall between its legs onto whatever stands behind.
+	await _click_on(goat.position + Vector2(0, -22))
 
 
 ## The stork on the villa roof clatters its bill when clicked.
@@ -349,7 +351,7 @@ func _shot_stork() -> void:
 	var middle: Vector2 = m._stork.position + m._stork.texture.get_size() / 2.0
 	_look_at(middle.x)
 	await _wait(0.4)
-	await _click_on(middle)
+	await _click_on(middle, true, m._call_out.bind("stork", middle))
 
 
 # Camera and pointer ------------------------------------------------------
@@ -392,13 +394,17 @@ func _beds_in_view(wanted: Callable) -> Array:
 
 ## The pointer comes in along the path from the lower left, clicks, then drifts back down out of the way, so it never
 ## passes over the beds or covers what the click sets off. A click that opens a window leaves the pointer where it is.
-func _click_on(at: Vector2, drift := true) -> void:
+## With answer, the click calls that animal's own response rather than leaving the game to find it under the pointer.
+func _click_on(at: Vector2, drift := true, answer := Callable()) -> void:
 	if not _pointer.visible:
 		_pointer.visible = true
 		_pointer.position = _screen(at + Vector2(-40, 10))
 	await _move_to(at)
 	await _tap()
-	m._click(at)
+	if answer.is_valid():
+		answer.call()
+	else:
+		m._click(at)
 	if drift:
 		await _wait(0.15)
 		_move_to(at + Vector2(-26, 12))
