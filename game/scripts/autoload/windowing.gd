@@ -285,10 +285,12 @@ func _place_strip() -> void:
 	var usable := DisplayServer.screen_get_usable_rect(win.current_screen)
 	# The strip may take at most 40% of the screen's height; larger sizes shrink to fit smaller screens.
 	scale = clampi(strip_scale, 1, max_strip_scale())
-	# Recordings choose the strip's size, so it comes out the same on any screen.
+	# Recordings choose the strip's size and width, so it comes out the same on any screen.
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scale="):
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
+		elif arg.begins_with("--strip-width="):
+			strip_width = int(arg.trim_prefix("--strip-width="))
 	# Until the player sets a width it is the main view's, with 16 pixels to spare at each side.
 	var width := strip_width if strip_width > 0 else (BASE.x + 32) * scale
 	width = clampi(width, maxi(STRIP_MIN_VIEW * scale, strip_min_width), mini(usable.size.x, STRIP_MAX_VIEW * scale))

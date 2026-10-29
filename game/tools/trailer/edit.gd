@@ -200,12 +200,8 @@ func _build() -> void:
 	_picture.size = _size
 	_picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_picture)
-	_strip_texture = ImageTexture.create_from_image(Image.create(1536, 498, false, Image.FORMAT_RGBA8))
 	_strip = TextureRect.new()
-	_strip.texture = _strip_texture
 	_strip.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	# The strip sits centred along the bottom of the desktop, just above its taskbar.
-	_strip.position = Vector2(roundf((_size.x - 1536.0) / 2.0), _size.y - _taskbar - 498.0)
 	_strip.visible = false
 	add_child(_strip)
 	# Cards, captions and the end card are drawn in big pixels and scaled up, like the game.
@@ -322,6 +318,11 @@ func _draw_segment(seg: Dictionary, local: float, length: float) -> void:
 		var img := Image.load_from_file(path)
 		if seg.has("desk"):
 			img.convert(Image.FORMAT_RGBA8)
+			# The strip's frames are sized as it ran; it sits centred along the bottom of the desktop, above its taskbar.
+			if _strip_texture == null:
+				_strip_texture = ImageTexture.create_from_image(img)
+				_strip.texture = _strip_texture
+				_strip.position = Vector2(roundf((_size.x - img.get_width()) / 2.0), _size.y - _taskbar - img.get_height())
 			_strip_texture.update(img)
 		else:
 			img.convert(Image.FORMAT_RGB8)

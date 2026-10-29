@@ -82,8 +82,10 @@ CUT_SHOTS = {
     "pet_the_dog": ["pet", "cat", "donkey", "goat", "stork", "hoopoe", "endcard"],
     "cozy_sounds": ["grove", "bakery", "plant", "pasture", "night", "endcard"],
 }
-# The desktop strip's size, the window strip mode makes at three screen pixels to the game pixel.
-STRIP_SIZE = (1536, 498)
+# The desktop strip as it runs along a 1080p screen: the full width, at the two screen pixels to the game pixel that
+# the game allows there, since the strip may take at most 40% of the screen's height.
+STRIP_SIZE = (1920, 332)
+STRIP_SHAPE = ["--scale=2", "--strip-width=1920"]
 # Each format's frame, the estate's pixel scale in it, and where its shots are kept: the shorts' narrow frame shows the
 # estate close up.
 FORMATS = {
@@ -120,7 +122,7 @@ def record(name, fmt):
     # A .png movie is written as numbered frames with the sound beside them in a .wav of the same name.
     strip = "--strip" in flags
     size = STRIP_SIZE if strip else fmt["size"]
-    shape = ["--scale=3"] if strip else window(fmt)
+    shape = STRIP_SHAPE if strip else window(fmt)
     godot(["--write-movie", str(folder / "f.png"), "--fixed-fps", str(FPS), "--quit-after", str(seconds * FPS),
            "--", "--demo", "--no-music", "--no-ambience", *shape, f"--trailer-shot={name}", *flags, "--quiet-start"], size)
 
@@ -151,20 +153,22 @@ def desktop_frame(size, out):
     else:
         wide = round(shot.height * size[0] / size[1])
         shot = shot.crop(((shot.width - wide) // 2, 0, (shot.width - wide) // 2 + wide, shot.height))
+    taskbar = taskbar_height(shot)
     factor = size[0] / shot.width
     shot.resize(size, Image.LANCZOS).save(out)
-    return out, round(taskbar_height() * factor)
+    return out, round(taskbar * factor)
 
 
-def taskbar_height():
-    """How tall the Windows taskbar is on the main screen, in screen pixels: the screen's height less its work area's."""
-    import ctypes
-    from ctypes import wintypes
-    user32 = ctypes.windll.user32
-    user32.SetProcessDPIAware()
-    area = wintypes.RECT()
-    user32.SystemParametersInfoW(0x30, 0, ctypes.byref(area), 0)
-    return user32.GetSystemMetrics(1) - (area.bottom - area.top)
+def taskbar_height(shot):
+    """How tall the taskbar along the screenshot's bottom is: the rows up from the bottom that keep the bottom row's
+    dark, even colour. A row's median is used, so the app icons on the taskbar do not break it up."""
+    import numpy as np
+    rows = np.median(np.asarray(shot.convert("L"), dtype=float), axis=1)
+    base = rows[-1]
+    height = 0
+    while height < len(rows) // 4 and abs(rows[-1 - height] - base) < 12:
+        height += 1
+    return height
 
 
 def main():

@@ -74,7 +74,8 @@ def render_all():
     for name, flags in SCREENSHOTS.items():
         shoot(RENDERS / f"shot_{name}.png", (1920, 1080), flags)
     # The strip comes out on a see-through background at three screen pixels to the game pixel.
-    shoot(RENDERS / "strip.png", (1536, 498), ["--maxed", "--strip", "--hour=10", *EARNED, "--trailer-shot=profile"], scale=3)
+    shoot(RENDERS / "strip.png", (1920, 332), ["--maxed", "--strip", "--strip-width=1920", "--hour=10", *EARNED,
+                                                "--trailer-shot=profile"], scale=2)
 
 
 def camera_left(render, centre_x):
@@ -141,7 +142,7 @@ def layout():
         old.unlink()
     for name in SCREENSHOTS:
         Image.open(RENDERS / f"shot_{name}.png").convert("RGB").save(OUT / "screenshots" / f"{name}.png")
-    frame = desktop_frame((2560, 1440), RENDERS / "desktop_2560x1440.png")
+    frame = desktop_frame((1920, 1080), RENDERS / "desktop_1920x1080.png")
     if frame:
         desk = Image.open(frame[0]).convert("RGBA")
         strip = Image.open(RENDERS / "strip.png").convert("RGBA")
