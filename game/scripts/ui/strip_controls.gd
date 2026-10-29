@@ -21,10 +21,6 @@ const ICONS := {
 }
 
 var _scale_label: Label
-## The hint for the button under the pointer, shown under the buttons inside the bar itself, so it is never cut away by
-## the outline that lets clicks through the strip, as a separate tooltip would be.
-var _hint: Label
-var _hovered: Button
 var _dock_button: Button
 var _sky_button: Button
 ## The drag in progress: "move" or "width", where the pointer started on the screen, and the value it started from.
@@ -38,23 +34,17 @@ var _pinned := "--strip-controls" in OS.get_cmdline_user_args()
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	modulate.a = 0.0
-	var col := UiKit.column(self)
-	var row := UiKit.row(col)
+	var row := UiKit.row(self)
 	row.add_theme_constant_override("separation", 2)
-	_hint = UiKit.label(col)
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.visible = false
-	# A long hint wraps within the width of the buttons rather than stretching the bar.
-	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_icon_button(row, "left", tr("Look left"), func(): pan_requested.emit(-1))
-	_icon_button(row, "smaller", tr("Smaller"), func(): Windowing.change_strip_scale(-1))
+	_icon_button(row, "left", func(): pan_requested.emit(-1))
+	_icon_button(row, "smaller", func(): Windowing.change_strip_scale(-1))
 	_scale_label = UiKit.label(row)
-	_icon_button(row, "larger", tr("Larger"), func(): Windowing.change_strip_scale(1))
-	_grip(_icon_button(row, "move", tr("Drag to move the strip anywhere on the screen"), Callable()), "move")
-	_grip(_icon_button(row, "width", tr("Drag to make the strip wider or narrower"), Callable()), "width")
-	_dock_button = _icon_button(row, "to_top", "", func(): Windowing.toggle_dock())
-	_sky_button = _icon_button(row, "sky", "", func(): Windowing.set_transparent(not Windowing.transparent))
-	_icon_button(row, "right", tr("Look right"), func(): pan_requested.emit(1))
+	_icon_button(row, "larger", func(): Windowing.change_strip_scale(1))
+	_grip(_icon_button(row, "move", Callable()), "move")
+	_grip(_icon_button(row, "width", Callable()), "width")
+	_dock_button = _icon_button(row, "to_top", func(): Windowing.toggle_dock())
+	_sky_button = _icon_button(row, "sky", func(): Windowing.set_transparent(not Windowing.transparent))
+	_icon_button(row, "right", func(): pan_requested.emit(1))
 
 
 ## Shows the controls while the pointer is over the strip or a drag is under way, read from the pointer's place on the
@@ -70,11 +60,7 @@ func _process(delta: float) -> void:
 	_scale_label.text = "%dx" % Windowing.scale
 	var top := Windowing.dock == "top"
 	_dock_button.icon = _texture("to_bottom" if top else "to_top")
-	_dock_button.set_meta("hint", tr("Move the strip to the bottom") if top else tr("Move the strip to the top"))
 	_sky_button.icon = _texture("no_sky" if Windowing.transparent else "sky")
-	_sky_button.set_meta("hint", tr("Show the painted sky") if Windowing.transparent else tr("Show only the farm"))
-	_hint.text = String(_hovered.get_meta("hint")) if _hovered else ""
-	_hint.visible = _hint.text != ""
 	# Along the top right corner, clear of the purse bar at the top left.
 	var parent := get_parent() as Control
 	position = Vector2(roundf(parent.size.x - size.x - 4.0), 4.0)
@@ -85,13 +71,10 @@ func area() -> Rect2:
 	return get_global_rect() if visible else Rect2()
 
 
-func _icon_button(parent: Node, icon: String, tip: String, action: Callable) -> Button:
+func _icon_button(parent: Node, icon: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.icon = _texture(icon)
 	b.focus_mode = Control.FOCUS_NONE
-	b.set_meta("hint", tip)
-	b.mouse_entered.connect(func(): _hovered = b)
-	b.mouse_exited.connect(func(): if _hovered == b: _hovered = null)
 	b.expand_icon = false
 	# A little larger than the icon needs, so the buttons are easy to hit on a strip along the screen's edge.
 	b.custom_minimum_size = Vector2(15, 15)

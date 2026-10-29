@@ -54,8 +54,6 @@ func _ready() -> void:
 	elif Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
 		strip = false
 	get_window().size_changed.connect(_on_resized)
-	# Tooltips open in the main window, so they take its theme: the game's parchment rather than the engine's black.
-	get_window().theme = UiKit.make_theme()
 	Settings.changed.connect(_on_resized)
 	_apply.call_deferred()
 

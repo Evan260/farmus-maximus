@@ -358,11 +358,6 @@ static func make_theme() -> Theme:
 	t.set_color("caret_color", "LineEdit", INK)
 	t.set_stylebox("background", "ProgressBar", _flat(Color(0.29, 0.18, 0.14, 0.3), 0))
 	t.set_stylebox("fill", "ProgressBar", _flat(Color(0.7, 0.38, 0.25), 0))
-	# Tooltips on parchment with the interface's ink, like the rest of the game, rather than the engine's black boxes.
-	t.set_stylebox("panel", "TooltipPanel", _textured(PANEL_TEX, 6, Color.WHITE, 4))
-	t.set_color("font_color", "TooltipLabel", INK)
-	t.set_font("font", "TooltipLabel", ui_font())
-	t.set_font_size("font_size", "TooltipLabel", text_size())
 	return t
 
 

@@ -105,8 +105,7 @@ func _name_farm(n: int) -> void:
 	field.text = _suggestion()
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	r.add_child(field)
-	var dice := UiKit.button(r, tr("Another"), func(): field.text = _suggestion())
-	dice.tooltip_text = tr("Suggest another name")
+	UiKit.button(r, tr("Another"), func(): field.text = _suggestion())
 	field.grab_focus.call_deferred()
 	var start := func():
 		var chosen := field.text.strip_edges()

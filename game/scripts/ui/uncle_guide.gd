@@ -31,7 +31,6 @@ func _ready() -> void:
 	_portrait.texture = PORTRAIT
 	_portrait.mouse_filter = Control.MOUSE_FILTER_STOP
 	_portrait.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_portrait.tooltip_text = tr("Uncle Marcus")
 	_portrait.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			_folded = not _folded

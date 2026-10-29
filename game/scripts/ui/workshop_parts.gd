@@ -39,7 +39,6 @@ static func slot(parent: Node, item: String, size := 40) -> Label:
 	count.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	count.offset_right = -3
 	count.offset_bottom = -1
-	frame.tooltip_text = TranslationServer.translate(Game.item_name(item))
 	return count
 
 

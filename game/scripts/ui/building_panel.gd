@@ -308,7 +308,6 @@ func _build_workshop_view() -> void:
 			pick.icon = load(path) if ResourceLoader.exists(path) else null
 			pick.toggle_mode = true
 			pick.button_pressed = int(b["recipe"]) == k
-			pick.tooltip_text = tr(String(Balance.get_value("items.%s.name" % item, item)))
 			pick.pressed.connect(func(): Sfx.play("click", -8.0); Game.set_recipe(id, k))
 			choices.add_child(pick)
 	var recipe := Game.current_recipe(id)
@@ -320,14 +319,12 @@ func _build_workshop_view() -> void:
 	line.add_theme_constant_override("separation", 6)
 	if ins.is_empty():
 		# Bees need no loading: their slot shows the flowers they visit.
-		var bloom := WorkshopParts.slot_with_caption(line, "lavender", "")
-		bloom.get_parent().tooltip_text = tr("Flowers nearby")
+		WorkshopParts.slot_with_caption(line, "lavender", "")
 	for item in ins:
 		_in_counts[item] = [WorkshopParts.slot_with_caption(line, item, "x%d" % (int(ins[item]) * batch)), int(ins[item]) * batch]
 	_arrow = WorkshopParts.Arrow.new()
 	_arrow.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_arrow.custom_minimum_size.y = 40
-	_arrow.tooltip_text = tr("Each batch takes %s") % UiKit.duration(float(recipe.get("seconds", 30)) / Game.building_speed(id))
 	line.add_child(_arrow)
 	for item in outs:
 		_out_counts[item] = WorkshopParts.slot_with_caption(line, item, "x%d" % (int(outs[item]) * batch))
@@ -337,14 +334,11 @@ func _build_workshop_view() -> void:
 		var helper := String(Game.building_info(id).get("helper", ""))
 		if Game.helpers.has(helper):
 			# The helper who keeps it loaded stands in for the load button.
-			WorkshopParts.face(feed, helper).tooltip_text = tr("%s keeps it loaded from the storehouse.") % Game.helper_info(helper).get("name", "")
+			WorkshopParts.face(feed, helper)
 		else:
 			_load = UiKit.button(feed, tr("Load"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
-			_load.tooltip_text = tr("Load from the storehouse") + ("\n" + tr("Hire %s the %s to keep it loaded.") % [Game.helper_info(helper).get("name", ""), UiKit.mid(tr(String(Game.helper_info(helper).get("role", ""))))] if helper != "" else "")
 		var boxes := UiKit.row(feed)
 		boxes.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		boxes.tooltip_text = tr("Batches waiting: %d of %d") % [b["queue"].size(), Game.building_queue_max(id)]
-		boxes.mouse_filter = Control.MOUSE_FILTER_PASS
 		var first := String(ins.keys()[0])
 		for k in Game.building_queue_max(id):
 			var box := PanelContainer.new()
@@ -403,13 +397,11 @@ func _build_workshop_view() -> void:
 		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bottom.add_child(spacer)
 		_action = UiKit.button(bottom, tr("Upgrade"), _do_action)
-		_action.tooltip_text = _upgrade_text(levels[int(b["level"])]) + "\n" + tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed)
 	else:
 		var spacer := Control.new()
 		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bottom.add_child(spacer)
-	var pause := UiKit.button(bottom, ">" if b["paused"] else "||", func(): Game.set_building_paused(id, not b["paused"]))
-	pause.tooltip_text = tr("Resume work") if b["paused"] else tr("Pause work")
+	UiKit.button(bottom, ">" if b["paused"] else "||", func(): Game.set_building_paused(id, not b["paused"]))
 	_tick_workshop_view()
 
 
