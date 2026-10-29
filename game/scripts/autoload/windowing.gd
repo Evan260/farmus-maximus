@@ -29,6 +29,10 @@ var follow := false
 var screen := -1
 ## The strip's horizontal offset from centre, in screen pixels, set by dragging it.
 var offset_x := 0
+## How far the strip sits in from the screen edge it is docked to, in screen pixels, set by dragging it up or down.
+var offset_y := 0
+## The narrowest the strip may be, in screen pixels, so its two bars always fit side by side; the interface sets it.
+var strip_min_width := 0
 ## Screen pixels per estate pixel: the largest whole number that still shows the full height of the scene.
 var scale := 1
 ## Screen pixels per interface pixel, which the player can set larger or smaller than the estate's.
@@ -62,9 +66,11 @@ func _on_resized() -> void:
 ## Picks the pixel scales from the window's size; the estate's viewport is then the window divided by that scale, so it always fills the window.
 func _rescale() -> void:
 	var size := get_window().size
-	# In the strip the interface keeps pace with the farm, one step smaller, so its bar stays readable on a big screen.
+	# In the strip the interface is sized for the screen rather than the strip, so it stays readable however small the
+	# strip is made: two interface pixels to the screen pixel on an ordinary screen, more on a very large one.
 	if strip:
-		ui_scale = clampi(scale - 1 + Settings.ui_scale_step, 1, maxi(1, scale))
+		var screen_tall := DisplayServer.screen_get_usable_rect(get_window().current_screen).size.y
+		ui_scale = clampi(screen_tall / 540 + Settings.ui_scale_step, 1, 4)
 		return
 	scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
 	# A tall narrow window crops a little off each side rather than shrinking the estate under a sea of sky.
@@ -95,6 +101,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		toggle_strip()
 	elif event.is_action_pressed("reset_strip") and strip:
 		offset_x = 0
+		offset_y = 0
 		_apply()
 		_save()
 
@@ -122,6 +129,10 @@ func toggle_strip() -> void:
 
 func set_transparent(on: bool) -> void:
 	transparent = on
+	# On Windows the outline that lets clicks through also clips what the window draws, so with the painted sky behind
+	# the farm the whole strip is drawn and clickable again; the clear strip sets its outline afresh.
+	if not on:
+		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 	_strip_changed()
 
 
@@ -140,10 +151,17 @@ func max_strip_scale() -> int:
 	return mini(maxi(1, int(usable.size.y * 0.4) / STRIP_ROWS), maxi(1, usable.size.x / BASE.x))
 
 
-## Moves the strip along the screen while it is dragged; how far is kept when the drag ends.
-func move_strip(offset: int) -> void:
-	offset_x = offset
+## Moves the strip across and up or down the screen while it is dragged; where it is kept when the drag ends.
+func move_strip(offset: Vector2i) -> void:
+	offset_x = offset.x
+	# Dragged up a strip at the bottom moves in from its edge, and dragged down a strip at the top does.
+	offset_y = -offset.y if dock == "bottom" else offset.y
 	_place_strip()
+
+
+## Where the strip is dragged from: across from the middle, and up or down from the bottom or down from the top.
+func strip_offset() -> Vector2i:
+	return Vector2i(offset_x, -offset_y if dock == "bottom" else offset_y)
 
 
 ## Makes the strip wider or narrower while it is dragged; the width is kept when the drag ends.
@@ -159,6 +177,7 @@ func finish_strip_drag() -> void:
 
 func toggle_dock() -> void:
 	dock = "top" if dock == "bottom" else "bottom"
+	offset_y = 0
 	_strip_changed()
 
 
@@ -241,7 +260,7 @@ func _place_strip() -> void:
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
 	# Until the player sets a width it is the main view's, with 16 pixels to spare at each side.
 	var width := strip_width if strip_width > 0 else (BASE.x + 32) * scale
-	width = clampi(width, STRIP_MIN_VIEW * scale, mini(usable.size.x, STRIP_MAX_VIEW * scale))
+	width = clampi(width, maxi(STRIP_MIN_VIEW * scale, strip_min_width), mini(usable.size.x, STRIP_MAX_VIEW * scale))
 	strip_width = width if strip_width > 0 else 0
 	win.size = Vector2i(width, STRIP_ROWS * scale)
 	# The strip never slides off the screen, and its offset is held to what fits so a later drag starts from there.
@@ -249,7 +268,8 @@ func _place_strip() -> void:
 	offset_x = clampi(offset_x, -room, room)
 	var x := usable.position.x + room + offset_x
 	# The usable rect already leaves out the taskbar, wherever it sits, so the strip never covers it.
-	var y := usable.position.y if dock == "top" else usable.position.y + usable.size.y - win.size.y
+	offset_y = clampi(offset_y, 0, maxi(0, usable.size.y - win.size.y))
+	var y := usable.position.y + offset_y if dock == "top" else usable.position.y + usable.size.y - win.size.y - offset_y
 	win.position = Vector2i(x, y)
 
 
@@ -275,6 +295,7 @@ func _load() -> void:
 	strip_scale = int(d.get("strip_scale", [2, 3, 4][clampi(int(d.get("size_index", 0)), 0, 2)]))
 	strip_width = int(d.get("strip_width", 0))
 	offset_x = int(d.get("offset_x", 0))
+	offset_y = int(d.get("offset_y", 0))
 	dock = String(d.get("dock", "bottom"))
 	focus_mode = bool(d.get("focus_mode", false))
 	follow = bool(d.get("follow", false))
@@ -289,4 +310,4 @@ func _save() -> void:
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "strip_scale": strip_scale,
-			"strip_width": strip_width, "offset_x": offset_x, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))
+			"strip_width": strip_width, "offset_x": offset_x, "offset_y": offset_y, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))

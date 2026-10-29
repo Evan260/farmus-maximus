@@ -180,6 +180,7 @@ var _follow_timer := 0.0
 ## Painted scenery that is hidden in the transparent desktop strip, so only the farm floats over the desktop.
 var _scenery: Array = []
 var _click_area_timer := 0.0
+var _strip_bars: Array[Rect2] = []
 ## The spot chosen with the keyboard or a gamepad, or Vector2.INF when the mouse is in use.
 var _pad_point := Vector2.INF
 ## True once the hover has been cleared for a pointer resting on the interface, so it is cleared only once.
@@ -516,6 +517,11 @@ func _process(delta: float) -> void:
 	if Engine.get_process_frames() % 20 == 0:
 		rig.update_cart_load()
 	if Windowing.strip and Windowing.transparent:
+		# On Windows the outline also clips what the strip draws, so it follows the bars the moment they change.
+		var bars: Array[Rect2] = hud.strip_bar_rects()
+		if bars != _strip_bars:
+			_strip_bars = bars
+			_click_area_timer = 0.0
 		_click_area_timer -= delta
 		if _click_area_timer <= 0.0:
 			_click_area_timer = 0.5

@@ -26,7 +26,7 @@ var _sky_button: Button
 ## The drag in progress: "move" or "width", where the pointer started on the screen, and the value it started from.
 var _drag := ""
 var _drag_from := Vector2i.ZERO
-var _drag_start := 0
+var _drag_start := Vector2i.ZERO
 ## For checking how the controls look: shown all the time, as if the pointer were over the strip.
 var _pinned := "--strip-controls" in OS.get_cmdline_user_args()
 
@@ -40,7 +40,7 @@ func _ready() -> void:
 	_icon_button(row, "smaller", tr("Smaller"), func(): Windowing.change_strip_scale(-1))
 	_scale_label = UiKit.label(row)
 	_icon_button(row, "larger", tr("Larger"), func(): Windowing.change_strip_scale(1))
-	_grip(_icon_button(row, "move", tr("Drag to move the strip"), Callable()), "move")
+	_grip(_icon_button(row, "move", tr("Drag to move the strip anywhere on the screen"), Callable()), "move")
 	_grip(_icon_button(row, "width", tr("Drag to make the strip wider or narrower"), Callable()), "width")
 	_dock_button = _icon_button(row, "to_top", "", func(): Windowing.toggle_dock())
 	_sky_button = _icon_button(row, "sky", "", func(): Windowing.set_transparent(not Windowing.transparent))
@@ -95,17 +95,17 @@ func _grip(b: Button, kind: String) -> void:
 			if event.pressed:
 				_drag = kind
 				_drag_from = DisplayServer.mouse_get_position()
-				_drag_start = Windowing.offset_x if kind == "move" else get_window().size.x
+				_drag_start = Windowing.strip_offset() if kind == "move" else Vector2i(get_window().size.x, 0)
 			elif _drag != "":
 				_drag = ""
 				Windowing.finish_strip_drag()
 		elif event is InputEventMouseMotion and _drag == kind:
-			var dx := DisplayServer.mouse_get_position().x - _drag_from.x
+			var moved := DisplayServer.mouse_get_position() - _drag_from
 			if kind == "move":
-				Windowing.move_strip(_drag_start + dx)
+				Windowing.move_strip(_drag_start + moved)
 			else:
 				# The strip grows from its middle, so the edge under the pointer follows it.
-				Windowing.set_strip_width(_drag_start + dx * 2))
+				Windowing.set_strip_width(_drag_start.x + moved.x * 2))
 
 
 static var _textures := {}

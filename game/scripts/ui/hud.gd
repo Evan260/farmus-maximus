@@ -126,6 +126,7 @@ func _ready() -> void:
 	_build_compact()
 	_strip_controls = StripControls.new()
 	_strip_controls.pan_requested.connect(func(step): strip_pan_requested.emit(step))
+	_strip_controls.visible = false
 	_root.add_child(_strip_controls)
 	_build_toolbar()
 	_build_debug()
@@ -212,6 +213,8 @@ func _process(delta: float) -> void:
 	_buttons.visible = not in_strip and not titled
 	_zone_bar.visible = not in_strip and not titled
 	_compact.visible = in_strip and not titled
+	# The strip may not be made narrower than its two bars side by side, with a little room between them.
+	Windowing.strip_min_width = int((_compact.size.x + _strip_controls.size.x + 24.0) * Windowing.ui_scale)
 	if in_strip:
 		for w in _windows:
 			w.visible = false
