@@ -191,6 +191,18 @@ func _run() -> void:
 	for d in rain._drops:
 		rows[roundi(d.y)] = true
 	_check(rows.size() > 40, "rain stays spread out after one very long frame (%d rows)" % rows.size())
+	var settings: Node = root.get_node("Settings")
+	var windowing: Node = root.get_node("Windowing")
+	var loudness := AudioServer.get_bus_volume_db(0)
+	settings.background_sound = "quieter"
+	windowing.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(AudioServer.get_bus_volume_db(0) < loudness - 6.0, "the game turns down while another window has the focus")
+	settings.background_sound = "muted"
+	windowing.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_check(AudioServer.is_bus_mute(0), "and falls silent when set to muted")
+	windowing.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	_check(not AudioServer.is_bus_mute(0) and is_equal_approx(AudioServer.get_bus_volume_db(0), loudness), "and comes back in full when the game has the focus again")
+	settings.background_sound = "full"
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
 

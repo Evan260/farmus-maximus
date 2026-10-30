@@ -17,7 +17,7 @@ func _init() -> void:
 func signature() -> String:
 	return "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.strip_scale,
 		Windowing.dock, str(Windowing.focus_mode) + str(Windowing.follow), Settings.offline_progress, Settings.notifications, Settings.large_text, Settings.reduced_motion,
-		Settings.strong_cues, Settings.low_power, str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
+		Settings.strong_cues, Settings.low_power, Settings.background_sound + str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
 
 
 func build() -> void:
@@ -39,6 +39,9 @@ func build() -> void:
 				slider.custom_minimum_size = Vector2(120, 8)
 				slider.value_changed.connect(func(v): Sfx.set_volume(bus, v))
 				r.add_child(slider)
+			var sounds := {"full": "Full volume", "quieter": "Quieter", "muted": "Muted"}
+			UiKit.setting(body, tr("While you use other windows"), tr(sounds.get(Settings.background_sound, "Full volume")),
+				func(): Settings.set_value("background_sound", {"full": "quieter", "quieter": "muted", "muted": "full"}.get(Settings.background_sound, "full")))
 			UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
 			UiKit.para(body, tr("Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks."), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Display":

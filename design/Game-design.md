@@ -269,7 +269,7 @@ None of this is needed to play; it is why people leave the game open.
 | **Storehouse panel** | Every good you hold |
 | **Market town** | Stalls to sell and buy, the price board, the notice board |
 | **Journal** | Collections and milestones |
-| **Settings** | Music, ambience and effects volume; window and strip options; offline progress on or off; notifications |
+| **Settings** | Music, ambience and effects volume, and full, quieter or muted sound while other windows are in use; window and strip options; offline progress on or off; notifications |
 | **Desktop strip** | One zone along the bottom of the screen, with a compact bar |
 
 Controller and keyboard play work everywhere in the full window. All text lives in data files, ready for translation.
@@ -346,5 +346,4 @@ Also added during the build: a dairy (milk to cheese) and a perfumer to run the 
 
 ## 16. Still open
 
-- A "legacy" option to pass the estate to an heir and start again with bonuses?
 - Trademark, domain and social handle checks for the name.

@@ -57,6 +57,7 @@ func _ready() -> void:
 		strip = false
 	get_window().size_changed.connect(_on_resized)
 	Settings.changed.connect(_on_resized)
+	Settings.changed.connect(_apply_volume)
 	_apply.call_deferred()
 
 
@@ -93,9 +94,11 @@ func _notification(what: int) -> void:
 		NOTIFICATION_APPLICATION_FOCUS_IN:
 			_focused = true
 			_update_fps()
+			_apply_volume()
 		NOTIFICATION_APPLICATION_FOCUS_OUT:
 			_focused = false
 			_update_fps()
+			_apply_volume()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -275,9 +278,19 @@ func _apply() -> void:
 			_mode_before_strip = Window.MODE_WINDOWED
 	_rescale()
 	_update_fps()
-	# Focus mode turns everything down a little, so a strip left running all day stays in the background.
-	AudioServer.set_bus_volume_db(0, -8.0 if strip and focus_mode else 0.0)
+	_apply_volume()
 	view_changed.emit()
+
+
+func _apply_volume() -> void:
+	# Focus mode turns everything down a little, so a strip left running all day stays in the background.
+	var db := -8.0 if strip and focus_mode else 0.0
+	# A recording is made while other windows have the focus, so it always keeps its sound.
+	var behind := not _focused and Engine.get_write_movie_path() == ""
+	if behind and Settings.background_sound == "quieter":
+		db -= 12.0
+	AudioServer.set_bus_volume_db(0, db)
+	AudioServer.set_bus_mute(0, behind and Settings.background_sound == "muted")
 
 
 func _place_strip() -> void:
