@@ -9,7 +9,8 @@ Usage:
   Add --cut=NAME to any of these for one of the shorts: ruin_to_life, day_1_vs_day_120, pet_the_dog or cozy_sounds.
   The shorts share their shots, recorded close up at 1080x1920.
 
-Finished videos go to marketing/recordings/videos/, named in NAMES below; the shot frames they are cut from are kept in
+Finished videos go to their own folders in marketing/recordings/videos/, named in NAMES below, beside each video's
+title, description and thumbnail; the shot frames they are cut from are kept in
 marketing/recordings/content/ so a change to the edit renders again in a minute or two. The farm along the bottom of a
 desktop is laid over marketing/desktop.png, a screenshot of a real desktop; without it that shot is left out. The shots are scripted in
 game/tools/trailer/shots.gd and the edits, with their captions and music, in game/tools/trailer/edit.gd. Every shot
@@ -26,11 +27,11 @@ WORK = ROOT / "marketing" / "recordings" / "content"
 DESKTOP = ROOT / "marketing" / "desktop.png"
 # Each cut's finished file.
 NAMES = {
-    "trailer": "steam_trailer.avi",
-    "ruin_to_life": "short_ruin_to_life.avi",
-    "day_1_vs_day_120": "short_day_1_vs_day_120.avi",
-    "pet_the_dog": "short_you_can_pet_the_dog.avi",
-    "cozy_sounds": "short_cozy_sounds.avi",
+    "trailer": "steam_trailer/steam_trailer.avi",
+    "ruin_to_life": "short_ruin_to_life/short_ruin_to_life.avi",
+    "day_1_vs_day_120": "short_day_1_vs_day_120/short_day_1_vs_day_120.avi",
+    "pet_the_dog": "short_you_can_pet_the_dog/short_you_can_pet_the_dog.avi",
+    "cozy_sounds": "short_cozy_sounds/short_cozy_sounds.avi",
 }
 
 FPS = 30
