@@ -103,6 +103,7 @@ func _shot_plant() -> void:
 ## The cart sets off for market with the day's goods.
 func _shot_cart() -> void:
 	_look_at(Estate.CART_HOME_X + 170)
+	_pack_market_goods()
 	await _wait(1.8)
 	Game.send_cart()
 
@@ -115,7 +116,18 @@ func _shot_coins() -> void:
 		Game.coins -= value
 		await m._rig_tween.finished
 		Game.coins += value, CONNECT_ONE_SHOT)
-	Game.cart = {"away": true, "time_left": 0.2, "items": 16, "value": 1260, "load": []}
+	# The cart is packed and sent off unseen, so it pays exactly what the cart shot's toast says it left with.
+	_pack_market_goods()
+	Game.set_block_signals(true)
+	Game.send_cart()
+	Game.set_block_signals(false)
+	Game.cart.merge({"time_left": 0.2, "load": []}, true)
+
+
+## The load both cart shots share. Today's favourites are random, so they are cleared to price it alike in each recording.
+func _pack_market_goods() -> void:
+	Game.market.favourites = []
+	Game.storage = {"bread": 14, "olive_oil": 14, "honey": 12, "dried_lavender": 10, "stone": 4, "timber": 2}
 
 
 ## The farmhand at work in the home beds; the narrow view finds her before the part that is used.
