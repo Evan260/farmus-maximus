@@ -6,7 +6,8 @@ Usage:
   python tools/trailer/make_trailer.py shots ruin   records just those shots again
   python tools/trailer/make_trailer.py render       renders from the shots already recorded
   python tools/trailer/make_trailer.py render 70    renders a preview from 70 seconds in, into recordings/work/
-  Add --cut=NAME to any of these for one of the shorts: ruin_to_life, day_1_vs_day_120, pet_the_dog or cozy_sounds.
+  Add --cut=NAME to any of these for one of the shorts: ruin_to_life, day_1_vs_day_120, pet_the_dog, cozy_sounds,
+  on_my_desktop, meet_the_staff or one_day.
   The shorts share their shots, recorded close up at 1080x1920.
 
 Finished videos go to their own folders in marketing/recordings/videos/, named in NAMES below, beside each video's
@@ -32,6 +33,9 @@ NAMES = {
     "day_1_vs_day_120": "short_day_1_vs_day_120/short_day_1_vs_day_120.avi",
     "pet_the_dog": "short_you_can_pet_the_dog/short_you_can_pet_the_dog.avi",
     "cozy_sounds": "short_cozy_sounds/short_cozy_sounds.avi",
+    "on_my_desktop": "short_on_my_desktop/short_on_my_desktop.avi",
+    "meet_the_staff": "short_meet_the_staff/short_meet_the_staff.avi",
+    "one_day": "short_one_day/short_one_day.avi",
 }
 
 FPS = 30
@@ -70,7 +74,12 @@ SHOTS = {
     "night": (9, ["--maxed", "--zone=home", "--hour=22", "--aurora=horizontal", *HUD_OFF]),
     "endcard": (9, ["--maxed", "--zone=vineyard", "--hour=19.6", *HUD_OFF]),
     # The desktop strip, recorded on its own see-through background for the edit to lay over a made-up desktop.
-    "desk": (8, ["--maxed", "--strip", "--hour=10", "--coins=48250", "--aureus=12"]),
+    "desk": (11, ["--maxed", "--strip", "--hour=10", "--coins=48250", "--aureus=12"]),
+    "staff_farmhand": (9, ["--maxed", "--zone=home", "--hour=9", *HUD_OFF]),
+    "staff_beekeeper": (6, ["--maxed", "--zone=grove", "--hour=10", *HUD_OFF]),
+    "staff_presser": (6, ["--maxed", "--zone=vineyard", "--hour=16.5", *HUD_OFF]),
+    "staff_stablehand": (6, ["--maxed", "--zone=pasture", "--hour=10", *HUD_OFF]),
+    "full_day": (22, ["--maxed", "--zone=home", "--hour=5", "--aurora=horizontal", *HUD_OFF]),
 }
 # The trailer's shots, and each vertical cut's. Vertical shots are all without the interface, since its panels are laid
 # out for a wide screen.
@@ -82,16 +91,18 @@ CUT_SHOTS = {
     "day_1_vs_day_120": ["stages", "endcard"],
     "pet_the_dog": ["pet", "cat", "donkey", "goat", "stork", "hoopoe", "endcard"],
     "cozy_sounds": ["grove", "bakery", "plant", "pasture", "night", "endcard"],
+    "on_my_desktop": ["desk", "helper", "bakery", "pet", "endcard"],
+    "meet_the_staff": ["staff_farmhand", "staff_beekeeper", "staff_presser", "staff_stablehand", "endcard"],
+    "one_day": ["full_day", "endcard"],
 }
-# The desktop strip as it runs along a 1080p screen: the full width, at the two screen pixels to the game pixel that
-# the game allows there, since the strip may take at most 40% of the screen's height.
-STRIP_SIZE = (1920, 332)
-STRIP_SHAPE = ["--scale=2", "--strip-width=1920"]
 # Each format's frame, the estate's pixel scale in it, and where its shots are kept: the shorts' narrow frame shows the
 # estate close up.
 FORMATS = {
-    "trailer": {"shots": WORK / "trailer_shots", "size": (1920, 1080), "scale": 4},
-    "short": {"shots": WORK / "short_shots", "size": (1080, 1920), "scale": 6},
+    # The trailer's strip runs along a 1080p screen: the full width, at the two screen pixels to the game pixel that the
+    # game allows there, since the strip may take at most 40% of the screen's height.
+    "trailer": {"shots": WORK / "trailer_shots", "size": (1920, 1080), "scale": 4, "strip_size": (1920, 332), "strip_scale": 2},
+    # The shorts show the desktop's middle enlarged to fill the tall frame, so their strip is drawn larger to match it.
+    "short": {"shots": WORK / "short_shots", "size": (1080, 1920), "scale": 6, "strip_size": (1080, 498), "strip_scale": 3},
 }
 
 
@@ -122,8 +133,8 @@ def record(name, fmt):
     folder.mkdir(parents=True)
     # A .png movie is written as numbered frames with the sound beside them in a .wav of the same name.
     strip = "--strip" in flags
-    size = STRIP_SIZE if strip else fmt["size"]
-    shape = STRIP_SHAPE if strip else window(fmt)
+    size = fmt["strip_size"] if strip else fmt["size"]
+    shape = [f"--scale={fmt['strip_scale']}", f"--strip-width={size[0]}"] if strip else window(fmt)
     godot(["--write-movie", str(folder / "f.png"), "--fixed-fps", str(FPS), "--quit-after", str(seconds * FPS),
            "--", "--demo", "--no-music", "--no-ambience", *shape, f"--trailer-shot={name}", *flags, "--quiet-start"], size)
 

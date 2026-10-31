@@ -10,11 +10,15 @@ var _pointer: Sprite2D
 var _young := false
 ## Seconds between the villa's stages in the quick ruin-to-estate shot: two beats of the trailer's music.
 const STAGE_SECONDS := 1.714
+## One beat of the trailer's music, in seconds.
+const BEAT := 0.857
 ## How far a building is framed to the left of the middle, in game pixels, so the window it opens does not hide it.
 const WINDOW_CLEARANCE := 115.0
 ## True in the narrow portrait view of the short cut, where each shot frames its subject rather than a whole zone.
 var _narrow := false
 var _ring: Sprite2D
+## The helper the camera stays with, if any.
+var _followed: Node2D
 
 
 func _ready() -> void:
@@ -68,6 +72,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _young and m.villa._wreath:
 		m.villa._wreath.visible = false
+	if _followed:
+		_look_at(lerpf(m.cam_x + m._view_size().x / 2.0, _followed.position.x, 0.06))
 
 
 # Shots -------------------------------------------------------------------
@@ -219,16 +225,50 @@ func _shot_inside() -> void:
 
 ## The dog on the path is petted, and hearts rise. The camera finds the dog before the part the trailer uses.
 func _shot_pet() -> void:
+	# Close up, a helper walking past would stand in front of the dog.
+	if _narrow:
+		for helper in m._helpers.values():
+			helper.visible = false
 	await _wait(1.4)
 	_look_at(m.dog.position.x)
 	await _wait(0.6)
-	await _click_on(m.dog.position + Vector2(0, -8))
+	await _click_on(m.dog.position + Vector2(0, -8), true, m.dog.pet)
 
 
 ## A whole day passes in a few seconds while the helpers keep at it.
 func _shot_timelapse() -> void:
 	_look_at(Estate.VILLA_BASE.x if _narrow else Estate.HOME + 240)
 	Game.speed = 160.0
+
+
+## The whole of one day at the villa, an hour of game time to each beat of the music, so the edit can caption the hours.
+func _shot_full_day() -> void:
+	_look_at(Estate.VILLA_BASE.x)
+	Game.calendar.weather = "sun"
+	Game.calendar.weather_left = 9999.0
+	Game.speed = Game.day_seconds() / (24.0 * BEAT)
+
+
+func _shot_staff_farmhand() -> void:
+	_follow("farmhand")
+
+
+func _shot_staff_beekeeper() -> void:
+	_follow("beekeeper")
+
+
+func _shot_staff_presser() -> void:
+	_follow("presser")
+
+
+func _shot_staff_stablehand() -> void:
+	_follow("stablehand")
+
+
+## Starts on a helper and stays with them as they go about their work.
+func _follow(id: String) -> void:
+	_followed = m._helpers[id]
+	_look_at(_followed.position.x)
 
 
 ## The finished estate by night: lamplit windows, fireflies, the Milky Way.
