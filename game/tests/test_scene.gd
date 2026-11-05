@@ -92,6 +92,7 @@ func _run() -> void:
 		await process_frame
 	_check(main._store_scaffold.visible and main._builders.has("project_storage"), "enlarging the storehouse puts up scaffolding and brings a builder")
 	await _check_ride(main)
+	_check_catch_up(main)
 	var pets: Control = main.hud._companions
 	# Without a window the screen is only 64 pixels square, so it is given a full screen's size to fit windows in.
 	var screen: Vector2 = main.hud._root.size
@@ -133,6 +134,7 @@ func _run() -> void:
 	_check(solid != Vector2.INF and main._animal_at(solid) == "donkey", "the donkey answers a click on itself")
 	_check(empty_corner != Vector2.INF and main._animal_at(empty_corner) != "donkey", "the donkey ignores a click on the empty corner of its picture")
 	_check(String(pair[0].saying()) != "", "a person has something to say when clicked")
+	await _check_stone_donkey(main)
 	game.pets_chosen = false
 	main._spawn_pets()
 	_check(not main.dog.visible and not main.cat.visible, "on a new farm the pets stay away until they are chosen")
@@ -207,7 +209,10 @@ func _run() -> void:
 	_check(not AudioServer.is_bus_mute(0) and is_equal_approx(AudioServer.get_bus_volume_db(0), loudness), "and comes back in full when the game has the focus again")
 	settings.background_sound = "full"
 	await _check_fade_reuse()
-	_check_saves()
+	_check_trial_run()
+	_check_saves(main)
+	# The windows rebuilt above finish placing their focus on the next frame, so the scene stays until then.
+	await process_frame
 	main.queue_free()
 	await process_frame
 	_check(hooks.map(func(s: Signal): return s.get_connections().size()) == hooked, "the farm's handlers on the game's signals go when the scene does")
@@ -248,6 +253,87 @@ func _check_ride(main: Node2D) -> void:
 	settings.reduced_motion = motion
 
 
+## Time caught up all at once sends none of the signals the scene follows, so afterwards the scene is set from the farm.
+func _check_catch_up(main: Node2D) -> void:
+	var game: Node = root.get_node("Game")
+	_check(game.caught_up.is_connected(main._on_caught_up), "the farm is redrawn after time is caught up")
+	game.cart = {"away": true, "time_left": 1.0, "items": 1, "value": 5, "load": []}
+	main._cart.position.x = main.estate_width + 60
+	game.quiet = true
+	game.advance(2.0)
+	game.quiet = false
+	main._on_caught_up({})
+	_check(not game.cart["away"] and absf(main._cart.position.x - main._cart_park_x) < 1.0 and main._can_drop(main._cart_side()), "a cart that came home during a catch-up is parked where helpers can load it")
+	game.cart = {"away": true, "time_left": 600.0, "items": 1, "value": 5, "load": []}
+	game.quiet = true
+	game.cart_left.emit(1, 5)
+	game.quiet = false
+	main._on_caught_up({})
+	_check(main._cart.position.x >= main.estate_width and not main._cart_returning, "and one that left during it is away down the road")
+	game.cart = game._empty_cart()
+	main._on_caught_up({})
+	var level := int(game.levels.get("storage", 0))
+	game.projects["storage"] = 1.0
+	main._store_scaffold.visible = true
+	var some: String = game.buildings.keys()[0]
+	main._building_states[some] = "upgrading" if game.buildings[some]["state"] != "upgrading" else "working"
+	game.quiet = true
+	game._finish_project("storage")
+	game.quiet = false
+	main._on_caught_up({})
+	var dressed := "storehouse_%d.png" % (level + 1)
+	var shows_level: bool = main._storehouse.texture.resource_path.ends_with(dressed) or not ResourceLoader.exists("res://assets/sprites/farm/" + dressed)
+	_check(shows_level and not main._store_scaffold.visible, "a storehouse enlarged during a catch-up is shown enlarged, without its scaffolding")
+	_check(main._building_states[some] == String(game.buildings[some]["state"]), "and each building's state is noted afresh")
+
+
+## Clicking the paving cart's donkey makes that donkey bray, not the trader's.
+func _check_stone_donkey(main: Node2D) -> void:
+	var game: Node = root.get_node("Game")
+	var hour: float = game.day_time
+	game.day_time = 10.0
+	game.projects["cart_speed"] = game.upgrade_seconds("cart_speed")
+	await process_frame
+	await process_frame
+	var donkey: AnimatedSprite2D = main._stone_donkey
+	var host: Node2D = main.road._stone_cart
+	var box: Rect2 = Hit.frame_rect(host, donkey)
+	var solid := Vector2.INF
+	for y in range(int(box.position.y), int(box.end.y)):
+		for x in range(int(box.position.x), int(box.end.x)):
+			var at := Vector2(x, y) + Vector2(0.5, 0.5)
+			if solid == Vector2.INF and Hit.frame_has_pixel(host, donkey, at) and main._pasture.animal_at(at) == null and main._wildlife.rabbit_at(at).is_empty():
+				solid = at
+	_check(solid != Vector2.INF and main._animal_at(solid) == "donkey", "the paving cart's donkey answers a click on itself")
+	if solid != Vector2.INF:
+		main._call_out("donkey", solid)
+		_check(donkey.animation == "bray" and main._donkey.animation != "bray", "and it is that donkey that brays")
+	game.projects.erase("cart_speed")
+	game.day_time = hour
+	await process_frame
+
+
+## A test run is a trial run, so a changed setting, volume or window never reaches the player's own files.
+func _check_trial_run() -> void:
+	var settings: Node = root.get_node("Settings")
+	var sfx: Node = root.get_node("Sfx")
+	var windowing: Node = root.get_node("Windowing")
+	_check(not settings.persist and settings.trial_run(), "a test run counts as a trial run")
+	if settings.persist:
+		return
+	var files := ["user://prefs.json", "user://settings.json", "user://window.json"]
+	var read := func() -> Array: return files.map(func(f): return FileAccess.get_file_as_string(f) if FileAccess.file_exists(f) else "-")
+	var before: Array = read.call()
+	var tips: bool = settings.show_tutorial
+	var music: float = sfx.volumes["Music"]
+	settings.set_value("show_tutorial", not tips)
+	sfx.set_volume("Music", 0.123)
+	windowing.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	_check(read.call() == before, "a trial run never writes the player's preferences, volumes or window")
+	settings.set_value("show_tutorial", tips)
+	sfx.set_volume("Music", music)
+
+
 ## A sound player taken while it is still fading out plays the new sound at its own volume.
 func _check_fade_reuse() -> void:
 	var sfx: Node = root.get_node("Sfx")
@@ -264,7 +350,7 @@ func _check_fade_reuse() -> void:
 
 
 ## The farms on disk, kept in a folder of the test's own so the player's farms are never touched.
-func _check_saves() -> void:
+func _check_saves(main: Node2D) -> void:
 	var saves: Node = root.get_node("Saves")
 	var game: Node = root.get_node("Game")
 	var dir := "user://test_saves/"
@@ -286,6 +372,42 @@ func _check_saves() -> void:
 	saves.save_game()
 	_check(FileAccess.get_file_as_string(saves.path_for(1)) == good, "a save that cannot be written leaves the last good one alone")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(saves.path_for(1) + ".tmp"))
+	var list: Control = load("res://scripts/ui/farms_panel.gd").new()
+	main.hud._root.add_child(list)
+	var shown: String = list.signature()
+	saves.save_game()
+	_check(list.signature() == shown, "an autosave does not rebuild the farm list")
+	list.open()
+	list._deleting = 1
+	list._typed = ""
+	list.refresh()
+	var typing: LineEdit = list.find_children("*", "LineEdit", true, false)[0]
+	typing.text = "del"
+	typing.text_changed.emit("del")
+	list._signature = ""
+	list.refresh()
+	_check(list.find_children("*", "LineEdit", true, false)[0].text == "del", "the farm list rebuilding keeps what was typed to confirm a delete")
+	list.close()
+	var tmp: String = saves.path_for(1) + ".tmp"
+	var newest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(saves.path_for(1)))
+	newest["farm_name"] = "Newest"
+	newest["saved_at"] = float(newest["saved_at"]) + 1.0
+	var whole := JSON.stringify(newest, "\t")
+	_write_file(tmp, whole.substr(0, whole.length() / 2))
+	saves.load_game(1)
+	_check(game.farm_name != "Newest", "a half-written .tmp never wins over the farm file")
+	_write_file(tmp, whole)
+	saves.load_game(1)
+	_check(game.farm_name == "Newest", "a whole .tmp newer than the farm file is loaded first")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(saves.path_for(1)))
+	saves.load_game(1)
+	_check(game.farm_name == "Newest" and saves.free_slot() != 1, "and is loaded when a save stopped before the farm file was replaced")
+	saves.save_game()
+	_check(FileAccess.file_exists(saves.path_for(1)) and not FileAccess.file_exists(tmp), "the next save puts the farm file back")
+	saves.pending_summary = {"seconds": 3600.0}
+	saves.play(saves.slot)
+	_check(saves.pending_summary.has("seconds"), "playing the farm already open keeps its summary of time away")
+	saves.title_done = false
 	for path in saves._candidates(2):
 		var f := FileAccess.open(path, FileAccess.WRITE)
 		f.store_string("{ not a farm")
@@ -297,6 +419,13 @@ func _check_saves() -> void:
 	saves.save_game()
 	var kept := Array(DirAccess.get_files_at(dir)).filter(func(f): return String(f).begins_with("farm_2.json") and ".unreadable-" in String(f))
 	_check(kept.size() == 4 and not saves.slot_info(2).is_empty(), "a farm that cannot be read is kept aside rather than written over")
+	var counts := [saves._files(1).size(), saves._files(2).size()]
+	saves.enabled = false
+	saves.reset()
+	saves.delete(1)
+	saves.delete(2)
+	_check([saves._files(1).size(), saves._files(2).size()] == counts, "with saving off, resetting or deleting a farm leaves its files alone")
+	saves.enabled = true
 	saves.load_game(1)
 	saves.delete(1)
 	_check(saves.slot == 2 and saves.has_farm and game.farm_name == "Second" and int(saves._farms().get("last", 0)) == 2, "deleting the farm being played moves on to another farm")
@@ -306,6 +435,12 @@ func _check_saves() -> void:
 	saves.folder = "user://"
 	_clear_folder(dir)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(dir))
+
+
+func _write_file(path: String, text: String) -> void:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(text)
+	f.close()
 
 
 func _clear_folder(dir: String) -> void:

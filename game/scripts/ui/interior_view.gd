@@ -53,8 +53,9 @@ var _display: Sprite2D
 ## or taller than the painting.
 var _origin := Vector2.ZERO
 var _dog_offsets := {}
-## Set while the dog is awake from a stroke: up, wagging, then lying back down.
+## Set while the dog is awake from a stroke: up, wagging, then lying back down, as timed by its tween.
 var _dog_awake := false
+var _dog_tween: Tween
 var _sky_layer: CanvasLayer
 var _sky: Node2D
 var _loom: Node2D
@@ -82,6 +83,8 @@ var _cat_shadow: Sprite2D
 var _cat: AnimatedSprite2D
 var _ui_layer: CanvasLayer
 var _ui_root: Control
+var _outside: Button
+var _furnish: Button
 var _purse: Label
 var _comfort: Label
 var _hover_label: Label
@@ -226,8 +229,8 @@ func _build_ui() -> void:
 	_ui_layer.add_child(_ui_root)
 	var top := UiKit.row(_ui_root)
 	top.position = Vector2(4, 4)
-	UiKit.button(top, tr("Back outside"), leave)
-	UiKit.button(top, tr("Furnish"), func(): _open(""))
+	_outside = UiKit.button(top, tr("Back outside"), leave)
+	_furnish = UiKit.button(top, tr("Furnish"), func(): _open(""))
 	var purse_box := PanelContainer.new()
 	top.add_child(purse_box)
 	var info := UiKit.column(purse_box)
@@ -336,6 +339,10 @@ func _dress_room() -> void:
 	while f.get_frame_count("lie_down") > 4:
 		f.remove_frame("lie_down", 4)
 	Frames.add_folder(f, "happy", dog_dir + "happy_east/", 12.0, true, dog_look, 1)
+	# The dog is put back to sleep with its new pictures, so a stroke it was waking from is over.
+	if _dog_tween:
+		_dog_tween.kill()
+	_dog_awake = false
 	_dog_offsets = {}
 	for anim in f.get_animation_names():
 		_dog_offsets[anim] = Frames.anchor(f.get_frame_texture(anim, 0))
@@ -393,6 +400,20 @@ func _process(delta: float) -> void:
 	_land.queue_redraw()
 	_marks.queue_redraw()
 	_refresh()
+	if not Input.get_connected_joypads().is_empty():
+		_keep_pad_focus()
+
+
+## A gamepad always has a button to act on: the furnishing window's while it is open, otherwise Furnish.
+func _keep_pad_focus() -> void:
+	_outside.focus_mode = Control.FOCUS_ALL
+	_furnish.focus_mode = Control.FOCUS_ALL
+	if get_viewport().gui_get_focus_owner() != null:
+		return
+	if _panel.visible:
+		UiKit.pad_focus(_panel)
+	else:
+		_furnish.grab_focus()
 
 
 ## A dot of light on the half-detail canvas: placed on its grid and a whole number of its pixels in size.
@@ -674,14 +695,18 @@ func _wake_dog() -> void:
 	if _dog_awake or not _dog.sprite_frames.has_animation("happy"):
 		return
 	_dog_awake = true
+	var frames := _dog.sprite_frames
+	var rise := frames.get_frame_count("lie_down") / frames.get_animation_speed("lie_down") if frames.has_animation("lie_down") else 0.0
 	_dog_play("lie_down", true)
-	await _dog.animation_finished
-	_dog_play("happy")
-	await get_tree().create_timer(2.6).timeout
-	_dog_play("lie_down")
-	await _dog.animation_finished
-	_dog_play("sleep")
-	_dog_awake = false
+	_dog_tween = create_tween()
+	_dog_tween.tween_interval(rise)
+	_dog_tween.tween_callback(_dog_play.bind("happy"))
+	_dog_tween.tween_interval(2.6)
+	_dog_tween.tween_callback(_dog_play.bind("lie_down"))
+	_dog_tween.tween_interval(rise)
+	_dog_tween.tween_callback(func():
+		_dog_play("sleep")
+		_dog_awake = false)
 
 
 ## A few passes of the shuttle, each beaten home with a soft knock.
@@ -730,7 +755,9 @@ func _refresh() -> void:
 	if sig == _signature:
 		return
 	_signature = sig
+	var focus := UiKit.focus_hint(_panel)
 	UiKit.clear(_list)
+	(func(): UiKit.pad_focus(_panel, focus)).call_deferred()
 	if ruined():
 		_title.text = tr("A ruin")
 		UiKit.para(_list, tr("Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room."), 210)

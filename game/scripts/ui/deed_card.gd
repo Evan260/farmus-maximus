@@ -54,10 +54,12 @@ func _draw() -> void:
 	var hw := font.get_string_size(header, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	_centred(font, header, 18, size, RUBRIC)
 	var mid := roundf(w / 2.0)
-	for side in [-1, 1]:
+	# The rule and diamond either side of the heading shorten to fit the room beside it, and give way to a long one.
+	var rule := minf(10.0, floorf(ROOM / 2.0 - roundf(hw / 2.0) - 6.0))
+	for side in ([-1, 1] if rule >= 2.0 else []):
 		var inner: float = mid + side * (roundf(hw / 2.0) + 3)
-		_rect(Rect2(minf(inner, inner + side * 10), 15, 10, 1), RUBRIC.lerp(PARCH, 0.4))
-		_rect(Rect2(inner + side * 12 - 1, 14, 2, 2), RUBRIC.lerp(PARCH, 0.4))
+		_rect(Rect2(minf(inner, inner + side * rule), 15, rule, 1), RUBRIC.lerp(PARCH, 0.4))
+		_rect(Rect2(inner + side * (rule + 2) - 1, 14, 2, 2), RUBRIC.lerp(PARCH, 0.4))
 	var heading := _lines(font, _upper(title), size)
 	var heading_base := 29.0 if heading.size() == 1 else 28.0
 	for k in heading.size():

@@ -8,6 +8,9 @@ var weather_left := 0.0
 ## Soil stays damp for a while after rain stops, which counts as watered.
 var wet_left := 0.0
 var _game: Node
+## The season's id and the day it was worked out for, since growth asks for it for every plant on every step.
+var _season := ""
+var _season_day := -1
 
 
 func _init(game: Node) -> void:
@@ -20,7 +23,10 @@ func season_index() -> int:
 
 
 func season_id() -> String:
-	return String(_seasons()[season_index()]["id"])
+	if day != _season_day:
+		_season_day = day
+		_season = String(_seasons()[season_index()]["id"])
+	return _season
 
 
 func season_name() -> String:

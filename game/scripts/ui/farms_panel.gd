@@ -7,6 +7,8 @@ var on_new: Callable
 var on_change: Callable
 ## The slot whose delete button has been pressed, waiting for the player to type the word that confirms it.
 var _deleting := 0
+## What has been typed to confirm the delete, kept so the list rebuilding while the player types does not lose it.
+var _typed := ""
 
 
 func _init() -> void:
@@ -29,10 +31,11 @@ func open() -> void:
 	super()
 
 
+## Only what the list shows, so the autosave's new time on the farm being played does not rebuild it every minute.
 func signature() -> String:
-	var parts := [str(_deleting)]
+	var parts := [str(_deleting), str(Saves.slot)]
 	for n in range(1, Saves.SLOTS + 1):
-		parts.append(JSON.stringify(Saves.slot_info(n)))
+		parts.append(describe(Saves.slot_info(n)))
 	return "|".join(parts)
 
 
@@ -51,7 +54,7 @@ func build() -> void:
 			continue
 		UiKit.button(r, tr("Play"), func(): Saves.play(n))
 		if _deleting != n:
-			UiKit.button(r, tr("Delete"), func(): _deleting = n; refresh())
+			UiKit.button(r, tr("Delete"), func(): _deleting = n; _typed = ""; refresh())
 			continue
 		_confirm_delete(card, n)
 
@@ -66,6 +69,8 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 	field.placeholder_text = word
 	field.max_length = 20
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	field.text = _typed
+	field.caret_column = _typed.length()
 	r.add_child(field)
 	var gone := func():
 		if field.text.strip_edges().to_lower() != word.to_lower():
@@ -81,8 +86,8 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 			on_change.call()
 		refresh()
 	var del := UiKit.button(r, tr("Delete"), gone)
-	del.disabled = true
-	field.text_changed.connect(func(t: String): del.disabled = t.strip_edges().to_lower() != word.to_lower())
+	del.disabled = _typed.strip_edges().to_lower() != word.to_lower()
+	field.text_changed.connect(func(t: String): _typed = t; del.disabled = t.strip_edges().to_lower() != word.to_lower())
 	field.text_submitted.connect(func(_t): gone.call())
 	UiKit.button(r, tr("Cancel"), func(): _deleting = 0; refresh())
 	field.grab_focus.call_deferred()

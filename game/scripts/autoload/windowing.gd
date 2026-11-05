@@ -100,6 +100,9 @@ func _notification(what: int) -> void:
 			_focused = false
 			_update_fps()
 			_apply_volume()
+		# The window opens next time on the monitor it was closed on.
+		NOTIFICATION_WM_CLOSE_REQUEST:
+			_save()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -331,20 +334,9 @@ func _update_fps() -> void:
 	Engine.max_fps = fps
 
 
-## Demo farms, test runs and recordings neither read nor change the player's own window settings, so they always start
-## the same way and never leave the player's window changed.
-func _trial_run() -> bool:
-	for arg in OS.get_cmdline_args():
-		if String(arg).begins_with("res://tests/"):
-			return true
-	for flag in ["--demo", "--new-farm", "--readonly"]:
-		if flag in OS.get_cmdline_user_args():
-			return true
-	return false
-
-
 func _load() -> void:
-	if _trial_run() or not FileAccess.file_exists(SETTINGS_PATH):
+	# Trial runs ignore the player's window settings too, so they always start the same way.
+	if not Settings.persist or not FileAccess.file_exists(SETTINGS_PATH):
 		return
 	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS_PATH))
 	if typeof(d) != TYPE_DICTIONARY:
@@ -363,7 +355,7 @@ func _load() -> void:
 
 
 func _save() -> void:
-	if _trial_run():
+	if not Settings.persist:
 		return
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:

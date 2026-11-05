@@ -155,6 +155,8 @@ func fade_out(p: AudioStreamPlayer, seconds := 1.0) -> void:
 func set_volume(bus: String, value: float) -> void:
 	volumes[bus] = clampf(value, 0.0, 1.0)
 	_apply(bus)
+	if not Settings.persist:
+		return
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({"volumes": volumes}))

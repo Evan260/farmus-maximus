@@ -22,6 +22,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# A frame as long as the computer sleeping would otherwise carry the insects far off the estate.
+	delta = minf(delta, 0.25)
 	_t += delta
 	var night := Lighting.night_amount(Game.day_time)
 	for b in _butterflies:
@@ -46,7 +48,7 @@ func _steer(b: Dictionary, delta: float, speed: float, wobble: float) -> void:
 	if to.length() < 3.0:
 		b["target"] = _new_target(b["pos"])
 		return
-	b["pos"] += to.normalized() * speed * delta + Vector2(0, sin(b["phase"] * 7.0) * wobble * delta * 4.0)
+	b["pos"] = b["pos"].move_toward(b["target"], speed * delta) + Vector2(0, sin(b["phase"] * 7.0) * wobble * delta * 4.0)
 
 
 func _new_target(from: Vector2) -> Vector2:

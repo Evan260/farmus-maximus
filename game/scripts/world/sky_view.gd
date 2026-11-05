@@ -199,8 +199,9 @@ func _process(delta: float) -> void:
 		var s: Sprite2D = c["sprite"]
 		s.position.x += float(c["speed"]) * wind * delta
 		s.position.y = float(c["base_y"]) + float(c["lift"]) * sin(_t * TAU / float(c["period"]) + float(c["phase"])) * (0.3 if Settings.reduced_motion else 1.0)
+		# Carrying on from the left by the overshoot keeps the clouds spread out even after one very long frame.
 		if s.position.x > WIDTH * 2:
-			s.position.x = -s.texture.get_width()
+			s.position.x = fposmod(s.position.x + s.texture.get_width(), WIDTH * 2 + s.texture.get_width()) - s.texture.get_width()
 		var shown := float(c["alpha"]) if overcast or not c["grey_only"] else 0.0
 		s.modulate.a = move_toward(s.modulate.a, shown, delta * 0.2)
 	_place_moon()

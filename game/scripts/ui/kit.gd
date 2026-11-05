@@ -226,6 +226,8 @@ static func scroll(parent: Node, size: Vector2) -> VBoxContainer:
 	var s := ScrollContainer.new()
 	s.custom_minimum_size = size
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# A button the d-pad moves to further down the list is scrolled into view.
+	s.follow_focus = true
 	parent.add_child(s)
 	touch_scroll(s)
 	# The list keeps clear of the scroll bar, so buttons at the end of a line are not drawn under it.
@@ -253,6 +255,11 @@ static func pad_focus(root: Control, was := {}) -> void:
 	if usable.is_empty() or (focused != null and root.is_ancestor_of(focused)):
 		return
 	var pick := usable[0]
+	# A window's close button comes first, but a reflex press of A should not shut the window it just opened.
+	for b in usable:
+		if b.text != "":
+			pick = b
+			break
 	if not was.is_empty():
 		# A button with the same text wins, the nearest to the old place first; otherwise whichever now stands nearest it.
 		var best := INF

@@ -173,13 +173,62 @@ func _run() -> void:
 	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 400, "load": []}
 	game.helpers["trader"] = 1
 	game.add_item("lavender", 12, true)
+	var sold_before: Dictionary = game.market.sold_today.duplicate()
+	var trip_value := 0
+	for n in 12:
+		trip_value += game.market.cart_price("lavender")
+		game.market.note_sold("lavender", 1)
+	game.market.sold_today = sold_before
 	var sent := []
 	var note_trip := func(_items: int, value: int) -> void: sent.append(value)
 	game.cart_left.connect(note_trip)
 	game.simulate_offline(15.0 + game.cart_trip_seconds())
 	game.cart_left.disconnect(note_trip)
 	var share := float(data_file.get_value("offline.earnings_share", 0.25))
-	_check(sent.size() == 1 and game.coins == 400 + int(sent[0] * share), "time away keeps a share of what the farm earns while away")
+	_check(int(game.stats["cart_trips"]) == 1 and game.coins == 400 + int(trip_value * share), "time away keeps a share of what the farm earns while away")
+	_check(sent.is_empty(), "a cart sent off during a catch-up makes no sound or message of its own")
+
+	# A whole busy day caught up at once tells the scene nothing while it runs; the scene redraws once it is over.
+	_maxed_farm(game, data_file)
+	game.keep_goods = {}
+	var heard := []
+	var ears := {}
+	for sig in game.get_script().get_script_signal_list():
+		var ear := (func(signal_name: String) -> void: heard.append(signal_name)).bind(String(sig["name"]))
+		if sig["args"].size() > 0:
+			ear = ear.unbind(sig["args"].size())
+		ears[String(sig["name"])] = ear
+		game.connect(String(sig["name"]), ear)
+	var busy: Dictionary = game.simulate_offline(2.0 * game.day_seconds())
+	for signal_name in ears:
+		game.disconnect(signal_name, ears[signal_name])
+	_check(int(busy["harvested"]) > 0 and int(game.stats.get("cart_trips", 0)) > 0 and heard.is_empty(), "a catch-up sends the scene no signals while it runs: %s" % ", ".join(PackedStringArray(heard)))
+
+	# Catching up a maxed farm whose storehouse is full takes moments, so opening the game never stalls on it.
+	_maxed_farm(game, data_file)
+	for item in data_file.get_value("items", {}):
+		if String(data_file.get_value("items.%s.kind" % item, "good")) == "good":
+			for q in 3:
+				game.add_item(game.item_key(item, q), 2, true)
+	game.add_item("lavender", game.holding_capacity() - game.stored_total(), true)
+	var started := Time.get_ticks_msec()
+	var jammed: Dictionary = game.simulate_offline(3.0 * 3600.0)
+	var took := Time.get_ticks_msec() - started
+	_check(bool(jammed["storage_full"]) and took < 6000, "three hours away on a full maxed farm are caught up in a few seconds (%d ms)" % took)
+
+	# A farm stranded while away is helped once the player is back, with the gift kept in full and not counted as earnings.
+	game.new_game()
+	game.day_time = 8.0
+	game.coins = 2
+	var rescue := int(data_file.get_value("start.rescue_coins", 10))
+	var gifts := []
+	var note_gift := func(gift: int) -> void: gifts.append(gift)
+	game.rescued.connect(note_gift)
+	var stranded: Dictionary = game.simulate_offline(60.0)
+	_check(game.coins == 2 and int(stranded["earned"]) == 0 and int(game.stats.get("earned", 0)) == 0 and gifts.is_empty(), "Uncle Marcus's gift waits until the catch-up is over")
+	game.advance(0.1)
+	game.rescued.disconnect(note_gift)
+	_check(game.coins == 2 + rescue and gifts == [rescue] and int(game.stats.get("earned", 0)) == 0, "and then comes in full, with word of it, without counting as earnings")
 
 	# The estate: deeds need the villa, buildings need materials, and workshops refine goods once loaded.
 	game.new_game()
@@ -431,22 +480,57 @@ func _run() -> void:
 	game.zones_owned["pasture"] = true
 	_check(game.decoration_block("pergola") == "", "and is on sale once the pasture is bought")
 
-	# A computer that sleeps with the game open catches up on waking just as a closed game does.
+	# A computer that sleeps with the game open catches up on waking, by the wall clock, just as a closed game does.
 	game.new_game()
 	game.day_time = 8.0
 	game.coins = 0
 	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 400, "load": []}
 	var settings: Node = root.get_node("Settings")
+	var saves: Node = root.get_node("Saves")
 	var offline_setting: bool = settings.offline_progress
+	var had_farm: bool = saves.has_farm
+	var real_clock: Callable = game.wall_clock
 	settings.offline_progress = true
+	saves.has_farm = true
+	var clock := [1000000.0]
+	game.wall_clock = func() -> float: return clock[0]
 	var woke := []
 	var note_woke := func(s: Dictionary) -> void: woke.append(s)
 	game.caught_up.connect(note_woke)
-	game._process(3.0 * game.day_seconds())
-	game.caught_up.disconnect(note_woke)
-	settings.offline_progress = offline_setting
-	_check(game.calendar.day >= 3 and woke.size() == 1, "a long sleep moves the calendar on day by day, with a summary")
+	var frame := func(seconds: float) -> void:
+		clock[0] += seconds
+		game._process(minf(seconds, 0.133))
+	frame.call(0.016)
+	frame.call(3.0 * game.day_seconds())
+	_check(game.calendar.day >= 3 and woke.size() == 1 and is_equal_approx(float(woke[0]["seconds"]), 3.0 * game.day_seconds()), "a long sleep moves the calendar on day by day, with a summary")
 	_check(game.coins == 400, "and the cart on the road when it slept pays in full")
+	frame.call(120.0)
+	frame.call(0.016)
+	_check(woke.size() == 1, "the frame after a catch-up only sets the clock going again")
+	game.speed = 500.0
+	var day_before: int = game.calendar.day
+	var hour_before: float = game.day_time
+	frame.call(0.016)
+	game.speed = 1.0
+	_check(woke.size() == 1 and (game.calendar.day > day_before or game.day_time > hour_before), "a fast debug speed runs the estate faster without counting as time away")
+	game.from_dict(JSON.parse_string(JSON.stringify(game.to_dict())))
+	frame.call(600.0)
+	_check(woke.size() == 1, "the first frame after a farm loads is not time away")
+	frame.call(15.0)
+	_check(woke.size() == 2 and is_equal_approx(float(woke[1]["seconds"]), 15.0), "a short sleep is caught up too, so the scene can redraw")
+	settings.offline_progress = false
+	day_before = game.calendar.day
+	frame.call(3.0 * game.day_seconds())
+	_check(woke.size() == 2 and game.calendar.day == day_before, "with offline progress off, a sleep is not caught up")
+	settings.offline_progress = true
+	saves.has_farm = false
+	frame.call(0.016)
+	frame.call(3.0 * game.day_seconds())
+	_check(woke.size() == 2 and game.calendar.day == day_before, "the empty farm behind the title screen is never caught up")
+	game.caught_up.disconnect(note_woke)
+	game.wall_clock = real_clock
+	settings.offline_progress = offline_setting
+	saves.has_farm = had_farm
 
 	# Every page in the journal can be filled: no good is listed at a quality the estate's rules cannot make.
 	var wrong := []
@@ -482,6 +566,15 @@ func _run() -> void:
 	game.coins = 100
 	_check(game.market.buy("seed_violet") and game.crop_unlocked("lavender_violet"), "buying cuttings unlocks a lavender variety")
 	_check(not game.market.buy("seed_violet"), "cuttings are bought once")
+	game.storage = {"lavender": 5}
+	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 40, "load": []}
+	game.market.pack_cart()
+	_check(game.market.brought_total() == 0 and game.market.sell("lavender", 5) == 0, "with the cart on the road, nothing is brought to the stalls")
+	game.market.unpack_cart()
+	game.cart = game._empty_cart()
+	game.market.pack_cart()
+	_check(game.market.brought_total() == 5, "a parked cart brings the goods marked for sale to the stalls")
+	game.market.unpack_cart()
 
 	# The calendar: seasons, weather and festivals.
 	game.new_game()
@@ -580,6 +673,35 @@ func _run() -> void:
 
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
+
+
+## Everything at its top level, as on the debug "maxed" farm, with every bed planted and ripe and every good kept.
+func _maxed_farm(game: Node, data_file: Node) -> void:
+	game.new_game()
+	game.rng.seed = 3
+	game.day_time = 8.0
+	game.villa_stage = game.villa_stages().size()
+	for z in game.zones_owned:
+		game.zones_owned[z] = true
+	for id in game.buildings:
+		game.buildings[id]["state"] = "working"
+		game.buildings[id]["level"] = game.building_info(id).get("levels", []).size()
+	for kind in ["chicken", "goat"]:
+		game.buildings["barn"]["animals"][kind] = game.animal_capacity(kind)
+	game.buildings["barn"]["feed"] = 40
+	for h in data_file.get_value("helpers", {}):
+		game.helpers[h] = game.helper_info(h).get("costs", [0]).size()
+	for u in game.levels:
+		game.levels[u] = data_file.get_value("upgrades.%s.values" % u, [0]).size() - 1
+	var crops := {"home": ["lavender", "lavender_violet", "lavender_bluegrey", "lavender_white", "wheat"], "grove": ["olives", "herbs"], "vineyard": ["grapes"]}
+	for i in game.plots.size():
+		var p: Dictionary = game.plots[i]
+		var list: Array = crops[p["zone"]]
+		p["unlocked"] = true
+		p["crop"] = list[i % list.size()]
+		p["growth"] = game.time_to_ready(p)
+	for item in data_file.get_value("items", {}):
+		game.keep_goods[item] = true
 
 
 ## The best quality the estate's rules can make a good at, worked out from the crops, the cellar, the barn and the recipes.

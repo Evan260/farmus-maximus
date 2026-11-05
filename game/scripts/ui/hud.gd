@@ -72,6 +72,16 @@ var _journal: WindowPanel
 var _settings: WindowPanel
 var _upgrades: WindowPanel
 var _companions: WindowPanel
+## The summary of time away on screen, and what it adds up to, so a second catch-up joins it rather than stacking another.
+var _away: PanelContainer
+var _away_summary := {}
+## Cards in the middle of the screen that wait for their one button, such as the summary of time away.
+var _cards: Array = []
+## Set while Start has handed a gamepad the interface's own buttons on the estate.
+var _bar_armed := false
+## The title screen's button that opened a window over it, which takes the focus back when the window closes.
+var _title_focus := {}
+var _debug_layer: CanvasLayer
 
 
 func _ready() -> void:
@@ -113,6 +123,9 @@ func _ready() -> void:
 	_tip = UiKit.label(_root, "", true)
 	_toast = UiKit.label(_root, "", true)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Drawn over the windows, so a message about one is never hidden behind it.
+	_toast.z_index = 1
 	_toast.modulate.a = 0.0
 
 	_build_zone_bar()
@@ -135,13 +148,14 @@ func _ready() -> void:
 	_root.add_child(_uncle)
 	_achievements = AchievementPopup.new()
 	_achievements.below = _buttons
+	_achievements.window_open = window_open
 	_root.add_child(_achievements)
 	visibility_changed.connect(_hold_news)
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
 	Game.message.connect(func(text): toast(tr(text)); Sfx.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast(tr("The storehouse and the cart are full: send the cart to market")))
-	Game.caught_up.connect(_show_away)
+	Game.caught_up.connect(_on_caught_up)
 	Game.achievement_unlocked.connect(_on_achievement)
 	Game.discovered.connect(_on_discovered)
 	Game.festival_started.connect(_on_festival)
@@ -198,17 +212,17 @@ func modal_open() -> bool:
 	return _title != null
 
 
-## Once the farm is on screen: on a new farm the player chooses their dog and cat, after which Uncle Marcus welcomes
-## them; otherwise, what happened while the player was away.
+## Once the farm is on screen: on a new farm, or one left before its pets were chosen, the player chooses their dog
+## and cat, after which Uncle Marcus welcomes them; otherwise, what happened while the player was away.
 func _after_title() -> void:
 	# A farmer who already has harvests behind them was welcomed long ago.
 	if not Game.intro_seen and int(Game.stats.get("harvested", 0)) > 0:
 		Game.intro_seen = true
-	if not Game.intro_seen:
+	if not Game.intro_seen or not Game.pets_chosen:
 		Game.intro_seen = true
 		Saves.save_game()
 		_choose_pets()
-	elif not Saves.pending_summary.is_empty():
+	elif not Saves.pending_summary.is_empty() or not _away_summary.is_empty():
 		_show_away(Saves.pending_summary)
 		Saves.pending_summary = {}
 
@@ -226,6 +240,12 @@ func _process(delta: float) -> void:
 	# The title screen waits behind the strip, which offers only the way back to it.
 	if titled:
 		_title.visible = not in_strip
+		if not _any_window():
+			UiKit.pad_focus(_title, _title_focus)
+	elif visible and not _any_window() and not _open_cards().is_empty():
+		UiKit.pad_focus(_cards.back())
+	if _bar_armed and not _bar_focused():
+		_pad_bar(false)
 	if _compact_market.visible == titled:
 		_compact_label.visible = not titled
 		_compact_market.visible = not titled
@@ -261,6 +281,8 @@ func _fit() -> void:
 	scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_root.position = Vector2.ZERO
 	_root.size = (get_viewport().get_visible_rect().size / Windowing.ui_scale).floor()
+	if _debug_layer:
+		_debug_layer.scale = scale
 
 
 ## Everything of the interface showing over the strip: its bars, a message, a speech bubble or a window such as the
@@ -277,15 +299,57 @@ func strip_bar_rects() -> Array[Rect2]:
 		# A full-screen layer, such as the title screen's, is not a piece of interface floating over the farm.
 		if r.has_area() and not r.encloses(whole):
 			rects.append(r)
+	# The achievement cards' layer covers the screen, but the card sliding along it is interface over the farm.
+	var card: Rect2 = _achievements.card_rect()
+	if card.has_area():
+		rects.append(card)
 	return rects
 
 
-## True while a window covers the estate, so clicks there do not reach the farm.
+## True while a window, a card waiting for its button or the interface's own buttons have the gamepad, so the estate
+## leaves the d-pad and the A button to them.
 func window_open() -> bool:
+	return _any_window() or not _open_cards().is_empty() or (_bar_armed and _bar_focused())
+
+
+func _any_window() -> bool:
 	for w in _windows:
 		if w.visible:
 			return true
 	return false
+
+
+func _open_cards() -> Array:
+	_cards = _cards.filter(func(c): return is_instance_valid(c) and not c.is_queued_for_deletion())
+	return _cards
+
+
+## The interface's own buttons on the estate, which a gamepad reaches with Start: the toolbar, the windows' buttons,
+## the zone bar, the sleep button and Uncle Marcus's OK.
+func _bar_buttons() -> Array:
+	var all: Array = [_sleep_button]
+	for row in [_tool_row, _buttons, _zone_bar]:
+		all.append_array(row.get_children())
+	all.append_array(_uncle.find_children("*", "Button", true, false))
+	return all
+
+
+func _bar_focused() -> bool:
+	var f := get_viewport().gui_get_focus_owner()
+	return f != null and f in _bar_buttons()
+
+
+## Start hands a gamepad the interface's buttons, starting from the tool in hand, and Start or B hands it back to the estate.
+func _pad_bar(on: bool) -> void:
+	if not on and _bar_focused():
+		get_viewport().gui_release_focus()
+	_bar_armed = on
+	for b in _bar_buttons():
+		b.focus_mode = Control.FOCUS_ALL if on else Control.FOCUS_NONE
+	if on:
+		var current := "seed:" + Game.selected_seed if tool == "seed" else tool
+		var start: Button = _tool_buttons.get(current, _tool_buttons.values()[0])
+		start.grab_focus()
 
 
 func close_windows() -> bool:
@@ -325,6 +389,8 @@ func request_house() -> void:
 
 func open_window(name: String) -> void:
 	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades, "companions": _companions}.get(name)
+	if _title:
+		_title_focus = UiKit.focus_hint(_title)
 	if w and not w.visible:
 		_open(w)
 
@@ -354,10 +420,12 @@ func toast(text: String) -> void:
 	# Messages from the farm loading behind the title screen are not news to the player yet.
 	if _title != null:
 		return
-	# Messages that arrive together are shown one after another rather than overwriting each other.
+	# Messages that arrive together wait their turn; a long wait keeps the newest four, a repeated one moving to the back.
 	if not visible or (_toast_tween and _toast_tween.is_running() and _toast.text != text):
-		if not text in _toast_queue and _toast_queue.size() < 4:
-			_toast_queue.append(text)
+		_toast_queue.erase(text)
+		_toast_queue.append(text)
+		if _toast_queue.size() > 4:
+			_toast_queue.pop_front()
 		return
 	_show_toast(text)
 
@@ -368,8 +436,9 @@ func _show_toast(text: String) -> void:
 		_toast_tween.kill()
 	_toast.modulate.a = 1.0
 	var view := _root.size
-	_toast.position = Vector2(0, roundf(view.y * 0.2))
-	_toast.size.x = view.x
+	# A long message wraps within the screen, a little in from its edges.
+	_toast.position = Vector2(8, roundf(view.y * 0.2))
+	_toast.size = Vector2(view.x - 16, 0)
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.6)
@@ -429,7 +498,7 @@ func _update_tip() -> void:
 	var settled := not Windowing.strip and _title == null and Game.pets_chosen
 	var ready := settled and Settings.show_tutorial
 	# He steps aside while a window is open, so his advice never covers it, and returns without sliding in again.
-	if settled and window_open():
+	if settled and _any_window():
 		_uncle.visible = false
 		return
 	if not _notice.is_empty() and _uncle.dismissed() == String(_notice["id"]):
@@ -553,9 +622,7 @@ func _triumph() -> void:
 	col.add_child(wreath)
 	UiKit.para(col, tr("Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door."), 200)
 	UiKit.button(col, tr("Ave!"), p.queue_free)
-	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_centre_card(p)
 	UiKit.fade_in(p, 0.6)
 
 
@@ -567,8 +634,25 @@ func _petal_texture() -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
-func _show_away(summary: Dictionary) -> void:
+## The farm catches up after every pause in play, but only a real absence is worth a summary.
+func _on_caught_up(summary: Dictionary) -> void:
+	if float(summary.get("seconds", 0)) >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
+		_show_away(summary)
+
+
+## What happened while the player was away. It waits while the title screen is up, and a second catch-up adds its time
+## and harvests to the summary showing; how the farm stands now comes from the newer one.
+func _show_away(news: Dictionary) -> void:
+	var summary := _away_summary.merged(news, true)
+	for key in ["seconds", "harvested", "made", "earned"]:
+		summary[key] = _away_summary.get(key, 0) + news.get(key, 0)
+	_away_summary = summary
+	if _title != null:
+		return
+	if is_instance_valid(_away):
+		_away.queue_free()
 	var p := PanelContainer.new()
+	_away = p
 	_root.add_child(p)
 	var col := UiKit.column(p)
 	var hours := float(summary.get("seconds", 0)) / 3600.0
@@ -585,11 +669,19 @@ func _show_away(summary: Dictionary) -> void:
 		lines.append(tr("The storehouse and the cart are full"))
 	for line in lines:
 		UiKit.label(col, line)
-	UiKit.button(col, tr("Lovely"), p.queue_free)
-	# Centred on whatever the view is, so it fits the desktop strip as well as the full window.
+	UiKit.button(col, tr("Lovely"), func():
+		p.queue_free()
+		_away_summary = {})
+	_centre_card(p)
+
+
+## A card that waits for its one button, centred on whatever the view is, so it fits the desktop strip as well as the
+## full window; a gamepad presses its button with A, or with B.
+func _centre_card(p: PanelContainer) -> void:
 	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_cards.append(p)
 
 
 ## The small bar shown in the desktop strip instead of the full panels.
@@ -608,16 +700,14 @@ func _build_compact() -> void:
 func _build_debug() -> void:
 	# The debug panel has a layer of its own above everything, so it also opens inside the farmhouse and in the town,
 	# where the rest of the interface is hidden.
-	var layer := CanvasLayer.new()
-	layer.layer = 30
-	add_child.call_deferred(layer)
+	_debug_layer = CanvasLayer.new()
+	_debug_layer.layer = 30
+	_debug_layer.scale = scale
+	add_child.call_deferred(_debug_layer)
 	var holder := Control.new()
 	holder.theme = UiKit.make_theme()
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(holder)
-	var scale_to_ui := func(): layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
-	scale_to_ui.call()
-	Windowing.view_changed.connect(scale_to_ui)
+	_debug_layer.add_child(holder)
 	_debug = PanelContainer.new()
 	_debug.position = Vector2(4, 70)
 	_debug.visible = false
@@ -636,22 +726,44 @@ func _build_debug() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# A window opened over the title screen, such as the settings, closes with Escape or B like any other.
+	if event.is_action_pressed("close_panel") and _go_back():
+		get_viewport().set_input_as_handled()
+		return
 	if modal_open():
 		return
+	# The farm's own keys wait while the interface is hidden in the market or the farmhouse, or shrunk to the strip.
+	var on_farm := visible and not Windowing.strip
 	# The debug panel, with its free coins and farm reset, only opens in development builds, never for players.
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F1 and OS.is_debug_build():
 		_debug.visible = not _debug.visible
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode >= KEY_1 and event.keycode <= KEY_9:
+	elif on_farm and event is InputEventKey and event.pressed and not event.echo and event.keycode >= KEY_1 and event.keycode <= KEY_9:
 		var slots := _tool_buttons.keys()
 		var k := int(event.keycode - KEY_1)
 		if k < slots.size():
 			select_tool(String(slots[k]))
 			get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("close_panel") and close_windows():
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("open_journal"):
+	elif on_farm and event.is_action_pressed("open_journal"):
 		_open(_journal)
 		get_viewport().set_input_as_handled()
+	elif on_farm and event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START and (_bar_armed or not window_open()):
+		_pad_bar(not _bar_armed)
+		get_viewport().set_input_as_handled()
+
+
+## Escape or B closes what is open, the newest first: a window, then a card waiting for its button, then the
+## gamepad's turn on the interface's buttons. True if there was something to close.
+func _go_back() -> bool:
+	if close_windows():
+		return true
+	if not _open_cards().is_empty():
+		var button: Button = _cards.back().find_children("*", "Button", true, false)[0]
+		button.pressed.emit()
+		return true
+	if _bar_armed:
+		_pad_bar(false)
+		return true
+	return false
 
 
 
@@ -728,10 +840,18 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 		box.border_color = Color(0.7, 0.38, 0.25) if chosen else Color(0.55, 0.4, 0.28)
 		box.set_border_width_all(1)
 		box.set_content_margin_all(0)
+		# The slot a gamepad is on is ringed in cream over its own look, as the interface's other buttons are.
+		if state == "focus":
+			box.draw_center = false
+			box.border_color = UiKit.CREAM
 		b.add_theme_stylebox_override(state, box)
 	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
 		b.add_theme_color_override(state, tint)
-	b.pressed.connect(func(): select_tool(id))
+	# A gamepad that has chosen its tool goes straight back to the field to use it.
+	b.pressed.connect(func():
+		select_tool(id)
+		if _bar_armed:
+			_pad_bar(false))
 	b.mouse_entered.connect(func(): set_info(text))
 	b.mouse_exited.connect(func(): set_info(""))
 	_tool_row.add_child(b)

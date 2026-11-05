@@ -17,13 +17,10 @@ var _icon_bottoms := {}
 
 ## Parks the cart with the donkey standing at its handles, both facing right towards the road to market.
 func park_rig() -> void:
-	# A donkey walking to or from the barn, or stabled for the night, keeps to what it is doing.
-	var walking_alone := m._donkey_night != ""
-	var facing := m._donkey.flip_h
 	face_rig(false)
 	m._cart.position.x = Estate.CART_HOME_X
-	if walking_alone:
-		m._donkey.flip_h = facing
+	# A donkey walking to or from the barn, or stabled for the night, keeps to what it is doing.
+	if m._donkey_night != "":
 		return
 	m._donkey.position = Vector2(harness_x(Estate.CART_HOME_X, false), Estate.RIG_BASE)
 	m._donkey.play("stand")
@@ -52,7 +49,7 @@ func donkey_walk_to_barn() -> void:
 	m._harness.visible = false
 	m._dust(Vector2(m._donkey.position.x, Estate.RIG_BASE), 6)
 	var door := Vector2((Estate.Pasture.BARN_LEFT + Estate.Pasture.BARN_RIGHT) / 2.0, 252.0)
-	m._donkey.flip_h = false
+	m._donkey.flip_h = door.x < m._donkey.position.x
 	donkey_stroll(true)
 	m._donkey_tween = create_tween()
 	m._donkey_tween.tween_property(m._donkey, "position:x", door.x, absf(door.x - m._donkey.position.x) / 26.0)
@@ -66,16 +63,23 @@ func donkey_walk_to_barn() -> void:
 
 func donkey_walk_home() -> void:
 	m._donkey_night = "back"
-	var home := Vector2(harness_x(Estate.CART_HOME_X, false), Estate.RIG_BASE)
 	m._donkey.position = Vector2((Estate.Pasture.BARN_LEFT + Estate.Pasture.BARN_RIGHT) / 2.0, 252.0)
 	m._donkey.modulate.a = 0.0
 	m._donkey.visible = true
-	m._donkey.flip_h = true
 	m._donkey.play("stand")
+	donkey_head_home()
+
+
+## Walks the donkey on from wherever it has got to on its way home, to the shafts of the cart as it is sized now.
+func donkey_head_home() -> void:
+	var home := Vector2(harness_x(Estate.CART_HOME_X, false), Estate.RIG_BASE)
+	m._donkey.flip_h = home.x < m._donkey.position.x
+	if m._donkey_tween:
+		m._donkey_tween.kill()
 	m._donkey_tween = create_tween()
-	m._donkey_tween.tween_property(m._donkey, "modulate:a", 1.0, 0.8)
+	m._donkey_tween.tween_property(m._donkey, "modulate:a", 1.0, 0.8 * (1.0 - m._donkey.modulate.a))
 	m._donkey_tween.tween_callback(donkey_stroll.bind(true))
-	m._donkey_tween.tween_property(m._donkey, "position:y", float(Estate.RIG_BASE), (Estate.RIG_BASE - 252.0) / 14.0)
+	m._donkey_tween.tween_property(m._donkey, "position:y", float(Estate.RIG_BASE), (Estate.RIG_BASE - m._donkey.position.y) / 14.0)
 	m._donkey_tween.tween_property(m._donkey, "position:x", home.x, absf(m._donkey.position.x - home.x) / 26.0)
 	# Back at the cart it turns round to face the road, and the harness goes on again.
 	m._donkey_tween.tween_callback(func():
@@ -154,13 +158,17 @@ func size_cart() -> void:
 	m._front_wheel.visible = level >= 3
 	face_rig(m._cart.flip_h)
 	m._harness.queue_redraw()
+	if m._donkey_night == "back":
+		donkey_head_home()
 	if not Game.cart["away"] and not m._cart_returning:
 		park_rig()
 
 
 func face_rig(homeward: bool) -> void:
 	m._cart.flip_h = homeward
-	m._donkey.flip_h = homeward
+	# A donkey out of the shafts, on its way to or from the barn, faces the way it walks.
+	if m._donkey_night == "":
+		m._donkey.flip_h = homeward
 	m._wheel.position = Vector2(45.0 + _cart_grow.x if homeward else 15.0, 23.0 + _cart_grow.y)
 	var front := 21.0 + _cart_grow.x
 	m._front_wheel.position = Vector2(60.0 + _cart_grow.x - front if homeward else front, 23.0 + _cart_grow.y)

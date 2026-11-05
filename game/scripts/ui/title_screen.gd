@@ -58,6 +58,7 @@ func _show_menu() -> void:
 	_menu.custom_minimum_size = Vector2(150, 0)
 	if Saves.has_farm:
 		var go := UiKit.button(_menu, tr("Continue"), _continue)
+		go.focus_mode = Control.FOCUS_ALL
 		go.grab_focus.call_deferred()
 		var info := Saves.slot_info(Saves.slot)
 		var about := UiKit.label(_menu, FarmsPanel.describe(info))
@@ -67,7 +68,8 @@ func _show_menu() -> void:
 	if Saves.any_farm():
 		UiKit.button(_menu, tr("Farms"), _open_farms)
 	UiKit.button(_menu, tr("Settings"), func(): open_window.call("settings"))
-	UiKit.button(_menu, tr("Quit"), func(): Saves.save_game(); get_tree().quit())
+	# Quitting here does what closing the window does: the farm is saved and the window remembers its monitor.
+	UiKit.button(_menu, tr("Quit"), func(): get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST); get_tree().quit())
 
 
 func _continue() -> void:

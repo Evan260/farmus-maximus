@@ -37,14 +37,14 @@ var ui_scale_step := 0
 var day_minutes := 20
 var show_tutorial := true
 var keys := {}
-## Off for a trial "new farm" run, which shows the first-day welcome without changing the player's real settings.
+## Off for trial runs (see trial_run), which never write the player's preferences, volumes or window settings.
 var persist := true
 
 
 func _ready() -> void:
+	persist = not trial_run()
 	_load()
 	if "--new-farm" in OS.get_cmdline_user_args():
-		persist = false
 		show_tutorial = true
 	for action in ACTIONS:
 		if not InputMap.has_action(action):
@@ -88,6 +88,17 @@ func _system_language() -> String:
 		if loc.get_slice("_", 0) == lang:
 			return loc
 	return "en"
+
+
+## Demo farms, new-farm trials, read-only checks and tests, which leave the player's farms and settings as they were.
+func trial_run() -> bool:
+	for arg in OS.get_cmdline_args():
+		if String(arg).begins_with("res://tests/"):
+			return true
+	for flag in ["--demo", "--new-farm", "--readonly"]:
+		if flag in OS.get_cmdline_user_args():
+			return true
+	return false
 
 
 func key_for(action: String) -> int:

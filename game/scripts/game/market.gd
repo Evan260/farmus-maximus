@@ -44,6 +44,9 @@ func cart_price(key: String) -> int:
 func pack_cart() -> void:
 	brought = {}
 	cart_in_town = true
+	# A cart out on the road is not in town with the player, so the stalls have nothing from it to sell.
+	if _game.cart["away"]:
+		return
 	var room: int = _game.cart_capacity()
 	var goods: Dictionary = _game.sellable_goods()
 	var keys := goods.keys()

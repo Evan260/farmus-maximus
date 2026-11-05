@@ -15,6 +15,8 @@ var _stone_x := 0.0
 var _stone_wheel: Sprite2D
 ## True on the frame the stone cart comes into view.
 var _stone_first_look := false
+## The road's level and whether work on it was under way when it was last drawn.
+var _drawn := []
 
 
 ## Each improvement to the road is worked along its whole length: first the paving, then a kerb of raised stones along
@@ -42,6 +44,7 @@ func pave_road() -> void:
 	m._kerb.position = Vector2(-40.0, 270.0)
 	_milestone_reach = reach.call(1)
 	_footpath_reach = reach.call(2)
+	_drawn = [level, Game.projects.has("cart_speed")]
 	m._road_works.queue_redraw()
 
 
@@ -100,6 +103,9 @@ func update_road_cart(delta: float) -> void:
 	if not paving:
 		if _stone_cart.visible:
 			_stone_cart.visible = false
+		# Work finished during a quiet catch-up sends no signal, so the road is redrawn whenever it differs from the game.
+		if _drawn != [int(Game.levels.get("cart_speed", 0)), false]:
+			pave_road()
 		return
 	pave_road()
 	var target := maxf(0.0, m._paving_front - 96.0)
@@ -118,7 +124,7 @@ func update_road_cart(delta: float) -> void:
 		_stone_x = move_toward(_stone_x, target, pace * delta)
 		m._stone_donkey.play("walk")
 		m._stone_donkey.speed_scale = pace / maxf(1.0, m.rig.donkey_pace())
-	else:
+	elif m._stone_donkey.animation != "bray" or not m._stone_donkey.is_playing():
 		m._stone_donkey.play("stand")
 		m._stone_donkey.speed_scale = 1.0
 	_stone_wheel.rotation += (_stone_x - before) / 11.0
@@ -138,7 +144,7 @@ func stable_stone_donkey() -> void:
 		m._stone_donkey.modulate.a = 0.0
 	elif m._stone_night == "" and night:
 		m._stone_night = "out"
-		m._stone_donkey.flip_h = false
+		m._stone_donkey.flip_h = barn.x < m._stone_donkey.position.x
 		m._stone_donkey.play("walk")
 		var walk := create_tween()
 		walk.tween_property(m._stone_donkey, "position:x", barn.x, absf(barn.x - home.x) / 26.0)
@@ -148,7 +154,7 @@ func stable_stone_donkey() -> void:
 	elif m._stone_night == "barn" and not night:
 		m._stone_night = "back"
 		m._stone_donkey.position = barn
-		m._stone_donkey.flip_h = true
+		m._stone_donkey.flip_h = home.x < barn.x
 		m._stone_donkey.play("walk")
 		var walk := create_tween()
 		walk.tween_property(m._stone_donkey, "modulate:a", 1.0, 0.8)

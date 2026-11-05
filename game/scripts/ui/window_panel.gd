@@ -45,6 +45,7 @@ func _ready() -> void:
 	_scroll = ScrollContainer.new()
 	UiKit.touch_scroll(_scroll)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.follow_focus = true
 	_col.remove_child(body)
 	_col.add_child(_scroll)
 	_scroll_gap = MarginContainer.new()
@@ -121,7 +122,12 @@ func refresh() -> void:
 			s.scroll_vertical = 0
 	else:
 		_restore_scroll.call_deferred(scrolled)
-	UiKit.pad_focus.call_deferred(self, focus)
+	# A method of the window rather than of UiKit, so a window freed before the call is simply skipped.
+	_pad_focus.call_deferred(focus)
+
+
+func _pad_focus(was: Dictionary) -> void:
+	UiKit.pad_focus(self, was)
 
 
 ## After a button's action the window shows the result at once, and after a purchase it waits a moment, so a double-click never pays twice.

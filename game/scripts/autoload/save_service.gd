@@ -9,7 +9,7 @@ const BACKUP_EVERY := 300.0
 
 ## Filled on load when time passed while the game was closed; the HUD shows it once.
 var pending_summary := {}
-## Off in demo mode, so screenshots never overwrite a real save.
+## Off for trial runs such as demo farms and read-only checks, which never write, move or delete a farm's files.
 var enabled := true
 ## Where the farms are kept; tests point it at a folder of their own so the player's farms are never touched.
 var folder := "user://"
@@ -29,8 +29,8 @@ func _ready() -> void:
 		enabled = false
 		Game.new_game()
 		return
-	# Read-only runs load the real farm for checking without ever writing to it.
-	if "--readonly" in args:
+	# Read-only runs and demo farms may load the real farm, but never write to it.
+	if not Settings.persist:
 		enabled = false
 	# Older saves are brought over only on the very first start; once farms.json exists a deleted farm stays deleted.
 	if enabled and not FileAccess.file_exists(_farms_path()):
@@ -163,7 +163,7 @@ func _set_aside_unreadable(n: int) -> bool:
 func load_game(n: int) -> void:
 	slot = n
 	pending_summary = {}
-	for path in _candidates(n):
+	for path in _load_order(n):
 		if not FileAccess.file_exists(path):
 			continue
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -186,7 +186,7 @@ func load_game(n: int) -> void:
 
 ## What the farm in a slot is, for the farm list: its name, day and villa, or an empty dictionary for an empty slot.
 func slot_info(n: int) -> Dictionary:
-	for path in _candidates(n):
+	for path in _load_order(n):
 		if not FileAccess.file_exists(path):
 			continue
 		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -200,7 +200,7 @@ func slot_info(n: int) -> Dictionary:
 ## The first slot with nothing in it, or 0 when every slot holds a farm; a farm that cannot be read still holds its slot.
 func free_slot() -> int:
 	for n in range(1, SLOTS + 1):
-		if _files(n).is_empty():
+		if _files(n).is_empty() and slot_info(n).is_empty():
 			return n
 	return 0
 
@@ -210,11 +210,12 @@ func any_farm() -> bool:
 	return range(1, SLOTS + 1).any(func(n): return not slot_info(n).is_empty())
 
 
-## Plays the farm in a slot: the scene starts again around it.
+## Plays the farm in a slot: the scene starts again around it. The farm already open carries on with its summary of time away.
 func play(n: int) -> void:
-	save_game()
-	load_game(n)
-	_remember_slot()
+	if n != slot or not has_farm:
+		save_game()
+		load_game(n)
+		_remember_slot()
 	title_done = true
 	get_tree().reload_current_scene()
 
@@ -255,8 +256,11 @@ func reset() -> void:
 
 
 func _remove(n: int) -> void:
-	for path in _files(n):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	if not enabled:
+		return
+	for path in _candidates(n) + [path_for(n) + ".tmp"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _candidates(n: int) -> Array:
@@ -264,6 +268,23 @@ func _candidates(n: int) -> Array:
 	for i in range(1, BACKUPS + 1):
 		list.append("%s.bak%d" % [path_for(n), i])
 	return list
+
+
+## The files a farm is read from, best first: a save cut off before its .tmp replaced the farm file leaves the newest copy there.
+func _load_order(n: int) -> Array:
+	var list := _candidates(n)
+	var tmp := path_for(n) + ".tmp"
+	if FileAccess.file_exists(tmp) and _saved_at(tmp) > _saved_at(path_for(n)):
+		list.push_front(tmp)
+	return list
+
+
+## When a save was made, or -1 for a file that is missing or not whole, so a half-written .tmp never wins.
+func _saved_at(path: String) -> float:
+	if not FileAccess.file_exists(path):
+		return -1.0
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return float(d.get("saved_at", 0)) if typeof(d) == TYPE_DICTIONARY else -1.0
 
 
 ## Moves each backup one along, the save itself becoming the newest, once the newest backup has aged.

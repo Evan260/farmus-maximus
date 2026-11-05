@@ -212,7 +212,7 @@ func _build_barn() -> void:
 	var b: Dictionary = Game.buildings[id]
 	UiKit.section(body, tr("Animals"))
 	for kind in ["chicken", "goat"]:
-		UiKit.label(body, "%s: %d of %d" % [tr("Hens" if kind == "chicken" else "Goats"), int(b["animals"].get(kind, 0)), Game.animal_capacity(kind, id)])
+		UiKit.label(body, tr("%s: %d of %d") % [tr("Hens" if kind == "chicken" else "Goats"), int(b["animals"].get(kind, 0)), Game.animal_capacity(kind, id)])
 	UiKit.para(body, tr("Hens lay eggs and goats give milk; all of them leave manure for the fields."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
 	UiKit.section(body, tr("Feed"))
 	_feed = UiKit.label(body)

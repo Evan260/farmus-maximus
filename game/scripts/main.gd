@@ -389,6 +389,7 @@ func _ready() -> void:
 	Game.helper_hired.connect(_on_helper_arrived)
 	Game.decoration_bought.connect(_on_decoration_bought)
 	Game.pets_changed.connect(_spawn_pets)
+	Game.caught_up.connect(_on_caught_up)
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
 		_donkey.position.x = rig.harness_x(_cart.position.x, false)
@@ -1076,11 +1077,8 @@ func _animal_at(point: Vector2) -> String:
 		return String(grazing.get_meta("kind"))
 	if _stork.visible and Hit.texture_has_pixel(_stork.texture, _stork.position, point):
 		return "stork"
-	for d in [_donkey, _stone_donkey]:
-		# The paving cart's donkey is drawn inside the cart, so its place is counted from the cart's.
-		var host: Node2D = road._stone_cart if d == _stone_donkey else d
-		if d and d.is_visible_in_tree() and d.modulate.a > 0.5 and Hit.frame_has_pixel(host, d, point):
-			return "donkey"
+	if _donkey_at(point):
+		return "donkey"
 	if not _wildlife.rabbit_at(point).is_empty():
 		return "rabbit"
 	if _wildlife.fox_at(point):
@@ -1090,8 +1088,19 @@ func _animal_at(point: Vector2) -> String:
 	return ""
 
 
+## The trader's donkey or the paving cart's under the pointer, or null.
+func _donkey_at(point: Vector2) -> AnimatedSprite2D:
+	for d in [_donkey, _stone_donkey]:
+		# The paving cart's donkey is drawn inside the cart, so its place is counted from the cart's.
+		var host: Node2D = road._stone_cart if d == _stone_donkey else d
+		if d and d.is_visible_in_tree() and d.modulate.a > 0.5 and Hit.frame_has_pixel(host, d, point):
+			return d
+	return null
+
+
 func _call_out(animal: String, point: Vector2) -> void:
 	var grazing: Node2D = _pasture.animal_at(point)
+	var donkey: AnimatedSprite2D = _donkey_at(point) if animal == "donkey" else null
 	if animal == "rabbit":
 		_wildlife.startle(_wildlife.rabbit_at(point), point)
 		return
@@ -1103,9 +1112,9 @@ func _call_out(animal: String, point: Vector2) -> void:
 		return
 	if grazing:
 		grazing.react()
-	elif animal == "donkey" and _donkey.animation == "stand" and not _riding:
-		_donkey.play("bray")
-		_donkey.animation_finished.connect(func(): _donkey.play("stand"), CONNECT_ONE_SHOT)
+	elif donkey and donkey.animation == "stand" and not (donkey == _donkey and _riding):
+		donkey.play("bray")
+		donkey.animation_finished.connect(func(): donkey.play("stand"), CONNECT_ONE_SHOT)
 	elif animal == "stork" and not _stork.has_meta("bobbing"):
 		# A stork greets by throwing its head back and clattering its bill, which reads as a quick bob at this size.
 		_stork.set_meta("bobbing", true)
@@ -1482,17 +1491,26 @@ func _on_decoration_bought(_id: String) -> void:
 	Sfx.play("made", -4.0)
 
 
+## A cart sent off while the donkey is stabled has the donkey fetched and put in the shafts straight away.
+func _hitch_donkey() -> void:
+	if _donkey_night == "":
+		return
+	if _donkey_tween:
+		_donkey_tween.kill()
+	_donkey_night = ""
+	_donkey.visible = true
+	_donkey.modulate.a = 1.0
+	_donkey.position.y = RIG_BASE
+	_donkey.speed_scale = 1.0
+	_harness.visible = true
+
+
 func _on_cart_left(_items: int, value: int) -> void:
-	# Sent off while the donkey is stabled, it is fetched and put in the shafts straight away.
-	if _donkey_night != "":
-		if _donkey_tween:
-			_donkey_tween.kill()
-		_donkey_night = ""
-		_donkey.visible = true
-		_donkey.modulate.a = 1.0
-		_donkey.position.y = RIG_BASE
-		_donkey.speed_scale = 1.0
-		_harness.visible = true
+	# Trips made while time is caught up all at once would each queue their own messages, so the cart is simply sent away.
+	if Game.quiet:
+		_show_cart_away()
+		return
+	_hitch_donkey()
 	Sfx.play("cart")
 	# A trader can send the cart off again while it is still driving home; it turns round, and is no longer returning.
 	if _cart_returning:
@@ -1528,6 +1546,31 @@ func _on_cart_home(coins: int) -> void:
 	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46) - _camera.position, "+%d" % coins)
 	_burst(Vector2(CART_HOME_X + 30, RIG_BASE - 20), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
 	hud.toast(tr("The cart is back: +%d sestertii") % coins)
+
+
+## Time caught up all at once moves the farm on without the signals the scene follows, so the scene is set from the state.
+func _on_caught_up(_summary: Dictionary) -> void:
+	_dress_storehouse()
+	_store_scaffold.visible = Game.projects.has("storage")
+	for id in Game.buildings:
+		_building_states[id] = String(Game.buildings[id]["state"])
+	# A cart driving out may carry on out of sight, but one that came home is parked where helpers can load it.
+	var heading_out := _rig_tween != null and _rig_tween.is_running() and not _cart_returning
+	if Game.cart["away"] and not heading_out:
+		_show_cart_away()
+	elif not Game.cart["away"] and not _riding:
+		_park_cart()
+
+
+## Puts the cart on the road to town out of sight, as a farm opened with the cart away shows it.
+func _show_cart_away() -> void:
+	if _rig_tween:
+		_rig_tween.kill()
+	_cart_returning = false
+	_hitch_donkey()
+	rig.face_rig(false)
+	_cart.position.x = estate_width + 60
+	_donkey.position.x = rig.harness_x(_cart.position.x, false)
 
 
 func _on_dog_petted(sleepy := false) -> void:

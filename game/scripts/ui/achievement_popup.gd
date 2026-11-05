@@ -9,6 +9,8 @@ const HOLD := 5.0
 
 ## The interface element the card stands below; without one it sits at the top edge.
 var below: Control
+## Supplied by the HUD: true while a window is open, when the card lets clicks through to the window's buttons under it.
+var window_open: Callable
 ## While true, cards wait in the queue and a card on its way stops where it is, such as while the title screen is up.
 var hold := false:
 	set(value):
@@ -72,6 +74,9 @@ func _next() -> void:
 	desc.add_theme_color_override("font_color", UiKit.FADED)
 	# A description that wraps keeps the same tight line spacing as the lines above it.
 	desc.add_theme_constant_override("line_spacing", -1)
+	# Its parts leave the pointer to the card, so the card alone decides whether clicks go through to a window under it.
+	for part in _card.find_children("*", "Control", true, false):
+		part.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var card := _card
 	card.position = Vector2(size.x, size.y)
 	# A wrapped description only knows its height once laid out, so the card is measured a frame later, still out of sight.
@@ -111,6 +116,16 @@ func _process(_delta: float) -> void:
 	# The buttons above can change size with the interface size setting, so the card keeps to just below them.
 	if _card:
 		_card.position.y = _top()
+		var over_window: bool = window_open.is_valid() and window_open.call()
+		_card.mouse_filter = Control.MOUSE_FILTER_IGNORE if over_window else Control.MOUSE_FILTER_STOP
+
+
+## The stretch of screen the card showing slides along, from where it lands to the right edge, or an empty rect.
+func card_rect() -> Rect2:
+	if _card == null or not _card.is_visible_in_tree():
+		return Rect2()
+	var left := size.x - _card.size.x - MARGIN
+	return Rect2(global_position + Vector2(left, _card.position.y), Vector2(size.x - left, _card.size.y))
 
 
 func _top() -> float:

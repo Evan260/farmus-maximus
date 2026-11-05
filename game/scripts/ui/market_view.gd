@@ -58,6 +58,9 @@ var _hover_label: Label
 var _hovered := ""
 var _panel: PanelContainer
 var _pad_bar: HBoxContainer
+var _back: Button
+## The place last opened, whose button in the pad bar takes the focus back when its window closes.
+var _visited := ""
 var _signature := ""
 var _timer := 0.0
 var _clouds: Array[Sprite2D] = []
@@ -167,7 +170,7 @@ func _ready() -> void:
 	_ui_layer.add_child(_ui_root)
 	var top := UiKit.row(_ui_root)
 	top.position = Vector2(4, 4)
-	UiKit.button(top, tr("Back to the estate"), leave)
+	_back = UiKit.button(top, tr("Back to the estate"), leave)
 	var purse_box := PanelContainer.new()
 	top.add_child(purse_box)
 	_purse = UiKit.label(purse_box)
@@ -296,6 +299,7 @@ func enter() -> void:
 	_ui_layer.visible = true
 	_sky_layer.visible = true
 	tab = ""
+	_visited = ""
 	_panel.visible = false
 	_bunting.queue_redraw()
 	_props.queue_redraw()
@@ -317,6 +321,7 @@ func leave() -> void:
 
 func _open(id: String) -> void:
 	tab = id
+	_visited = id
 	if not _panel.visible:
 		UiKit.fade_in(_panel)
 	_signature = ""
@@ -333,6 +338,8 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	_pad_bar.visible = not Input.get_connected_joypads().is_empty()
+	if _pad_bar.visible:
+		_keep_pad_focus()
 	_water_time += delta
 	_water.queue_redraw()
 	_drift_clouds(delta)
@@ -342,6 +349,23 @@ func _process(delta: float) -> void:
 	if _timer <= 0.0:
 		_timer = 0.3
 		_refresh()
+
+
+## A gamepad always has a button to act on: the open window's, or else the place last visited in the bar below.
+func _keep_pad_focus() -> void:
+	_back.focus_mode = Control.FOCUS_ALL
+	for b in _pad_bar.get_children():
+		b.focus_mode = Control.FOCUS_ALL
+	if get_viewport().gui_get_focus_owner() != null:
+		return
+	if _panel.visible:
+		UiKit.pad_focus(_panel)
+		return
+	var at := 0
+	for i in SPOTS.size():
+		if SPOTS[i]["id"] == _visited:
+			at = i
+	(_pad_bar.get_child(at) as Button).grab_focus()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -610,7 +634,8 @@ func _refresh() -> void:
 			_build_land()
 		"Decorations":
 			_build_decorations()
-	UiKit.pad_focus.call_deferred(_panel, focus)
+	# Through the market rather than UiKit, so a call left over when the scene is rebuilt is simply skipped.
+	(func(): UiKit.pad_focus(_panel, focus)).call_deferred()
 
 
 func _build_stalls() -> void:
