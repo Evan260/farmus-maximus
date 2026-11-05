@@ -11,6 +11,8 @@ const RUBRIC := Color(0.62, 0.2, 0.14)
 const GOLD := Color(0.86, 0.66, 0.24)
 const WAX := Color(0.72, 0.16, 0.14)
 const SIZE := Vector2(104, 70)
+## How wide a line of writing can be, inside the ruled frame with a pixel or two to spare.
+const ROOM := 84.0
 
 var title := ""
 ## "owned", "sale" or "later".
@@ -46,30 +48,73 @@ func _draw() -> void:
 			for r in ROD.size():
 				_rect(Rect2(side, end_y + 1 + r, 3, 1), ROD[r])
 	var font := UiKit.ui_font()
+	var size := UiKit.text_size()
+	var step := size + 1
 	var header := tr("DEED")
-	var hw := font.get_string_size(header, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.text_size()).x
-	_centred(font, header, 18, UiKit.text_size(), RUBRIC)
+	var hw := font.get_string_size(header, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	_centred(font, header, 18, size, RUBRIC)
 	var mid := roundf(w / 2.0)
 	for side in [-1, 1]:
 		var inner: float = mid + side * (roundf(hw / 2.0) + 3)
 		_rect(Rect2(minf(inner, inner + side * 10), 15, 10, 1), RUBRIC.lerp(PARCH, 0.4))
 		_rect(Rect2(inner + side * 12 - 1, 14, 2, 2), RUBRIC.lerp(PARCH, 0.4))
-	_centred(font, title.to_upper(), 29, UiKit.text_size(), INK)
-	for line in 3:
-		var lw := 50.0 - line * 12.0
-		_rect(Rect2(roundf((w - lw) / 2.0), 34 + line * 4, lw, 1), INK.lerp(PARCH, 0.72))
+	var heading := _lines(font, _upper(title), size)
+	var heading_base := 29.0 if heading.size() == 1 else 28.0
+	for k in heading.size():
+		_centred(font, heading[k], heading_base + k * step, size, INK)
+	var foot_lines := 1
 	match state:
 		"owned":
 			_seal(Vector2(w - 22, h - 20))
-			draw_string(font, Vector2(13, h - 13), tr("Yours"), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, RUBRIC)
+			draw_string(font, Vector2(13, h - 13), tr("Yours"), HORIZONTAL_ALIGNMENT_LEFT, -1, size, RUBRIC)
 		"sale":
 			var text := "%d %s" % [price, tr("sestertii")]
-			var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
-			var x := roundf((w - tw - 7) / 2.0)
+			# A long word for the coins gives way to the coin alone beside the number.
+			if _width(font, text, size) + 7 > ROOM:
+				text = str(price)
+			var x := roundf((w - _width(font, text, size) - 7) / 2.0)
 			_coin(Vector2(x + 2, h - 16))
-			draw_string(font, Vector2(x + 7, h - 13), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, INK)
+			draw_string(font, Vector2(x + 7, h - 13), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, INK)
 		"later":
-			_centred(font, tr("Not for sale"), h - 13, 8, INK * Color(1, 1, 1, _fade))
+			var foot := _lines(font, tr("Not for sale"), size)
+			foot_lines = foot.size()
+			for k in foot_lines:
+				_centred(font, foot[k], h - 13 - (foot_lines - 1 - k) * step, size, INK * Color(1, 1, 1, _fade))
+	# The ruled lines under the name fill the room left between it and the bottom line.
+	var lowest := h - 13 - (foot_lines - 1) * step - size - 1
+	for line in 3:
+		var y := heading_base + (heading.size() - 1) * step + 5 + line * 4
+		if y > lowest:
+			break
+		var lw := 50.0 - line * 12.0
+		_rect(Rect2(roundf((w - lw) / 2.0), y, lw, 1), INK.lerp(PARCH, 0.72))
+
+
+## Text too wide for the card is split in two at the space that leaves the wider half narrowest.
+func _lines(font: Font, text: String, size: int) -> PackedStringArray:
+	var best := PackedStringArray([text])
+	var words := text.split(" ")
+	if _width(font, text, size) <= ROOM or words.size() < 2:
+		return best
+	var widest := INF
+	for k in range(1, words.size()):
+		var pair := PackedStringArray([" ".join(words.slice(0, k)), " ".join(words.slice(k))])
+		var wider := maxf(_width(font, pair[0], size), _width(font, pair[1], size))
+		if wider < widest:
+			widest = wider
+			best = pair
+	return best
+
+
+func _width(font: Font, text: String, size: int) -> float:
+	return font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+
+
+## Capitals as the language writes them: in Turkish a capital i keeps its dot.
+func _upper(text: String) -> String:
+	if TranslationServer.get_locale().begins_with("tr"):
+		text = text.replace("i", "İ")
+	return text.to_upper()
 
 
 ## A thin ruled frame inside the sheet with a small diamond at each corner.

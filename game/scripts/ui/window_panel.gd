@@ -20,6 +20,11 @@ const SCREEN_MARGIN := 8.0
 const TOOLBAR_ROOM := 30.0
 ## The right margin that keeps a scroll bar off the text when a window's page scrolls.
 var _scroll_gap: MarginContainer
+## How long the window's buttons ignore clicks after one of them paid for something, about a double-click's length.
+const PAID_HOLD := 0.4
+var _hold := 0.0
+## The farm's sestertii and aurei as of the last frame, to tell whether a button's action paid for something.
+var _purse := Vector2i.ZERO
 
 
 func _init(title := "") -> void:
@@ -81,6 +86,8 @@ func close() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	_hold -= delta
+	_purse = Vector2i(Game.coins, Game.aureus)
 	if fixed_size == Vector2.ZERO:
 		_fit_to_screen()
 	_refresh_timer -= delta
@@ -98,9 +105,13 @@ func refresh() -> void:
 	_signature = sig
 	var scrolled: Array = [] if _reset_scroll else _scroll_positions()
 	_reset_scroll = false
+	var focus := UiKit.focus_hint(self)
 	UiKit.clear(top)
 	UiKit.clear(body)
 	build()
+	for b in top.find_children("*", "Button", true, false) + body.find_children("*", "Button", true, false):
+		b.pressed.connect(_acted)
+		b.gui_input.connect(_held_click.bind(b))
 	tick()
 	_widen_paragraphs(self)
 	if fixed_size == Vector2.ZERO:
@@ -110,7 +121,20 @@ func refresh() -> void:
 			s.scroll_vertical = 0
 	else:
 		_restore_scroll.call_deferred(scrolled)
-	UiKit.pad_focus.call_deferred(self)
+	UiKit.pad_focus.call_deferred(self, focus)
+
+
+## After a button's action the window shows the result at once, and after a purchase it waits a moment, so a double-click never pays twice.
+func _acted() -> void:
+	if Game.coins < _purse.x or Game.aureus < _purse.y:
+		_hold = PAID_HOLD
+	_purse = Vector2i(Game.coins, Game.aureus)
+	(func(): if visible: refresh()).call_deferred()
+
+
+func _held_click(event: InputEvent, b: Button) -> void:
+	if _hold > 0.0 and ((event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT) or event is InputEventScreenTouch):
+		b.accept_event()
 
 
 ## A wrapped paragraph measures its height at its current width, which is none until the next layout, so the first

@@ -783,6 +783,8 @@ Yours,Yours,À toi,Deins,Tuya,Tuo,Sua,Twoje,Senin,Ваша,Твоя,所有済み
 and a gold aureus,and a gold aureus,et un aureus d’or,und ein goldener Aureus,y un áureo de oro,e un aureo d'oro,e um áureo de ouro,i złoty aureus,ve bir altın aureus,и золотой ауреус,і золотий ауреус,＋アウレウス金貨1枚,+ 아우레우스 금화,外加一枚金奥里斯,外加一枚奧里斯金幣
 and a rare seed,and a rare seed,et une graine rare,und ein seltener Samen,y una semilla rara,e un seme raro,e uma semente rara,i rzadkie nasiono,ve nadir bir tohum,и редкое семя,і рідкісне насіння,＋珍しい種,+ 희귀한 씨앗,外加一颗稀有种子,外加一顆稀有種子
 asleep,asleep,endormi,schlafend,dormido,dorme,dormindo,śpi,uyuyor,спит,спить,おやすみ中,자는 중,睡着了,睡著了
+aurei,aurei,aurei,Aurei,áureos,aurei,áureos,aureusy,aureus,ауреуса,ауреуси,アウレウス,아우레우스,奥里斯,奧里斯
+aureus,aureus,aureus,Aureus,áureo,aureo,áureo,aureus,aureus,ауреус,ауреус,アウレウス,아우레우스,奥里斯,奧里斯
 bread or wine,bread or wine,pain ou vin,Brot oder Wein,pan o vino,pane o vino,pão ou vinho,chleb lub wino,ekmek ya da şarap,хлеб или вино,хліб або вино,パンかワイン,빵 또는 와인,面包或葡萄酒,麵包或葡萄酒
 cart,cart,charrette,Wagen,carro,carretto,carroça,wóz,araba,тележка,Візок,荷車,수레,驴车,驢車
 click to dig up,click to dig up,clique pour arracher,klicke zum Ausgraben,haz clic para arrancar,clicca per estirpare,clique para arrancar,"kliknij, by wykopać",sökmek için tıkla,"нажмите, чтобы выкопать","натисни, щоб викопати",クリックで掘り起こす,클릭해서 파내기,点击挖除,點擊挖除
@@ -796,5 +798,6 @@ holds %d batches,holds %d batches,contient %d lots,fasst %d Chargen,admite %d lo
 makes %d at a time,makes %d at a time,produit %d à la fois,stellt %d auf einmal her,hace %d a la vez,fa %d alla volta,faz %d de cada vez,wytwarza naraz: %d,tek seferde %d üretir,за раз: %d шт.,за раз: %d,一度に%d個作る,한 번에 %d개 생산,每次产出%d份,一次產出 %d 份
 makes better goods,makes better goods,donne de meilleurs produits,stellt bessere Waren her,hace mejores productos,produce merci migliori,faz produtos melhores,lepsza jakość towarów,daha iyi mal üretir,товары лучшего качества,кращі товари,品質が上がる,더 좋은 물품 생산,产出更好的货物,產出更好的貨品
 manured,manured,avec fumier,gedüngt,con abono,concimato,adubado,nawiezione,gübreli,удобрено,удобрена,肥やし済み,거름 줌,已施肥,已施肥
-sestertii,sestertii,sesterces,Sesterzen,sestercios,sesterzi,sestércios,sest.,sestertius,сест.,сестерціїв,セステルティウス,세스테르티우스,塞斯特斯,塞斯特斯
+sestertii,sestertii,sesterces,Sesterzen,sestercios,sesterzi,sestércios,sest.,sestertius,сест.,сест.,セステルティウス,세스테르티우스,塞斯特斯,塞斯特斯
+sestertius,sestertius,sesterce,Sesterz,sestercio,sesterzio,sestércio,sestercja,sestertius,сестерций,сестерцій,セステルティウス,세스테르티우스,塞斯特斯,塞斯特斯
 you have,you have,tu en as,vorrätig,tienes,hai,você tem,masz,sende,у вас,у тебе,所持,보유,现有,你有

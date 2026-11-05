@@ -166,7 +166,20 @@ func _run() -> void:
 	game.coins = 0
 	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 400, "load": []}
 	summary = game.simulate_offline(20.0)
-	_check(game.coins == 100 and int(summary["earned"]) == 100, "time away keeps a quarter of what the farm earns")
+	_check(game.coins == 400 and int(summary["earned"]) == 400, "a cart already on the road when the game closed pays its full value")
+	game.new_game()
+	game.day_time = 8.0
+	game.coins = 0
+	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 400, "load": []}
+	game.helpers["trader"] = 1
+	game.add_item("lavender", 12, true)
+	var sent := []
+	var note_trip := func(_items: int, value: int) -> void: sent.append(value)
+	game.cart_left.connect(note_trip)
+	game.simulate_offline(15.0 + game.cart_trip_seconds())
+	game.cart_left.disconnect(note_trip)
+	var share := float(data_file.get_value("offline.earnings_share", 0.25))
+	_check(sent.size() == 1 and game.coins == 400 + int(sent[0] * share), "time away keeps a share of what the farm earns while away")
 
 	# The estate: deeds need the villa, buildings need materials, and workshops refine goods once loaded.
 	game.new_game()
@@ -274,6 +287,181 @@ func _run() -> void:
 	_check(game.load_building("barn") == 4, "feed goes into the barn")
 	game.advance(secs.call("buildings.barn.cycle_seconds"))
 	_check(game.count_item("eggs") == 1 and game.count_item("milk") == 1 and game.count_item("manure") == 1, "animals make eggs, milk and manure")
+	var cycle: float = secs.call("buildings.barn.cycle_seconds")
+	game.storage = {}
+	game.add_item("lavender", game.holding_capacity(), true)
+	game.buildings["barn"]["feed"] = 5
+	game.advance(cycle)
+	_check(int(game.buildings["barn"]["feed"]) == 5 and game.count_item("eggs") == 0, "the barn keeps its feed while there is no room for the eggs and milk")
+	game.remove_key("lavender", 2)
+	game.advance(1.0)
+	_check(int(game.buildings["barn"]["feed"]) == 4 and game.count_item("eggs") == 1 and game.count_item("manure") == 0, "and uses it once they fit, with no room needed for manure")
+	game.storage = {}
+	game.buildings["barn"]["level"] = 3
+	game.advance(cycle)
+	_check(game.storage.has("eggs@1") and game.storage.has("milk@1"), "a fully built barn makes fine eggs and milk")
+	game.storage["manure"] = game.manure_cap()
+	game.advance(cycle)
+	_check(game.count_item("manure") == game.manure_cap(), "the storehouse keeps no more manure than the cap")
+	game.storage.erase("manure")
+	game.use_manure = false
+	game.advance(cycle)
+	_check(game.count_item("manure") == 0 and game.count_item("eggs") > 1, "with manure switched off, the barn keeps none")
+	game.use_manure = true
+	var clogged: Dictionary = JSON.parse_string(JSON.stringify(game.to_dict()))
+	clogged["storage"]["manure"] = game.storage_capacity()
+	game.from_dict(clogged)
+	_check(game.count_item("manure") == game.manure_cap(), "a save clogged with manure keeps only the cap when it loads")
+
+	# A batch keeps the recipe it was loaded with when the player picks another, through saves and from old saves too.
+	game.new_game()
+	game.day_time = 8.0
+	game.buildings["bakery"]["state"] = "working"
+	game.add_item("flour", 4, true)
+	game.add_item("herbs", 2, true)
+	_check(game.load_building("bakery") == 2, "the bakery loads two batches of bread")
+	game.set_recipe("bakery", 1)
+	game.advance(1.0)
+	_check(is_equal_approx(game.batch_seconds("bakery"), float(data_file.get_value("buildings.bakery.recipes.0.seconds", 0))), "a running batch takes its own recipe's time")
+	game.advance(2.0 * secs.call("buildings.bakery.recipes.0.seconds"))
+	_check(game.count_item("bread") == 2 and game.count_item("herb_bread") == 0 and game.count_item("herbs") == 2, "bread loaded before the recipe changed comes out as bread")
+	var old_save: Dictionary = JSON.parse_string(JSON.stringify(game.to_dict()))
+	var old_bakery: Dictionary = old_save["buildings"]["bakery"]
+	old_bakery.erase("batch_recipe")
+	old_bakery.merge({"recipe": 0, "busy": true, "progress": 10.0, "batch_q": 0.0, "queue": [0.0, 1.0]}, true)
+	game.from_dict(old_save)
+	game.advance(3.0 * secs.call("buildings.bakery.recipes.0.seconds"))
+	_check(game.count_item("bread") == 5 and game.storage.has("bread@1"), "an old save's batches, kept as plain numbers, load and are baked")
+	game.add_item("flour", 2, true)
+	game.set_recipe("bakery", 1)
+	game.load_building("bakery")
+	game.from_dict(JSON.parse_string(JSON.stringify(game.to_dict())))
+	game.set_recipe("bakery", 0)
+	game.advance(secs.call("buildings.bakery.recipes.1.seconds"))
+	_check(game.count_item("herb_bread") == 1 and game.count_item("bread") == 5, "a queued batch keeps its recipe through a save")
+	game.buildings["mill"]["state"] = "working"
+	game.buildings["mill"]["queue"] = [1.0]
+	game.advance(secs.call("buildings.mill.recipes.0.seconds"))
+	_check(game.storage.has("flour@1"), "a batch given as a plain number is still made")
+
+	# Catch-up makes as much as play: work past a batch's end goes on to the next, and so does the cart's time on the road.
+	var shed_run := func(offline: bool) -> int:
+		game.new_game()
+		game.day_time = 8.0
+		game.levels["storage"] = 4
+		game.buildings["drying_shed"]["state"] = "working"
+		game.buildings["drying_shed"]["level"] = 3
+		game.helpers["perfumer"] = 1
+		game.add_item("lavender", 100, true)
+		if offline:
+			game.simulate_offline(300.0)
+		else:
+			for k in 3000:
+				game.advance(0.1)
+		return game.count_item("dried_lavender")
+	var shed_live: int = shed_run.call(false)
+	var shed_away: int = shed_run.call(true)
+	_check(shed_live > 0 and absi(shed_away - shed_live) <= 2, "a fast workshop makes as much while away as in play (%d and %d)" % [shed_away, shed_live])
+	var cart_run := func(offline: bool) -> int:
+		game.new_game()
+		game.day_time = 8.0
+		game.levels["cart_speed"] = 3
+		game.helpers["trader"] = 1
+		game.add_item("wheat", 2000, true)
+		if offline:
+			game.simulate_offline(70.0)
+		else:
+			for k in 700:
+				game.advance(0.1)
+		return int(game.stats.get("cart_trips", 0))
+	var trips_live: int = cart_run.call(false)
+	var trips_away: int = cart_run.call(true)
+	_check(trips_live > 5 and absi(trips_away - trips_live) <= 1, "the trader makes as many trips while away as in play (%d and %d)" % [trips_away, trips_live])
+
+	# A plant whose whole crop does not fit stays ripe until there is room, and the player is told the storehouse is full.
+	game.new_game()
+	game.day_time = 8.0
+	game.zones_owned["grove"] = true
+	var tree := -1
+	for i in game.plots.size():
+		if game.plots[i]["zone"] == "grove" and tree < 0:
+			tree = i
+	game.plots[tree].merge({"unlocked": true, "crop": "olives", "growth": 9999.0}, true)
+	game.add_item("lavender", game.holding_capacity() - 1, true)
+	var warned := []
+	var note_full := func() -> void: warned.append(true)
+	game.storage_full.connect(note_full)
+	_check(not game.try_harvest(tree) and game.is_ready(tree) and warned.size() == 1 and game.count_item("olives") == 0, "olives that do not all fit stay on the tree")
+	game.storage_full.disconnect(note_full)
+	game.helpers["presser"] = 1
+	game.advance(5.0)
+	_check(game.is_ready(tree) and game.count_item("olives") == 0, "a helper also waits for room for the whole crop")
+	game.remove_key("lavender", 2)
+	_check(game.try_harvest(tree) and game.count_item("olives") == int(data_file.get_value("crops.olives.yield", 0)), "and picks it once it fits")
+
+	# The soil starts to dry when the rain stops, however long it rained.
+	game.new_game()
+	var damp := float(data_file.get_value("calendar.wet_seconds", 0))
+	game.calendar.weather = "rain"
+	game.calendar.weather_left = 9999.0
+	game.calendar.wet_left = damp
+	game.calendar.advance(2.0 * damp)
+	game.calendar.weather = "sun"
+	game.calendar.advance(damp - 1.0)
+	_check(game.calendar.wet(), "the soil stays damp for a while after a long rain")
+	game.calendar.advance(2.0)
+	_check(not game.calendar.wet(), "and then dries")
+
+	# Every decoration waits for the villa with portico, and for the land its spot is on.
+	var zone_list: Array = data_file.get_value("estate.zones", [])
+	var misplaced := []
+	for id in data_file.get_value("decorations", {}):
+		var d: Dictionary = data_file.get_value("decorations." + id, {})
+		var land := ""
+		for z in zone_list:
+			if float(d.get("x", 0)) >= float(z["x"]):
+				land = String(z["id"])
+		if int(d.get("requires_villa", 0)) < 4 or String(d.get("zone", "home")) != land:
+			misplaced.append(id)
+	_check(misplaced.is_empty(), "every decoration needs the villa with portico and the land it stands on: %s" % ", ".join(PackedStringArray(misplaced)))
+	game.new_game()
+	game.villa_stage = 4
+	game.journal.add("festival:vinalia")
+	_check(game.decoration_block("pergola") != "", "the vine pergola waits for the pasture")
+	game.zones_owned["pasture"] = true
+	_check(game.decoration_block("pergola") == "", "and is on sale once the pasture is bought")
+
+	# A computer that sleeps with the game open catches up on waking just as a closed game does.
+	game.new_game()
+	game.day_time = 8.0
+	game.coins = 0
+	game.cart = {"away": true, "time_left": 10.0, "items": 4, "value": 400, "load": []}
+	var settings: Node = root.get_node("Settings")
+	var offline_setting: bool = settings.offline_progress
+	settings.offline_progress = true
+	var woke := []
+	var note_woke := func(s: Dictionary) -> void: woke.append(s)
+	game.caught_up.connect(note_woke)
+	game._process(3.0 * game.day_seconds())
+	game.caught_up.disconnect(note_woke)
+	settings.offline_progress = offline_setting
+	_check(game.calendar.day >= 3 and woke.size() == 1, "a long sleep moves the calendar on day by day, with a summary")
+	_check(game.coins == 400, "and the cart on the road when it slept pays in full")
+
+	# Every page in the journal can be filled: no good is listed at a quality the estate's rules cannot make.
+	var wrong := []
+	for item in data_file.get_value("items", {}):
+		if data_file.get_value("items.%s.no_quality" % item, false):
+			continue
+		if _best_quality(item, data_file, {}) != int(data_file.get_value("items.%s.best_quality" % item, 2)):
+			wrong.append(item)
+	for page in game.journal.catalogue():
+		var page_id := String(page["id"])
+		if page_id.begins_with("quality:") and int(page_id.get_slice(":", 2)) > _best_quality(page_id.get_slice(":", 1), data_file, {}):
+			wrong.append(page_id)
+	_check(wrong.is_empty(), "every quality page in the journal can be reached: %s" % ", ".join(PackedStringArray(wrong)))
+	var pages: Array = game.journal.catalogue().map(func(e): return e["id"])
+	_check("quality:eggs:1" in pages and not "quality:eggs:2" in pages and not "quality:honey:2" in pages and "quality:cheese:2" in pages, "eggs and honey have a fine page but no excellent one, while cheese has both")
 
 	# The market: demand, favourites, orders and the shop.
 	game.new_game()
@@ -392,6 +580,41 @@ func _run() -> void:
 
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
+
+
+## The best quality the estate's rules can make a good at, worked out from the crops, the cellar, the barn and the recipes.
+func _best_quality(item: String, data_file: Node, seen: Dictionary) -> int:
+	if data_file.get_value("items.%s.no_quality" % item, false) or seen.has(item):
+		return 0
+	seen[item] = true
+	var best := 0
+	for c in data_file.get_value("crops", {}):
+		if String(data_file.get_value("crops.%s.item" % c, c)) == item:
+			best = 2
+	var all: Dictionary = data_file.get_value("buildings", {})
+	for id in all:
+		var info: Dictionary = all[id]
+		var top := 0
+		for level in info.get("levels", []):
+			top = maxi(top, int(level.get("quality", 0)))
+		if info.get("kind", "") == "cellar" and item == "aged_wine":
+			best = 2
+		if item in info.get("makes", {}).values():
+			best = maxi(best, top)
+		for r in info.get("recipes", []):
+			var outs: Array = r.get("out", {}).keys()
+			if r.get("lavender_honey", false) and "honey" in outs:
+				outs.append("lavender_honey")
+			if not item in outs:
+				continue
+			var sum := 0.0
+			var counted := 0
+			for input in r.get("in", {}):
+				if not data_file.get_value("items.%s.no_quality" % input, false):
+					sum += _best_quality(String(input), data_file, seen.duplicate()) * int(r["in"][input])
+					counted += int(r["in"][input])
+			best = maxi(best, mini(2, int(round(sum / counted if counted > 0 else 0.0)) + top))
+	return best
 
 
 func _check(ok: bool, what: String) -> void:

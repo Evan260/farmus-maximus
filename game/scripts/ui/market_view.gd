@@ -595,6 +595,7 @@ func _refresh() -> void:
 	for spot in SPOTS:
 		if spot["id"] == tab:
 			_title.text = tr(String(spot["name"]))
+	var focus := UiKit.focus_hint(_panel)
 	UiKit.clear(_list)
 	match tab:
 		"Stalls":
@@ -609,7 +610,7 @@ func _refresh() -> void:
 			_build_land()
 		"Decorations":
 			_build_decorations()
-	UiKit.pad_focus.call_deferred(_panel)
+	UiKit.pad_focus.call_deferred(_panel, focus)
 
 
 func _build_stalls() -> void:
@@ -650,8 +651,17 @@ func _build_orders() -> void:
 		if String(o.get("seed", "")) != "":
 			reward += " " + tr("and a rare seed")
 		UiKit.label(r, "%s  (%s: %d)" % [reward, tr("you have"), Game.count_item(String(o["item"]))])
-		var b := UiKit.button(r, tr("Deliver"), func(): if Game.market.deliver(i): Sfx.play("coins"))
+		var b := UiKit.button(r, tr("Deliver"), func(): _deliver(o))
 		b.disabled = not Game.market.can_deliver(i)
+
+
+## Delivers that very order: the ones after it move up the board as soon as one is delivered.
+func _deliver(order: Dictionary) -> void:
+	for i in Game.market.orders.size():
+		if is_same(Game.market.orders[i], order):
+			if Game.market.deliver(i):
+				Sfx.play("coins")
+			return
 
 
 func _build_prices() -> void:

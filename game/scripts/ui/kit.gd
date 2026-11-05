@@ -239,18 +239,39 @@ static func scroll(parent: Node, size: Vector2) -> VBoxContainer:
 	return c
 
 
-## A gamepad player moves between buttons with the d-pad, so they become focusable and the first one takes focus.
-static func pad_focus(root: Control) -> void:
+## A gamepad player moves between buttons with the d-pad, so they become focusable; after a rebuild the focus goes back to the button most like the one that had it.
+static func pad_focus(root: Control, was := {}) -> void:
 	if Input.get_connected_joypads().is_empty() or not root.is_inside_tree():
 		return
-	var first: Button = null
-	for b in root.find_children("*", "Button", true, false):
+	var buttons := root.find_children("*", "Button", true, false)
+	var usable: Array[Button] = []
+	for b in buttons:
 		b.focus_mode = Control.FOCUS_ALL
-		if not first and b.is_visible_in_tree() and not b.disabled:
-			first = b
+		if b.is_visible_in_tree() and not b.disabled:
+			usable.append(b)
 	var focused := root.get_viewport().gui_get_focus_owner()
-	if first and (focused == null or not root.is_ancestor_of(focused)):
-		first.grab_focus()
+	if usable.is_empty() or (focused != null and root.is_ancestor_of(focused)):
+		return
+	var pick := usable[0]
+	if not was.is_empty():
+		# A button with the same text wins, the nearest to the old place first; otherwise whichever now stands nearest it.
+		var best := INF
+		for b in usable:
+			var gap := absf(buttons.find(b) - int(was["index"])) + (0.0 if b.text == String(was["text"]) else 1000.0)
+			if gap <= best:
+				best = gap
+				pick = b
+	pick.grab_focus()
+
+
+## The focused button's text and place among root's buttons, so pad_focus can find its equal once root is rebuilt.
+static func focus_hint(root: Control) -> Dictionary:
+	if not root.is_inside_tree():
+		return {}
+	var focused := root.get_viewport().gui_get_focus_owner()
+	if not focused is Button or not root.is_ancestor_of(focused):
+		return {}
+	return {"text": (focused as Button).text, "index": root.find_children("*", "Button", true, false).find(focused)}
 
 
 static func clear(node: Node) -> void:
@@ -263,9 +284,9 @@ static func clear(node: Node) -> void:
 static func cost_text(cost: Dictionary) -> String:
 	var parts := []
 	if int(cost.get("coins", 0)) > 0:
-		parts.append(plural(int(cost["coins"]), "sestertius", "sestertii"))
+		parts.append(plural(int(cost["coins"]), TranslationServer.translate("sestertius"), TranslationServer.translate("sestertii")))
 	if int(cost.get("aureus", 0)) > 0:
-		parts.append(plural(int(cost["aureus"]), "aureus", "aurei"))
+		parts.append(plural(int(cost["aureus"]), TranslationServer.translate("aureus"), TranslationServer.translate("aurei")))
 	for key in cost:
 		if key in ["coins", "aureus"] or int(cost[key]) <= 0:
 			continue
@@ -297,8 +318,9 @@ static func mid(text: String) -> String:
 	return text if TranslationServer.get_locale().begins_with("de") else text.to_lower()
 
 
+## A count with the word that follows it, both words already in the player's language.
 static func plural(n: int, one: String, many: String) -> String:
-	return "%d %s" % [n, TranslationServer.translate(one if n == 1 else many)]
+	return "%d %s" % [n, one if n == 1 else many]
 
 
 static func duration(seconds: float) -> String:

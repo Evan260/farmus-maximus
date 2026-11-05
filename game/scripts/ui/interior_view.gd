@@ -94,6 +94,8 @@ var _selected := ""
 var _signature := ""
 var _t := 0.0
 var _spots: Dictionary = {}
+## The picture the room is dressed in, such as "ruin.png".
+var _room := ""
 
 
 func _ready() -> void:
@@ -304,11 +306,16 @@ func ruined() -> bool:
 	return Game.villa_stage < 2
 
 
+## The room's picture for the farmhouse as it stands.
+func _room_picture() -> String:
+	# From the villa rustica on, the walls are freshly painted rather than worn.
+	return "ruin.png" if ruined() else ("painted.png" if Game.villa_stage >= 3 else "empty.png")
+
+
 ## Shows the ruin or the restored room, the furnishings bought so far, and the pets napping in their places.
 func _dress_room() -> void:
-	# From the villa rustica on, the walls are freshly painted rather than worn.
-	var room := "ruin.png" if ruined() else ("painted.png" if Game.villa_stage >= 3 else "empty.png")
-	_base.texture = load(DIR + room)
+	_room = _room_picture()
+	_base.texture = load(DIR + _room)
 	# The top rows of the painting hold no open sky, so they can be carried on upwards without showing a hole.
 	_top.texture = ImageTexture.create_from_image(_base.texture.get_image().get_region(Rect2i(0, 0, 240, 8)))
 	for id in _sprites:
@@ -354,6 +361,9 @@ func _dress_room() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	# Builders can finish the farmhouse while the player is inside; a dog up from a stroke lies down first.
+	if _room_picture() != _room and not _dog_awake:
+		_dress_room()
 	_t += delta
 	var night := Lighting.night_amount(Game.day_time)
 	var day: Color = Lighting.color_at(Game.day_time)

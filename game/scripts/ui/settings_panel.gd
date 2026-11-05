@@ -14,6 +14,12 @@ func _init() -> void:
 	fixed_size = Vector2(264, 190)
 
 
+## A key left waiting when the window closed is not still waiting when it opens again.
+func open() -> void:
+	_waiting_for = ""
+	super()
+
+
 func signature() -> String:
 	return "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.strip_scale,
 		Windowing.dock, str(Windowing.focus_mode) + str(Windowing.follow), Settings.offline_progress, Settings.notifications, Settings.large_text, Settings.reduced_motion,
@@ -98,8 +104,14 @@ func _key_name(action: String) -> String:
 func _input(event: InputEvent) -> void:
 	if _waiting_for == "" or not visible:
 		return
-	if event is InputEventKey and event.pressed and not event.echo:
+	var key: bool = event is InputEventKey and event.pressed and not event.echo
+	# Escape or the pad's B keeps the old key, except for closing panels, whose usual key Escape is.
+	if event.is_action_pressed("ui_cancel") and not (key and _waiting_for == "close_panel"):
+		_waiting_for = ""
+	elif key:
 		Settings.rebind(_waiting_for, event.physical_keycode)
 		_waiting_for = ""
-		get_viewport().set_input_as_handled()
-		refresh()
+	else:
+		return
+	get_viewport().set_input_as_handled()
+	refresh()

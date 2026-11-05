@@ -134,7 +134,7 @@ func tick() -> void:
 			if _bar:
 				# An idle workshop says so in words, so an empty bar would only take up room.
 				_bar.visible = b["busy"]
-				_bar.value = float(b["progress"]) / float(Game.current_recipe(id).get("seconds", 30)) if b["busy"] else 0.0
+				_bar.value = float(b["progress"]) / Game.batch_seconds(id) if b["busy"] else 0.0
 	_tick_action(Game.building_action(id).get("cost", {}), Game.building_block(id))
 	if _casks:
 		_casks.text = _cask_text()
@@ -175,7 +175,7 @@ func _working_status() -> String:
 	if b["paused"]:
 		return tr("Paused")
 	if b["busy"]:
-		if float(b["progress"]) >= float(Game.current_recipe(id).get("seconds", 30)):
+		if float(b["progress"]) >= Game.batch_seconds(id):
 			return tr("Done, waiting for room in the storehouse")
 		return tr("Working")
 	if Game.current_recipe(id).get("in", {}).is_empty():
@@ -407,8 +407,7 @@ func _build_workshop_view() -> void:
 
 func _tick_workshop_view() -> void:
 	var b: Dictionary = Game.buildings[id]
-	var recipe := Game.current_recipe(id)
-	_arrow.value = float(b["progress"]) / float(recipe.get("seconds", 30)) if b["busy"] else 0.0
+	_arrow.value = float(b["progress"]) / Game.batch_seconds(id) if b["busy"] else 0.0
 	for item in _in_counts:
 		var have := Game.count_item(item)
 		var l: Label = _in_counts[item][0]
@@ -424,7 +423,7 @@ func _tick_workshop_view() -> void:
 	var note := ""
 	if b["paused"]:
 		note = tr("Paused")
-	elif b["busy"] and float(b["progress"]) >= float(recipe.get("seconds", 30)):
+	elif b["busy"] and float(b["progress"]) >= Game.batch_seconds(id):
 		note = tr("Done, waiting for room in the storehouse")
 	_state_note.text = note
 	_state_note.visible = note != ""

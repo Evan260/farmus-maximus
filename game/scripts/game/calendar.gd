@@ -5,7 +5,7 @@ var day := 0
 ## The current weather: "sun", "cloudy", "rain" or "mist", and how long it lasts.
 var weather := "sun"
 var weather_left := 0.0
-## Soil stays damp for a while after rain, which counts as watered.
+## Soil stays damp for a while after rain stops, which counts as watered.
 var wet_left := 0.0
 var _game: Node
 
@@ -48,7 +48,8 @@ func wet() -> bool:
 
 
 func advance(dt: float) -> void:
-	wet_left = maxf(0.0, wet_left - dt)
+	if not raining():
+		wet_left = maxf(0.0, wet_left - dt)
 	weather_left -= dt
 	if weather_left <= 0.0:
 		_change_weather()

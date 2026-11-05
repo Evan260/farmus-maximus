@@ -55,7 +55,7 @@ func _draw() -> void:
 	elif b["state"] == "upgrading":
 		fill = 1.0 - float(b["time_left"]) / Game.building_upgrade_seconds(id)
 	elif b["state"] == "working" and b["busy"]:
-		fill = float(b["progress"]) / float(Game.building_info(id).get("seconds", 30))
+		fill = float(b["progress"]) / Game.batch_seconds(id)
 	if fill >= 0.0:
 		draw_rect(bar, Color(0.2, 0.14, 0.12, 0.8))
 		draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(roundf(22 * clampf(fill, 0, 1)), 1)), Color(0.98, 0.84, 0.4))

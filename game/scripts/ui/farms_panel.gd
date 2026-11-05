@@ -73,7 +73,7 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 		_deleting = 0
 		var current := n == Saves.slot
 		Saves.delete(n)
-		# The estate behind the title belonged to that farm, so it starts again empty.
+		# The estate behind the title belonged to that farm, so it opens on another farm or starts again empty.
 		if current:
 			get_tree().reload_current_scene()
 			return

@@ -61,6 +61,7 @@ var _buttons: VBoxContainer
 var _compact: PanelContainer
 var _strip_controls: PanelContainer
 var _compact_label: Label
+var _compact_market: Button
 var _zone_bar: HBoxContainer
 var _zone_buttons := {}
 var _windows: Array = []
@@ -135,10 +136,12 @@ func _ready() -> void:
 	_achievements = AchievementPopup.new()
 	_achievements.below = _buttons
 	_root.add_child(_achievements)
+	visibility_changed.connect(_hold_news)
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
 	Game.message.connect(func(text): toast(tr(text)); Sfx.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast(tr("The storehouse and the cart are full: send the cart to market")))
+	Game.caught_up.connect(_show_away)
 	Game.achievement_unlocked.connect(_on_achievement)
 	Game.discovered.connect(_on_discovered)
 	Game.festival_started.connect(_on_festival)
@@ -172,11 +175,18 @@ func _show_title() -> void:
 	_root.add_child(_title)
 	# Behind the windows, so the settings open over it.
 	_root.move_child(_title, 0)
-	_achievements.hold = true
+	_hold_news()
 	_title.closed.connect(func():
 		_title = null
-		_achievements.hold = false
+		_hold_news()
 		_after_title())
+
+
+## Achievement cards and messages wait while the interface is hidden, in the market or the farmhouse, then play in order.
+func _hold_news() -> void:
+	_achievements.hold = _title != null or not visible
+	if visible and not (_toast_tween and _toast_tween.is_running()) and not _toast_queue.is_empty():
+		_show_toast(_toast_queue.pop_front())
 
 
 func title_open() -> bool:
@@ -212,7 +222,14 @@ func _process(delta: float) -> void:
 	_stats_panel.visible = not in_strip and not titled
 	_buttons.visible = not in_strip and not titled
 	_zone_bar.visible = not in_strip and not titled
-	_compact.visible = in_strip and not titled
+	_compact.visible = in_strip
+	# The title screen waits behind the strip, which offers only the way back to it.
+	if titled:
+		_title.visible = not in_strip
+	if _compact_market.visible == titled:
+		_compact_label.visible = not titled
+		_compact_market.visible = not titled
+		_compact.reset_size()
 	# The strip may not be made narrower than its two bars side by side, with a little room between them.
 	Windowing.strip_min_width = int((_compact.size.x + _strip_controls.size.x + 24.0) * Windowing.ui_scale)
 	if in_strip:
@@ -338,7 +355,7 @@ func toast(text: String) -> void:
 	if _title != null:
 		return
 	# Messages that arrive together are shown one after another rather than overwriting each other.
-	if _toast_tween and _toast_tween.is_running() and _toast.text != text:
+	if not visible or (_toast_tween and _toast_tween.is_running() and _toast.text != text):
 		if not text in _toast_queue and _toast_queue.size() < 4:
 			_toast_queue.append(text)
 		return
@@ -356,7 +373,7 @@ func _show_toast(text: String) -> void:
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.6)
-	_toast_tween.tween_callback(func(): if not _toast_queue.is_empty(): _show_toast(_toast_queue.pop_front()))
+	_toast_tween.tween_callback(func(): if visible and not _toast_queue.is_empty(): _show_toast(_toast_queue.pop_front()))
 
 
 ## A speech bubble above someone on the estate, which stays over them; spot returns where it points, in estate pixels
@@ -469,18 +486,20 @@ func _build_zone_bar() -> void:
 	_zone_bar.offset_top = 4
 
 
-## On a new farm the player names the dog and cat; however the window is closed, the pets then come home.
+## On a new farm the player names the dog and cat; however the window goes away, even hidden by another, the pets then come home.
 func _choose_pets() -> void:
 	_open(_companions)
-	_companions.closed.connect(func():
-		if not Game.pets_chosen:
-			Game.pets_chosen = true
-			Game.pets_changed.emit()
-		_pets_chosen(), CONNECT_ONE_SHOT)
+	_companions.visibility_changed.connect(_pets_chosen)
 
 
 ## Once the pets are home the uncle can start with his advice.
 func _pets_chosen() -> void:
+	if _companions.visible:
+		return
+	_companions.visibility_changed.disconnect(_pets_chosen)
+	if not Game.pets_chosen:
+		Game.pets_chosen = true
+		Game.pets_changed.emit()
 	_update_tip()
 
 
@@ -579,7 +598,7 @@ func _build_compact() -> void:
 	_root.add_child(_compact)
 	var row := UiKit.row(_compact)
 	_compact_label = UiKit.label(row)
-	UiKit.button(row, tr("Market"), func(): Windowing.toggle_strip(); town_requested.emit())
+	_compact_market = UiKit.button(row, tr("Market"), func(): Windowing.toggle_strip(); town_requested.emit())
 	UiKit.button(row, tr("Expand"), func(): Windowing.toggle_strip())
 	# Top-left, where the strip shows only sky or desktop, so it never covers the cart or the plots.
 	_compact.position = Vector2(4, 4)

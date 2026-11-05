@@ -34,6 +34,8 @@ signal pets_changed
 signal rescued(coins: int)
 signal upgrade_bought(upgrade_id: String)
 signal upgrade_started(upgrade_id: String)
+## A frame long enough to count as time away was caught up, with the same summary a closed game gets on opening.
+signal caught_up(summary: Dictionary)
 
 var coins := 0
 ## Gold coins from special orders and festivals, spent on rare decorations.
@@ -102,7 +104,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	advance(delta * speed)
+	# A frame this long means the computer slept with the game open, so it is caught up like a closed game.
+	if delta > float(Balance.get_value("offline.long_frame_seconds", 10)):
+		if Settings.offline_progress:
+			var summary := simulate_offline(delta)
+			if delta >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
+				caught_up.emit(summary)
+	else:
+		advance(delta * speed)
 	dog_timer -= delta * speed
 	_achievement_timer -= delta
 	if _achievement_timer <= 0.0:
@@ -517,11 +526,25 @@ func dig_up(i: int) -> bool:
 func try_harvest(i: int) -> bool:
 	if not is_ready(i):
 		return false
-	if stored_total() >= holding_capacity():
+	if not harvest_fits(i):
 		storage_full.emit()
 		return false
 	_harvest(i, true)
 	return true
+
+
+## How many goods a ripe plant gives when it is picked.
+func harvest_amount(i: int) -> int:
+	var p: Dictionary = plots[i]
+	var amount := int(crop_info(p["crop"]).get("yield", 1))
+	if p["crop"] == "olives" and blessed("minerva"):
+		amount += 1
+	return amount
+
+
+## Whether the farm has room for a ripe plant's whole yield; a plant that does not fit stays ripe until there is.
+func harvest_fits(i: int) -> bool:
+	return stored_total() + harvest_amount(i) <= holding_capacity()
 
 
 func try_unlock(i: int) -> bool:
@@ -543,11 +566,8 @@ func _harvest(i: int, by_hand := false) -> int:
 	var p: Dictionary = plots[i]
 	var info := crop_info(p["crop"])
 	var base := String(info.get("item", p["crop"]))
-	var amount := int(info.get("yield", 1))
-	if p["crop"] == "olives" and blessed("minerva"):
-		amount += 1
 	var key := item_key(base, _harvest_quality(i, by_hand))
-	amount = add_item(key, amount)
+	var amount := add_item(key, harvest_amount(i))
 	p["growth"] = 0.0
 	p["ready_age"] = 0.0
 	p["cycle"] = int(p["cycle"]) + 1
@@ -778,9 +798,11 @@ func advance(dt: float) -> Dictionary:
 				p["ready_age"] = float(p.get("ready_age", 0.0)) + dt
 			else:
 				p["growth"] = minf(float(p["growth"]) + dt * growth_rate(i), need)
+	var spare := 0.0
 	if cart["away"]:
 		cart["time_left"] = float(cart["time_left"]) - dt
 		if cart["time_left"] <= 0.0:
+			spare = -float(cart["time_left"])
 			var value := int(cart["value"])
 			coins += value
 			add_stat("earned", value)
@@ -789,6 +811,9 @@ func advance(dt: float) -> Dictionary:
 			if not quiet:
 				cart_returned.emit(value)
 	result["harvested"] += _advance_helpers(dt)
+	# A trader who set out again in this step has already been on the road for the part of it after the cart came home.
+	if spare > 0.0 and cart["away"]:
+		cart["time_left"] = float(cart["time_left"]) - spare
 	_rescue_if_stranded()
 	return result
 
@@ -824,6 +849,9 @@ func simulate_offline(seconds: float) -> Dictionary:
 	var remaining := minf(seconds, float(Balance.get_value("offline.max_hours", 12)) * 3600.0)
 	var step := float(Balance.get_value("offline.step_seconds", 5))
 	var start_coins := coins
+	# A cart already on the road was loaded and sold in play, so it pays in full when it comes home.
+	var on_road: bool = cart["away"]
+	var paid_in_full := 0
 	var summary := {"seconds": remaining, "harvested": 0, "earned": 0, "made": 0}
 	quiet = true
 	while remaining > 0.0:
@@ -831,9 +859,12 @@ func simulate_offline(seconds: float) -> Dictionary:
 		var r := advance(dt)
 		summary["harvested"] += r["harvested"]
 		summary["made"] += r["made"]
+		if on_road and int(r["earned"]) > 0:
+			paid_in_full = int(r["earned"])
+			on_road = false
 		remaining -= dt
 	quiet = false
-	var earned := coins - start_coins
+	var earned := coins - start_coins - paid_in_full
 	if earned > 0:
 		var forgone := earned - int(earned * float(Balance.get_value("offline.earnings_share", 0.25)))
 		coins -= forgone
@@ -954,6 +985,29 @@ func recipes(id: String) -> Array:
 func current_recipe(id: String) -> Dictionary:
 	var list := recipes(id)
 	return list[clampi(int(buildings[id]["recipe"]), 0, list.size() - 1)] if not list.is_empty() else {}
+
+
+## Where the chosen recipe sits in the building's full list; a queued batch keeps this, since that list never shifts.
+func _recipe_slot(id: String) -> int:
+	return maxi(0, building_info(id).get("recipes", []).find(current_recipe(id)))
+
+
+## The recipe of the batch a workshop is making: the one it was loaded with, even if the player has chosen another since.
+func batch_recipe(id: String) -> Dictionary:
+	var all: Array = building_info(id).get("recipes", [])
+	var slot := int(buildings[id].get("batch_recipe", -1))
+	return all[slot] if buildings[id]["busy"] and slot >= 0 and slot < all.size() else current_recipe(id)
+
+
+## A queued batch as its quality and recipe. An older save's batch is only its quality, so it uses the recipe chosen now.
+func _batch_entry(id: String, e: Variant) -> Dictionary:
+	var entry: Dictionary = e if e is Dictionary else {"quality": float(e)}
+	return {"quality": float(entry.get("quality", 0.0)), "recipe": int(entry.get("recipe", _recipe_slot(id)))}
+
+
+## How much work the batch a workshop is making takes, in seconds at the building's first level.
+func batch_seconds(id: String) -> float:
+	return float(batch_recipe(id).get("seconds", 30))
 
 
 func set_recipe(id: String, index: int) -> void:
@@ -1132,7 +1186,7 @@ func load_building(id: String) -> int:
 		needs[item] = int(r["in"][item]) * building_batch(id)
 	var loaded := 0
 	while b["queue"].size() < building_queue_max(id) and has_items(needs) and not needs.is_empty():
-		b["queue"].append(take_items(needs))
+		b["queue"].append({"quality": take_items(needs), "recipe": _recipe_slot(id)})
 		loaded += 1
 	return loaded
 
@@ -1209,37 +1263,53 @@ func _advance_buildings(dt: float) -> int:
 				continue
 			"shrine":
 				continue
+		made += _advance_workshop(id, dt)
+	return made
+
+
+## Works a workshop's batches; work past a batch's end goes on to the next, so long catch-up steps make as much as play.
+func _advance_workshop(id: String, dt: float) -> int:
+	var b: Dictionary = buildings[id]
+	var made := 0
+	var work := dt * building_speed(id)
+	while true:
 		var r := current_recipe(id)
 		if r.is_empty():
-			continue
+			return made
 		if r.get("in", {}).is_empty():
 			# Bees need nobody: hives fill their own queue.
 			while b["queue"].size() < building_queue_max(id):
-				b["queue"].append(0.0)
+				b["queue"].append({"quality": 0.0, "recipe": _recipe_slot(id)})
 		elif _helper_loads(id) and b["queue"].size() < building_queue_max(id):
 			load_building(id)
 		if not b["busy"]:
 			if b["queue"].is_empty():
-				continue
-			b["batch_q"] = float(b["queue"].pop_front())
+				return made
+			var next := _batch_entry(id, b["queue"].pop_front())
+			b["batch_q"] = float(next["quality"])
+			b["batch_recipe"] = int(next["recipe"])
 			b["busy"] = true
 			b["progress"] = 0.0
-		var seconds := float(r.get("seconds", 30))
-		b["progress"] = minf(float(b["progress"]) + dt * building_speed(id), seconds)
-		if b["progress"] < seconds:
-			continue
+		var run := batch_recipe(id)
+		var seconds := float(run.get("seconds", 30))
+		var left := seconds - float(b["progress"])
+		if work < left:
+			b["progress"] = float(b["progress"]) + work
+			return made
+		work -= maxf(left, 0.0)
+		b["progress"] = seconds
 		var out := {}
-		for item in r.get("out", {}):
+		for item in run.get("out", {}):
 			var name := String(item)
-			if name == "honey" and r.get("lavender_honey", false) and _lavender_in_bloom():
+			if name == "honey" and run.get("lavender_honey", false) and _lavender_in_bloom():
 				name = "lavender_honey"
-			out[name] = int(r["out"][item]) * building_batch(id)
+			out[name] = int(run["out"][item]) * building_batch(id)
 		var amount := 0
 		for item in out:
 			amount += int(out[item])
 		# A finished batch waits in the building until the storehouse has room for it.
 		if stored_total() + amount > holding_capacity():
-			continue
+			return made
 		var q := clampi(int(round(float(b["batch_q"]))) + int(building_level_info(id).get("quality", 0)), 0, 2)
 		for item in out:
 			add_item(item_key(item, q), int(out[item]))
@@ -1248,6 +1318,8 @@ func _advance_buildings(dt: float) -> int:
 		made += amount
 		b["busy"] = false
 		b["progress"] = 0.0
+		if work <= 0.0:
+			return made
 	return made
 
 
@@ -1366,24 +1438,36 @@ func _advance_barn(id: String, dt: float) -> int:
 	var cycle := float(building_info(id).get("cycle_seconds", 60))
 	if b["progress"] < cycle:
 		return 0
-	var need := ceili(herd / 3.0)
-	# Animals are never hungry in a way that hurts: without feed they simply rest and make nothing.
-	if int(b["feed"]) < need:
-		b["progress"] = cycle
-		return 0
-	b["progress"] = 0.0
-	b["feed"] = int(b["feed"]) - need
-	var made := 0
 	var makes: Dictionary = building_info(id).get("makes", {})
+	var goods := {}
+	var amount := 0
 	for kind in b["animals"]:
 		var item := String(makes.get(kind, ""))
 		if item != "" and int(b["animals"][kind]) > 0:
-			var n := add_item(item, int(b["animals"][kind]))
-			made += n
-			if n > 0 and not quiet:
-				building_made.emit(id, item, n)
-	made += add_item("manure", ceili(herd / 2.0))
-	return made
+			goods[item] = int(goods.get(item, 0)) + int(b["animals"][kind])
+			amount += int(b["animals"][kind])
+	var need := ceili(herd / 3.0)
+	# Animals are never hungry in a way that hurts: without feed, or without room for their eggs and milk, they rest.
+	if int(b["feed"]) < need or stored_total() + amount > holding_capacity():
+		b["progress"] = cycle
+		return 0
+	b["progress"] = float(b["progress"]) - cycle
+	b["feed"] = int(b["feed"]) - need
+	var q := clampi(int(building_level_info(id).get("quality", 0)), 0, 2)
+	for item in goods:
+		add_item(item_key(item, q), int(goods[item]))
+		if not quiet:
+			building_made.emit(id, item, int(goods[item]))
+	return amount + add_item("manure", mini(ceili(herd / 2.0), manure_room(id)))
+
+
+func manure_cap(id := "barn") -> int:
+	return int(building_info(id).get("manure_max", 10))
+
+
+## How much more manure the storehouse takes. It keeps only a few loads for planting, and none while manure is not used.
+func manure_room(id := "barn") -> int:
+	return maxi(0, manure_cap(id) - count_item("manure")) if use_manure else 0
 
 
 # The lararium -----------------------------------------------------------
@@ -1469,7 +1553,7 @@ func _advance_helpers(dt: float) -> int:
 		helper_timers[id] = float(helper_timers.get(id, 0.0)) - dt
 		while float(helper_timers[id]) <= 0.0:
 			var i := _ready_plot_for(info)
-			if i < 0 or stored_total() >= holding_capacity():
+			if i < 0:
 				# Nothing to do, so the helper waits instead of saving up a burst of harvests.
 				helper_timers[id] = 0.0
 				break
@@ -1487,7 +1571,7 @@ func _advance_helpers(dt: float) -> int:
 ## A helper on screen harvests the plant they walked to, and returns what they picked; annual crops are replanted straight away.
 func helper_harvest(id: String, i: int) -> String:
 	var info := helper_info(id)
-	if i < 0 or not is_ready(i) or stored_total() >= holding_capacity():
+	if i < 0 or not is_ready(i) or not harvest_fits(i):
 		return ""
 	var p: Dictionary = plots[i]
 	if not ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
@@ -1508,9 +1592,10 @@ func helper_interval(id: String) -> float:
 	return float(intervals[mini(int(helpers.get(id, 1)) - 1, intervals.size() - 1)]) / comfort_factor()
 
 
+## The first ripe plant a helper looks after whose whole yield fits in the storehouse, or -1.
 func _ready_plot_for(info: Dictionary) -> int:
 	for i in plots.size():
-		if not is_ready(i):
+		if not is_ready(i) or not harvest_fits(i):
 			continue
 		if info.has("zones") and plots[i]["zone"] in info["zones"]:
 			return i
@@ -1544,6 +1629,8 @@ func decoration_block(id: String) -> String:
 		return "Owned"
 	if villa_stage < int(d.get("requires_villa", 0)):
 		return tr("Restore the villa first: %s") % UiKit.mid(tr(String(villa_stages()[int(d["requires_villa"]) - 1]["name"])))
+	if not zone_owned(String(d.get("zone", "home"))):
+		return "Buy this land first"
 	if d.has("festival") and calendar.festival().get("id", "") != d["festival"] and not journal.has("festival:" + String(d["festival"])):
 		return tr("Sold during %s") % tr(String(d["festival"]).capitalize())
 	return ""
@@ -1650,7 +1737,7 @@ func _new_plot(zone: String, is_unlocked: bool) -> Dictionary:
 func _new_building() -> Dictionary:
 	return {
 		"state": "ruin", "time_left": 0.0, "level": 0, "busy": false, "progress": 0.0, "paused": false,
-		"recipe": 0, "queue": [], "batch_q": 0.0, "casks": [], "feed": 0, "animals": {},
+		"recipe": 0, "queue": [], "batch_q": 0.0, "batch_recipe": -1, "casks": [], "feed": 0, "animals": {},
 	}
 
 
@@ -1687,6 +1774,8 @@ func from_dict(d: Dictionary) -> void:
 	storage = {}
 	for key in d.get("storage", {}):
 		storage[key] = int(d["storage"][key])
+	if count_item("manure") > manure_cap():
+		remove_key("manure", count_item("manure") - manure_cap())
 	var saved: Array = d.get("plots", [])
 	for i in mini(saved.size(), plots.size()):
 		var s: Dictionary = saved[i]
@@ -1731,10 +1820,11 @@ func from_dict(d: Dictionary) -> void:
 			b["level"] = int(b["level"])
 			b["recipe"] = int(b["recipe"])
 			b["feed"] = int(b["feed"])
-			b["queue"] = Array(b["queue"])
 			b["casks"] = Array(b["casks"])
 			b["animals"] = Dictionary(b["animals"])
 			buildings[id] = b
+			b["batch_recipe"] = int(s.get("batch_recipe", _recipe_slot(id)))
+			b["queue"] = Array(b["queue"]).map(func(e): return _batch_entry(id, e))
 	for id in d.get("helpers", {}):
 		helpers[id] = int(d["helpers"][id])
 	# Saves from before the helpers had names stored the farmhand as an upgrade level.

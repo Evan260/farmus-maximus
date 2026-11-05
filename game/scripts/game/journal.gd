@@ -44,7 +44,7 @@ func catalogue() -> Array:
 		goods.append("item:" + item)
 		good_names.append(name)
 		if not Balance.get_value("items.%s.no_quality" % item, false):
-			for q in [1, 2]:
+			for q in range(1, int(Balance.get_value("items.%s.best_quality" % item, 2)) + 1):
 				goods.append("quality:%s:%d" % [item, q])
 				good_names.append("%s %s" % [quality_names[q], name.to_lower()])
 	add_section.call("Goods", goods, good_names)

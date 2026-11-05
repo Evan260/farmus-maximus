@@ -10,7 +10,8 @@ var _touching := false
 var _dragging := false
 var _from := Vector2.ZERO
 var _start := 0
-var _swallow_release := false
+## Shared by every list, since a list inside a scrolling window feels the same drag and only one of them takes its release.
+static var _swallow_release := false
 
 
 func _input(event: InputEvent) -> void:
@@ -20,11 +21,13 @@ func _input(event: InputEvent) -> void:
 		if event.pressed and _screen_rect().has_point(event.position):
 			_touching = true
 			_dragging = false
+			_swallow_release = false
 			_from = event.position
 			_start = scroll.scroll_vertical
 		elif not event.pressed and _touching:
 			_touching = false
-			_swallow_release = _dragging
+			if _dragging:
+				_swallow_release = true
 	elif event is InputEventScreenDrag and _touching:
 		var moved: float = event.position.y - _from.y
 		if not _dragging and absf(moved) > DEADZONE:

@@ -829,7 +829,7 @@ func _into_field(w: Walker, inside: bool) -> void:
 func _ready_plot(info: Dictionary) -> PlotView:
 	for v in plot_views:
 		var p: Dictionary = Game.plots[v.index]
-		if Game.is_ready(v.index) and ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
+		if Game.is_ready(v.index) and Game.harvest_fits(v.index) and ((info.has("zones") and p["zone"] in info["zones"]) or (info.has("crops") and p["crop"] in info["crops"])):
 			return v
 	return null
 

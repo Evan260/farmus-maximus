@@ -240,11 +240,13 @@
 		},
 		"honey": {
 			"name": "Honey",
-			"price": 18
+			"price": 18,
+			"best_quality": 1
 		},
 		"lavender_honey": {
 			"name": "Lavender honey",
-			"price": 30
+			"price": 30,
+			"best_quality": 1
 		},
 		"wax": {
 			"name": "Beeswax",
@@ -275,11 +277,13 @@
 		},
 		"eggs": {
 			"name": "Eggs",
-			"price": 5
+			"price": 5,
+			"best_quality": 1
 		},
 		"milk": {
 			"name": "Milk",
-			"price": 6
+			"price": 6,
+			"best_quality": 1
 		},
 		"cheese": {
 			"name": "Cheese",
@@ -532,6 +536,7 @@
 		"max_hours": 12,
 		"earnings_share": 0.25,
 		"step_seconds": 5,
+		"long_frame_seconds": 10,
 		"min_seconds_for_summary": 30
 	},
 	"save": {
@@ -1154,6 +1159,7 @@
 				]
 			},
 			"cycle_seconds": 120,
+			"manure_max": 10,
 			"feed": [
 				"straw",
 				"wheat"
@@ -1851,35 +1857,40 @@
 			"x": 1105,
 			"y": 238,
 			"requires_villa": 5,
-			"water": true
+			"water": true,
+			"zone": "yard"
 		},
 		"bench": {
 			"name": "Marble bench",
 			"price": 640,
 			"x": 1262,
 			"y": 240,
-			"requires_villa": 4
+			"requires_villa": 4,
+			"zone": "yard"
 		},
 		"sundial": {
 			"name": "Sundial",
 			"price": 560,
 			"x": 1408,
 			"y": 238,
-			"requires_villa": 4
+			"requires_villa": 4,
+			"zone": "yard"
 		},
 		"birdbath": {
 			"name": "Birdbath",
 			"price": 440,
 			"x": 60,
 			"y": 240,
-			"requires_villa": 4
+			"requires_villa": 4,
+			"zone": "grove"
 		},
 		"dovecote": {
 			"name": "Dovecote",
 			"price": 1400,
 			"x": 118,
 			"y": 236,
-			"requires_villa": 4
+			"requires_villa": 4,
+			"zone": "grove"
 		},
 		"mosaic": {
 			"name": "Dolphin mosaic",
@@ -1894,21 +1905,26 @@
 			"aureus": 3,
 			"x": 300,
 			"y": 236,
-			"requires_villa": 7
+			"requires_villa": 7,
+			"zone": "grove"
 		},
 		"pergola": {
 			"name": "Vine pergola",
 			"festival": "vinalia",
 			"price": 1000,
 			"x": 1965,
-			"y": 238
+			"y": 238,
+			"requires_villa": 4,
+			"zone": "pasture"
 		},
 		"garland_arch": {
 			"name": "Garland arch",
 			"festival": "floralia",
 			"price": 720,
 			"x": 960,
-			"y": 242
+			"y": 242,
+			"requires_villa": 4,
+			"zone": "yard"
 		},
 		"saturnalia_lanterns": {
 			"name": "Saturnalia lamps",
@@ -1916,7 +1932,9 @@
 			"price": 800,
 			"x": 2310,
 			"y": 240,
-			"glow": true
+			"glow": true,
+			"requires_villa": 4,
+			"zone": "pasture"
 		}
 	},
 	"dog": {

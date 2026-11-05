@@ -9,10 +9,15 @@ const HOLD := 5.0
 
 ## The interface element the card stands below; without one it sits at the top edge.
 var below: Control
-## While true, cards wait in the queue, such as while the title screen is up.
+## While true, cards wait in the queue and a card on its way stops where it is, such as while the title screen is up.
 var hold := false:
 	set(value):
 		hold = value
+		if _tween and _tween.is_valid():
+			if hold:
+				_tween.pause()
+			else:
+				_tween.play()
 		if not hold and _card == null:
 			_next()
 var _queue: Array = []
@@ -32,7 +37,7 @@ func add(a: Dictionary) -> void:
 
 
 func _next() -> void:
-	if _queue.is_empty() or hold:
+	if _queue.is_empty() or hold or _card != null:
 		return
 	var a: Dictionary = _queue.pop_front()
 	move_to_front()
@@ -84,6 +89,8 @@ func _next() -> void:
 	_tween.tween_property(wreath, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_tween.tween_interval(HOLD)
 	_tween.tween_callback(_leave)
+	if hold:
+		_tween.pause()
 
 
 func _leave() -> void:
