@@ -65,6 +65,8 @@ var _offsets := {}
 var _stride := {}
 var _carry: Sprite2D
 var _delivering := false
+## The fade in or out, or the step through their door, that is under way; a new one stops it so two never pull apart.
+var _fade: Tween
 
 
 func _ready() -> void:
@@ -92,7 +94,7 @@ func _ready() -> void:
 			_street_y = position.y
 			position.y = door_y
 		return
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
+	_new_fade().tween_property(self, "modulate:a", 1.0, 0.6)
 
 
 func _process(delta: float) -> void:
@@ -105,7 +107,11 @@ func _process(delta: float) -> void:
 			if is_equal_approx(position.x, _target):
 				if _homeward:
 					_homeward = false
-					_go_in()
+					# Night can be over by the time they reach the door, after Sleep or a late delivery.
+					if Game.is_night():
+						_go_in()
+					else:
+						_rest()
 				elif not is_nan(leave_at):
 					_fade_out()
 				elif _delivering:
@@ -242,12 +248,12 @@ func _go_in() -> void:
 	_state = "home"
 	if is_nan(door_y):
 		_play("stand")
-		create_tween().tween_property(self, "modulate:a", 0.0, 0.8)
+		_new_fade().tween_property(self, "modulate:a", 0.0, 0.8)
 		return
 	_street_y = position.y
 	_play("walk")
 	var seconds := maxf(0.4, absf(position.y - door_y) / speed)
-	var t := create_tween()
+	var t := _new_fade()
 	t.tween_property(self, "position:y", door_y, seconds)
 	t.parallel().tween_property(self, "modulate:a", 0.0, seconds * 0.6).set_delay(seconds * 0.4)
 	t.tween_callback(_play.bind("stand"))
@@ -256,7 +262,7 @@ func _go_in() -> void:
 ## Comes out of the door in the morning and steps back down onto the path before carrying on.
 func _come_out() -> void:
 	_state = "step"
-	var t := create_tween()
+	var t := _new_fade()
 	t.tween_property(self, "modulate:a", 1.0, 0.8)
 	if not is_nan(door_y) and not is_nan(_street_y):
 		_play("walk")
@@ -269,9 +275,16 @@ func _come_out() -> void:
 
 func _fade_out() -> void:
 	set_process(false)
-	var fade := create_tween()
+	var fade := _new_fade()
 	fade.tween_property(self, "modulate:a", 0.0, 0.6)
 	fade.tween_callback(queue_free)
+
+
+func _new_fade() -> Tween:
+	if _fade:
+		_fade.kill()
+	_fade = create_tween()
+	return _fade
 
 
 ## Answers a click: stops where it is and plays its reaction once, then carries on. False when it is busy or has none.

@@ -73,11 +73,12 @@ func _process(delta: float) -> void:
 		_seen("animal:birds", _swallows[0]["pos"], view)
 	var dragon_time: bool = night < 0.2 and (season == "summer" or Game.calendar.wet_left > 0.0)
 	if dragon_time and _dragonflies.size() < 3 and randf() < delta * 0.1:
-		_dragonflies.append({"pos": Vector2(randf_range(view.position.x, view.end.x), randf_range(200, 240)), "target": Vector2.ZERO, "rest": 0.0, "age": 0.0})
+		_dragonflies.append({"pos": Vector2(randf_range(view.position.x, view.end.x), randf_range(200, 240)), "target": Vector2.ZERO, "rest": 0.0, "life": randf_range(25, 50), "age": 0.0})
 	elif not dragon_time and not _dragonflies.is_empty() and randf() < delta * 0.2:
 		_dragonflies.pop_back()
 	for d in _dragonflies:
 		d["age"] = float(d["age"]) + delta
+		d["life"] = float(d["life"]) - delta
 		d["rest"] = float(d["rest"]) - delta
 		if float(d["rest"]) > 0.0:
 			continue
@@ -87,6 +88,7 @@ func _process(delta: float) -> void:
 			d["rest"] = randf_range(0.3, 1.5)
 		d["pos"] = d["pos"].move_toward(d["target"], 80.0 * delta)
 		_seen("animal:dragonfly", d["pos"], view)
+	_dragonflies = _dragonflies.filter(func(d): return d["life"] > 0.0)
 	if Game.calendar.wet() and _snails.size() < 5 and randf() < delta * 0.05:
 		_snails.append({"pos": Vector2(randf_range(view.position.x, view.end.x), randf_range(262, 268)), "dir": 1.0 if randf() < 0.5 else -1.0, "life": randf_range(60, 160), "age": 0.0})
 	for s in _snails:

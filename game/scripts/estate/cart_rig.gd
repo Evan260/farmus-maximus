@@ -9,6 +9,10 @@ var _cart_grow := Vector2i.ZERO
 var _donkey_first_look := true
 ## How far the trader's cart has tipped forward, in radians, with no donkey in its shafts.
 var _cart_tilt := 0.0
+## How fast the donkeys' walk cycle travels, worked out once since measuring it reads every picture back.
+var _donkey_pace := NAN
+## The lowest visible row of each good's icon on the cart, by picture, measured once for the same reason.
+var _icon_bottoms := {}
 
 
 ## Parks the cart with the donkey standing at its handles, both facing right towards the road to market.
@@ -119,8 +123,15 @@ func tip_parts(parts: Array, axle: Vector2, target: float, delta: float) -> void
 ## Walks the donkey at an amble on its own, its legs slowed to match, or puts it back to the cart's pace.
 func donkey_stroll(walking: bool) -> void:
 	m._donkey.play("walk" if walking else "stand")
-	var pace := Estate.Walker.natural_pace(m._donkey.sprite_frames, "walk")
+	var pace := donkey_pace()
 	m._donkey.speed_scale = 26.0 / pace if walking and pace > 0.0 else 1.0
+
+
+## How many pixels a second the donkeys' walk carries them at its own frame rate; both donkeys share the pictures.
+func donkey_pace() -> float:
+	if is_nan(_donkey_pace):
+		_donkey_pace = Estate.Walker.natural_pace(m._donkey.sprite_frames, "walk")
+	return _donkey_pace
 
 
 ## Where the donkey stands so the shaft tips reach its harness: going out the shafts point right, coming home the cart is turned round.
@@ -206,7 +217,9 @@ func update_cart_load() -> void:
 			icon.texture = load(paths[k])
 			var x := 4.0 + k * 8.0
 			# Each good sits down in the bed: its visible bottom is placed below the cart's rim, which hides it.
-			var bottom := icon.texture.get_image().get_used_rect().end.y
+			if not _icon_bottoms.has(paths[k]):
+				_icon_bottoms[paths[k]] = icon.texture.get_image().get_used_rect().end.y
+			var bottom: int = _icon_bottoms[paths[k]]
 			icon.position = Vector2(x if not m._cart.flip_h else 60.0 + _cart_grow.x - x - 16.0, 9 - bottom - rail)
 
 

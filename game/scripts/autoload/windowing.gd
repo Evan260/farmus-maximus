@@ -26,6 +26,7 @@ var dock := "bottom"
 var focus_mode := false
 ## When on, the strip drifts to whichever zone has the most going on.
 var follow := false
+## The monitor the window was on when the game last closed, which it is moved back to once, as the game starts.
 var screen := -1
 ## The strip's horizontal offset from centre, in screen pixels, set by dragging it.
 var offset_x := 0
@@ -249,6 +250,7 @@ func _apply() -> void:
 	win.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 	if screen >= 0 and screen < DisplayServer.get_screen_count() and win.current_screen != screen:
 		win.current_screen = screen
+	screen = -1
 	if strip:
 		# Windows keeps a maximized window's frame and size whatever is asked of it, so the strip starts from a plain window.
 		if win.mode != Window.MODE_WINDOWED:

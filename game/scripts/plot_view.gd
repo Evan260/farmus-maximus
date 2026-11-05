@@ -132,10 +132,10 @@ func _draw() -> void:
 
 ## A small hop of the plant, so planting and harvesting feel like they did something.
 func bounce() -> void:
-	var base := _crop.position.y
+	# The hop moves the picture's offset, so the crop's place on the soil is free to change with its new picture.
 	var t := create_tween()
-	t.tween_property(_crop, "position:y", base - 2.0, 0.07)
-	t.tween_property(_crop, "position:y", base, 0.12)
+	t.tween_property(_crop, "offset:y", -2.0, 0.07)
+	t.tween_property(_crop, "offset:y", 0.0, 0.12)
 
 
 func contains(point: Vector2) -> bool:

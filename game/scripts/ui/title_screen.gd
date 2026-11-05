@@ -64,7 +64,7 @@ func _show_menu() -> void:
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		about.add_theme_color_override("font_color", UiKit.FADED)
 	UiKit.button(_menu, tr("New farm"), _new_farm)
-	if Saves.has_farm or Saves.free_slot() != 1:
+	if Saves.any_farm():
 		UiKit.button(_menu, tr("Farms"), _open_farms)
 	UiKit.button(_menu, tr("Settings"), func(): open_window.call("settings"))
 	UiKit.button(_menu, tr("Quit"), func(): Saves.save_game(); get_tree().quit())

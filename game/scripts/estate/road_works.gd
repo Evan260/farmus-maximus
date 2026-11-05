@@ -13,6 +13,8 @@ var _stone_cart: Node2D
 ## Where the stone cart stands on the road, and its wheel.
 var _stone_x := 0.0
 var _stone_wheel: Sprite2D
+## True on the frame the stone cart comes into view.
+var _stone_first_look := false
 
 
 ## Each improvement to the road is worked along its whole length: first the paving, then a kerb of raised stones along
@@ -104,6 +106,7 @@ func update_road_cart(delta: float) -> void:
 	if not _stone_cart.visible:
 		_stone_cart.visible = true
 		_stone_x = target
+		_stone_first_look = true
 	var before := _stone_x
 	stable_stone_donkey()
 	# It waits until the work has moved on a few steps, then walks up to it at an amble, rather than inching along; only
@@ -114,7 +117,7 @@ func update_road_cart(delta: float) -> void:
 		var pace := 14.0 if target - _stone_x < 60.0 else 26.0
 		_stone_x = move_toward(_stone_x, target, pace * delta)
 		m._stone_donkey.play("walk")
-		m._stone_donkey.speed_scale = pace / maxf(1.0, Estate.Walker.natural_pace(m._stone_donkey.sprite_frames, "walk"))
+		m._stone_donkey.speed_scale = pace / maxf(1.0, m.rig.donkey_pace())
 	else:
 		m._stone_donkey.play("stand")
 		m._stone_donkey.speed_scale = 1.0
@@ -128,7 +131,12 @@ func stable_stone_donkey() -> void:
 	var night: bool = Game.is_night()
 	var barn := Vector2((Estate.Pasture.BARN_LEFT + Estate.Pasture.BARN_RIGHT) / 2.0 - _stone_cart.position.x, 252.0)
 	var home := Vector2(58, Estate.RIG_BASE)
-	if m._stone_night == "" and night:
+	if m._stone_night == "" and night and _stone_first_look:
+		# A cart first seen at night has its donkey already stabled rather than walking the whole way to the barn.
+		m._stone_night = "barn"
+		m._stone_donkey.position = barn
+		m._stone_donkey.modulate.a = 0.0
+	elif m._stone_night == "" and night:
 		m._stone_night = "out"
 		m._stone_donkey.flip_h = false
 		m._stone_donkey.play("walk")
@@ -150,6 +158,7 @@ func stable_stone_donkey() -> void:
 			m._stone_donkey.flip_h = false
 			m._stone_donkey.play("stand")
 			m._stone_night = "")
+	_stone_first_look = false
 
 
 ## A paving cart in three layers like the trader's: the back rim, the heap of stones, and the front wall with its

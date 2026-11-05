@@ -11,6 +11,8 @@ func _initialize() -> void:
 func _run() -> void:
 	var game: Node = root.get_node("Game")
 	root.get_node("Saves").enabled = false
+	var hooks: Array = [game.unlocked, game.animal_added, game.helper_hired, game.decoration_bought]
+	var hooked: Array = hooks.map(func(s: Signal): return s.get_connections().size())
 	game.new_game()
 	game.pets_chosen = true
 	game.day_time = 8.0
@@ -89,6 +91,7 @@ func _run() -> void:
 	for f in 40:
 		await process_frame
 	_check(main._store_scaffold.visible and main._builders.has("project_storage"), "enlarging the storehouse puts up scaffolding and brings a builder")
+	await _check_ride(main)
 	var pets: Control = main.hud._companions
 	# Without a window the screen is only 64 pixels square, so it is given a full screen's size to fit windows in.
 	var screen: Vector2 = main.hud._root.size
@@ -203,8 +206,111 @@ func _run() -> void:
 	windowing.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
 	_check(not AudioServer.is_bus_mute(0) and is_equal_approx(AudioServer.get_bus_volume_db(0), loudness), "and comes back in full when the game has the focus again")
 	settings.background_sound = "full"
+	await _check_fade_reuse()
+	_check_saves()
+	main.queue_free()
+	await process_frame
+	_check(hooks.map(func(s: Signal): return s.get_connections().size()) == hooked, "the farm's handlers on the game's signals go when the scene does")
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
+
+
+## Riding the cart to market: one trip at a time, no strip from inside the town, and the trip called off by going indoors.
+func _check_ride(main: Node2D) -> void:
+	var settings: Node = root.get_node("Settings")
+	var windowing: Node = root.get_node("Windowing")
+	var game: Node = root.get_node("Game")
+	var motion: bool = settings.reduced_motion
+	settings.reduced_motion = false
+	var visits := int(game.stats.get("market_visits", 0))
+	main._ride_to_market()
+	main.go_to_town()
+	_check(not main.market.visible, "pressing M during the ride waits for the ride")
+	await create_timer(2.4).timeout
+	_check(main.market.visible and int(game.stats.get("market_visits", 0)) == visits + 1, "a ride with M pressed on the way enters the market once")
+	var strip_key := InputEventAction.new()
+	strip_key.action = "toggle_strip"
+	strip_key.pressed = true
+	root.push_input(strip_key)
+	_check(not windowing.strip, "the strip waits until the player has left the market")
+	if windowing.strip:
+		windowing.toggle_strip()
+	main.market.leave()
+	await create_timer(0.8).timeout
+	_check(not main.market.visible and absf(main._cart.position.x - main._cart_park_x) < 1.0, "back from the market the cart is parked at home")
+	main._ride_to_market()
+	await process_frame
+	main.go_inside()
+	await create_timer(2.4).timeout
+	_check(main.interior.visible and not main.market.visible and absf(main._cart.position.x - main._cart_park_x) < 1.0, "going indoors during the ride calls the trip off and parks the cart")
+	main.interior.leave()
+	await create_timer(0.8).timeout
+	settings.reduced_motion = motion
+
+
+## A sound player taken while it is still fading out plays the new sound at its own volume.
+func _check_fade_reuse() -> void:
+	var sfx: Node = root.get_node("Sfx")
+	var sound: String = sfx._sounds.keys()[0]
+	var first: AudioStreamPlayer = sfx.play(sound)
+	sfx.fade_out(first, 1.0)
+	if first == null or not sfx._fades.has(first):
+		return
+	for k in sfx._players.size() - 1:
+		sfx.play(sound)
+	var again: AudioStreamPlayer = sfx.play(sound, -3.0)
+	await create_timer(0.5).timeout
+	_check(again == first and is_equal_approx(first.volume_db, -3.0), "a sound player reused during a fade keeps its new sound's volume")
+
+
+## The farms on disk, kept in a folder of the test's own so the player's farms are never touched.
+func _check_saves() -> void:
+	var saves: Node = root.get_node("Saves")
+	var game: Node = root.get_node("Game")
+	var dir := "user://test_saves/"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
+	_clear_folder(dir)
+	saves.folder = dir
+	saves.enabled = true
+	saves.load_game(1)
+	saves.save_game()
+	_check(not FileAccess.file_exists(saves.path_for(1)), "the empty estate behind the title screen is not saved")
+	game.intro_seen = true
+	saves.save_game()
+	_check(saves.has_farm and not saves.slot_info(1).is_empty(), "an empty slot played straight away is saved once its welcome begins")
+	saves.save_game()
+	saves.save_game()
+	_check(FileAccess.file_exists(saves.path_for(1) + ".bak1") and not FileAccess.file_exists(saves.path_for(1) + ".bak2"), "saves a moment apart do not push the backups along")
+	var good := FileAccess.get_file_as_string(saves.path_for(1))
+	DirAccess.make_dir_absolute(ProjectSettings.globalize_path(saves.path_for(1) + ".tmp"))
+	saves.save_game()
+	_check(FileAccess.get_file_as_string(saves.path_for(1)) == good, "a save that cannot be written leaves the last good one alone")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(saves.path_for(1) + ".tmp"))
+	for path in saves._candidates(2):
+		var f := FileAccess.open(path, FileAccess.WRITE)
+		f.store_string("{ not a farm")
+		f.close()
+	_check(saves.slot_info(2).is_empty() and saves.free_slot() == 3, "a farm that cannot be read keeps its slot")
+	saves.load_game(2)
+	game.intro_seen = true
+	game.farm_name = "Second"
+	saves.save_game()
+	var kept := Array(DirAccess.get_files_at(dir)).filter(func(f): return String(f).begins_with("farm_2.json") and ".unreadable-" in String(f))
+	_check(kept.size() == 4 and not saves.slot_info(2).is_empty(), "a farm that cannot be read is kept aside rather than written over")
+	saves.load_game(1)
+	saves.delete(1)
+	_check(saves.slot == 2 and saves.has_farm and game.farm_name == "Second" and int(saves._farms().get("last", 0)) == 2, "deleting the farm being played moves on to another farm")
+	saves.delete(2)
+	_check(not saves.has_farm and not saves.any_farm(), "deleting the last farm leaves none to carry on with")
+	saves.enabled = false
+	saves.folder = "user://"
+	_clear_folder(dir)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(dir))
+
+
+func _clear_folder(dir: String) -> void:
+	for f in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(dir.path_join(f)))
 
 
 func _show_journal_page(journal: Control, page: String) -> void:

@@ -4,16 +4,18 @@ extends Node
 
 const SLOTS := 3
 const BACKUPS := 3
-## Remembers which farm was played last.
-const FARMS_PATH := "user://farms.json"
+## Seconds the newest backup must have aged before the backups move along, so each really is an older copy.
+const BACKUP_EVERY := 300.0
 
 ## Filled on load when time passed while the game was closed; the HUD shows it once.
 var pending_summary := {}
 ## Off in demo mode, so screenshots never overwrite a real save.
 var enabled := true
+## Where the farms are kept; tests point it at a folder of their own so the player's farms are never touched.
+var folder := "user://"
 ## The farm being played, from 1 to SLOTS.
 var slot := 1
-## False while there is no farm yet, so the empty estate behind the title screen is never saved.
+## False while the estate is not yet a farm: the empty one behind the title screen is never saved.
 var has_farm := false
 ## Set once the player has chosen a farm on the title screen, so the scene reloading with that farm skips it.
 var title_done := false
@@ -31,7 +33,7 @@ func _ready() -> void:
 	if "--readonly" in args:
 		enabled = false
 	# Older saves are brought over only on the very first start; once farms.json exists a deleted farm stays deleted.
-	if enabled and not FileAccess.file_exists(FARMS_PATH):
+	if enabled and not FileAccess.file_exists(_farms_path()):
 		_migrate_from_old_name()
 		_migrate_to_slots()
 		_remember_slot()
@@ -40,7 +42,12 @@ func _ready() -> void:
 
 
 func path_for(n: int) -> String:
-	return "user://farm_%d.json" % n
+	return folder.path_join("farm_%d.json" % n)
+
+
+## The file that remembers which farm was played last.
+func _farms_path() -> String:
+	return folder.path_join("farms.json")
 
 
 ## Godot keeps saves in a folder named after the game, so the files from before the rename to Farmus Maximus are copied over once.
@@ -67,22 +74,19 @@ func _migrate_to_slots() -> void:
 		pairs.append(["user://save.json.bak%d" % i, "%s.bak%d" % [path_for(1), i]])
 	for pair in pairs:
 		if FileAccess.file_exists(pair[0]):
-			DirAccess.rename_absolute(ProjectSettings.globalize_path(pair[0]), ProjectSettings.globalize_path(pair[1]))
+			_move(pair[0], pair[1])
 
 
 func _farms() -> Dictionary:
-	if not FileAccess.file_exists(FARMS_PATH):
+	if not FileAccess.file_exists(_farms_path()):
 		return {}
-	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(FARMS_PATH))
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(_farms_path()))
 	return d if typeof(d) == TYPE_DICTIONARY else {}
 
 
 func _remember_slot() -> void:
-	if not enabled:
-		return
-	var f := FileAccess.open(FARMS_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({"last": slot}))
+	if enabled:
+		_write(_farms_path(), JSON.stringify({"last": slot}))
 
 
 func _process(delta: float) -> void:
@@ -98,22 +102,62 @@ func _notification(what: int) -> void:
 
 
 func save_game() -> void:
-	if not enabled or not has_farm:
+	# An empty estate becomes a farm in its slot once it is played, which begins with the first-day welcome.
+	if not enabled or not (has_farm or Game.intro_seen):
 		return
+	has_farm = true
 	var path := path_for(slot)
 	var data := Game.to_dict()
 	data["version"] = 2
 	data["saved_at"] = Time.get_unix_time_from_system()
-	_rotate_backups(path)
 	# Writing to a temporary file first means a crash mid-write never leaves a half-written save.
 	var tmp := path + ".tmp"
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		push_error("Could not write save: %s" % FileAccess.get_open_error())
+	if not _write(tmp, JSON.stringify(data, "\t")) or not _set_aside_unreadable(slot):
 		return
-	f.store_string(JSON.stringify(data, "\t"))
+	_rotate_backups(path)
+	_move(tmp, path)
+
+
+## Writes a file and reads it back, so a full disk or a failed write is caught before it can replace anything.
+func _write(path: String, text: String) -> bool:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		push_error("Could not write %s: %s" % [path, error_string(FileAccess.get_open_error())])
+		return false
+	var stored := f.store_string(text)
 	f.close()
-	DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp), ProjectSettings.globalize_path(path))
+	if not stored or FileAccess.get_file_as_string(path) != text:
+		push_error("Could not write %s" % path)
+		return false
+	return true
+
+
+func _move(from: String, to: String) -> bool:
+	var err := DirAccess.rename_absolute(ProjectSettings.globalize_path(from), ProjectSettings.globalize_path(to))
+	if err != OK:
+		push_error("Could not move %s to %s: %s" % [from, to, error_string(err)])
+	return err == OK
+
+
+func _readable(path: String) -> bool:
+	return typeof(JSON.parse_string(FileAccess.get_file_as_string(path))) == TYPE_DICTIONARY
+
+
+func _files(n: int) -> Array:
+	return _candidates(n).filter(func(path): return FileAccess.file_exists(path))
+
+
+## A farm none of whose files can be read is moved aside under a plain name rather than saved over, so it can be rescued.
+func _set_aside_unreadable(n: int) -> bool:
+	var found := _files(n)
+	if found.is_empty() or found.any(_readable):
+		return true
+	var stamp := int(Time.get_unix_time_from_system())
+	for path in found:
+		if not _move(path, "%s.unreadable-%d" % [path, stamp]):
+			return false
+	push_error("Farm %d could not be read, so its files were kept beside it as .unreadable copies" % n)
+	return true
 
 
 func load_game(n: int) -> void:
@@ -153,12 +197,17 @@ func slot_info(n: int) -> Dictionary:
 	return {}
 
 
-## The first empty slot, or 0 when every slot holds a farm.
+## The first slot with nothing in it, or 0 when every slot holds a farm; a farm that cannot be read still holds its slot.
 func free_slot() -> int:
 	for n in range(1, SLOTS + 1):
-		if slot_info(n).is_empty():
+		if _files(n).is_empty():
 			return n
 	return 0
+
+
+## Whether any slot holds a farm that can be played.
+func any_farm() -> bool:
+	return range(1, SLOTS + 1).any(func(n): return not slot_info(n).is_empty())
 
 
 ## Plays the farm in a slot: the scene starts again around it.
@@ -184,18 +233,30 @@ func create(n: int, farm_name: String) -> void:
 	get_tree().reload_current_scene()
 
 
-## Deletes the farm in a slot and its backups for good.
+## Deletes the farm in a slot and its backups for good; deleting the farm being played moves on to another, if any.
 func delete(n: int) -> void:
-	for path in _candidates(n):
-		if FileAccess.file_exists(path):
-			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	if n == slot:
-		has_farm = false
-		Game.new_game()
+	_remove(n)
+	if n != slot:
+		return
+	for other in range(1, SLOTS + 1):
+		if not slot_info(other).is_empty():
+			load_game(other)
+			_remember_slot()
+			return
+	has_farm = false
+	Game.new_game()
 
 
+## Starts the farm being played over from nothing, in the same slot.
 func reset() -> void:
-	delete(slot)
+	_remove(slot)
+	has_farm = false
+	Game.new_game()
+
+
+func _remove(n: int) -> void:
+	for path in _files(n):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _candidates(n: int) -> Array:
@@ -205,11 +266,16 @@ func _candidates(n: int) -> Array:
 	return list
 
 
+## Moves each backup one along, the save itself becoming the newest, once the newest backup has aged.
 func _rotate_backups(path: String) -> void:
-	if not FileAccess.file_exists(path):
+	var newest := path + ".bak1"
+	if FileAccess.file_exists(newest) and Time.get_unix_time_from_system() - FileAccess.get_modified_time(newest) < BACKUP_EVERY:
 		return
+	if not FileAccess.file_exists(path) or not _readable(path):
+		return
+	# Renaming rather than copying leaves each older copy's contents untouched on the disk.
 	for i in range(BACKUPS - 1, 0, -1):
 		var older := "%s.bak%d" % [path, i]
-		if FileAccess.file_exists(older):
-			DirAccess.copy_absolute(ProjectSettings.globalize_path(older), ProjectSettings.globalize_path("%s.bak%d" % [path, i + 1]))
-	DirAccess.copy_absolute(ProjectSettings.globalize_path(path), ProjectSettings.globalize_path(path + ".bak1"))
+		if FileAccess.file_exists(older) and not _move(older, "%s.bak%d" % [path, i + 1]):
+			return
+	_move(path, newest)

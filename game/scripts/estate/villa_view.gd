@@ -10,7 +10,7 @@ var shown_stage := 0
 var _wreath: Sprite2D
 ## One light per villa window, each with its own evening: when it is lit, when it goes out, and its flicker.
 var _windows: Array = []
-var _windows_night := -1
+var _windows_night: Variant = null
 
 
 func villa_texture() -> Texture2D:
@@ -121,7 +121,7 @@ func make_windows(tex: Texture2D, used: Rect2i) -> void:
 			pane.queue_free()
 		w["lamp"].queue_free()
 	_windows = []
-	_windows_night = -1
+	_windows_night = null
 	# The ruin has no glass, only dark holes, so it stays dark.
 	if Game.villa_stage <= 1:
 		return
@@ -203,10 +203,12 @@ func make_windows(tex: Texture2D, used: Rect2i) -> void:
 func light_windows(night: float) -> void:
 	if _windows.is_empty():
 		return
-	if _windows_night != Game.calendar.day:
-		_windows_night = Game.calendar.day
+	# After midnight it is still the evening before, whose windows may not have gone out yet.
+	var tonight: int = Game.calendar.day - (1 if Game.day_time < 12.0 else 0)
+	if _windows_night != tonight:
+		_windows_night = tonight
 		var rng := RandomNumberGenerator.new()
-		rng.seed = Game.calendar.day * 7919 + _windows.size()
+		rng.seed = tonight * 7919 + _windows.size()
 		for w in _windows:
 			w["lit"] = rng.randf() < 0.75
 			w["on"] = rng.randf_range(18.6, 20.2)

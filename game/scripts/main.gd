@@ -151,6 +151,8 @@ var _cart_x := 0.0
 ## The near shaft and the harness straps, drawn over the donkey so the cart is visibly hitched to it.
 var _harness: Node2D
 var _cart_returning := false
+## What the cart is bringing home, told when it parks, or when it turns round if it is sent off again first.
+var _coins_coming := 0
 var _donkey: AnimatedSprite2D
 ## Where the donkey is on its own between dusk and dawn: "" while it is hitched to the cart, "out" while it walks to
 ## the barn, "barn" for the night, and "back" while it comes home in the morning.
@@ -371,7 +373,8 @@ func _ready() -> void:
 
 	Game.planted.connect(func(i): Sfx.play("plant"); _view(i).bounce())
 	Game.dug_up.connect(func(i): Sfx.play("plant", -4.0); _dust(_view(i).position + Vector2(15, -2), 10))
-	Game.unlocked.connect(func(_i): Sfx.play("unlock"))
+	# A handler that never touches the scene is a method rather than a lambda, so it is disconnected when the scene is rebuilt.
+	Game.unlocked.connect(_on_unlocked)
 	Game.harvested.connect(_on_harvested)
 	Game.villa_build_started.connect(func(_stage): _on_build_started())
 	Game.villa_upgraded.connect(func(_stage): _on_villa_finished())
@@ -382,10 +385,9 @@ func _ready() -> void:
 	Game.building_made.connect(_on_building_made)
 	Game.helper_hired.connect(_spawn_helper)
 	Game.weather_changed.connect(_on_weather_changed)
-	# A new animal announces itself in its own voice; a helper arrives with a greeting; a decoration is knocked into place.
-	Game.animal_added.connect(func(kind): Sfx.play({"hen": "cluck", "goat": "goat"}.get(kind, "unlock")))
-	Game.helper_hired.connect(func(id): Sfx.play("rustle", -6.0); Sfx.play("salve_woman" if id in WOMEN else "salve_man", -4.0))
-	Game.decoration_bought.connect(func(_id): Sfx.play("made", -4.0))
+	Game.animal_added.connect(_on_animal_added)
+	Game.helper_hired.connect(_on_helper_arrived)
+	Game.decoration_bought.connect(_on_decoration_bought)
 	Game.pets_changed.connect(_spawn_pets)
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
@@ -427,12 +429,27 @@ func _ride_to_market() -> void:
 	rig.move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
 	await get_tree().create_timer(2.1).timeout
 	Sfx.fade_out(wheels, 1.2)
-	go_to_town()
 	_riding = false
+	# A player who switched to the strip or went indoors on the way stays at home, and the cart comes back.
+	if Windowing.strip or interior.visible:
+		_park_cart()
+		return
+	go_to_town()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# The strip shows only the estate, so it waits until the player has left the market or the farmhouse.
+	if event.is_action_pressed("toggle_strip") and (market.visible or interior.visible):
+		get_viewport().set_input_as_handled()
 
 
 func _back_from_market() -> void:
 	hud.visible = true
+	_park_cart()
+
+
+## Puts the cart back in its place at home, unless it is out on a trip of its own.
+func _park_cart() -> void:
 	if not Game.cart["away"] and not _cart_returning:
 		if _rig_tween:
 			_rig_tween.kill()
@@ -440,7 +457,7 @@ func _back_from_market() -> void:
 
 
 func go_inside() -> void:
-	if Windowing.strip:
+	if Windowing.strip or market.visible or interior.visible:
 		return
 	Dissolve.play(self, func() -> void:
 		hud.close_windows()
@@ -449,7 +466,8 @@ func go_inside() -> void:
 
 
 func go_to_town() -> void:
-	if Windowing.strip:
+	# A ride under way enters the town itself when it gets there.
+	if Windowing.strip or _riding or market.visible or interior.visible:
 		return
 	Dissolve.play(self, func() -> void:
 		hud.close_windows()
@@ -1059,7 +1077,9 @@ func _animal_at(point: Vector2) -> String:
 	if _stork.visible and Hit.texture_has_pixel(_stork.texture, _stork.position, point):
 		return "stork"
 	for d in [_donkey, _stone_donkey]:
-		if d and d.visible and Hit.frame_has_pixel(d, d, point):
+		# The paving cart's donkey is drawn inside the cart, so its place is counted from the cart's.
+		var host: Node2D = road._stone_cart if d == _stone_donkey else d
+		if d and d.is_visible_in_tree() and d.modulate.a > 0.5 and Hit.frame_has_pixel(host, d, point):
 			return "donkey"
 	if not _wildlife.rabbit_at(point).is_empty():
 		return "rabbit"
@@ -1442,6 +1462,26 @@ func _on_weather_changed(weather: String, before: String) -> void:
 		Game.discover("sighting:mist")
 
 
+func _on_unlocked(_plot_index: int) -> void:
+	Sfx.play("unlock")
+
+
+## A new animal announces itself in its own voice.
+func _on_animal_added(kind: String) -> void:
+	Sfx.play({"hen": "cluck", "goat": "goat"}.get(kind, "unlock"))
+
+
+## A new helper arrives with a greeting.
+func _on_helper_arrived(id: String) -> void:
+	Sfx.play("rustle", -6.0)
+	Sfx.play("salve_woman" if id in WOMEN else "salve_man", -4.0)
+
+
+## A new decoration is knocked into place.
+func _on_decoration_bought(_id: String) -> void:
+	Sfx.play("made", -4.0)
+
+
 func _on_cart_left(_items: int, value: int) -> void:
 	# Sent off while the donkey is stabled, it is fetched and put in the shafts straight away.
 	if _donkey_night != "":
@@ -1454,10 +1494,13 @@ func _on_cart_left(_items: int, value: int) -> void:
 		_donkey.speed_scale = 1.0
 		_harness.visible = true
 	Sfx.play("cart")
-	hud.toast(tr("The cart heads to market with %d sestertii of goods") % value)
 	# A trader can send the cart off again while it is still driving home; it turns round, and is no longer returning.
+	if _cart_returning:
+		hud.toast(tr("The cart is back: +%d sestertii") % _coins_coming)
+	hud.toast(tr("The cart heads to market with %d sestertii of goods") % value)
 	_cart_returning = false
 	rig.face_rig(false)
+	_donkey.position.x = rig.harness_x(_cart.position.x, false)
 	_donkey.play("walk")
 	# The road to town runs off the right edge of the estate, so the cart travels the whole way there.
 	rig.move_rig(estate_width + 60, (estate_width + 60 - _cart.position.x) / 90.0)
@@ -1472,7 +1515,12 @@ func _on_cart_returned(coins: int) -> void:
 	_donkey.position.x = rig.harness_x(_cart.position.x, true)
 	_donkey.play("walk")
 	rig.move_rig(CART_HOME_X, (estate_width + 60 - CART_HOME_X) / 90.0, true)
-	await _rig_tween.finished
+	_coins_coming = coins
+	# The arrival is part of the drive, so a drive cut short by the next trip never leaves it waiting.
+	_rig_tween.chain().tween_callback(_on_cart_home.bind(coins))
+
+
+func _on_cart_home(coins: int) -> void:
 	_dust(Vector2(CART_HOME_X + 40, RIG_BASE), 10)
 	_cart_returning = false
 	rig.park_rig()

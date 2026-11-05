@@ -16,6 +16,8 @@ var volumes := {"Music": 0.7, "Ambience": 0.45, "Effects": 0.8}
 var _sounds := {}
 var _takes := {}
 var _players: Array[AudioStreamPlayer] = []
+## The fade running on each player, so a player taken for a new sound stops fading first.
+var _fades := {}
 var _music: AudioStreamPlayer
 var _tracks: Array = []
 var _music_gap := 20.0
@@ -128,6 +130,9 @@ func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamP
 		return null
 	var p := _players[_next]
 	_next = (_next + 1) % _players.size()
+	if _fades.has(p):
+		_fades[p].kill()
+		_fades.erase(p)
 	p.stream = stream
 	p.volume_db = volume_db
 	p.pitch_scale = 1.0 + randf_range(-pitch_jitter, pitch_jitter)
@@ -139,10 +144,12 @@ func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamP
 func fade_out(p: AudioStreamPlayer, seconds := 1.0) -> void:
 	if p == null or not p.playing:
 		return
-	var stream := p.stream
+	if _fades.has(p):
+		_fades[p].kill()
 	var fade := p.create_tween()
 	fade.tween_property(p, "volume_db", -40.0, seconds).set_ease(Tween.EASE_IN)
-	fade.tween_callback(func(): if p.stream == stream: p.stop())
+	fade.tween_callback(p.stop)
+	_fades[p] = fade
 
 
 func set_volume(bus: String, value: float) -> void:
