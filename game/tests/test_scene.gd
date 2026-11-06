@@ -211,6 +211,7 @@ func _run() -> void:
 	await _check_fade_reuse()
 	_check_trial_run()
 	_check_saves(main)
+	await _check_window_fit()
 	# The windows rebuilt above finish placing their focus on the next frame, so the scene stays until then.
 	await process_frame
 	main.queue_free()
@@ -469,6 +470,22 @@ func _check_steady_size(window: Control, show: Callable, tabs: Array) -> void:
 		sizes[str(window.size)] = t
 	_check(sizes.size() == 1, "the %s window keeps one size on every tab: %s" % [window.name, sizes])
 	window.close()
+
+
+## A window that fits its page shows no scroll bar, whose width would change where the page's sentences wrap.
+func _check_window_fit() -> void:
+	for case in [[Vector2(480, 270), ScrollContainer.SCROLL_MODE_DISABLED, "fits the screen has no scroll bar"],
+			[Vector2(480, 60), ScrollContainer.SCROLL_MODE_AUTO, "is taller than the screen still scrolls"]]:
+		var holder := Control.new()
+		holder.size = case[0]
+		root.add_child(holder)
+		var farms: Control = load("res://scripts/ui/farms_panel.gd").new()
+		holder.add_child(farms)
+		farms.open()
+		for i in 5:
+			await process_frame
+		_check(farms._scroll.vertical_scroll_mode == case[1], "a window that " + case[2])
+		holder.queue_free()
 
 
 func _check(ok: bool, what: String) -> void:

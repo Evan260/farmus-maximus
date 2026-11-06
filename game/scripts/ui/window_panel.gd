@@ -162,10 +162,14 @@ func _widen_paragraphs(node: Node) -> void:
 ## the scroll bar.
 func _fit_to_screen() -> void:
 	var page := body.get_combined_minimum_size()
-	var chrome := _col.get_combined_minimum_size().y - _scroll.custom_minimum_size.y + 12.0
+	var chrome := _col.get_combined_minimum_size().y - _scroll.get_combined_minimum_size().y + 12.0
 	var screen := get_parent_area_size()
 	var room := maxf(40.0, screen.y - SCREEN_MARGIN - TOOLBAR_ROOM - chrome)
 	var scrolls := page.y > room
+	# A page that fits has no scroll bar, since the bar's width would change where its sentences wrap, and so its height.
+	var mode := ScrollContainer.SCROLL_MODE_AUTO if scrolls else ScrollContainer.SCROLL_MODE_DISABLED
+	if _scroll.vertical_scroll_mode != mode:
+		_scroll.vertical_scroll_mode = mode
 	var gap := 8 if scrolls else 0
 	if _scroll_gap.get_theme_constant("margin_right") != gap:
 		_scroll_gap.add_theme_constant_override("margin_right", gap)
