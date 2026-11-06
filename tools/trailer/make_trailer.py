@@ -10,8 +10,8 @@ Usage:
   on_my_desktop, meet_the_staff or one_day.
   The shorts share their shots, recorded close up at 1080x1920.
 
-Finished videos go to their own folders in marketing/recordings/videos/, named in NAMES below, beside each video's
-title, description and thumbnail; the shot frames they are cut from are kept in
+Finished videos go to their own folders in marketing/recordings/videos/, named in NAMES below, each with an .mp4 copy for
+the sites that take no .avi, beside its title, description and thumbnail; the shot frames they are cut from are kept in
 marketing/recordings/content/ so a change to the edit renders again in a minute or two. The farm along the bottom of a
 desktop is laid over marketing/desktop.png, a screenshot of a real desktop; without it that shot is left out. The shots are scripted in
 game/tools/trailer/shots.gd and the edits, with their captions and music, in game/tools/trailer/edit.gd. Every shot
@@ -41,6 +41,8 @@ NAMES = {
 FPS = 30
 GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe"
          / "Godot_v4.7.2-stable_win64_console.exe")
+FFMPEG = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
+          / "ffmpeg-9.0.2-full_build/bin/ffmpeg.exe")
 HUD_OFF = ["--no-hud"]
 # name: (seconds to record, game flags). The edit takes its part of each from edit.gd; a shot starts a moment early
 # so pets and helpers have walked into place before the part that is used. A --villa= stage comes after --maxed, which
@@ -149,7 +151,20 @@ def render(fmt, cut, start=0.0):
     godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "--quit-after", str(200 * FPS), "res://tools/trailer/edit.tscn",
            "--", "--readonly", *window(fmt), f"--shots={fmt['shots']}", f"--cut={cut}", f"--from={start}", *desk_args],
           fmt["size"])
+    if not start:
+        mp4_copy(out)
     print(f"ready: {out}")
+
+
+def mp4_copy(avi):
+    """Writes an .mp4 beside the .avi: about a tenth of its size, and the format Instagram, TikTok and most upload pages
+    want. Skipped without ffmpeg."""
+    if not FFMPEG.exists():
+        print("no ffmpeg, so no .mp4 copy")
+        return
+    subprocess.run([str(FFMPEG), "-y", "-loglevel", "error", "-i", str(avi), "-c:v", "libx264", "-preset", "slow", "-crf", "16",
+                    "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(avi.with_suffix(".mp4"))],
+                   check=True)
 
 
 def desktop_frame(size, out):
