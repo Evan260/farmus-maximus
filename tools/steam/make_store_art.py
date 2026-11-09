@@ -5,21 +5,23 @@ Scenes are rendered at one screen pixel to the game pixel and enlarged a whole n
 over the sky at the same pixel size; screenshots are taken at 1920x1080 as the game draws them. Every render plays a
 demo farm, so the real save is never touched.
 
-Usage: python tools/steam/make_store_art.py [renders|layout]
-  With no argument it renders the scenes and screenshots, then lays out the pictures. "layout" reuses the renders.
-The screenshots are taken straight into store/steam_page/screenshots; marketing/store_renders holds only the pieces the
-layout crops or combines (the scenes, the strip and the desktop). Writes store/steam_page/ (see README.txt there for
-which file goes in which Steamworks slot).
+Usage: python tools/steam/make_store_art.py
+The screenshots are taken straight into store/steam_page/screenshots, and the pieces the layout crops or combines (the
+scenes, the strip and the desktop) into a folder of their own that is deleted afterwards, so store/steam_page is the
+only place the store pictures are kept. Writes store/steam_page/ (see README.txt there for which file goes in which
+Steamworks slot).
 """
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "store" / "steam_page"
-RENDERS = ROOT / "marketing" / "store_renders"
+# The pieces the layout is made from, in a folder of their own for the length of the run.
+RENDERS = Path()
 GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe"
          / "Godot_v4.7.2-stable_win64_console.exe")
 LOGO = ROOT / "game" / "tools" / "trailer" / "logo.png"
@@ -71,7 +73,6 @@ def shoot(path, size, flags, scale=None):
 
 
 def render_all():
-    RENDERS.mkdir(parents=True, exist_ok=True)
     for name, (size, flags) in SCENES.items():
         shoot(RENDERS / f"{name}.png", size, flags + ["--no-hud"], scale=1)
     (OUT / "screenshots").mkdir(parents=True, exist_ok=True)
@@ -158,9 +159,11 @@ def layout():
 
 
 def main():
-    if sys.argv[1:] != ["layout"]:
+    global RENDERS
+    with tempfile.TemporaryDirectory() as tmp:
+        RENDERS = Path(tmp)
         render_all()
-    layout()
+        layout()
 
 
 if __name__ == "__main__":
