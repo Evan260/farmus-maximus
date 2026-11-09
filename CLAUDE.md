@@ -19,6 +19,7 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 | `tools/art/batches/gen_content.sh` | The script that generated the full game's buildings, people, animals, decorations and icons; it skips finished files |
 | `tools/art/split_layers.py`, `make_estate_ground.py` | Split the estate painting into parallax layers; paint the ground strip |
 | `tools/art/split_sky.py`, `make_icons.py` | Cut a sky into a clean base, moving clouds and the moon; make the 16-pixel list icons from the 32-pixel ones |
+| `tools/art/round_icon.py` | Round the game's icon (`game/icon.png`, `game/icon.ico`) into a tile with a dark rim, as Fishus Maximus's is, from the square picture kept in `tools/art/icon_square.png` |
 | `tools/art/split_town_sky.py` | Cut the market town painting into its sky, drifting clouds and the town in front |
 | `tools/art/make_paved_road.py` | Paint the Roman road laid over the dirt road by the paved road upgrade |
 | `tools/art/make_working_frames.py` | Make the loops that play while the mill and the presses work, from their working pictures |
