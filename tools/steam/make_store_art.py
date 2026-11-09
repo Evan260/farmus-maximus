@@ -7,7 +7,9 @@ demo farm, so the real save is never touched.
 
 Usage: python tools/steam/make_store_art.py [renders|layout]
   With no argument it renders the scenes and screenshots, then lays out the pictures. "layout" reuses the renders.
-Writes store/steam_page/ (see README.txt there for which file goes in which Steamworks slot).
+The screenshots are taken straight into store/steam_page/screenshots; marketing/store_renders holds only the pieces the
+layout crops or combines (the scenes, the strip and the desktop). Writes store/steam_page/ (see README.txt there for
+which file goes in which Steamworks slot).
 """
 import subprocess
 import sys
@@ -72,8 +74,11 @@ def render_all():
     RENDERS.mkdir(parents=True, exist_ok=True)
     for name, (size, flags) in SCENES.items():
         shoot(RENDERS / f"{name}.png", size, flags + ["--no-hud"], scale=1)
+    (OUT / "screenshots").mkdir(parents=True, exist_ok=True)
     for name, flags in SCREENSHOTS.items():
-        shoot(RENDERS / f"shot_{name}.png", (1920, 1080), flags)
+        path = OUT / "screenshots" / f"{name}.png"
+        shoot(path, (1920, 1080), flags)
+        Image.open(path).convert("RGB").save(path)
     # The strip comes out on a see-through background at three screen pixels to the game pixel.
     shoot(RENDERS / "strip.png", (1920, 332), ["--maxed", "--strip", "--strip-width=1920", "--hour=10", *EARNED,
                                                 "--trailer-shot=profile"], scale=2)
@@ -139,10 +144,10 @@ def layout():
     icon = Image.open(PROFILE).convert("RGB")
     icon.resize((184, 184), Image.LANCZOS).save(OUT / "community_icon_184x184.jpg", quality=95)
     icon.save(OUT / "app_icon.ico", sizes=[(16, 16), (32, 32), (48, 48), (256, 256)])
+    # A screenshot no longer in the list is taken off the page.
     for old in (OUT / "screenshots").glob("*.png"):
-        old.unlink()
-    for name in SCREENSHOTS:
-        Image.open(RENDERS / f"shot_{name}.png").convert("RGB").save(OUT / "screenshots" / f"{name}.png")
+        if old.stem not in SCREENSHOTS and old.stem != DESKTOP_SHOT:
+            old.unlink()
     frame = desktop_frame((1920, 1080), RENDERS / "desktop_1920x1080.png")
     if frame:
         desk = Image.open(frame[0]).convert("RGBA")
