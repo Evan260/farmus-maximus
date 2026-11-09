@@ -23,7 +23,8 @@ GODOT = (Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.Godo
 LOGO = ROOT / "game" / "tools" / "trailer" / "logo.png"
 # The name without its laurel, for pictures too narrow for the laurel or too small to read the name beside it.
 PLAIN_LOGO = LOGO.with_name("logo_plain.png")
-PROFILE = ROOT / "marketing" / "profile_picture.png"
+# The square profile picture; the one in marketing/ has rounded corners, which a square store icon would show black.
+PROFILE = ROOT / "tools" / "art" / "profile_square.png"
 # The game's road runs along y 286 at the foot of every render, and the villa's doorway is at x 851.
 VILLA_X = 851
 VINEYARD_X = 1680
