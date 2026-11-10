@@ -1,6 +1,6 @@
 extends "res://scripts/ui/window_panel.gd"
-## The farmer's journal, drawn as an open book. Bookmarks down the side choose a section; the right page shows
-## every entry in it, with undiscovered ones as dark silhouettes; the left page tells the story of the chosen one.
+## The farmer's journal, drawn as an open book. Bookmarks choose a section; every entry stays in the left-page list,
+## while the right page tells the selected entry's story. Undiscovered entries remain as dark silhouettes.
 
 const SECTIONS := ["Crops", "Goods", "Buildings", "Helpers", "Animals", "Finds", "Sightings", "Festivals", "Milestones", "Achievements"]
 const PAGE_W := 166
@@ -16,10 +16,18 @@ const LEATHER := Color(0.33, 0.2, 0.13)
 const PAPER := Color(0.95, 0.89, 0.74)
 const TAB := Color(0.83, 0.71, 0.52)
 const EDGE := Color(0.55, 0.4, 0.28)
+const FLIP_TIME := 0.78
+const FLIP_SLICES := 48
+const FLIP_ROWS := 24
+## Match the game's 3x window scale so printed sprites retain their pixel coverage while the leaf is warped.
+const CAPTURE_SCALE := 3
 
 var section := "Crops"
 var selected := ""
 var _pictures := {}
+var _book: Control
+var _page_views: Array[Control] = []
+var _flipping := false
 static var _paper_cache := {}
 
 
@@ -56,16 +64,28 @@ func build() -> void:
 	book.custom_minimum_size = Vector2(STACK * 2 + PAGE_W * 2 + SPINE, PAGE_H + STACK)
 	book.draw.connect(func(): _draw_book(book))
 	spread.add_child(book)
+	_book = book
 	var left := _page(book, STACK, true)
+	var left_view := left.get_parent() as ScrollContainer
 	var right_x := STACK + PAGE_W + SPINE
-	if selected == "":
-		_intro(left)
+	var right_view := ScrollContainer.new()
+	right_view.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right_view.position = Vector2(right_x + MARGIN, MARGIN)
+	right_view.size = Vector2(PAGE_W - MARGIN - 4, PAGE_H - MARGIN * 2)
+	book.add_child(right_view)
+	UiKit.touch_scroll(right_view)
+	var right := UiKit.column(right_view)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_page_views = [left_view, right_view]
+	var entries := _entries()
+	var found := entries.filter(func(e): return _found(e["id"])).size()
+	if not entries.any(func(e): return String(e["id"]) == selected):
+		selected = ""
+	_grid(left, entries, "%s   %d / %d" % [tr(section), found, entries.size()])
+	if selected != "":
+		_detail(right, selected)
 	else:
-		_detail(left, selected)
-	var right := UiKit.column(book)
-	right.position = Vector2(right_x + MARGIN, MARGIN)
-	right.custom_minimum_size = Vector2(PAGE_W - MARGIN - 4, 0)
-	_grid(right)
+		_section_story(right, entries)
 
 
 ## A divider tab beside the book; the open section's tab is paper coloured.
@@ -91,8 +111,194 @@ func _bookmark(parent: Node, s: String) -> void:
 		b.add_theme_stylebox_override(state, box)
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
 		b.add_theme_color_override(c, UiKit.INK if open else UiKit.INK.lightened(0.15))
-	b.pressed.connect(func(): Sfx.play("tab", -4.0); section = s; selected = ""; show_page())
+	b.pressed.connect(func(): _turn_to(s))
 	parent.add_child(b)
+
+
+## Change journal sections with the same paper-leaf turn used by the logbook.
+func _turn_to(to: String) -> void:
+	var target := SECTIONS.find(to)
+	if _flipping or target < 0 or to == section or not is_instance_valid(_book):
+		return
+	_flipping = true
+	var old_book := _book
+	var direction := 1 if target > SECTIONS.find(section) else -1
+	var turning_side := 1 if direction > 0 else 0
+	var front := await _capture_page_offscreen(old_book, turning_side)
+	if not is_instance_valid(old_book) or _book != old_book:
+		_flipping = false
+		return
+	var fixed_side := 0 if direction > 0 else 1
+	var fixed := await _capture_page_offscreen(old_book, fixed_side)
+	if not is_instance_valid(old_book) or _book != old_book:
+		_flipping = false
+		return
+	Sfx.play("page_turn")
+	section = to
+	selected = ""
+	show_page()
+	if not is_instance_valid(_book):
+		_flipping = false
+		return
+	var reverse_side := 0 if direction > 0 else 1
+	var overlay := _flip_overlay(_book, direction, front, fixed, front)
+	var back := await _capture_page_offscreen(_book, reverse_side)
+	if is_instance_valid(overlay):
+		overlay.set_meta("back", back)
+		overlay.queue_redraw()
+
+
+## Capture paper and its laid-out controls together so the turning leaf keeps its print at every angle.
+func _capture_page_offscreen(book: Control, side: int) -> Texture2D:
+	if not is_instance_valid(book) or not book.is_inside_tree() or side >= _page_views.size():
+		return _paper(side == 0)
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(PAGE_W, PAGE_H) * CAPTURE_SCALE
+	viewport.transparent_bg = false
+	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(viewport)
+	var root := Control.new()
+	root.size = Vector2(PAGE_W, PAGE_H)
+	root.scale = Vector2(CAPTURE_SCALE, CAPTURE_SCALE)
+	# The SubViewport does not inherit the HUD's theme, so give the duplicated controls the game's exact pixel fonts and ink.
+	root.theme = UiKit.make_theme()
+	root.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	viewport.add_child(root)
+	var paper := TextureRect.new()
+	paper.texture = _paper(side == 0)
+	paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	paper.size = Vector2(PAGE_W, PAGE_H)
+	root.add_child(paper)
+	var page := _page_views[side].duplicate() as Control
+	page.position = Vector2(MARGIN, MARGIN)
+	page.size = Vector2(PAGE_W - MARGIN - 4, PAGE_H - MARGIN * 2)
+	root.add_child(page)
+	await RenderingServer.frame_post_draw
+	if not is_instance_valid(viewport):
+		return _paper(side == 0)
+	var texture := ImageTexture.create_from_image(viewport.get_texture().get_image())
+	viewport.queue_free()
+	return texture
+
+
+## Put a textured leaf above the new spread and curl it around the centre seam.
+func _flip_overlay(book: Control, direction: int, front: Texture2D, fixed: Texture2D, back: Texture2D) -> Control:
+	var overlay := Control.new()
+	overlay.name = "JournalPageTurn"
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	overlay.z_index = 20
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.set_meta("direction", direction)
+	overlay.set_meta("progress", 0.0)
+	overlay.set_meta("front", front)
+	overlay.set_meta("fixed", fixed)
+	overlay.set_meta("back", back)
+	overlay.draw.connect(func(): _draw_flip(overlay))
+	overlay.tree_exiting.connect(func(): _flipping = false)
+	book.add_child(overlay)
+	var tween := overlay.create_tween()
+	tween.tween_method(func(value: float):
+		overlay.set_meta("progress", value)
+		overlay.queue_redraw(), 0.0, 1.0, FLIP_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.finished.connect(_finish_flip.bind(overlay))
+	return overlay
+
+
+## Hold the exact flat landing for a drawn frame before removing the leaf.
+func _finish_flip(overlay: Control) -> void:
+	if not is_instance_valid(overlay):
+		return
+	overlay.set_meta("progress", 1.0)
+	overlay.queue_redraw()
+	await RenderingServer.frame_post_draw
+	if is_instance_valid(overlay):
+		_flipping = false
+		overlay.queue_free()
+
+
+## Draw the page as a finely divided mesh, keeping the paper opaque through its landing.
+func _draw_flip(canvas: Control) -> void:
+	var progress: float = float(canvas.get_meta("progress"))
+	var direction: int = int(canvas.get_meta("direction"))
+	var reverse := progress >= 0.5
+	var texture: Texture2D = canvas.get_meta("back" if reverse else "front")
+	var angle := PI * progress if direction > 0 else PI * (1.0 + progress)
+	var hinge := STACK + PAGE_W + SPINE if direction > 0 else STACK + PAGE_W
+	hinge -= direction * SPINE * smoothstep(0.0, 1.0, progress)
+	var curl := sin(PI * progress)
+	var flip_uv := (direction < 0) != reverse
+	var fixed_x := STACK if direction > 0 else STACK + PAGE_W + SPINE
+	var fixed_alpha := 0.0 if progress >= 1.0 else 1.0
+	canvas.draw_texture_rect(canvas.get_meta("fixed"), Rect2(fixed_x, 0, PAGE_W, PAGE_H), false,
+		Color(1, 1, 1, fixed_alpha))
+	if progress >= 1.0:
+		var landing_x := STACK if direction > 0 else STACK + PAGE_W + SPINE
+		canvas.draw_texture_rect(texture, Rect2(landing_x, 0, PAGE_W, PAGE_H), false)
+		_draw_spine(canvas)
+		return
+	var points_by_cell: Array[PackedVector2Array] = []
+	var uvs_by_cell: Array[PackedVector2Array] = []
+	var colors_by_cell: Array[PackedColorArray] = []
+	for i in FLIP_SLICES:
+		var u0 := float(i) / FLIP_SLICES
+		var u1 := float(i + 1) / FLIP_SLICES
+		var sx0 := 1.0 - u0 if flip_uv else u0
+		var sx1 := 1.0 - u1 if flip_uv else u1
+		for j in FLIP_ROWS:
+			var v0 := float(j) / FLIP_ROWS
+			var v1 := float(j + 1) / FLIP_ROWS
+			var y0 := v0 * PAGE_H
+			var y1 := v1 * PAGE_H
+			var p00 := _flip_point(u0, y0, progress, direction, angle, hinge)
+			var p10 := _flip_point(u1, y0, progress, direction, angle, hinge)
+			var p11 := _flip_point(u1, y1, progress, direction, angle, hinge)
+			var p01 := _flip_point(u0, y1, progress, direction, angle, hinge)
+			var points := PackedVector2Array([p00, p10, p11, p01])
+			var shadow_shift := Vector2(direction * 4.0 * curl, 2.0 * curl)
+			var shadow_color := Color(SILHOUETTE, 0.16 * curl)
+			var shadow_points := PackedVector2Array([
+				p00 + shadow_shift, p10 + shadow_shift, p11 + shadow_shift, p01 + shadow_shift])
+			var shadow_colors := PackedColorArray([shadow_color, shadow_color, shadow_color, shadow_color])
+			_draw_flip_triangle(canvas, shadow_points[0], shadow_points[1], shadow_points[2], shadow_colors[0], shadow_colors[1], shadow_colors[2])
+			_draw_flip_triangle(canvas, shadow_points[0], shadow_points[2], shadow_points[3], shadow_colors[0], shadow_colors[2], shadow_colors[3])
+			var uvs := PackedVector2Array([Vector2(sx0, v0), Vector2(sx1, v0), Vector2(sx1, v1), Vector2(sx0, v1)])
+			var bend_light := sin(PI * (u0 + u1) * 0.5) * curl
+			var light := clampf(0.92 - bend_light * 0.28 + 0.07 * absf(cos(angle)), 0.55, 1.0)
+			var color := Color(light, light, light, 1.0)
+			points_by_cell.append(points)
+			uvs_by_cell.append(uvs)
+			colors_by_cell.append(PackedColorArray([color, color, color, color]))
+	for i in points_by_cell.size():
+		_draw_flip_triangle(canvas, points_by_cell[i][0], points_by_cell[i][1], points_by_cell[i][2],
+			colors_by_cell[i][0], colors_by_cell[i][1], colors_by_cell[i][2],
+			uvs_by_cell[i][0], uvs_by_cell[i][1], uvs_by_cell[i][2], texture)
+		_draw_flip_triangle(canvas, points_by_cell[i][0], points_by_cell[i][2], points_by_cell[i][3],
+			colors_by_cell[i][0], colors_by_cell[i][2], colors_by_cell[i][3],
+			uvs_by_cell[i][0], uvs_by_cell[i][2], uvs_by_cell[i][3], texture)
+	_draw_spine(canvas)
+
+
+## Split warped cells explicitly; the automatic polygon triangulator rejects some folded quads.
+func _draw_flip_triangle(canvas: Control, a: Vector2, b: Vector2, c: Vector2,
+		color_a: Color, color_b: Color, color_c: Color,
+		uv_a := Vector2.ZERO, uv_b := Vector2.ZERO, uv_c := Vector2.ZERO, texture: Texture2D = null) -> void:
+	if absf((b - a).cross(c - a)) < 0.001:
+		return
+	canvas.draw_polygon(PackedVector2Array([a, b, c]), PackedColorArray([color_a, color_b, color_c]),
+		PackedVector2Array([uv_a, uv_b, uv_c]), texture)
+
+
+## Bow the leaf, tighten its free edge into a curl, and align its final rightward landing with the flat page.
+func _flip_point(u: float, y: float, progress: float, direction: int, angle: float, hinge: float) -> Vector2:
+	var bend := sin(PI * u) * sin(PI * progress)
+	var roll := pow(u, 3.0) * sin(PI * progress)
+	var landing_shift := smoothstep(0.9, 1.0, progress) if direction < 0 else 0.0
+	var x := hinge + u * PAGE_W * cos(angle) - direction * bend * 11.0 - direction * roll * sin(PI * y / PAGE_H) * 48.0 + landing_shift
+	var edge_y := (y - PAGE_H * 0.5) / (PAGE_H * 0.5)
+	return Vector2(x, y + bend * edge_y * 4.0 + roll * edge_y * 20.0)
 
 
 ## The left page holds the story of the chosen entry and scrolls when the story runs long, so the book never grows.
@@ -121,8 +327,18 @@ func _draw_book(book: Control) -> void:
 	book.draw_rect(Rect2(right_x + PAGE_W + STACK - 1, STACK, 1, PAGE_H), EDGE)
 	book.draw_texture(_paper(true), Vector2(STACK, 0))
 	book.draw_texture(_paper(false), Vector2(right_x, 0))
-	for x in SPINE:
-		book.draw_rect(Rect2(STACK + PAGE_W + x, 0, 1, PAGE_H + STACK), PAPER.darkened(0.5 - 0.08 * absf(x - (SPINE - 1) / 2.0)))
+	book.draw_rect(Rect2(STACK, 0, PAGE_W, 1), PAPER)
+	book.draw_rect(Rect2(right_x, 0, PAGE_W, 1), PAPER)
+	_draw_spine(book)
+
+
+## Keep the textured gutter visible over the turning leaf and stop it at the worn page block.
+func _draw_spine(canvas: Control) -> void:
+	var x := STACK + PAGE_W
+	canvas.draw_rect(Rect2(x, 0, 1, PAGE_H), Color(0.59, 0.44, 0.3))
+	canvas.draw_rect(Rect2(x + 1, 0, 1, PAGE_H), Color(0.43, 0.31, 0.22))
+	canvas.draw_rect(Rect2(x + 2, 0, 1, PAGE_H), Color(0.29, 0.21, 0.17))
+	canvas.draw_rect(Rect2(x + 3, 0, 1, PAGE_H), Color(0.52, 0.39, 0.28))
 
 
 ## A page of paper: a fine grain, a few fibres and age spots, edges a little browned, and a shadow towards the fold.
@@ -138,7 +354,7 @@ func _paper(gutter_right: bool) -> Texture2D:
 			if rng.randf() < 0.14:
 				c = c.darkened(0.035)
 			var inner := PAGE_W - 1 - x if gutter_right else x
-			var edge := mini(PAGE_W - 1 - inner, mini(y, PAGE_H - 1 - y))
+			var edge := mini(PAGE_W - 1 - inner, PAGE_H - 1 - y)
 			if edge < 4:
 				c = c.darkened(0.07 * (1.0 - edge / 4.0))
 			if inner < 16:
@@ -159,14 +375,6 @@ func _paper(gutter_right: bool) -> Texture2D:
 	return tex
 
 
-func _intro(page: VBoxContainer) -> void:
-	_heading(page, tr("The Farmer's Journal"))
-	UiKit.para(page, tr("Everything you discover on the estate is written down here: every crop you grow, every good you make, the buildings you restore, the people who help you, the animals that visit and the rare sights you witness."), TEXT_W)
-	UiKit.para(page, tr("Choose a bookmark, then a page. Pages still to be found are dark shapes: keep farming and keep watching."), TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
-	UiKit.label(page, tr("Pages filled: %d%%") % int(round(Game.journal.share() * 100.0)))
-	UiKit.label(page, tr("Achievements: %d of %d") % [Game.journal.achievements.size(), Balance.get_value("achievements", []).size()])
-
-
 func _heading(page: Node, text: String) -> void:
 	UiKit.section(page, text)
 
@@ -184,16 +392,13 @@ func _found(id: String) -> bool:
 	return Game.journal.has(id)
 
 
-func _grid(page: VBoxContainer) -> void:
-	var list := _entries()
-	var found := list.filter(func(e): return _found(e["id"])).size()
-	_heading(page, "%s   %d / %d" % [tr(section), found, list.size()])
-	var area := UiKit.scroll(page, Vector2(PAGE_W - MARGIN - 4, PAGE_H - 34))
+func _grid(page: VBoxContainer, list: Array, heading: String) -> void:
+	_heading(page, heading)
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 2)
 	grid.add_theme_constant_override("v_separation", 2)
-	area.add_child(grid)
+	page.add_child(grid)
 	for e in list:
 		var id := String(e["id"])
 		var tile := Button.new()
@@ -215,8 +420,23 @@ func _grid(page: VBoxContainer) -> void:
 		# Big pictures are shrunk smoothly; icons already drawn at this size stay crisp.
 		if tile.icon and maxf(tile.icon.get_width(), tile.icon.get_height()) > TILE:
 			tile.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		tile.pressed.connect(func(): Sfx.play("click", -8.0); selected = id; refresh())
+		tile.pressed.connect(func(): Sfx.play("click", -8.0); selected = "" if selected == id else id; refresh())
 		grid.add_child(tile)
+
+
+## Give the right page a section-specific piece of journal writing before an entry is selected.
+func _section_story(page: VBoxContainer, entries: Array) -> void:
+	var discovered: Array = entries.filter(func(e): return _found(e["id"]))
+	if discovered.is_empty():
+		_heading(page, tr(section))
+		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
+		return
+	var id := String(discovered[0]["id"])
+	_heading(page, tr(_name(id)))
+	var story := _describe(id)
+	if story.is_empty():
+		story = tr("A record from the %s pages of the journal.") % tr(section.to_lower())
+	UiKit.para(page, story, TEXT_W)
 
 
 func _detail(page: VBoxContainer, id: String) -> void:
