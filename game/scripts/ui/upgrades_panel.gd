@@ -17,13 +17,13 @@ func signature() -> String:
 
 func build() -> void:
 	_rows = {}
-	UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), WIDTH).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), WIDTH).add_theme_color_override("font_color", UiKit.MUTED)
 	for id in IDS:
 		var card := UiKit.card(body)
 		var b := UiKit.setting(card, tr(String(Game.upgrade_info(id).get("name", id))), "", func(): Game.buy_upgrade(id), WIDTH - 10)
 		b.get_parent().get_child(0).add_theme_color_override("font_color", UiKit.HEADING)
 		var about := UiKit.para(card, "", WIDTH - 10)
-		about.add_theme_color_override("font_color", UiKit.FADED)
+		about.add_theme_color_override("font_color", UiKit.MUTED)
 		_rows[id] = {"button": b, "about": about}
 
 

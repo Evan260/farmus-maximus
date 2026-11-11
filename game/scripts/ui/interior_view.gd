@@ -235,7 +235,7 @@ func _build_ui() -> void:
 	var info := UiKit.column(purse_box)
 	_purse = UiKit.label(info)
 	_comfort = UiKit.label(info)
-	_comfort.add_theme_color_override("font_color", UiKit.FADED)
+	_comfort.add_theme_color_override("font_color", UiKit.MUTED)
 	_hover_label = UiKit.label(_ui_root, "", true)
 	_hover_label.visible = false
 	_panel = PanelContainer.new()
@@ -749,11 +749,11 @@ func _furnishing_card(id: String, named: bool) -> void:
 		UiKit.label(card, tr(String(f.get("name", "")))).add_theme_color_override("font_color", UiKit.HEADING)
 	UiKit.para(card, tr(String(f.get("desc", ""))), 200)
 	if Game.furnishings.has(id):
-		UiKit.label(card, tr("In place")).add_theme_color_override("font_color", UiKit.FADED)
+		UiKit.label(card, tr("In place")).add_theme_color_override("font_color", UiKit.MUTED)
 		return
 	var block := Game.furnishing_block(id)
 	if block != "":
-		UiKit.para(card, tr(block), 200).add_theme_color_override("font_color", UiKit.SHORT)
+		UiKit.para(card, tr(block), 200).add_theme_color_override("font_color", UiKit.RED)
 		return
 	var r := UiKit.row(card)
 	var buy := UiKit.button(r, tr("Buy for %d sestertii") % int(f.get("price", 0)), func():

@@ -41,13 +41,13 @@ func build() -> void:
 		UiKit.label(col, title).add_theme_color_override("font_color", UiKit.HEADING)
 		UiKit.para(col, tr(String(info.get("does", ""))), 190)
 		if level > 0:
-			UiKit.para(col, "\"%s\"" % tr(String(info.get("quote", ""))), 190).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.para(col, "\"%s\"" % tr(String(info.get("quote", ""))), 190).add_theme_color_override("font_color", UiKit.MUTED)
 		var block := Game.helper_block(id)
 		var cost := Game.helper_cost(id)
 		if level > 0 and cost < 0:
-			UiKit.label(col, tr("At work")).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.label(col, tr("At work")).add_theme_color_override("font_color", UiKit.MUTED)
 		elif block != "":
-			UiKit.label(col, tr(block)).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.label(col, tr(block)).add_theme_color_override("font_color", UiKit.MUTED)
 		else:
 			var verb := tr("Train") if level > 0 else tr("Hire")
 			_buttons[id] = UiKit.button(col, "%s: %s" % [verb, UiKit.cost_text({"coins": cost})], func(): Game.hire_helper(id))

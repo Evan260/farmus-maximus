@@ -71,7 +71,7 @@ func _next() -> void:
 	UiKit.label(words, tr("Achievement")).add_theme_color_override("font_color", UiKit.HEADING)
 	UiKit.label(words, tr(String(a["name"])))
 	var desc := UiKit.para(words, tr(String(a.get("desc", ""))), 140)
-	desc.add_theme_color_override("font_color", UiKit.FADED)
+	desc.add_theme_color_override("font_color", UiKit.MUTED)
 	# A description that wraps keeps the same tight line spacing as the lines above it.
 	desc.add_theme_constant_override("line_spacing", -1)
 	# Its parts leave the pointer to the card, so the card alone decides whether clicks go through to a window under it.

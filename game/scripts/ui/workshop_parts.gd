@@ -64,7 +64,7 @@ static func face(parent: Node, helper: String) -> TextureRect:
 static func caption(parent: Node, text: String) -> Label:
 	var l := UiKit.label(parent, text)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_color_override("font_color", UiKit.FADED)
+	l.add_theme_color_override("font_color", UiKit.MUTED)
 	return l
 
 

@@ -65,7 +65,7 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 	var info := Saves.slot_info(n)
 	var name: String = String(info["name"]) if String(info["name"]) != "" else tr("Your farm")
 	var ask := UiKit.para(card, tr("%s, on day %d, will be gone for good. Type \"%s\" to delete it.") % [name, int(info["day"]), word], 220)
-	ask.add_theme_color_override("font_color", UiKit.SHORT)
+	ask.add_theme_color_override("font_color", UiKit.RED)
 	var r := UiKit.row(card)
 	var field := LineEdit.new()
 	field.placeholder_text = word

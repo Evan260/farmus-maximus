@@ -292,7 +292,7 @@ func _section_story(page: VBoxContainer, entries: Array) -> void:
 	var discovered: Array = entries.filter(func(e): return _found(e["id"]))
 	if discovered.is_empty():
 		_heading(page, tr(section))
-		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
+		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.MUTED)
 		return
 	var id := String(discovered[0]["id"])
 	_heading(page, tr(_name(id)))
@@ -329,7 +329,7 @@ func _detail(page: VBoxContainer, id: String) -> void:
 		return
 	if not got:
 		_heading(page, "? ? ?")
-		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
+		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.MUTED)
 		return
 	_heading(page, tr(_name(id)))
 	UiKit.para(page, _describe(id), TEXT_W)
@@ -352,7 +352,7 @@ func _achievement_progress(page: VBoxContainer, key: String) -> void:
 			text = tr("Not earned yet: the journal is %d%% full so far.") % done[0]
 		elif not done.is_empty():
 			text = tr("Not earned yet: %d of %d so far.") % [mini(done[0], done[1]), done[1]]
-		UiKit.para(page, text, TEXT_W).add_theme_color_override("font_color", UiKit.FADED)
+		UiKit.para(page, text, TEXT_W).add_theme_color_override("font_color", UiKit.MUTED)
 
 
 func _name(id: String) -> String:

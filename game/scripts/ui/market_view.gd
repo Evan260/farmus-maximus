@@ -641,7 +641,7 @@ func _refresh() -> void:
 func _build_stalls() -> void:
 	var keys: Array = Game.market.brought.keys().filter(func(k): return int(Game.market.brought[k]) > 0 and int(Game.storage.get(k, 0)) > 0)
 	keys.sort_custom(func(a, b): return Game.market.price(a) > Game.market.price(b))
-	UiKit.para(_list, tr("The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first.") % [Game.market.brought_total(), Game.cart_capacity()], 280).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(_list, tr("The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first.") % [Game.market.brought_total(), Game.cart_capacity()], 280).add_theme_color_override("font_color", UiKit.MUTED)
 	if keys.is_empty():
 		UiKit.para(_list, tr("Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut."), 280)
 	for key in keys:
@@ -697,7 +697,7 @@ func _build_prices() -> void:
 	for item in Game.market.favourites:
 		fav.append(UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
 	UiKit.para(_list, tr("Wanted today: %s") % ", ".join(fav), 280)
-	UiKit.para(_list, tr("Selling many of one good lowers its price until tomorrow, so a mix pays best."), 280).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(_list, tr("Selling many of one good lowers its price until tomorrow, so a mix pays best."), 280).add_theme_color_override("font_color", UiKit.MUTED)
 	for item in Balance.get_value("items", {}):
 		if Balance.get_value("items.%s.kind" % item, "good") != "good" or not Game.journal.has("item:" + item):
 			continue
@@ -721,9 +721,9 @@ func _build_shop() -> void:
 		if owned != "":
 			var have := UiKit.label(r, owned)
 			have.custom_minimum_size = Vector2(62, 0)
-			have.add_theme_color_override("font_color", UiKit.FADED)
+			have.add_theme_color_override("font_color", UiKit.MUTED)
 		if block != "":
-			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.MUTED)
 			continue
 		var buy := UiKit.button(r, tr("Buy"), func(): if Game.market.buy(String(entry["id"])): Sfx.play("coins"))
 		buy.disabled = Game.missing(price) != ""
@@ -786,7 +786,7 @@ func _build_decorations() -> void:
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var block: String = Game.decoration_block(id)
 		if block != "":
-			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.MUTED)
 		else:
 			var b := UiKit.button(r, tr("Buy"), func(): if Game.buy_decoration(id): Sfx.play("coins"))
 			b.disabled = Game.missing(price) != ""

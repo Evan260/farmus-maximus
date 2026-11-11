@@ -17,8 +17,8 @@ const ICONS := "res://assets/sprites/icons/"
 const INK := Color(0.29, 0.18, 0.14)
 const CREAM := Color(0.99, 0.95, 0.86)
 ## Secondary text: lighter than the main ink but still dark and solid, so it reads on dim or poor screens.
-const FADED := Color(0.4, 0.27, 0.2)
-const SHORT := Color(0.66, 0.2, 0.14)
+const MUTED := Color(0.4, 0.27, 0.2)
+const RED := Color(0.66, 0.2, 0.14)
 const HEADING := Color(0.55, 0.27, 0.18)
 ## The parchment of a window, the darker paper of a tab that is not open, and the line round tabs.
 const TAB_OPEN := Color8(243, 220, 171)
@@ -129,7 +129,7 @@ static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 		b.add_theme_stylebox_override(state, box)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	for c in ["font_color", "font_hover_color"]:
-		b.add_theme_color_override(c, FADED)
+		b.add_theme_color_override(c, MUTED)
 	for c in ["font_pressed_color", "font_hover_pressed_color"]:
 		b.add_theme_color_override(c, INK)
 	b.pressed.connect(func(): Sfx.play("tab", -4.0))
@@ -225,7 +225,7 @@ static func update_costs(lines: Array) -> void:
 		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
 		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key))))
 		l.text = "%s  %d / %d" % [mid(TranslationServer.translate(name)), mini(have, need), need]
-		l.add_theme_color_override("font_color", INK if have >= need else SHORT)
+		l.add_theme_color_override("font_color", INK if have >= need else RED)
 
 
 static func progress(parent: Node) -> ProgressBar:

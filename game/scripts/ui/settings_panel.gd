@@ -49,7 +49,7 @@ func build() -> void:
 				var amount := UiKit.label(r, _percent(slider.value))
 				amount.custom_minimum_size = Vector2(30, 0)
 				amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				amount.add_theme_color_override("font_color", UiKit.FADED)
+				amount.add_theme_color_override("font_color", UiKit.MUTED)
 				slider.value_changed.connect(func(v):
 					amount.text = _percent(v)
 					Sfx.set_volume(bus[0], v))
@@ -66,7 +66,7 @@ func build() -> void:
 			_toggle("Focus mode: a quieter, slower strip", Windowing.focus_mode, func(v): Windowing.set_focus_mode(v))
 			_toggle("Strip follows the busiest zone", Windowing.follow, func(v): Windowing.set_follow(v))
 			_toggle("Low power", Settings.low_power, func(v): Settings.set_value("low_power", v); Windowing._update_fps())
-			UiKit.para(body, tr("Point at the strip to change its size, width, place and sky. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.FADED)
+			UiKit.para(body, tr("Point at the strip to change its size, width, place and sky. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.MUTED)
 		"Gameplay":
 			var locales := TranslationServer.get_loaded_locales()
 			if locales.size() > 1:

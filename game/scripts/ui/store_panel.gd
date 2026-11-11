@@ -17,7 +17,7 @@ func signature() -> String:
 func build() -> void:
 	_grow = null
 	_capacity = UiKit.label(body)
-	UiKit.para(body, tr("The trader sells only the extras, leaving at home what the villa, the shrine, market orders and workshops need. Mark a good Keep to keep all of it."), 250).add_theme_color_override("font_color", UiKit.FADED)
+	UiKit.para(body, tr("The trader sells only the extras, leaving at home what the villa, the shrine, market orders and workshops need. Mark a good Keep to keep all of it."), 250).add_theme_color_override("font_color", UiKit.MUTED)
 	var selling_now := Game.sellable_goods()
 	var list := UiKit.scroll(body, Vector2(250, 140))
 	var keys := Game.storage.keys()
@@ -33,12 +33,12 @@ func build() -> void:
 			var selling := Game.for_sale(key)
 			var kept := int(Game.storage[key]) - int(selling_now.get(key, 0))
 			if selling and kept > 0:
-				UiKit.label(r, tr("%d kept") % kept).add_theme_color_override("font_color", UiKit.FADED)
+				UiKit.label(r, tr("%d kept") % kept).add_theme_color_override("font_color", UiKit.MUTED)
 			var mark := UiKit.button(r, tr("For sale") if selling else tr("Keep"), func(): Game.set_for_sale(key, not selling); refresh())
 			mark.custom_minimum_size = Vector2(56, 0)
 			continue
 		var note := tr("for building, takes no room") if kind == "material" else tr("for the fields")
-		UiKit.label(r, note).add_theme_color_override("font_color", UiKit.FADED)
+		UiKit.label(r, note).add_theme_color_override("font_color", UiKit.MUTED)
 	if keys.is_empty():
 		UiKit.label(list, tr("Empty"))
 	var cost := Game.upgrade_cost("storage")

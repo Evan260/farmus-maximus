@@ -73,7 +73,7 @@ func _show_menu() -> void:
 		var info := Saves.slot_info(Saves.slot)
 		var about := UiKit.label(_menu, FarmsPanel.describe(info))
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		about.add_theme_color_override("font_color", UiKit.FADED)
+		about.add_theme_color_override("font_color", UiKit.MUTED)
 	var fresh := UiKit.button(_menu, tr("New farm"), _new_farm)
 	# A farm is never written over, so with every slot taken one has to be deleted first.
 	if Saves.free_slot() == 0:
