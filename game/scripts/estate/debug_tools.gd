@@ -1,33 +1,11 @@
 extends Node
-## The development-only side of the estate: demo farms, screenshots, bursts of frames and opening a panel from the
-## command line, so screenshots and checks never touch a real save.
+## The development-only side of the estate: demo farms and opening a panel from the command line, so screenshots and
+## checks never touch a real save. Screenshots and bursts of frames are the Dev autoload's.
 
 const TRAILER_SHOTS := "res://tools/trailer/shots.gd"
 
 ## The estate scene this works for.
 var m: Estate
-
-
-## Saves exactly what the window shows after the scene settles, then quits; used for store screenshots and layout checks.
-func take_screenshot(path: String) -> void:
-	for i in 45:
-		await get_tree().process_frame
-	get_viewport().get_texture().get_image().save_png(path)
-	get_tree().quit()
-
-
-## Saves eight frames a quarter of a second apart (or --burst-gap seconds), for checking anything that flickers or moves.
-func take_burst(prefix: String) -> void:
-	for i in 45:
-		await get_tree().process_frame
-	for k in 8:
-		get_viewport().get_texture().get_image().save_png("%s_%d.png" % [prefix, k])
-		var gap := 0.25
-		for arg in OS.get_cmdline_user_args():
-			if arg.begins_with("--burst-gap="):
-				gap = float(arg.trim_prefix("--burst-gap="))
-		await get_tree().create_timer(gap).timeout
-	get_tree().quit()
 
 
 func open_panel(which: String) -> void:
@@ -164,7 +142,7 @@ func load_demo_state() -> void:
 			Game.send_cart.call_deferred()
 		elif arg == "--estate":
 			demo_estate()
-		elif arg == "--maxed":
+		elif arg in ["--maxed", "--max-state"]:
 			demo_estate()
 			demo_maxed()
 		elif arg.begins_with("--pets="):

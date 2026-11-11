@@ -65,9 +65,9 @@ DESKTOP_SHOT = "02_on_your_desktop"
 def shoot(path, size, flags, scale=None):
     """Takes one picture with the game, once its scene has settled, at the given window size."""
     args = [str(GODOT), "--path", str(ROOT / "game"), "--", *QUIET, f"--window={size[0]}x{size[1]}", *flags,
-            f"--shot={path}"]
+            f"--shot={path}", "--quit"]
     if scale:
-        args.insert(-1, f"--scale={scale}")
+        args.insert(-2, f"--scale={scale}")
     subprocess.run(args, check=True, capture_output=True)
     print("rendered", path.name)
 

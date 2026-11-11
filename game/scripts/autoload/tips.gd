@@ -10,6 +10,8 @@ var _panel: PanelContainer
 var _label: Label
 var _owner: Control
 var _wait := 0.0
+## Where the pointer last moved, in window pixels, as the interface saw it.
+var _mouse := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -39,6 +41,11 @@ func _ready() -> void:
 func _fit() -> void:
 	scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_root.size = (get_viewport().get_visible_rect().size / Windowing.ui_scale).floor()
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse = event.position
 
 
 func _process(delta: float) -> void:
@@ -78,7 +85,7 @@ func _show(text: String) -> void:
 		_label.text = lines
 		_panel.visible = true
 		_panel.reset_size()
-	var mouse := get_viewport().get_mouse_position() / Windowing.ui_scale
+	var mouse := _mouse / Windowing.ui_scale
 	var room := _root.size
 	var pos := mouse + Vector2(8, 12)
 	if pos.x + _panel.size.x > room.x - 2:

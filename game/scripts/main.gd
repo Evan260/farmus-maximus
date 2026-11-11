@@ -197,13 +197,18 @@ var _centre := HOME + 240.0
 
 
 func _ready() -> void:
+	# The tests and bots build their own estate, so the one the game opens on stays empty.
+	if Dev.checking():
+		process_mode = Node.PROCESS_MODE_DISABLED
+		queue_free.call_deferred()
+		return
 	debug_tools = _part(DebugTools) as DebugTools
 	scenery = _part(Scenery) as Scenery
 	road = _part(RoadWorks) as RoadWorks
 	rig = _part(CartRig) as CartRig
 	villa = _part(VillaView) as VillaView
 	estate_width = float(Balance.get_value("estate.width", 2400))
-	if "--demo" in OS.get_cmdline_user_args():
+	if Dev.state() != "":
 		debug_tools.load_demo_state()
 	# The sky has its own layer at screen resolution, outside the night tint, so clouds and the moon move smoothly
 	# and the night sky's stars keep their own colours.
@@ -409,10 +414,13 @@ func _ready() -> void:
 			market.call_deferred("_open", arg.trim_prefix("--town="))
 		elif arg.begins_with("--panel="):
 			debug_tools.open_panel.call_deferred(arg.trim_prefix("--panel="))
-		elif arg.begins_with("--shot="):
-			debug_tools.take_screenshot(arg.trim_prefix("--shot="))
-		elif arg.begins_with("--burst="):
-			debug_tools.take_burst(arg.trim_prefix("--burst="))
+	match Dev.get_arg("screen"):
+		"town":
+			go_to_town.call_deferred()
+		"inside":
+			(func() -> void:
+				hud.visible = false
+				interior.enter()).call_deferred()
 
 
 ## The donkey sets off down the road with the cart before the market town comes into view.

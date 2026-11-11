@@ -183,7 +183,7 @@ func _wants_title() -> bool:
 	if Saves.title_done or Windowing.strip:
 		return false
 	var args := OS.get_cmdline_user_args()
-	return "--title" in args or (args.is_empty() and Settings.show_title)
+	return "--title" in args or Dev.get_arg("screen") == "title" or (args.is_empty() and Settings.show_title)
 
 
 func _show_title() -> void:

@@ -48,8 +48,11 @@ var persist := true
 func _ready() -> void:
 	persist = not trial_run()
 	_load()
-	if "--new-farm" in OS.get_cmdline_user_args():
+	if Dev.has("new-farm"):
 		show_tutorial = true
+	# --ui-size=-1 (Smaller), 0 (Normal), 1 (Larger) or 2 (Largest) tries an interface size without keeping it.
+	if Dev.has("ui-size"):
+		ui_scale_step = clampi(int(Dev.num("ui-size", 0)), -1, 2)
 	for action in ACTIONS:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -61,9 +64,8 @@ func _ready() -> void:
 		_bind(action, int(keys.get(action, ACTIONS[action]["key"])))
 	_load_translations()
 	TranslationServer.set_locale(language if language in TranslationServer.get_loaded_locales() else _system_language())
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--locale="):
-			TranslationServer.set_locale(arg.trim_prefix("--locale="))
+	if Dev.has("locale"):
+		TranslationServer.set_locale(Dev.get_arg("locale"))
 
 
 ## Every language column of the strings sheet becomes a translation file when imported; all of them are loaded.
@@ -94,15 +96,9 @@ func _system_language() -> String:
 	return "en"
 
 
-## Demo farms, new-farm trials, read-only checks and tests, which leave the player's farms and settings as they were.
+## Demo farms, new-farm trials, read-only checks, --no-save and tests, which leave the player's farms and settings as they were.
 func trial_run() -> bool:
-	for arg in OS.get_cmdline_args():
-		if String(arg).begins_with("res://tests/"):
-			return true
-	for flag in ["--demo", "--new-farm", "--readonly"]:
-		if flag in OS.get_cmdline_user_args():
-			return true
-	return false
+	return Dev.no_save()
 
 
 func key_for(action: String) -> int:

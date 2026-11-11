@@ -7,7 +7,7 @@ them, at the same pixel size as the estate. Below the road, which only a televis
 
 Usage: python tools/trailer/make_banner.py RENDER.png OUT.png [shift]
   RENDER.png is a game screenshot taken at one screen pixel to the game pixel and at least 1280x720, such as
-  --window=1600x720 --scale=1 --shot=RENDER.png; the banner shows its middle 1280 columns, or shift game pixels
+  --window=1600x720 --scale=1 --shot=RENDER.png --quit; the banner shows its middle 1280 columns, or shift game pixels
   to the right of the middle, so a building can stand clear of the logo.
 """
 import sys

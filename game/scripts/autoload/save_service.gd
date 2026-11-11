@@ -23,9 +23,8 @@ var _timer := 0.0
 
 
 func _ready() -> void:
-	var args := OS.get_cmdline_user_args()
-	# A "new farm" run starts from nothing and never touches the real save.
-	if "--new-farm" in args:
+	# A "new farm" run, and the tests and bots, start from nothing and never touch the real save.
+	if Dev.has("new-farm") or Dev.checking():
 		enabled = false
 		Game.new_game()
 		return

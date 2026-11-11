@@ -20,6 +20,7 @@ config/windows_native_icon="res://icon.ico"
 
 [autoload]
 
+Dev="*res://scripts/autoload/dev.gd"
 Balance="*res://scripts/autoload/balance.gd"
 Settings="*res://scripts/autoload/settings.gd"
 Game="*res://scripts/autoload/game_state.gd"
