@@ -62,6 +62,12 @@ func _ready() -> void:
 	Settings.changed.connect(_apply_volume)
 	_apply.call_deferred()
 	_restore_fullscreen.call_deferred()
+	# Minimising does not tell the game, so it looks once a second.
+	var look := Timer.new()
+	look.wait_time = 1.0
+	look.timeout.connect(func() -> void: if not strip_dragging: _update_fps())
+	add_child(look)
+	look.start()
 
 
 func _on_resized() -> void:
@@ -366,6 +372,9 @@ func _update_fps() -> void:
 		fps = 30
 	if Settings.low_power or (strip and focus_mode):
 		fps = 15 if not _focused or focus_mode else 30
+	# A minimised window shows nothing, so the farm only needs to keep its time.
+	if get_window().mode == Window.MODE_MINIMIZED:
+		fps = 5
 	Engine.max_fps = fps
 
 
