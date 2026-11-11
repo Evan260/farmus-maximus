@@ -38,6 +38,11 @@ func open_panel(which: String) -> void:
 		m.hud.open_window("settings")
 		m.hud._settings.tab = which.trim_prefix("settings:")
 		m.hud._settings.show_page()
+	elif which.begins_with("turn:"):
+		# turn:SECTION opens the journal and turns its page to that section a moment later, for checks.
+		m.hud.open_window("journal")
+		await get_tree().create_timer(0.9).timeout
+		m.hud._journal._turn_to(which.trim_prefix("turn:"))
 	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions"]:
 		m.hud.open_window(which)
 	else:

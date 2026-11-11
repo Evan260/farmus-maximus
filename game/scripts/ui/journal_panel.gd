@@ -6,6 +6,9 @@ const SECTIONS := ["Crops", "Goods", "Buildings", "Helpers", "Animals", "Finds",
 const PAGE_W := 166
 const PAGE_H := 196
 const TILE := 34
+## The tile's border and margin take two pixels on each side of its picture.
+const ICON_PIXELS := TILE - 4
+const ICON_ART_PIXELS := 28
 ## How many page edges show under each page, and the inner margin of the writing.
 const STACK := 3
 const SPINE := 4
@@ -16,18 +19,15 @@ const LEATHER := Color(0.33, 0.2, 0.13)
 const PAPER := Color(0.95, 0.89, 0.74)
 const TAB := Color(0.83, 0.71, 0.52)
 const EDGE := Color(0.55, 0.4, 0.28)
-const FLIP_TIME := 0.78
-const FLIP_SLICES := 48
-const FLIP_ROWS := 24
-## Match the game's 3x window scale so printed sprites retain their pixel coverage while the leaf is warped.
-const CAPTURE_SCALE := 3
 
 var section := "Crops"
 var selected := ""
 var _pictures := {}
 var _book: Control
 var _page_views: Array[Control] = []
-var _flipping := false
+var _turning := false
+## A section asked for while a page is turning, taken as soon as it lands.
+var _queued := ""
 static var _paper_cache := {}
 
 
@@ -115,192 +115,57 @@ func _bookmark(parent: Node, s: String) -> void:
 	parent.add_child(b)
 
 
-## Change journal sections with the same paper-leaf turn used by the logbook.
+## Turns the leaf to another section: the pages as they are now are pictured, the new section is laid out underneath,
+## and a PageTurn leaf carries the old page over with the new one on its back.
 func _turn_to(to: String) -> void:
 	var target := SECTIONS.find(to)
-	if _flipping or target < 0 or to == section or not is_instance_valid(_book):
+	if target < 0 or to == section:
 		return
-	_flipping = true
-	var old_book := _book
+	if _turning:
+		_queued = to
+		return
+	if not is_instance_valid(_book) or not _book.is_inside_tree():
+		return
+	_turning = true
+	var book := _book
 	var direction := 1 if target > SECTIONS.find(section) else -1
-	var turning_side := 1 if direction > 0 else 0
-	var front := await _capture_page_offscreen(old_book, turning_side)
-	if not is_instance_valid(old_book) or _book != old_book:
-		_flipping = false
-		return
-	var fixed_side := 0 if direction > 0 else 1
-	var fixed := await _capture_page_offscreen(old_book, fixed_side)
-	if not is_instance_valid(old_book) or _book != old_book:
-		_flipping = false
+	var shots := await PageTurn.capture(self, [_shot(1 if direction > 0 else 0), _shot(0 if direction > 0 else 1)], Windowing.ui_scale)
+	# The journal may have been closed while its pages were pictured, and is then left closed.
+	if not is_instance_valid(book) or not book.is_inside_tree() or _book != book:
+		_turning = false
 		return
 	Sfx.play("page_turn")
 	section = to
 	selected = ""
 	show_page()
-	if not is_instance_valid(_book):
-		_flipping = false
-		return
-	var reverse_side := 0 if direction > 0 else 1
-	var overlay := _flip_overlay(_book, direction, front, fixed, front)
-	var back := await _capture_page_offscreen(_book, reverse_side)
-	if is_instance_valid(overlay):
-		overlay.set_meta("back", back)
-		overlay.queue_redraw()
+	var turn := PageTurn.new()
+	turn.direction = direction
+	turn.left_page = Rect2(STACK, 0, PAGE_W, PAGE_H)
+	turn.right_page = Rect2(STACK + PAGE_W + SPINE, 0, PAGE_W, PAGE_H)
+	turn.front = shots[0]
+	turn.behind = shots[1]
+	turn.gutter = _draw_spine
+	turn.landed.connect(_landed)
+	turn.tree_exiting.connect(func(): _turning = false)
+	_book.add_child(turn)
+	var backs := await PageTurn.capture(self, [_shot(0 if direction > 0 else 1)], Windowing.ui_scale)
+	if is_instance_valid(turn):
+		turn.back = backs[0]
 
 
-## Capture paper and its laid-out controls together so the turning leaf keeps its print at every angle.
-func _capture_page_offscreen(book: Control, side: int) -> Texture2D:
-	if not is_instance_valid(book) or not book.is_inside_tree() or side >= _page_views.size():
-		return _paper(side == 0)
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(PAGE_W, PAGE_H) * CAPTURE_SCALE
-	viewport.transparent_bg = false
-	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
-	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-	add_child(viewport)
-	var root := Control.new()
-	root.size = Vector2(PAGE_W, PAGE_H)
-	root.scale = Vector2(CAPTURE_SCALE, CAPTURE_SCALE)
-	# The SubViewport does not inherit the HUD's theme, so give the duplicated controls the game's exact pixel fonts and ink.
-	root.theme = UiKit.make_theme()
-	root.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	viewport.add_child(root)
-	var paper := TextureRect.new()
-	paper.texture = _paper(side == 0)
-	paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	paper.size = Vector2(PAGE_W, PAGE_H)
-	root.add_child(paper)
-	var page := _page_views[side].duplicate() as Control
-	page.position = Vector2(MARGIN, MARGIN)
-	page.size = Vector2(PAGE_W - MARGIN - 4, PAGE_H - MARGIN * 2)
-	root.add_child(page)
-	await RenderingServer.frame_post_draw
-	if not is_instance_valid(viewport):
-		return _paper(side == 0)
-	var texture := ImageTexture.create_from_image(viewport.get_texture().get_image())
-	viewport.queue_free()
-	return texture
+## A section asked for while the last page was turning follows as soon as the leaf lands.
+func _landed() -> void:
+	_turning = false
+	if _queued != "":
+		var next := _queued
+		_queued = ""
+		_turn_to(next)
 
 
-## Put a textured leaf above the new spread and curl it around the centre seam.
-func _flip_overlay(book: Control, direction: int, front: Texture2D, fixed: Texture2D, back: Texture2D) -> Control:
-	var overlay := Control.new()
-	overlay.name = "JournalPageTurn"
-	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	overlay.z_index = 20
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.set_meta("direction", direction)
-	overlay.set_meta("progress", 0.0)
-	overlay.set_meta("front", front)
-	overlay.set_meta("fixed", fixed)
-	overlay.set_meta("back", back)
-	overlay.draw.connect(func(): _draw_flip(overlay))
-	overlay.tree_exiting.connect(func(): _flipping = false)
-	book.add_child(overlay)
-	var tween := overlay.create_tween()
-	tween.tween_method(func(value: float):
-		overlay.set_meta("progress", value)
-		overlay.queue_redraw(), 0.0, 1.0, FLIP_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	tween.finished.connect(_finish_flip.bind(overlay))
-	return overlay
-
-
-## Hold the exact flat landing for a drawn frame before removing the leaf.
-func _finish_flip(overlay: Control) -> void:
-	if not is_instance_valid(overlay):
-		return
-	overlay.set_meta("progress", 1.0)
-	overlay.queue_redraw()
-	await RenderingServer.frame_post_draw
-	if is_instance_valid(overlay):
-		_flipping = false
-		overlay.queue_free()
-
-
-## Draw the page as a finely divided mesh, keeping the paper opaque through its landing.
-func _draw_flip(canvas: Control) -> void:
-	var progress: float = float(canvas.get_meta("progress"))
-	var direction: int = int(canvas.get_meta("direction"))
-	var reverse := progress >= 0.5
-	var texture: Texture2D = canvas.get_meta("back" if reverse else "front")
-	var angle := PI * progress if direction > 0 else PI * (1.0 + progress)
-	var hinge := STACK + PAGE_W + SPINE if direction > 0 else STACK + PAGE_W
-	hinge -= direction * SPINE * smoothstep(0.0, 1.0, progress)
-	var curl := sin(PI * progress)
-	var flip_uv := (direction < 0) != reverse
-	var fixed_x := STACK if direction > 0 else STACK + PAGE_W + SPINE
-	var fixed_alpha := 0.0 if progress >= 1.0 else 1.0
-	canvas.draw_texture_rect(canvas.get_meta("fixed"), Rect2(fixed_x, 0, PAGE_W, PAGE_H), false,
-		Color(1, 1, 1, fixed_alpha))
-	if progress >= 1.0:
-		var landing_x := STACK if direction > 0 else STACK + PAGE_W + SPINE
-		canvas.draw_texture_rect(texture, Rect2(landing_x, 0, PAGE_W, PAGE_H), false)
-		_draw_spine(canvas)
-		return
-	var points_by_cell: Array[PackedVector2Array] = []
-	var uvs_by_cell: Array[PackedVector2Array] = []
-	var colors_by_cell: Array[PackedColorArray] = []
-	for i in FLIP_SLICES:
-		var u0 := float(i) / FLIP_SLICES
-		var u1 := float(i + 1) / FLIP_SLICES
-		var sx0 := 1.0 - u0 if flip_uv else u0
-		var sx1 := 1.0 - u1 if flip_uv else u1
-		for j in FLIP_ROWS:
-			var v0 := float(j) / FLIP_ROWS
-			var v1 := float(j + 1) / FLIP_ROWS
-			var y0 := v0 * PAGE_H
-			var y1 := v1 * PAGE_H
-			var p00 := _flip_point(u0, y0, progress, direction, angle, hinge)
-			var p10 := _flip_point(u1, y0, progress, direction, angle, hinge)
-			var p11 := _flip_point(u1, y1, progress, direction, angle, hinge)
-			var p01 := _flip_point(u0, y1, progress, direction, angle, hinge)
-			var points := PackedVector2Array([p00, p10, p11, p01])
-			var shadow_shift := Vector2(direction * 4.0 * curl, 2.0 * curl)
-			var shadow_color := Color(SILHOUETTE, 0.16 * curl)
-			var shadow_points := PackedVector2Array([
-				p00 + shadow_shift, p10 + shadow_shift, p11 + shadow_shift, p01 + shadow_shift])
-			var shadow_colors := PackedColorArray([shadow_color, shadow_color, shadow_color, shadow_color])
-			_draw_flip_triangle(canvas, shadow_points[0], shadow_points[1], shadow_points[2], shadow_colors[0], shadow_colors[1], shadow_colors[2])
-			_draw_flip_triangle(canvas, shadow_points[0], shadow_points[2], shadow_points[3], shadow_colors[0], shadow_colors[2], shadow_colors[3])
-			var uvs := PackedVector2Array([Vector2(sx0, v0), Vector2(sx1, v0), Vector2(sx1, v1), Vector2(sx0, v1)])
-			var bend_light := sin(PI * (u0 + u1) * 0.5) * curl
-			var light := clampf(0.92 - bend_light * 0.28 + 0.07 * absf(cos(angle)), 0.55, 1.0)
-			var color := Color(light, light, light, 1.0)
-			points_by_cell.append(points)
-			uvs_by_cell.append(uvs)
-			colors_by_cell.append(PackedColorArray([color, color, color, color]))
-	for i in points_by_cell.size():
-		_draw_flip_triangle(canvas, points_by_cell[i][0], points_by_cell[i][1], points_by_cell[i][2],
-			colors_by_cell[i][0], colors_by_cell[i][1], colors_by_cell[i][2],
-			uvs_by_cell[i][0], uvs_by_cell[i][1], uvs_by_cell[i][2], texture)
-		_draw_flip_triangle(canvas, points_by_cell[i][0], points_by_cell[i][2], points_by_cell[i][3],
-			colors_by_cell[i][0], colors_by_cell[i][2], colors_by_cell[i][3],
-			uvs_by_cell[i][0], uvs_by_cell[i][2], uvs_by_cell[i][3], texture)
-	_draw_spine(canvas)
-
-
-## Split warped cells explicitly; the automatic polygon triangulator rejects some folded quads.
-func _draw_flip_triangle(canvas: Control, a: Vector2, b: Vector2, c: Vector2,
-		color_a: Color, color_b: Color, color_c: Color,
-		uv_a := Vector2.ZERO, uv_b := Vector2.ZERO, uv_c := Vector2.ZERO, texture: Texture2D = null) -> void:
-	if absf((b - a).cross(c - a)) < 0.001:
-		return
-	canvas.draw_polygon(PackedVector2Array([a, b, c]), PackedColorArray([color_a, color_b, color_c]),
-		PackedVector2Array([uv_a, uv_b, uv_c]), texture)
-
-
-## Bow the leaf, tighten its free edge into a curl, and align its final rightward landing with the flat page.
-func _flip_point(u: float, y: float, progress: float, direction: int, angle: float, hinge: float) -> Vector2:
-	var bend := sin(PI * u) * sin(PI * progress)
-	var roll := pow(u, 3.0) * sin(PI * progress)
-	var landing_shift := smoothstep(0.9, 1.0, progress) if direction < 0 else 0.0
-	var x := hinge + u * PAGE_W * cos(angle) - direction * bend * 11.0 - direction * roll * sin(PI * y / PAGE_H) * 48.0 + landing_shift
-	var edge_y := (y - PAGE_H * 0.5) / (PAGE_H * 0.5)
-	return Vector2(x, y + bend * edge_y * 4.0 + roll * edge_y * 20.0)
-
-
+## A page of the journal as it is laid out, to be pictured with its paper: 0 the left page, 1 the right.
+func _shot(side: int) -> Dictionary:
+	return {"page": _page_views[side], "paper": _paper(side == 0), "at": Vector2(MARGIN, MARGIN),
+		"size": Vector2(PAGE_W, PAGE_H), "theme": UiKit.make_theme()}
 ## The left page holds the story of the chosen entry and scrolls when the story runs long, so the book never grows.
 func _page(book: Control, x: int, _left: bool) -> VBoxContainer:
 	var area := ScrollContainer.new()
@@ -407,6 +272,7 @@ func _grid(page: VBoxContainer, list: Array, heading: String) -> void:
 		tile.icon = _picture(id)
 		tile.expand_icon = true
 		tile.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tile.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var box := StyleBoxFlat.new()
 		box.bg_color = Color(0.87, 0.79, 0.62) if id != selected else Color(0.98, 0.93, 0.8)
 		box.border_color = Color(0.62, 0.46, 0.32) if id != selected else Color(0.7, 0.38, 0.25)
@@ -417,9 +283,6 @@ func _grid(page: VBoxContainer, list: Array, heading: String) -> void:
 		if not _found(id):
 			for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
 				tile.add_theme_color_override(state, SILHOUETTE)
-		# Big pictures are shrunk smoothly; icons already drawn at this size stay crisp.
-		if tile.icon and maxf(tile.icon.get_width(), tile.icon.get_height()) > TILE:
-			tile.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		tile.pressed.connect(func(): Sfx.play("click", -8.0); selected = "" if selected == id else id; refresh())
 		grid.add_child(tile)
 
@@ -450,12 +313,11 @@ func _detail(page: VBoxContainer, id: String) -> void:
 	frame.add_theme_stylebox_override("panel", box)
 	page.add_child(frame)
 	var pic := TextureRect.new()
-	pic.texture = _picture(id)
+	pic.texture = _picture(id, 2)
 	pic.custom_minimum_size = Vector2(TEXT_W - 10, 72)
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	if pic.texture and maxf(pic.texture.get_width(), pic.texture.get_height()) > 72:
-		pic.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	pic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if not got:
 		pic.modulate = SILHOUETTE
 	frame.add_child(pic)
@@ -551,12 +413,80 @@ func _describe(id: String) -> String:
 	return tr(String(notes.get(id, "")))
 
 
-func _picture(id: String) -> Texture2D:
-	if _pictures.has(id):
-		return _pictures[id]
-	var tex := _find_picture(id)
-	_pictures[id] = tex
+func _picture(id: String, times := 1) -> Texture2D:
+	var key := "%s@%d" % [id, times]
+	if _pictures.has(key):
+		return _pictures[key]
+	var tex := _uniform_icon(_find_picture(id))
+	if tex and times > 1:
+		var big := tex.get_image()
+		big.resize(big.get_width() * times, big.get_height() * times, Image.INTERPOLATE_NEAREST)
+		tex = ImageTexture.create_from_image(big)
+	_pictures[key] = tex
 	return tex
+
+
+## Fits a picture into one icon square, enlarged a whole number of times or averaged down into its own colours, so it stays crisp.
+func _uniform_icon(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var art := tex.get_image()
+	if art.is_compressed():
+		art.decompress()
+	art.convert(Image.FORMAT_RGBA8)
+	var used := art.get_used_rect()
+	if used.size == Vector2i.ZERO:
+		return tex
+	art = art.get_region(used)
+	var longest := maxi(art.get_width(), art.get_height())
+	if longest <= ICON_ART_PIXELS:
+		var times := ICON_ART_PIXELS / longest
+		art.resize(art.get_width() * times, art.get_height() * times, Image.INTERPOLATE_NEAREST)
+	else:
+		art = _shrunk(art, float(longest) / ICON_ART_PIXELS)
+	var canvas := Image.create(ICON_PIXELS, ICON_PIXELS, false, Image.FORMAT_RGBA8)
+	var offset := (Vector2i(ICON_PIXELS, ICON_PIXELS) - art.get_size()) / 2
+	canvas.blit_rect(art, Rect2i(Vector2i.ZERO, art.get_size()), offset)
+	return ImageTexture.create_from_image(canvas)
+
+
+## A picture made `f` times smaller, each pixel the average of its block snapped to the nearest of the picture's own colours.
+static func _shrunk(art: Image, f: float) -> Image:
+	var palette := {}
+	for y in art.get_height():
+		for x in art.get_width():
+			var c := art.get_pixel(x, y)
+			if c.a > 0.5:
+				palette[Color(c, 1.0)] = true
+	var colours := palette.keys()
+	var w := maxi(1, roundi(art.get_width() / f))
+	var h := maxi(1, roundi(art.get_height() / f))
+	var out := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	for y in h:
+		for x in w:
+			var sum := Color(0, 0, 0, 0)
+			var solid := 0
+			var count := 0
+			for sy in range(mini(int(y * f), art.get_height() - 1), clampi(int((y + 1) * f), int(y * f) + 1, art.get_height())):
+				for sx in range(mini(int(x * f), art.get_width() - 1), clampi(int((x + 1) * f), int(x * f) + 1, art.get_width())):
+					count += 1
+					var c := art.get_pixel(sx, sy)
+					if c.a > 0.5:
+						sum += c
+						solid += 1
+			# A block that is mostly clear stays clear, so the outline keeps its shape.
+			if solid * 2 < count:
+				continue
+			var mean := sum / solid
+			var best: Color = colours[0]
+			var nearest := INF
+			for c: Color in colours:
+				var d := (c.r - mean.r) ** 2 + (c.g - mean.g) ** 2 + (c.b - mean.b) ** 2
+				if d < nearest:
+					nearest = d
+					best = c
+			out.set_pixel(x, y, best)
+	return out
 
 
 func _find_picture(id: String) -> Texture2D:
@@ -569,6 +499,9 @@ func _find_picture(id: String) -> Texture2D:
 		"achievement": ["res://assets/sprites/icons32/%s.png" % ("laurel" if key == "triumph" else "aureus")],
 	}
 	var named := {
+		"animal:bees": "journal/journal_bees", "animal:butterflies": "journal/journal_butterflies", "animal:birds": "journal/journal_birds",
+		"animal:fireflies": "journal/journal_fireflies", "animal:dragonfly": "journal/journal_dragonfly", "animal:snail": "journal/journal_snail",
+		"animal:lizard": "journal/journal_lizard", "sighting:white_butterfly": "journal/journal_white_butterfly",
 		"animal:dog": "dog/east", "animal:donkey": "donkey/east", "animal:cat": "animals/cat_small/east", "animal:chicken": "animals/chicken/stand",
 		"animal:goat": "animals/goat/east", "animal:fox": "animals/fox/east", "animal:rabbit": "animals/rabbit/sit", "animal:hoopoe": "animals/hoopoe/stand",
 		"animal:stork": "animals/stork/nest", "find:old_coin": "icons32/sestertius", "find:truffle": "icons32/truffle", "find:rare_seed": "icons32/white_lavender",
@@ -606,29 +539,21 @@ func _trimmed(tex: Texture2D) -> Texture2D:
 ## Small pictures drawn in code, for creatures and sights that have no sprite of their own.
 func _drawn(id: String) -> Texture2D:
 	var art := {
-		"animal:bees": ["..WW..", ".W..W.", "YKYKY.", "YKYKYK", ".YKYK."],
-		"animal:butterflies": ["P.....P", "PP...PP", "PPPKPPP", ".PPKPP.", "..P.P.."],
-		"sighting:white_butterfly": ["W.....W", "WW...WW", "WWWKWWW", ".WWKWW.", "..W.W.."],
-		"animal:birds": ["K.....K", ".K...K.", "..KKK..", "...K...", "..K.K.."],
-		"animal:fireflies": ["..g..", ".gGg.", "gGYGg", ".gGg.", "..g.."],
-		"animal:dragonfly": ["WW.WW", ".WTW.", "..T..", "..T..", "..T.."],
-		"animal:snail": ["..BB.", ".BbbB", "GBbbB", "GGGGG"],
-		"animal:lizard": ["......G", "G.G.GG.", "GGGGG..", ".G.G..."],
 		"sighting:shooting_star": ["......W", "....wW.", "..ww...", "ww....."],
 		"sighting:rainbow": ["..RRRR..", ".RooooR.", "RoyyyyoR", "oy....yo", "y......y"],
 		"sighting:mist": ["WWW.WWWW", "........", ".WWWW.WW", "........", "WW.WWWWW"],
 		"sighting:aurora": ["v...vv.v", "vt.vttvt", "tA.tAAtA", "A..A..A.", "........"],
 	}
-	var colours := {"W": Color(0.97, 0.96, 0.93), "Y": Color(0.95, 0.76, 0.2), "K": Color(0.2, 0.15, 0.12), "P": Color(0.7, 0.55, 0.88),
-		"g": Color(0.8, 1.0, 0.5, 0.45), "G": Color(0.45, 0.6, 0.3), "T": Color(0.2, 0.55, 0.65), "B": Color(0.45, 0.3, 0.2), "b": Color(0.62, 0.45, 0.3),
-		"w": Color(1, 1, 0.85, 0.6), "R": Color(0.85, 0.3, 0.3), "o": Color(0.95, 0.6, 0.25), "y": Color(0.95, 0.88, 0.35),
-		"A": Color(0.35, 0.95, 0.6), "t": Color(0.25, 0.7, 0.8), "v": Color(0.6, 0.4, 0.9, 0.7)}
-	colours["G"] = Color(0.75, 1.0, 0.45) if id == "animal:fireflies" else colours["G"]
+	var colours := {"W": Color(0.97, 0.96, 0.93), "w": Color(1, 1, 0.85, 0.6), "R": Color(0.85, 0.3, 0.3), "o": Color(0.95, 0.6, 0.25),
+		"y": Color(0.95, 0.88, 0.35), "A": Color(0.35, 0.95, 0.6), "t": Color(0.25, 0.7, 0.8), "v": Color(0.6, 0.4, 0.9, 0.7)}
 	var rows: Array = art.get(id, ["KKK", "K.K", "KKK"])
-	var img := Image.create(rows[0].length(), rows.size(), false, Image.FORMAT_RGBA8)
+	var img := Image.create(24, 24, false, Image.FORMAT_RGBA8)
+	var top := (24 - rows.size()) / 2
 	for y in rows.size():
-		for x in String(rows[y]).length():
-			var ch := String(rows[y])[x]
+		var row := String(rows[y])
+		var left := (24 - row.length()) / 2
+		for x in row.length():
+			var ch := row[x]
 			if colours.has(ch):
-				img.set_pixel(x, y, colours[ch])
+				img.set_pixel(left + x, top + y, colours[ch])
 	return ImageTexture.create_from_image(img)

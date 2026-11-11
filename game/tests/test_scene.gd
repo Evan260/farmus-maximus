@@ -76,14 +76,11 @@ func _run() -> void:
 	_show_journal_page(journal, "Goods")
 	await process_frame
 	await process_frame
-	var lists: Array = journal.find_children("*", "ScrollContainer", true, false)
-	var grid: ScrollContainer = lists[lists.size() - 1]
-	grid.scroll_vertical = 40
+	_journal_list(journal).scroll_vertical = 40
 	_show_journal_page(journal, "item:olive_oil")
 	await process_frame
 	await process_frame
-	lists = journal.find_children("*", "ScrollContainer", true, false)
-	_check(lists[lists.size() - 1].scroll_vertical == 40, "choosing a journal entry keeps the list where it was")
+	_check(_journal_list(journal).scroll_vertical == 40, "choosing a journal entry keeps the list where it was")
 	journal.close()
 	game.coins += 1000
 	game.day_time = 9.0
@@ -447,6 +444,16 @@ func _write_file(path: String, text: String) -> void:
 func _clear_folder(dir: String) -> void:
 	for f in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(dir.path_join(f)))
+
+
+## The page that holds the journal's list of entries.
+func _journal_list(journal: Control) -> ScrollContainer:
+	var found: ScrollContainer = null
+	# The window's own scroll holds the whole book, so the innermost scroll around the grid is the list's.
+	for s in journal.find_children("*", "ScrollContainer", true, false):
+		if not s.find_children("*", "GridContainer", true, false).is_empty():
+			found = s
+	return found
 
 
 func _show_journal_page(journal: Control, page: String) -> void:
