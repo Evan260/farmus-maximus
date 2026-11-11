@@ -759,10 +759,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Escape or B closes what is open, the newest first: a window, then a card waiting for its button, then the
-## gamepad's turn on the interface's buttons. True if there was something to close.
+## Escape or B closes what is open, the newest first: a window, then a step of the title's menu, then a card waiting
+## for its button, then the gamepad's turn on the interface's buttons. True if there was something to close.
 func _go_back() -> bool:
 	if close_windows():
+		return true
+	if _title and _title.go_back():
 		return true
 	if not _open_cards().is_empty():
 		var button: Button = _cards.back().find_children("*", "Button", true, false)[0]

@@ -13,6 +13,8 @@ var open_window: Callable
 var _menu: VBoxContainer
 var _card: PanelContainer
 var _farms: Node
+## True while the menu asks for a new farm's name.
+var _naming := false
 
 
 func _ready() -> void:
@@ -54,6 +56,7 @@ func _ready() -> void:
 
 
 func _show_menu() -> void:
+	_naming = false
 	UiKit.clear(_menu)
 	_menu.custom_minimum_size = Vector2(150, 0)
 	if Saves.has_farm:
@@ -99,6 +102,7 @@ func _open_farms() -> void:
 func _name_farm(n: int) -> void:
 	_farms.close()
 	UiKit.clear(_menu)
+	_naming = true
 	_menu.custom_minimum_size = Vector2(190, 0)
 	UiKit.label(_menu, tr("Name your farm"))
 	var r := UiKit.row(_menu)
@@ -115,6 +119,17 @@ func _name_farm(n: int) -> void:
 	field.text_submitted.connect(func(_t): start.call())
 	UiKit.button(_menu, tr("Begin"), start)
 	UiKit.button(_menu, tr("Back"), _show_menu)
+
+
+## Escape or B steps back from the farm list or the naming of a farm to the menu; true if there was a step to take.
+func go_back() -> bool:
+	if _farms.visible:
+		_farms.close()
+		return true
+	if _naming:
+		_show_menu()
+		return true
+	return false
 
 
 func _suggestion() -> String:
