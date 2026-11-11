@@ -18,6 +18,7 @@ for scene in "${SCENES[@]}"; do
 		inside) flags="--hour=20 --weather=sun --inside --furnish=all" ;;
 		journal) flags="--hour=10 --weather=sun --panel=journal" ;;
 		strip) flags="--hour=10 --weather=sun --strip" ;;
+		windows|minimised) flags="--hour=10 --weather=sun" ;;
 		*) echo "unknown scene $scene"; continue ;;
 	esac
 	timeout $((SECONDS_EACH + 60)) "$GODOT" --path . --quit-after 100000 -- --max-state --no-save --window=1440x810 $flags \
