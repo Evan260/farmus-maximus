@@ -107,16 +107,16 @@ func _ready() -> void:
 
 	_buttons = VBoxContainer.new()
 	_root.add_child(_buttons)
-	# Anchored to the top-right corner and growing leftwards, so longer button text never gets cut off.
+	# Anchored to the top-right corner and growing leftwards.
 	_buttons.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_buttons.offset_top = 4
 	_buttons.offset_right = -4
-	UiKit.button(_buttons, tr("Upgrades"), func(): _open(_upgrades))
-	UiKit.button(_buttons, tr("Storehouse"), func(): _open(_store))
-	UiKit.button(_buttons, tr("Helpers"), func(): _open(_helpers))
-	UiKit.button(_buttons, tr("Journal"), func(): _open(_journal))
-	UiKit.button(_buttons, tr("Settings"), func(): _open(_settings))
+	_top_button(_buttons, "Upgrades", load("res://assets/sprites/icons/ui/upgrades.png"), func(): _open(_upgrades))
+	_top_button(_buttons, "Storehouse", load("res://assets/sprites/icons/ui/storehouse.png"), func(): _open(_store))
+	_top_button(_buttons, "Helpers", load("res://assets/sprites/icons/ui/helpers.png"), func(): _open(_helpers))
+	_top_button(_buttons, "Journal", load("res://assets/sprites/icons/ui/journal.png"), func(): _open(_journal))
+	_top_button(_buttons, "Settings", load("res://assets/sprites/icons/ui/settings.png"), func(): _open(_settings))
 
 	_info = UiKit.label(_root, "", true)
 	_info.visible = false
@@ -800,6 +800,28 @@ func _build_toolbar() -> void:
 	_root.add_child(_toolbar)
 	_tool_row = UiKit.row(_toolbar)
 	_tool_row.add_theme_constant_override("separation", 1)
+
+
+## Small picture buttons for the estate's main windows, matching the illustrated controls in Fishus Maximus.
+func _top_button(parent: Node, label: String, picture: Texture2D, action: Callable) -> Button:
+	var b := UiKit.button(parent, "", action)
+	b.name = label.replace(" ", "") + "Button"
+	b.tooltip_text = tr(label)
+	b.custom_minimum_size = Vector2(20, 20)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_END
+	var image := TextureRect.new()
+	image.name = "Picture"
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	image.texture = picture
+	image.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	image.offset_left = 2
+	image.offset_top = 2
+	image.offset_right = -2
+	image.offset_bottom = -2
+	b.add_child(image)
+	return b
 
 
 func _update_toolbar() -> void:
