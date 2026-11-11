@@ -45,7 +45,6 @@ var _sleep_button: Button
 ## Seconds since the farmer went to sleep, or below zero while awake.
 var _slept := -1.0
 var _info: Label
-var _info_beside: Control
 var _toast: Label
 var _toast_tween: Tween
 var _toast_queue: Array = []
@@ -118,6 +117,9 @@ func _ready() -> void:
 	_top_button(_buttons, "Helpers", load("res://assets/sprites/icons/ui/helpers.png"), func(): _open(_helpers))
 	_top_button(_buttons, "Journal", load("res://assets/sprites/icons/ui/journal.png"), func(): _open(_journal))
 	_top_button(_buttons, "Settings", load("res://assets/sprites/icons/ui/settings.png"), func(): _open(_settings))
+	var house: Texture2D = load("res://assets/sprites/icons/ui/title.png")
+	var home := _top_button(_buttons, "Save and go back to the title", house, back_to_title)
+	home.name = "TitleButton"
 
 	_info = UiKit.label(_root, "", true)
 	_info.visible = false
@@ -202,6 +204,14 @@ func _hold_news() -> void:
 	_achievements.hold = _title != null or not visible
 	if visible and not (_toast_tween and _toast_tween.is_running()) and not _toast_queue.is_empty():
 		_show_toast(_toast_queue.pop_front())
+
+
+## Saves the farm and lays the title screen over it again, where the farm list can switch to another farm.
+func back_to_title() -> void:
+	Saves.save_game()
+	close_windows()
+	if _title == null:
+		_show_title()
 
 
 func title_open() -> bool:
@@ -402,22 +412,16 @@ func set_zone(zone_id: String) -> void:
 		_zone_buttons[id].button_pressed = id == zone_id
 
 
-## Hover text for what is under the pointer, or set `beside` a button to name it just to the button's left.
-func set_info(text: String, beside: Control = null) -> void:
+## Hover text for what is under the pointer on the estate.
+func set_info(text: String) -> void:
 	_info.visible = text != ""
 	_info.text = text
-	_info_beside = beside
 	_place_info()
 
 
 ## The hover text sits just above the pointer, so it never hides the plants along the bottom of the field.
 func _place_info() -> void:
 	if not _info.visible:
-		return
-	if is_instance_valid(_info_beside):
-		var r := _root.get_global_transform().affine_inverse() * _info_beside.get_global_rect()
-		var need := _info.get_minimum_size()
-		_info.position = Vector2(r.position.x - need.x - 3, r.get_center().y - need.y / 2.0).clamp(Vector2(2, 2), _root.size - need - Vector2(2, 2)).round()
 		return
 	var at := get_viewport().get_mouse_position() / Windowing.ui_scale
 	var size := _info.get_minimum_size()
