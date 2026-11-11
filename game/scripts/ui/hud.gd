@@ -45,6 +45,7 @@ var _sleep_button: Button
 ## Seconds since the farmer went to sleep, or below zero while awake.
 var _slept := -1.0
 var _info: Label
+var _info_beside: Control
 var _toast: Label
 var _toast_tween: Tween
 var _toast_queue: Array = []
@@ -401,15 +402,22 @@ func set_zone(zone_id: String) -> void:
 		_zone_buttons[id].button_pressed = id == zone_id
 
 
-func set_info(text: String) -> void:
+## Hover text for what is under the pointer, or set `beside` a button to name it just to the button's left.
+func set_info(text: String, beside: Control = null) -> void:
 	_info.visible = text != ""
 	_info.text = text
+	_info_beside = beside
 	_place_info()
 
 
 ## The hover text sits just above the pointer, so it never hides the plants along the bottom of the field.
 func _place_info() -> void:
 	if not _info.visible:
+		return
+	if is_instance_valid(_info_beside):
+		var r := _root.get_global_transform().affine_inverse() * _info_beside.get_global_rect()
+		var need := _info.get_minimum_size()
+		_info.position = Vector2(r.position.x - need.x - 3, r.get_center().y - need.y / 2.0).clamp(Vector2(2, 2), _root.size - need - Vector2(2, 2)).round()
 		return
 	var at := get_viewport().get_mouse_position() / Windowing.ui_scale
 	var size := _info.get_minimum_size()
@@ -806,7 +814,8 @@ func _build_toolbar() -> void:
 func _top_button(parent: Node, label: String, picture: Texture2D, action: Callable) -> Button:
 	var b := UiKit.button(parent, "", action)
 	b.name = label.replace(" ", "") + "Button"
-	b.tooltip_text = tr(label)
+	b.mouse_entered.connect(func(): set_info(tr(label), b))
+	b.mouse_exited.connect(func(): set_info(""))
 	b.custom_minimum_size = Vector2(20, 20)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var image := TextureRect.new()

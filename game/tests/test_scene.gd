@@ -56,6 +56,12 @@ func _run() -> void:
 	game.add_item("tiles", 3, true)
 	var top: Vector2 = main.villa.villa_rect().position + Vector2(main.villa.villa_rect().size.x / 2, 10)
 	main._click(top)
+	await process_frame
+	var journal_button: Button = main.hud.find_child("JournalButton", true, false)
+	main.hud.set_info("Journal", journal_button)
+	_check(main.hud._info.visible and main.hud._info_beside == journal_button and main.hud._info.text == "Journal",
+		"a top button's name shows beside it at the interface's scale, not as a tiny tooltip")
+	main.hud.set_info("")
 	_check(main.hud._building.visible and main.hud._building.id == "villa", "clicking the farmhouse opens its panel")
 	main.hud._building._action.pressed.emit()
 	_check(game.villa_build["active"], "the farmhouse panel starts the restoration")
