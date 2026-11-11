@@ -22,6 +22,8 @@ var offline_progress := true
 var notifications := true
 var large_text := false
 var reduced_motion := false
+## Whether the full window fills the screen; F11 changes it.
+var fullscreen := false
 ## Ready plants get a clear marker above them, not just a twinkle, for players who find the twinkle hard to see.
 var strong_cues := false
 var low_power := false
@@ -138,7 +140,7 @@ func _load() -> void:
 	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	if typeof(d) != TYPE_DICTIONARY:
 		return
-	for name in ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "low_power", "show_title", "show_tutorial"]:
+	for name in ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "low_power", "show_title", "show_tutorial", "fullscreen"]:
 		if d.has(name):
 			set(name, bool(d[name]))
 	language = String(d.get("language", language))
@@ -160,5 +162,5 @@ func save() -> void:
 		f.store_string(JSON.stringify({
 			"offline_progress": offline_progress, "notifications": notifications, "large_text": large_text,
 			"reduced_motion": reduced_motion, "strong_cues": strong_cues, "low_power": low_power, "language": language,
-			"show_title": show_title, "show_tutorial": show_tutorial, "background_sound": background_sound, "keys": keys, "ui_scale_step": ui_scale_step, "ui_sizes": 2, "day_minutes": day_minutes,
+			"show_title": show_title, "show_tutorial": show_tutorial, "background_sound": background_sound, "keys": keys, "ui_scale_step": ui_scale_step, "ui_sizes": 2, "day_minutes": day_minutes, "fullscreen": fullscreen,
 		}))

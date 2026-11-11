@@ -46,6 +46,8 @@ var _drag_start_x := 0
 var _focused := true
 ## Whether the window was maximized or fullscreen before it became the strip, so leaving the strip brings that back.
 var _mode_before_strip := Window.MODE_WINDOWED
+## The window's mode before it went full screen, so F11 brings back a maximised window as it was.
+var _mode_before_fullscreen := Window.MODE_WINDOWED
 
 
 func _ready() -> void:
@@ -60,6 +62,7 @@ func _ready() -> void:
 	Settings.changed.connect(_on_resized)
 	Settings.changed.connect(_apply_volume)
 	_apply.call_deferred()
+	_restore_fullscreen.call_deferred()
 
 
 func _on_resized() -> void:
@@ -103,10 +106,14 @@ func _notification(what: int) -> void:
 		# The window opens next time on the monitor it was closed on.
 		NOTIFICATION_WM_CLOSE_REQUEST:
 			_save()
+			if Settings.fullscreen != is_fullscreen():
+				Settings.set_value("fullscreen", is_fullscreen())
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("toggle_strip"):
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
+		toggle_fullscreen()
+	elif event.is_action_pressed("toggle_strip"):
 		toggle_strip()
 	elif event.is_action_pressed("reset_strip") and strip:
 		offset_x = 0
@@ -128,6 +135,35 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _dragging:
 		offset_x = _drag_start_x + DisplayServer.mouse_get_position().x - _drag_from.x
 		_place_strip()
+
+
+## Full screen belongs to the full window: the strip is always a plain window, so F11 there goes back to the full window.
+func toggle_fullscreen() -> void:
+	if strip:
+		toggle_strip()
+		return
+	var win := get_window()
+	if win.mode == Window.MODE_FULLSCREEN:
+		win.mode = _mode_before_fullscreen
+	else:
+		_mode_before_fullscreen = win.mode
+		win.mode = Window.MODE_FULLSCREEN
+	Settings.set_value("fullscreen", is_fullscreen())
+
+
+## Whether the full window is full screen, or will be again once the strip is left.
+func is_fullscreen() -> bool:
+	return get_window().mode == Window.MODE_FULLSCREEN or (strip and _mode_before_strip == Window.MODE_FULLSCREEN)
+
+
+func _restore_fullscreen() -> void:
+	if not Settings.fullscreen or Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
+		return
+	if strip:
+		_mode_before_strip = Window.MODE_FULLSCREEN
+	else:
+		_mode_before_fullscreen = get_window().mode
+		get_window().mode = Window.MODE_FULLSCREEN
 
 
 func toggle_strip() -> void:
