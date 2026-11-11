@@ -32,7 +32,8 @@ func _on_achievement(a: Dictionary) -> void:
 
 
 func _unlock_on_steam(id: String) -> void:
-	if _steam:
+	# The demo and maxed farms, tests and other trial runs grant achievements freely, so none of theirs reach Steam.
+	if _steam and not Dev.no_save():
 		_steam.call("setAchievement", id)
 		_steam.call("storeStats")
 
