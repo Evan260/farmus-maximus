@@ -816,8 +816,7 @@ func _build_toolbar() -> void:
 func _top_button(parent: Node, label: String, picture: Texture2D, action: Callable) -> Button:
 	var b := UiKit.button(parent, "", action)
 	b.name = label.replace(" ", "") + "Button"
-	b.mouse_entered.connect(func(): set_info(tr(label), b))
-	b.mouse_exited.connect(func(): set_info(""))
+	UiKit.tip_on(b, label)
 	b.custom_minimum_size = Vector2(20, 20)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var image := TextureRect.new()
@@ -885,8 +884,7 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 		select_tool(id)
 		if _bar_armed:
 			_pad_bar(false))
-	b.mouse_entered.connect(func(): set_info(text))
-	b.mouse_exited.connect(func(): set_info(""))
+	UiKit.tip_on(b, text)
 	_tool_row.add_child(b)
 	_tool_buttons[id] = b
 

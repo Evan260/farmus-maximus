@@ -57,6 +57,14 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
+## Gives a control a tip shown when the pointer rests on it, drawn by the Tips autoload at the interface's scale.
+static func tip_on(c: Control, text: String) -> Control:
+	c.set_meta("tip", text)
+	if c.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+		c.mouse_filter = Control.MOUSE_FILTER_PASS
+	return c
+
+
 ## A framed panel of slightly darker parchment, for one item in a list, so each item reads as its own block.
 static func card(parent: Node) -> VBoxContainer:
 	var frame := PanelContainer.new()

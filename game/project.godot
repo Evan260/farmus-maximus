@@ -27,6 +27,7 @@ Saves="*res://scripts/autoload/save_service.gd"
 Sfx="*res://scripts/autoload/sfx.gd"
 Windowing="*res://scripts/autoload/windowing.gd"
 Platform="*res://scripts/autoload/platform.gd"
+Tips="*res://scripts/autoload/tips.gd"
 
 [display]
 

@@ -23,7 +23,7 @@ func open() -> void:
 func signature() -> String:
 	return "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.strip_scale,
 		Windowing.dock, str(Windowing.focus_mode) + str(Windowing.follow), Settings.offline_progress, str(Settings.notifications) + str(Windowing.is_fullscreen()), Settings.large_text, Settings.reduced_motion,
-		Settings.strong_cues, Settings.low_power, Settings.background_sound + str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
+		Settings.strong_cues, str(Settings.low_power) + str(Settings.tooltips), Settings.background_sound + str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
 
 
 func build() -> void:
@@ -53,8 +53,8 @@ func build() -> void:
 				slider.value_changed.connect(func(v):
 					amount.text = _percent(v)
 					Sfx.set_volume(bus[0], v))
-			UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
-			UiKit.para(body, tr("Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks."), 230).add_theme_color_override("font_color", UiKit.FADED)
+			var music := UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
+			UiKit.tip_on(music, "Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks.")
 			var sounds := {"full": "Full volume", "quieter": "Quieter", "muted": "Muted"}
 			UiKit.setting(body, tr("While you use other windows"), tr(sounds.get(Settings.background_sound, "Full volume")),
 				func(): Settings.set_value("background_sound", {"full": "quieter", "quieter": "muted", "muted": "full"}.get(Settings.background_sound, "full")))
@@ -86,6 +86,7 @@ func build() -> void:
 						b.add_theme_font_override("font", UiKit.ten_pixel_font())
 						b.add_theme_font_size_override("font_size", 10)
 			_toggle("Show tips", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
+			_toggle("Tips when you point at a button", Settings.tooltips, func(v): Settings.set_value("tooltips", v))
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
 			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))
 			UiKit.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
