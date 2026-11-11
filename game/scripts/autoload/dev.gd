@@ -131,6 +131,15 @@ func open_panel(which: String) -> void:
 		m.hud.open_window("journal")
 		await get_tree().create_timer(0.9).timeout
 		m.hud._journal._turn_to(which.trim_prefix("turn:"))
+	elif which in ["farms", "delete"]:
+		# The title's farm list, or with "delete" the first farm waiting for "delete" to be typed; nothing is deleted.
+		if not m.hud.title_open():
+			m.hud.back_to_title()
+		var title: Control = m.hud._title
+		title._open_farms()
+		if which == "delete":
+			title._farms._deleting = 1
+			title._farms.refresh()
 	elif which in ["journal", "helpers", "store", "settings", "upgrades", "companions"]:
 		m.hud.open_window(which)
 	else:
