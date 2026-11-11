@@ -165,7 +165,17 @@ func _landed() -> void:
 ## A page of the journal as it is laid out, to be pictured with its paper: 0 the left page, 1 the right.
 func _shot(side: int) -> Dictionary:
 	return {"page": _page_views[side], "paper": _paper(side == 0), "at": Vector2(MARGIN, MARGIN),
-		"size": Vector2(PAGE_W, PAGE_H), "theme": UiTheme.build()}
+		"size": Vector2(PAGE_W, PAGE_H), "theme": _theme_in_use()}
+
+
+## The theme the journal is drawn with, which the interface sets on one of its parents.
+func _theme_in_use() -> Theme:
+	var node: Node = self
+	while node is Control:
+		if (node as Control).theme:
+			return (node as Control).theme
+		node = node.get_parent()
+	return UiTheme.build()
 ## The left page holds the story of the chosen entry and scrolls when the story runs long, so the book never grows.
 func _page(book: Control, x: int, _left: bool) -> VBoxContainer:
 	var area := ScrollContainer.new()
