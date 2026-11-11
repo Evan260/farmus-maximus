@@ -5,7 +5,11 @@ const DIR := "res://assets/sprites/buildings/"
 const Scaffold := preload("res://scripts/world/scaffold.gd")
 
 var id := ""
-var hovered := false
+var hovered := false:
+	set(value):
+		if value != hovered:
+			hovered = value
+			queue_redraw()
 var _sprite: Sprite2D
 var _shadow: Sprite2D
 var _look := ""
@@ -16,6 +20,8 @@ var _still: Texture2D
 var _clock := 0.0
 ## The fire's light, for a building such as the bakery whose oven glows while it bakes.
 var _lamp: Lamp
+## How many pixels of the progress bar were filled when it was last drawn, or -1 for no bar.
+var _bar_drawn := -1
 
 
 func _ready() -> void:
@@ -40,15 +46,25 @@ func _process(delta: float) -> void:
 	modulate = Color.WHITE if Game.zone_owned(zone) else Color(0.62, 0.6, 0.58)
 	if _look != _look_for_state():
 		_refresh()
-	queue_redraw()
+	var bar := _bar_pixels()
+	if bar != _bar_drawn:
+		_bar_drawn = bar
+		queue_redraw()
 
 
 func _draw() -> void:
 	var r := local_rect()
 	if hovered:
 		Ui.outline(self, r, Color(1, 0.96, 0.85, 0.7))
-	var b: Dictionary = Game.buildings[id]
 	var bar := Rect2(Vector2(r.position.x + r.size.x / 2 - 12, r.position.y - 5), Vector2(24, 3))
+	if _bar_drawn >= 0:
+		draw_rect(bar, Color(0.2, 0.14, 0.12, 0.8))
+		draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(_bar_drawn, 1)), Color(0.98, 0.84, 0.4))
+
+
+## How many of the progress bar's 22 pixels are filled, or -1 while there is no work to show.
+func _bar_pixels() -> int:
+	var b: Dictionary = Game.buildings[id]
 	var fill := -1.0
 	if b["state"] == "repairing":
 		fill = 1.0 - float(b["time_left"]) / float(Game.building_info(id).get("repair_seconds", 30))
@@ -56,9 +72,7 @@ func _draw() -> void:
 		fill = 1.0 - float(b["time_left"]) / Game.building_upgrade_seconds(id)
 	elif b["state"] == "working" and b["busy"]:
 		fill = float(b["progress"]) / Game.batch_seconds(id)
-	if fill >= 0.0:
-		draw_rect(bar, Color(0.2, 0.14, 0.12, 0.8))
-		draw_rect(Rect2(bar.position + Vector2.ONE, Vector2(roundf(22 * clampf(fill, 0, 1)), 1)), Color(0.98, 0.84, 0.4))
+	return int(roundf(22 * clampf(fill, 0, 1))) if fill >= 0.0 else -1
 
 
 ## Turns the millstone or the press screw while the building is making something, and rests it otherwise.
@@ -115,7 +129,7 @@ func _refresh() -> void:
 	var folder := "%s%s_working_anim/" % [DIR, id]
 	while picture == "working" and ResourceLoader.exists("%sframe_%02d.png" % [folder, _frames.size()]):
 		_frames.append(load("%sframe_%02d.png" % [folder, _frames.size()]))
-	var used := tex.get_image().get_used_rect()
+	var used := Hit.used_rect(tex)
 	_sprite.region_rect = used
 	var light: Array = Game.building_info(id).get("light", [])
 	if _lamp:
@@ -141,3 +155,4 @@ func _refresh() -> void:
 		_scaffold.visible = false
 	_shadow.texture = Lighting.ellipse_texture(used.size.x + 8, 7, Color(0.16, 0.11, 0.12, 0.28))
 	_shadow.position = Vector2(round(-used.size.x / 2.0) - 4, -5)
+	queue_redraw()

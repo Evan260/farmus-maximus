@@ -6,6 +6,7 @@ var plant_tops: Callable = func() -> Array: return []
 var _puddles: Array = []
 var _wet := 0.0
 var _t := 0.0
+var _shown := false
 
 
 func _ready() -> void:
@@ -18,7 +19,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_wet = move_toward(_wet, 1.0 if Game.calendar.wet() else 0.0, delta / 20.0)
-	queue_redraw()
+	# Without puddles or morning dew nothing is drawn, so the empty drawing is kept until there are.
+	var shown := _wet > 0.01 or (Game.day_time >= 5.0 and Game.day_time < 8.5)
+	if shown or _shown:
+		queue_redraw()
+	_shown = shown
 
 
 func _draw() -> void:

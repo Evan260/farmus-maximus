@@ -148,6 +148,8 @@ var _cart_load: Node2D
 var _cart_x := 0.0
 ## The near shaft and the harness straps, drawn over the donkey so the cart is visibly hitched to it.
 var _harness: Node2D
+## Where the cart and donkey stood when the harness was last drawn, and which way the cart faced.
+var _harness_drawn := Vector4.INF
 var _cart_returning := false
 ## What the cart is bringing home, told when it parks, or when it turns round if it is sent off again first.
 var _coins_coming := 0
@@ -542,7 +544,10 @@ func _process(delta: float) -> void:
 	_cart_back.position = _cart.position
 	_cart_back.flip_h = _cart.flip_h
 	rig.tip_cart(delta)
-	_harness.queue_redraw()
+	var hitch := Vector4(_cart.position.x, _cart.position.y, _donkey.position.x, float(_cart.flip_h))
+	if hitch != _harness_drawn:
+		_harness_drawn = hitch
+		_harness.queue_redraw()
 	# The wheel turns by the distance travelled over its radius, in steps fine enough to look smooth at this size.
 	var rolled := _cart.position.x - _cart_x
 	_cart_x = _cart.position.x

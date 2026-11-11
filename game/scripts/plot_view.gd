@@ -21,7 +21,11 @@ static var wind: ShaderMaterial
 static var _cache := {}
 
 var index := 0
-var hovered := false
+var hovered := false:
+	set(value):
+		if value != hovered:
+			hovered = value
+			queue_redraw()
 var _bed: Sprite2D
 var _shadow: Sprite2D
 var _crop: Sprite2D
@@ -29,6 +33,9 @@ var _visual := ""
 var _crop_id := ""
 var _hit := Rect2(Vector2(0, -5), Vector2(30, 8))
 var _time := 0.0
+## What the last drawing showed: the twinkle over a ripe plant and the strong cues setting.
+var _twinkled := false
+var _cues := false
 
 
 func _ready() -> void:
@@ -58,12 +65,17 @@ func _process(delta: float) -> void:
 			_crop.texture = texture_for(crop, visual, index)
 			# Plants of any size stand on the middle of the soil patch, measured from their lowest visible pixel,
 			# so 48-pixel olive trees are planted in the bed just like 32-pixel lavender.
-			var used := _crop.texture.get_image().get_used_rect()
+			var used := Hit.used_rect(_crop.texture)
 			# Mirrored plants are measured from the other side, so they stand on the middle of the soil just the same.
 			var left := (_crop.texture.get_width() - used.end.x) if _crop.flip_h else used.position.x
 			_crop.position = Vector2(roundf(15 - left - used.size.x / 2.0), 0 - used.end.y)
 		_hit = _hit_rect()
-	queue_redraw()
+		queue_redraw()
+	var twinkle := _visual == "bloom" and fmod(_time + index * 0.37, 1.6) < 0.8
+	if twinkle != _twinkled or Settings.strong_cues != _cues:
+		_twinkled = twinkle
+		_cues = Settings.strong_cues
+		queue_redraw()
 
 
 ## The picture for a crop at a stage, recoloured for lavender varieties and cached so each is made once.
@@ -152,7 +164,7 @@ func _hit_rect() -> Rect2:
 	var soil := Rect2(Vector2(0, -5), Vector2(30, 8))
 	if not _crop.visible or _crop.texture == null:
 		return soil
-	var used := Rect2(_crop.texture.get_image().get_used_rect())
+	var used := Rect2(Hit.used_rect(_crop.texture))
 	if _crop.flip_h:
 		used.position.x = _crop.texture.get_width() - used.position.x - used.size.x
 	used.position += _crop.position

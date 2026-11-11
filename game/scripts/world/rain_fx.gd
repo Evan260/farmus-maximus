@@ -6,6 +6,7 @@ var _rain := 0.0
 var _mist := 0.0
 var _t := 0.0
 var _fog: ColorRect
+var _shown := false
 
 
 func _ready() -> void:
@@ -43,7 +44,11 @@ func _process(delta: float) -> void:
 		if d.y > size.y:
 			d = Vector2(randf_range(0, size.x + 40), fposmod(d.y + 4.0, size.y + 4.0) - 4.0)
 		_drops[i] = d
-	queue_redraw()
+	# In dry weather nothing is drawn, so the empty drawing is kept until rain comes.
+	var shown := _rain > 0.01
+	if shown or _shown:
+		queue_redraw()
+	_shown = shown
 
 
 func _draw() -> void:

@@ -2,6 +2,7 @@ extends Node2D
 ## Fireflies over the lavender at night. They live on a layer the night tint does not reach, so they glow instead of darkening.
 
 var _flies: Array = []
+var _shown := false
 
 
 func _ready() -> void:
@@ -15,7 +16,11 @@ func _process(delta: float) -> void:
 		f["pos"] += (f["drift"] + Vector2(sin(f["phase"] * 0.7) * 3.0, cos(f["phase"] * 0.9) * 2.0)) * delta
 		if f["pos"].x < 0 or f["pos"].x > 2400 or f["pos"].y < 160 or f["pos"].y > 260:
 			f["pos"] = Vector2(randf_range(10, 2390), randf_range(170, 255))
-	queue_redraw()
+	# By day nothing is drawn, so the empty drawing is kept until night comes.
+	var shown := Lighting.night_amount(Game.day_time) >= 0.3
+	if shown or _shown:
+		queue_redraw()
+	_shown = shown
 
 
 func _draw() -> void:

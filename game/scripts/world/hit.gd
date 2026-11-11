@@ -11,14 +11,19 @@ static func frame_rect(owner: Node2D, s: AnimatedSprite2D) -> Rect2:
 	var tex := s.sprite_frames.get_frame_texture(s.animation, s.frame)
 	if tex == null:
 		return Rect2()
-	var key := tex.get_instance_id()
-	if not _used.has(key):
-		_used[key] = Rect2(tex.get_image().get_used_rect())
-	var used: Rect2 = _used[key]
+	var used := Rect2(used_rect(tex))
 	var size := tex.get_size()
 	var left := size.x - used.end.x if s.flip_h else used.position.x
 	var origin := s.offset - (size / 2.0 if s.centered else Vector2.ZERO)
 	return Rect2(_base(owner, s) + origin + Vector2(left, used.position.y), used.size).grow(2.0)
+
+
+## The picture's visible area, worked out once for each picture since reading a picture's pixels back is slow.
+static func used_rect(tex: Texture2D) -> Rect2i:
+	var key := tex.get_instance_id()
+	if not _used.has(key):
+		_used[key] = tex.get_image().get_used_rect()
+	return _used[key]
 
 
 ## True only on the frame's own pixels, so a click just past an animal's outline goes to whatever is behind it.

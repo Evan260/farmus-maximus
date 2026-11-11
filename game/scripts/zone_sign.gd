@@ -16,7 +16,11 @@ const NAIL := Color8(70, 66, 70)
 const SHADOW := Color(0.18, 0.14, 0.08, 0.3)
 
 var zone_id := ""
-var hovered := false
+var hovered := false:
+	set(value):
+		if value != hovered:
+			hovered = value
+			queue_redraw()
 var _lines: Array[String] = []
 var _board := Rect2()
 
@@ -33,7 +37,7 @@ func _process(_delta: float) -> void:
 		# The board is sized to its text, so a longer name or price never spills over the edge.
 		var size := Vector2(ceilf(width) + PAD.x * 2, LINE * _lines.size() + PAD.y * 2 - 2)
 		_board = Rect2(Vector2(-roundf(size.x / 2), SINK - POST - size.y), size)
-	queue_redraw()
+		queue_redraw()
 
 
 func _draw() -> void:
