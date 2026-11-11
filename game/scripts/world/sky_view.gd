@@ -46,6 +46,12 @@ var _galaxy_amount := 0.0
 var _galaxy_clock := 0.0
 ## "vertical" or "horizontal" to see one shape of the lights for checking; empty lets each night choose.
 var aurora_shape := ""
+## Each evening's rolls for the northern lights, their shape and the Milky Way, made once that evening.
+var _rolls_evening := 0
+var _rolled := false
+var _aurora_roll := 0.0
+var _shape_roll := 0.0
+var _galaxy_roll := 0.0
 
 
 func _ready() -> void:
@@ -213,12 +219,11 @@ func _process(delta: float) -> void:
 ## Returns whether tonight is a night for the lights, so the Milky Way keeps to other nights.
 func _show_aurora(delta: float, night: float) -> bool:
 	var evening: int = Game.calendar.day - (1 if Game.day_time < 12.0 else 0)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = evening * 7717 + 13
+	_roll(evening)
 	# Nobody should miss the lights by bad luck alone: after enough days without them, every clear night has them.
 	var overdue: bool = evening >= int(Data.get_value("calendar.aurora_sure_after_days", 30)) and not Game.journal.has("sighting:aurora")
-	var tonight := force_aurora or overdue or rng.randf() < float(Data.get_value("calendar.aurora_chance", 0.07))
-	var rising := rng.randf() < 0.5 if aurora_shape == "" else aurora_shape == "vertical"
+	var tonight := force_aurora or overdue or _aurora_roll < float(Data.get_value("calendar.aurora_chance", 0.07))
+	var rising := _shape_roll < 0.5 if aurora_shape == "" else aurora_shape == "vertical"
 	var clear: bool = Game.calendar.weather == "sun"
 	var target := smoothstep(0.75, 1.0, night) if tonight and clear else 0.0
 	# Sleeping fast-forwards the night, and the lights with it, though never so fast that they flicker.
@@ -236,17 +241,29 @@ func _show_aurora(delta: float, night: float) -> bool:
 	return tonight and not force_galaxy
 
 
+func _roll(evening: int) -> void:
+	if _rolled and evening == _rolls_evening:
+		return
+	_rolled = true
+	_rolls_evening = evening
+	var rng := RandomNumberGenerator.new()
+	rng.seed = evening * 7717 + 13
+	_aurora_roll = rng.randf()
+	_shape_roll = rng.randf()
+	rng.seed = evening * 3191 + 7
+	_galaxy_roll = rng.randf()
+
+
 ## On a clear night near the new moon the Milky Way can be seen arching over the farm, as it can far from any town.
 ## About half of those dark nights show it; a player who has never seen it gets it on the first dark night after a
 ## few weeks, so nobody misses it by bad luck.
 func _show_galaxy(delta: float, night: float, aurora_tonight: bool) -> void:
 	var evening: int = Game.calendar.day - (1 if Game.day_time < 12.0 else 0)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = evening * 3191 + 7
+	_roll(evening)
 	var dark := _lit_share(posmod(evening, MOON_CYCLE)) <= 0.3
 	var overdue: bool = evening >= int(Data.get_value("calendar.milky_way_sure_after_days", 20)) and not Game.journal.has("sighting:milky_way")
 	var chance := float(Data.get_value("calendar.milky_way_chance", 0.5))
-	var tonight := force_galaxy or (dark and not aurora_tonight and (overdue or rng.randf() < chance))
+	var tonight := force_galaxy or (dark and not aurora_tonight and (overdue or _galaxy_roll < chance))
 	var target := smoothstep(0.8, 1.0, night) if tonight and Game.calendar.weather == "sun" else 0.0
 	_galaxy_clock += delta
 	_galaxy_amount = target if force_galaxy else move_toward(_galaxy_amount, target, delta * minf(Game.speed, 40.0) / 20.0)
