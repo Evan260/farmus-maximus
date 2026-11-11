@@ -24,6 +24,8 @@ var _rain: AudioStreamPlayer
 var _next := 0
 var _day: AudioStreamPlayer
 var _night: AudioStreamPlayer
+## Headless runs have no sound device to mix the endless loops, and an unmixed stream is never let go of at exit.
+var _silent := DisplayServer.get_name() == "headless"
 
 
 func _ready() -> void:
@@ -65,7 +67,7 @@ func _process(delta: float) -> void:
 	if _rain:
 		_rain.volume_db = move_toward(_rain.volume_db, 0.0 if rain > 0.0 else -60.0, delta * 15.0)
 	# Music plays a track, then leaves several minutes of plain ambience before the next, so it never wears thin.
-	if not _music.playing:
+	if not _music.playing and not _silent:
 		_music_gap -= delta
 		if _music_gap <= 0.0:
 			var track := _pick_track()
@@ -209,5 +211,6 @@ func _ambience(name: String) -> AudioStreamPlayer:
 	# Each loop starts silent and is brought up by the hour and the weather, so none bursts in at full volume.
 	p.volume_db = -60.0
 	add_child(p)
-	p.play()
+	if not _silent:
+		p.play()
 	return p
