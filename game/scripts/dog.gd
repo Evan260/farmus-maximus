@@ -15,6 +15,7 @@ var max_x := 456.0
 var door_x := NAN
 ## Coat colour chosen by the player, applied to every frame.
 var coat := ""
+var breed := ""
 var sprite: AnimatedSprite2D
 var _shadow: Sprite2D
 var _state := ""
@@ -188,5 +189,5 @@ func _add(f: SpriteFrames, anim: String, folder: String, frames: Array, fps: flo
 	f.set_animation_speed(anim, fps)
 	f.set_animation_loop(anim, loop)
 	for i in frames:
-		f.add_frame(anim, Coats.recolour(load("%s%s/frame_%02d.png" % [dir, folder, i]), "dog", coat))
+		f.add_frame(anim, Coats.recolour(load("%s%s/frame_%02d.png" % [dir, folder, i]), "dog", coat, breed))
 

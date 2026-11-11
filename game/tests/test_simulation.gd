@@ -676,6 +676,8 @@ func _run() -> void:
 	game.from_dict(old)
 	_check(int(game.helpers.get("farmhand", 0)) == 2, "an old save's farmhand upgrade becomes the hired farmhand")
 
+	_dog_coats()
+
 	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
 	quit(1 if failures else 0)
 
@@ -742,6 +744,31 @@ func _best_quality(item: String, data_file: Node, seen: Dictionary) -> int:
 					counted += int(r["in"][input])
 			best = maxi(best, mini(2, int(round(sum / counted if counted > 0 else 0.0)) + top))
 	return best
+
+
+## Every dog breed comes in at least three coats, each its own look, and a saved "natural" coat still draws the breed as painted.
+func _dog_coats() -> void:
+	for breed in Coats.BREEDS["dog"]:
+		var coats: Dictionary = Coats.options("dog", breed)
+		_check(coats.size() >= 3, "the %s comes in at least three coats" % breed)
+		var picture: Texture2D = load(Coats.breed_dir("dog", breed) + "sit_east/frame_08.png")
+		var first: String = coats.keys()[0]
+		_check(Coats.recolour(picture, "dog", first, breed) == picture, "a %s in its first coat looks as it is painted" % breed)
+		for coat in coats.keys().slice(1):
+			_check(Coats.recolour(picture, "dog", coat, breed) != picture, "the %s's %s coat is a look of its own" % [breed, coat])
+		if breed != "hound":
+			_check(first == "natural", "a %s saved in its natural coat keeps that look" % breed)
+			# The headless renderer cannot read a made texture back, so the coats are compared pixel by pixel here.
+			var source := picture.get_image()
+			source.convert(Image.FORMAT_RGBA8)
+			var looks := {}
+			for coat in coats:
+				var out := PackedColorArray()
+				for y in source.get_height():
+					for x in source.get_width():
+						out.append(Coats.breed_pixel(breed, coat, source.get_pixel(x, y)))
+				looks[str(out).hash()] = coat
+			_check(looks.size() == coats.size(), "each of the %s's coats looks different" % breed)
 
 
 func _check(ok: bool, what: String) -> void:

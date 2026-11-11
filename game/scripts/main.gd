@@ -1771,7 +1771,8 @@ func _spawn_pets() -> void:
 	world.add_child(cat)
 	dog = Dog.new()
 	dog.coat = String(Game.pets.get("dog", {}).get("coat", ""))
-	dog.dir = Coats.breed_dir("dog", String(Game.pets.get("dog", {}).get("breed", "")))
+	dog.breed = String(Game.pets.get("dog", {}).get("breed", ""))
+	dog.dir = Coats.breed_dir("dog", dog.breed)
 	dog.position = Vector2(HOME + 345, 268)
 	dog.min_x = HOME + 10
 	dog.max_x = HOME + 456

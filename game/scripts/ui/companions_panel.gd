@@ -88,7 +88,7 @@ func _step(kind: String, by: int) -> void:
 func _show(kind: String) -> void:
 	var coat := String(_choice[kind]["coat"])
 	var picture := Coats.breed_dir(kind, _breed(kind)) + "east.png"
-	_pictures[kind].texture = Coats.recolour(load(picture), kind, coat) if ResourceLoader.exists(picture) else null
+	_pictures[kind].texture = Coats.recolour(load(picture), kind, coat, _breed(kind)) if ResourceLoader.exists(picture) else null
 	_coat_labels[kind].text = tr(String(Coats.options(kind, _breed(kind)).get(coat, coat)))
 	_breed_labels[kind].text = tr(String(Coats.BREEDS[kind].get(_breed(kind), "")))
 

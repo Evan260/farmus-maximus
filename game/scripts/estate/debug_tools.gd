@@ -169,8 +169,9 @@ func load_demo_state() -> void:
 			demo_maxed()
 		elif arg.begins_with("--pets="):
 			var breeds := arg.trim_prefix("--pets=").split(",")
-			Game.pets["dog"]["breed"] = breeds[0]
-			Game.pets["dog"]["coat"] = Coats.options("dog", breeds[0]).keys()[0]
+			var dog := breeds[0].split(":")
+			Game.pets["dog"]["breed"] = dog[0]
+			Game.pets["dog"]["coat"] = dog[1] if dog.size() > 1 else Coats.options("dog", dog[0]).keys()[0]
 			if breeds.size() > 1:
 				Game.pets["cat"]["breed"] = breeds[1]
 				Game.pets["cat"]["coat"] = Coats.options("cat", breeds[1]).keys()[0]

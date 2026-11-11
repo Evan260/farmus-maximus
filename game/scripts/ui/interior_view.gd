@@ -339,7 +339,7 @@ func _dress_room() -> void:
 		return
 	var dog: Dictionary = Game.pets.get("dog", {})
 	var dog_dir := Coats.breed_dir("dog", String(dog.get("breed", "")))
-	var dog_look := func(tex: Texture2D) -> Texture2D: return Coats.recolour(tex, "dog", String(dog.get("coat", "")))
+	var dog_look := func(tex: Texture2D) -> Texture2D: return Coats.recolour(tex, "dog", String(dog.get("coat", "")), String(dog.get("breed", "")))
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
 	# Lying down is the first four pictures of the sleep folder; the sleeping loop is the rest.
