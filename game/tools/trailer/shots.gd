@@ -1,9 +1,9 @@
 extends Node
 ## The trailer's scripted shots: each one sets the estate up, moves the camera and clicks things with a drawn pointer,
 ## so tools/trailer/make_trailer.py can record it in movie mode the same way every time.
-## Started by debug_tools.gd with --trailer-shot=NAME; the shot list and timings are in make_trailer.py.
+## Started by the Dev autoload with --trailer-shot=NAME; the shot list and timings are in make_trailer.py.
 
-## The estate scene, supplied by debug_tools.gd.
+## The estate scene, supplied by the Dev autoload.
 var m: Node
 var shot := ""
 var _pointer: Sprite2D

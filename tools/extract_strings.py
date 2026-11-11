@@ -25,7 +25,7 @@ ENGINE_LINE = re.compile(r"Audio\.|AudioServer|get_node|res://|user://|push_|pri
 # Names that stay as they are in every language: the default pet and farm names, the store, a locale code and buses.
 KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Dev", "Hant", "Master"}
 # Scripts whose text only the developer sees.
-DEV_SCRIPTS = {"dev.gd", "debug_tools.gd"}
+DEV_SCRIPTS = {"dev.gd"}
 
 
 def unescape(s):

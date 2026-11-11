@@ -8,7 +8,7 @@ Usage: python tools/record_clip.py NAME SECONDS [game flags ...]
   python tools/record_clip.py lavender 8 --estate --zone=home --hour=18 --no-hud
   python tools/record_clip.py hoopoe 6 --estate --zone=home --hour=10 --no-hud --hoopoe
 Writes marketing/recordings/clips/NAME.avi (kept out of git). Useful flags: --estate, --maxed, --zone=, --hour=, --weather=,
---no-hud, --galaxy, --rainbow, --hoopoe, --greet, --panel=, --inside (see game/scripts/estate/debug_tools.gd for all).
+--no-hud, --galaxy, --rainbow, --hoopoe, --greet, --panel=, --inside (see game/scripts/autoload/dev.gd for all).
 """
 import subprocess
 import sys

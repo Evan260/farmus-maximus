@@ -24,7 +24,6 @@ const Scaffold := preload("res://scripts/world/scaffold.gd")
 const Hud := preload("res://scripts/ui/hud.gd")
 const MarketView := preload("res://scripts/ui/market_view.gd")
 const InteriorView := preload("res://scripts/ui/interior_view.gd")
-const DebugTools := preload("res://scripts/estate/debug_tools.gd")
 const Scenery := preload("res://scripts/estate/scenery.gd")
 const RoadWorks := preload("res://scripts/estate/road_works.gd")
 const CartRig := preload("res://scripts/estate/cart_rig.gd")
@@ -81,7 +80,6 @@ var _fetches := {}
 var _picks := {}
 var signs: Array = []
 var hud: CanvasLayer
-var debug_tools: DebugTools
 var scenery: Scenery
 var road: RoadWorks
 var rig: CartRig
@@ -202,14 +200,14 @@ func _ready() -> void:
 		process_mode = Node.PROCESS_MODE_DISABLED
 		queue_free.call_deferred()
 		return
-	debug_tools = _part(DebugTools) as DebugTools
+	Dev.m = self
 	scenery = _part(Scenery) as Scenery
 	road = _part(RoadWorks) as RoadWorks
 	rig = _part(CartRig) as CartRig
 	villa = _part(VillaView) as VillaView
 	estate_width = float(Data.get_value("estate.width", 2400))
 	if Dev.state() != "":
-		debug_tools.load_demo_state()
+		Dev.load_demo_state()
 	# The sky has its own layer at screen resolution, outside the night tint, so clouds and the moon move smoothly
 	# and the night sky's stars keep their own colours.
 	_sky_layer = CanvasLayer.new()
@@ -413,7 +411,7 @@ func _ready() -> void:
 			go_to_town.call_deferred()
 			market.call_deferred("_open", arg.trim_prefix("--town="))
 		elif arg.begins_with("--panel="):
-			debug_tools.open_panel.call_deferred(arg.trim_prefix("--panel="))
+			Dev.open_panel.call_deferred(arg.trim_prefix("--panel="))
 	match Dev.get_arg("screen"):
 		"town":
 			go_to_town.call_deferred()

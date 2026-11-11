@@ -60,7 +60,7 @@ func _keys_in_scripts() -> Dictionary:
 		for sub in DirAccess.get_directories_at(dir):
 			dirs.append(dir.path_join(sub))
 		for file in DirAccess.get_files_at(dir):
-			if not file.ends_with(".gd") or file in ["dev.gd", "debug_tools.gd"]:
+			if not file.ends_with(".gd") or file == "dev.gd":
 				continue
 			var text := FileAccess.get_file_as_string(dir.path_join(file))
 			for call in ["tr(\"", "translate(\""]:
