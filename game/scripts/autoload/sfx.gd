@@ -12,7 +12,7 @@ const BUSES := ["Music", "Ambience", "Effects"]
 const SETTINGS_PATH := "user://settings.json"
 
 ## Volume per bus, 0 to 1.
-var volumes := {"Music": 0.7, "Ambience": 0.45, "Effects": 0.8}
+var volumes := {"Master": 1.0, "Music": 0.7, "Ambience": 0.45, "Effects": 0.8}
 var _sounds := {}
 var _takes := {}
 var _players: Array[AudioStreamPlayer] = []
@@ -163,6 +163,12 @@ func set_volume(bus: String, value: float) -> void:
 
 
 func _apply(bus: String) -> void:
+	# The master bus also falls quieter while other windows have the focus, so the window code sets it.
+	if bus == "Master":
+		var windowing := get_node_or_null("/root/Windowing")
+		if windowing:
+			windowing._apply_volume()
+		return
 	var idx := AudioServer.get_bus_index(bus)
 	AudioServer.set_bus_volume_db(idx, linear_to_db(maxf(volumes[bus], 0.0001)))
 	AudioServer.set_bus_mute(idx, volumes[bus] <= 0.001)

@@ -325,13 +325,13 @@ func _apply() -> void:
 
 func _apply_volume() -> void:
 	# Focus mode turns everything down a little, so a strip left running all day stays in the background.
-	var db := -8.0 if strip and focus_mode else 0.0
+	var db := linear_to_db(maxf(float(Sfx.volumes["Master"]), 0.0001)) + (-8.0 if strip and focus_mode else 0.0)
 	# A recording is made while other windows have the focus, so it always keeps its sound.
 	var behind := not _focused and Engine.get_write_movie_path() == ""
 	if behind and Settings.background_sound == "quieter":
 		db -= 12.0
 	AudioServer.set_bus_volume_db(0, db)
-	AudioServer.set_bus_mute(0, behind and Settings.background_sound == "muted")
+	AudioServer.set_bus_mute(0, (behind and Settings.background_sound == "muted") or float(Sfx.volumes["Master"]) <= 0.001)
 
 
 func _place_strip() -> void:

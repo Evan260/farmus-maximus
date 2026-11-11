@@ -35,22 +35,29 @@ func build() -> void:
 	top.add_child(gap)
 	match tab:
 		"Sound":
-			for bus in ["Music", "Ambience", "Effects"]:
+			for bus in [["Master", "Everything"], ["Music", "Music"], ["Effects", "Effects"], ["Ambience", "Ambience"]]:
 				var r := UiKit.row(body)
-				UiKit.label(r, tr(bus)).custom_minimum_size = Vector2(70, 0)
+				UiKit.label(r, tr(bus[1])).custom_minimum_size = Vector2(70, 0)
 				var slider := HSlider.new()
 				slider.min_value = 0.0
 				slider.max_value = 1.0
 				slider.step = 0.05
-				slider.value = Sfx.volumes[bus]
+				slider.value = Sfx.volumes[bus[0]]
 				slider.custom_minimum_size = Vector2(120, 8)
-				slider.value_changed.connect(func(v): Sfx.set_volume(bus, v))
+				slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				r.add_child(slider)
+				var amount := UiKit.label(r, _percent(slider.value))
+				amount.custom_minimum_size = Vector2(30, 0)
+				amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+				amount.add_theme_color_override("font_color", UiKit.FADED)
+				slider.value_changed.connect(func(v):
+					amount.text = _percent(v)
+					Sfx.set_volume(bus[0], v))
+			UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
+			UiKit.para(body, tr("Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks."), 230).add_theme_color_override("font_color", UiKit.FADED)
 			var sounds := {"full": "Full volume", "quieter": "Quieter", "muted": "Muted"}
 			UiKit.setting(body, tr("While you use other windows"), tr(sounds.get(Settings.background_sound, "Full volume")),
 				func(): Settings.set_value("background_sound", {"full": "quieter", "quieter": "muted", "muted": "full"}.get(Settings.background_sound, "full")))
-			UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
-			UiKit.para(body, tr("Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks."), 230).add_theme_color_override("font_color", UiKit.FADED)
 		"Display":
 			var sizes := {-1: "Smaller", 0: "Normal", 1: "Larger", 2: "Largest"}
 			UiKit.setting(body, tr("Interface size"), tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))
@@ -78,14 +85,14 @@ func build() -> void:
 					if loc.get_slice("_", 0) in UiKit.TEN_PIXEL:
 						b.add_theme_font_override("font", UiKit.ten_pixel_font())
 						b.add_theme_font_size_override("font_size", 10)
+			_toggle("Show tips", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
+			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
+			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))
 			UiKit.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
 			UiKit.setting(body, tr("Length of a day"), tr("%d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
 			_toggle("Progress while the game is closed", Settings.offline_progress, func(v): Settings.set_value("offline_progress", v))
 			_toggle("Flash the taskbar when something needs you", Settings.notifications, func(v): Settings.set_value("notifications", v))
-			_toggle("Show tips", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
 			_toggle("Open on the title screen", Settings.show_title, func(v): Settings.set_value("show_title", v))
-			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
-			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))
 			_toggle("Clear marker on ready plants", Settings.strong_cues, func(v): Settings.set_value("strong_cues", v))
 		"Keys":
 			for action in Settings.ACTIONS:
@@ -97,6 +104,10 @@ func build() -> void:
 
 func _toggle(text: String, on: bool, action: Callable) -> void:
 	UiKit.setting(body, tr(text), tr("On") if on else tr("Off"), func(): action.call(not on))
+
+
+func _percent(v: float) -> String:
+	return "%d%%" % int(roundf(v * 100.0))
 
 
 func _key_name(action: String) -> String:
