@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://cn8ghulijjkhq"
-path="res://.godot/imported/fusion-pixel-8px-proportional-zh_tw.ttf.woff2-2b465a84b044880c9257637ca904764d.fontdata"
+path="res://.godot/imported/fusion-pixel-8px-proportional-zh_tw.ttf.woff2-3bf173c8e048066508c1c9b504b0036f.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/fusion-pixel/fusion-pixel-8px-proportional-zh_tw.ttf.woff2"
-dest_files=["res://.godot/imported/fusion-pixel-8px-proportional-zh_tw.ttf.woff2-2b465a84b044880c9257637ca904764d.fontdata"]
+source_file="res://assets/fonts/fusion-pixel-8px-proportional-zh_tw.ttf.woff2"
+dest_files=["res://.godot/imported/fusion-pixel-8px-proportional-zh_tw.ttf.woff2-3bf173c8e048066508c1c9b504b0036f.fontdata"]
 
 [params]
 

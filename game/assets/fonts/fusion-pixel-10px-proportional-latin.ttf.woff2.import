@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://curgoqopl8ylq"
-path="res://.godot/imported/fusion-pixel-10px-proportional-latin.ttf.woff2-5531845f60678e635a21eff24dca2f3a.fontdata"
+path="res://.godot/imported/fusion-pixel-10px-proportional-latin.ttf.woff2-c1b4d96671c6d9492936d179c37d9b79.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/fusion-pixel/fusion-pixel-10px-proportional-latin.ttf.woff2"
-dest_files=["res://.godot/imported/fusion-pixel-10px-proportional-latin.ttf.woff2-5531845f60678e635a21eff24dca2f3a.fontdata"]
+source_file="res://assets/fonts/fusion-pixel-10px-proportional-latin.ttf.woff2"
+dest_files=["res://.godot/imported/fusion-pixel-10px-proportional-latin.ttf.woff2-c1b4d96671c6d9492936d179c37d9b79.fontdata"]
 
 [params]
 

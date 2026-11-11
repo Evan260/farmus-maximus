@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://dhltyyfnc0g3f"
-path="res://.godot/imported/fusion-pixel-8px-proportional-ja.ttf.woff2-b6faec96d36b6bf3aad72ec33fd49ab5.fontdata"
+uid="uid://4k3yk5hkurpj"
+path="res://.godot/imported/fusion-pixel-8px-proportional-ko.ttf.woff2-6b43345c974a1357bbe265b4c4d79121.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/fusion-pixel/fusion-pixel-8px-proportional-ja.ttf.woff2"
-dest_files=["res://.godot/imported/fusion-pixel-8px-proportional-ja.ttf.woff2-b6faec96d36b6bf3aad72ec33fd49ab5.fontdata"]
+source_file="res://assets/fonts/fusion-pixel-8px-proportional-ko.ttf.woff2"
+dest_files=["res://.godot/imported/fusion-pixel-8px-proportional-ko.ttf.woff2-6b43345c974a1357bbe265b4c4d79121.fontdata"]
 
 [params]
 

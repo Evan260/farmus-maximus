@@ -2,7 +2,7 @@ class_name UiKit
 ## Shared building blocks for the interface: the parchment theme, labels, buttons, item icons and price text.
 
 const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
-const FUSION := "res://assets/fonts/fusion-pixel/"
+const FUSION := "res://assets/fonts/"
 ## Languages whose letters the 8-pixel fonts lack (Cyrillic, and the Polish and Turkish accented letters), so their
 ## whole interface uses a 10-pixel font instead.
 const TEN_PIXEL := ["ru", "uk", "be", "bg", "pl", "tr"]
