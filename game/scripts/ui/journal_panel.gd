@@ -134,7 +134,7 @@ func _turn_to(to: String) -> void:
 	if not is_instance_valid(book) or not book.is_inside_tree() or _book != book:
 		_turning = false
 		return
-	Sfx.play("page_turn")
+	Audio.play("page_turn")
 	section = to
 	selected = ""
 	show_page()
@@ -283,7 +283,7 @@ func _grid(page: VBoxContainer, list: Array, heading: String) -> void:
 		if not _found(id):
 			for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
 				tile.add_theme_color_override(state, SILHOUETTE)
-		tile.pressed.connect(func(): Sfx.play("click", -8.0); selected = "" if selected == id else id; refresh())
+		tile.pressed.connect(func(): Audio.play("click", -8.0); selected = "" if selected == id else id; refresh())
 		grid.add_child(tile)
 
 

@@ -33,7 +33,7 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.pressed.connect(func(): Sfx.play("click", -8.0))
+	b.pressed.connect(func(): Audio.play("click", -8.0))
 	b.pressed.connect(action)
 	parent.add_child(b)
 	return b
@@ -114,7 +114,7 @@ static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 		b.add_theme_color_override(c, UiTheme.MUTED)
 	for c in ["font_pressed_color", "font_hover_pressed_color"]:
 		b.add_theme_color_override(c, UiTheme.INK)
-	b.pressed.connect(func(): Sfx.play("tab", -4.0))
+	b.pressed.connect(func(): Audio.play("tab", -4.0))
 	b.pressed.connect(action)
 	parent.add_child(b)
 	return b

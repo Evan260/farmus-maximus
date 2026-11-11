@@ -308,7 +308,7 @@ func _build_workshop_view() -> void:
 			pick.icon = load(path) if ResourceLoader.exists(path) else null
 			pick.toggle_mode = true
 			pick.button_pressed = int(b["recipe"]) == k
-			pick.pressed.connect(func(): Sfx.play("click", -8.0); Game.set_recipe(id, k))
+			pick.pressed.connect(func(): Audio.play("click", -8.0); Game.set_recipe(id, k))
 			choices.add_child(pick)
 	var recipe := Game.current_recipe(id)
 	var ins: Dictionary = recipe.get("in", {})

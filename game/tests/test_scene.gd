@@ -322,7 +322,7 @@ func _check_stone_donkey(main: Node2D) -> void:
 ## A test run is a trial run, so a changed setting, volume or window never reaches the player's own files.
 func _check_trial_run() -> void:
 	var settings: Node = root.get_node("Settings")
-	var sfx: Node = root.get_node("Sfx")
+	var sfx: Node = root.get_node("Audio")
 	var windowing: Node = root.get_node("Windowing")
 	_check(not settings.persist and settings.trial_run(), "a test run counts as a trial run")
 	if settings.persist:
@@ -342,7 +342,7 @@ func _check_trial_run() -> void:
 
 ## A sound player taken while it is still fading out plays the new sound at its own volume.
 func _check_fade_reuse() -> void:
-	var sfx: Node = root.get_node("Sfx")
+	var sfx: Node = root.get_node("Audio")
 	var sound: String = sfx._sounds.keys()[0]
 	var first: AudioStreamPlayer = sfx.play(sound)
 	sfx.fade_out(first, 1.0)

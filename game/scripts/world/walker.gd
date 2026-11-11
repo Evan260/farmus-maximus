@@ -310,9 +310,9 @@ func contains(point: Vector2) -> bool:
 ## A person answers a click with their greeting, the rustle of their clothes and, if there is one, their voice.
 func greet() -> void:
 	if react():
-		Sfx.play("rustle", -10.0, 0.1)
+		Audio.play("rustle", -10.0, 0.1)
 		if voice != "":
-			Sfx.play(voice, -4.0, 0.05)
+			Audio.play(voice, -4.0, 0.05)
 
 
 ## Something this person says when clicked: one of their own lines, or a common Latin exclamation of the day.

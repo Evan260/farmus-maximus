@@ -80,7 +80,7 @@ func _icon_button(parent: Node, icon: String, action: Callable) -> Button:
 	b.custom_minimum_size = Vector2(19, 19)
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if action.is_valid():
-		b.pressed.connect(func(): Sfx.play("click", -8.0))
+		b.pressed.connect(func(): Audio.play("click", -8.0))
 		b.pressed.connect(action)
 	parent.add_child(b)
 	return b

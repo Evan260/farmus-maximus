@@ -305,7 +305,7 @@ func enter() -> void:
 	_props.queue_redraw()
 	Game.add_stat("market_visits", 1)
 	Game.market.pack_cart()
-	Sfx.play("market_bell")
+	Audio.play("market_bell")
 	_signature = ""
 	_refresh()
 
@@ -325,7 +325,7 @@ func _open(id: String) -> void:
 	if not _panel.visible:
 		Ui.fade_in(_panel)
 	_signature = ""
-	Sfx.play("click", -8.0)
+	Audio.play("click", -8.0)
 	_refresh()
 
 
@@ -656,7 +656,7 @@ func _build_stalls() -> void:
 func _sell(key: String, n: int) -> void:
 	var coins: int = Game.market.sell(key, n)
 	if coins > 0:
-		Sfx.play("coins")
+		Audio.play("coins")
 
 
 func _build_orders() -> void:
@@ -685,7 +685,7 @@ func _deliver(order: Dictionary) -> void:
 	for i in Game.market.orders.size():
 		if is_same(Game.market.orders[i], order):
 			if Game.market.deliver(i):
-				Sfx.play("coins")
+				Audio.play("coins")
 			return
 
 
@@ -725,10 +725,10 @@ func _build_shop() -> void:
 		if block != "":
 			Ui.label(r, tr(block)).add_theme_color_override("font_color", UiTheme.MUTED)
 			continue
-		var buy := Ui.button(r, tr("Buy"), func(): if Game.market.buy(String(entry["id"])): Sfx.play("coins"))
+		var buy := Ui.button(r, tr("Buy"), func(): if Game.market.buy(String(entry["id"])): Audio.play("coins"))
 		buy.disabled = Game.missing(price) != ""
 		if entry.has("item"):
-			var five := Ui.button(r, tr("Buy 5"), func(): if Game.market.buy(String(entry["id"]), 5): Sfx.play("coins"))
+			var five := Ui.button(r, tr("Buy 5"), func(): if Game.market.buy(String(entry["id"]), 5): Audio.play("coins"))
 			five.disabled = Game.missing({"coins": int(entry["price"]) * 5}) != ""
 
 
@@ -788,5 +788,5 @@ func _build_decorations() -> void:
 		if block != "":
 			Ui.label(r, tr(block)).add_theme_color_override("font_color", UiTheme.MUTED)
 		else:
-			var b := Ui.button(r, tr("Buy"), func(): if Game.buy_decoration(id): Sfx.play("coins"))
+			var b := Ui.button(r, tr("Buy"), func(): if Game.buy_decoration(id): Audio.play("coins"))
 			b.disabled = Game.missing(price) != ""

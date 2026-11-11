@@ -279,8 +279,8 @@ func startle_fox(from: Vector2) -> void:
 	_fox_dir = 1.0 if _fox.position.x >= from.x else -1.0
 	_fox.flip_h = _fox_dir < 0
 	_fox_fleeing = 6.0
-	Sfx.play("thump", -6.0, 0.15)
-	Sfx.play("rustle", -8.0, 0.1)
+	Audio.play("thump", -6.0, 0.15)
+	Audio.play("rustle", -8.0, 0.1)
 
 
 ## The hoopoe under the pointer, while it stands on the ground in plain sight.
@@ -295,14 +295,14 @@ func call_hoopoe(from: Vector2) -> void:
 	_hoopoe_dir = 1.0 if _hoopoe.position.x >= from.x else -1.0
 	_hoopoe.flip_h = _hoopoe_dir < 0
 	_hoopoe_call = 0.0
-	Sfx.play("hoopoe", -4.0, 0.0)
+	Audio.play("hoopoe", -4.0, 0.0)
 
 
 ## Thumps a hind foot in alarm and bounds away from the click.
 func startle(rabbit: Dictionary, from: Vector2) -> void:
 	rabbit["dir"] = 1.0 if rabbit["pos"].x >= from.x else -1.0
 	rabbit["flee"] = 1.5
-	Sfx.play("thump", -2.0, 0.08)
+	Audio.play("thump", -2.0, 0.08)
 
 
 func _fade(creature: Dictionary) -> float:

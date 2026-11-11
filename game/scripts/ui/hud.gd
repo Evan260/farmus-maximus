@@ -156,7 +156,7 @@ func _ready() -> void:
 	visibility_changed.connect(_hold_news)
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
-	Game.message.connect(func(text): toast(tr(text)); Sfx.play("nope", -6.0))
+	Game.message.connect(func(text): toast(tr(text)); Audio.play("nope", -6.0))
 	Game.storage_full.connect(func(): toast(tr("The storehouse and the cart are full: send the cart to market")))
 	Game.caught_up.connect(_on_caught_up)
 	Game.achievement_unlocked.connect(_on_achievement)
@@ -166,9 +166,9 @@ func _ready() -> void:
 	Game.dog_found.connect(func(_id, text): toast(tr(text)))
 	Game.rescued.connect(func(gift):
 		_notice = {"id": "rescue_%d" % Time.get_ticks_msec(), "text": tr("Here are %d sestertii to start again, my dear heir. Plant something, and mind the shovel!") % gift}
-		Sfx.play("coins"))
+		Audio.play("coins"))
 	Game.planted.connect(func(_i): _notice = {})
-	Game.blessing_started.connect(func(god): Sfx.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
+	Game.blessing_started.connect(func(god): Audio.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % Game.helper_info(id).get("name", "")))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
 	if _wants_title():
@@ -484,7 +484,7 @@ func _open(w: WindowPanel) -> void:
 		w.close()
 	else:
 		if w == _journal:
-			Sfx.play("page_turn")
+			Audio.play("page_turn")
 		w.open()
 
 
@@ -589,13 +589,13 @@ func _on_achievement(a: Dictionary) -> void:
 		_triumph()
 		return
 	_achievements.add(a)
-	Sfx.play("flourish", -6.0)
+	Audio.play("flourish", -6.0)
 
 
 ## Earning every achievement is celebrated like a Roman triumph: a fanfare, rose petals thrown over the whole view, and
 ## a word of honour, while a golden laurel wreath is hung above the villa door.
 func _triumph() -> void:
-	Sfx.play("triumph")
+	Audio.play("triumph")
 	var petals := CPUParticles2D.new()
 	var view := _root.size
 	petals.position = Vector2(view.x / 2.0, -6)
@@ -894,7 +894,7 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 
 
 func select_tool(id: String) -> void:
-	Sfx.play("tab", -6.0)
+	Audio.play("tab", -6.0)
 	if id.begins_with("seed:"):
 		tool = "seed"
 		Game.selected_seed = id.get_slice(":", 1)

@@ -36,7 +36,7 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			_folded = not _folded
 			_box.visible = not _folded
-			Sfx.play("tab", -8.0))
+			Audio.play("tab", -8.0))
 	add_child(_portrait)
 	_box = PanelContainer.new()
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -78,7 +78,7 @@ func show_advice(id: String, text: String, guide := false) -> void:
 	tween.tween_property(_portrait, "position:x", 0.0, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_box.modulate.a = 0.0
 	tween.tween_property(_box, "modulate:a", 1.0, 0.3).set_delay(0.25)
-	Sfx.play("advice", -3.0)
+	Audio.play("advice", -3.0)
 
 
 ## The advice the player last closed with Got it.

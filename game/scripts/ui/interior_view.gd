@@ -620,10 +620,10 @@ func _stroke(pet: AnimatedSprite2D) -> void:
 	var dog := pet == _dog
 	# The dog thumps its tail as it stirs, gets up to wag, then settles back to sleep; the cat purrs in its sleep.
 	if dog:
-		Sfx.tail_thumps()
+		Audio.tail_thumps()
 		_wake_dog()
 	else:
-		Sfx.play("cat", -4.0)
+		Audio.play("cat", -4.0)
 	Game.add_stat("pets", 1)
 	_hearts.append({"at": pet.position + Vector2(6 if dog else 0, -26 if dog else -30), "age": 0.0})
 	if not dog:
@@ -678,8 +678,8 @@ func _weave() -> void:
 	_weaving = PASSES * PASS_SECONDS
 	# The shuttle hisses through, then the beater knocks the row home.
 	for k in PASSES:
-		get_tree().create_timer(PASS_SECONDS * k + 0.1).timeout.connect(func(): Sfx.play("rustle", -18.0, 0.15))
-		get_tree().create_timer(PASS_SECONDS * (k + 0.85)).timeout.connect(func(): Sfx.play("made", -14.0, 0.1))
+		get_tree().create_timer(PASS_SECONDS * k + 0.1).timeout.connect(func(): Audio.play("rustle", -18.0, 0.15))
+		get_tree().create_timer(PASS_SECONDS * (k + 0.85)).timeout.connect(func(): Audio.play("made", -14.0, 0.1))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -699,7 +699,7 @@ func _open(id: String) -> void:
 		Ui.fade_in(_panel)
 	_panel.visible = true
 	_signature = ""
-	Sfx.play("click", -8.0)
+	Audio.play("click", -8.0)
 	_refresh()
 
 
@@ -758,10 +758,10 @@ func _furnishing_card(id: String, named: bool) -> void:
 	var r := Ui.row(card)
 	var buy := Ui.button(r, tr("Buy for %d sestertii") % int(f.get("price", 0)), func():
 		if Game.buy_furnishing(id):
-			Sfx.play("coins", -6.0)
+			Audio.play("coins", -6.0)
 			# Each furnishing arrives with its own sound: a fire lit, pots set down.
 			for sound in f.get("sounds", []):
-				Sfx.play(String(sound), -2.0)
+				Audio.play(String(sound), -2.0)
 			_sprites[id].visible = true
 			Ui.fade_in(_sprites[id], 0.6)
 			_signature = "")

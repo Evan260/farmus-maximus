@@ -4,7 +4,7 @@ extends Node
 signal changed
 
 const FILE := "settings.cfg"
-## The settings kept in each section of settings.cfg; the volumes and the strip's own are kept there by Sfx and Windowing.
+## The settings kept in each section of settings.cfg; the volumes and the strip's own are kept there by Audio and Windowing.
 const PLAY := ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "show_title", "show_tutorial", "tooltips", "language", "day_minutes"]
 const DISPLAY := ["ui_scale_step", "fullscreen", "low_power"]
 const SOUND := ["background_sound"]

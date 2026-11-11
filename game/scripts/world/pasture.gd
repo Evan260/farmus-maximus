@@ -30,10 +30,10 @@ func _process(delta: float) -> void:
 	# The rooster greets the morning, and now and then a goat has something to say, heard only near the pasture.
 	var near := _within_earshot()
 	if near and not _hens.is_empty() and _last_hour < 6.0 and Game.day_time >= 6.0:
-		Sfx.play("rooster", -6.0)
+		Audio.play("rooster", -6.0)
 	_last_hour = Game.day_time
 	if near and not _goats.is_empty() and randf() < delta / 90.0:
-		Sfx.play("goat", -10.0)
+		Audio.play("goat", -10.0)
 	_sync -= delta
 	if _sync <= 0.0:
 		_sync = 1.0

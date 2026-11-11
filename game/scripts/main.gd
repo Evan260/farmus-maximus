@@ -376,8 +376,8 @@ func _ready() -> void:
 	add_child(interior)
 	hud.house_requested.connect(go_inside)
 
-	Game.planted.connect(func(i): Sfx.play("plant"); _view(i).bounce())
-	Game.dug_up.connect(func(i): Sfx.play("plant", -4.0); _dust(_view(i).position + Vector2(15, -2), 10))
+	Game.planted.connect(func(i): Audio.play("plant"); _view(i).bounce())
+	Game.dug_up.connect(func(i): Audio.play("plant", -4.0); _dust(_view(i).position + Vector2(15, -2), 10))
 	# A handler that never touches the scene is a method rather than a lambda, so it is disconnected when the scene is rebuilt.
 	Game.unlocked.connect(_on_unlocked)
 	Game.harvested.connect(_on_harvested)
@@ -432,12 +432,12 @@ func _ride_to_market() -> void:
 		go_to_town()
 		return
 	_riding = true
-	var wheels := Sfx.play("cart_stone" if _paved_reach > _cart.position.x + 60.0 else "cart_dirt")
+	var wheels := Audio.play("cart_stone" if _paved_reach > _cart.position.x + 60.0 else "cart_dirt")
 	rig.face_rig(false)
 	_donkey.play("walk")
 	rig.move_rig(_cart.position.x + 220.0, 220.0 / 90.0)
 	await get_tree().create_timer(2.1).timeout
-	Sfx.fade_out(wheels, 1.2)
+	Audio.fade_out(wheels, 1.2)
 	_riding = false
 	# A player who switched to the strip or went indoors on the way stays at home, and the cart comes back.
 	if Windowing.strip or interior.visible:
@@ -557,11 +557,11 @@ func _process(delta: float) -> void:
 		_hammer_timer -= delta
 		if _hammer_timer <= 0.0:
 			_hammer_timer = randf_range(1.2, 2.6)
-			Sfx.play("hammer", -10.0, 0.15)
+			Audio.play("hammer", -10.0, 0.15)
 			_dust(_villa.position + Vector2(randf_range(10, _villa.region_rect.size.x - 10), _villa.region_rect.size.y - 4), 6)
 	for v in building_views:
 		if Game.buildings[v.id]["state"] in ["repairing", "upgrading"] and not Game.is_night() and randf() < delta * 0.5:
-			Sfx.play("hammer", -14.0, 0.2)
+			Audio.play("hammer", -14.0, 0.2)
 			_dust(v.position + Vector2(randf_range(-20, 20), -2), 4)
 	_update_life(delta)
 	if Windowing.strip and Windowing.follow:
@@ -599,7 +599,7 @@ func _update_life(delta: float) -> void:
 		_dog_dig_check = 5.0
 		if Game.dog_timer <= 0.0 and Lighting.night_amount(Game.day_time) < 0.5:
 			_dust(dog.position + Vector2(8, -2), 8)
-			Sfx.play("plant", -6.0)
+			Audio.play("plant", -6.0)
 			Game.dog_dig()
 	var trader: Node2D = _helpers.get("trader")
 	if trader:
@@ -1057,7 +1057,7 @@ func _world_input(event: InputEvent) -> void:
 				# A press that did not move far is a click; one that moved was a drag across the estate.
 				if _pressed and not _dragging and event.button_index == MOUSE_BUTTON_LEFT:
 					if hud.close_windows():
-						Sfx.play("click", -10.0)
+						Audio.play("click", -10.0)
 					else:
 						_click(world.get_global_mouse_position())
 				_pressed = false
@@ -1133,7 +1133,7 @@ func _call_out(animal: String, point: Vector2) -> void:
 			bob.tween_property(_stork, "position", home, 0.09)
 		bob.tween_callback(func(): _stork.remove_meta("bobbing"))
 	var sound: String = {"hen": "cluck", "goat": "goat", "stork": "stork", "donkey": "donkey"}.get(animal, "")
-	Sfx.play(sound, -4.0, 0.1)
+	Audio.play(sound, -4.0, 0.1)
 	_hearts(point + Vector2(0, -6))
 
 
@@ -1403,7 +1403,7 @@ func _cart_rect() -> Rect2:
 
 func _on_harvested(plot_index: int, amount: int) -> void:
 	var v := _view(plot_index)
-	Sfx.play("harvest")
+	Audio.play("harvest")
 	v.bounce()
 	hud.float_text(v.position + Vector2(10, -34) - _camera.position, "+%d" % amount)
 	var colours := [Color(0.74, 0.57, 0.87), Color(0.57, 0.38, 0.69), Color(0.62, 0.66, 0.52)]
@@ -1422,7 +1422,7 @@ func _on_harvested(plot_index: int, amount: int) -> void:
 
 
 func _on_building_made(id: String, item: String, amount: int) -> void:
-	Sfx.play({"aged_wine": "cork", "bread": "oven", "herb_bread": "oven"}.get(item, "made"), -4.0)
+	Audio.play({"aged_wine": "cork", "bread": "oven", "herb_bread": "oven"}.get(item, "made"), -4.0)
 	for v in building_views:
 		if v.id == id:
 			hud.float_text(v.position + Vector2(-16, -v.local_rect().size.y - 14) - _camera.position, "+%d %s" % [amount, Ui.mid(tr(String(Data.get_value("items.%s.name" % item, item))))])
@@ -1438,23 +1438,23 @@ func _on_building_changed(id: String) -> void:
 			continue
 		match state:
 			"owned":
-				Sfx.play("coins")
+				Audio.play("coins")
 				hud.toast(tr("You own the %s. Repair it to put it to work.") % name)
 			"repairing":
-				Sfx.play("hammer")
+				Audio.play("hammer")
 				_dust(v.position, 14)
 				hud.toast(tr("Repairs have begun"))
 			"upgrading":
-				Sfx.play("hammer")
+				Audio.play("hammer")
 				_dust(v.position, 14)
 				hud.toast(tr("Builders are improving the %s") % name)
 			"working":
 				if _building_states.get(id, "") == "upgrading":
-					Sfx.play("built")
+					Audio.play("built")
 					_dust(v.position, 24)
 					hud.toast(tr("The %s is now level %d") % [name, int(Game.buildings[id]["level"]) + 1])
 				elif int(Game.buildings[id]["level"]) == 0 and not Game.buildings[id]["busy"] and Game.buildings[id]["queue"].is_empty():
-					Sfx.play("built")
+					Audio.play("built")
 					_dust(v.position, 24)
 					hud.toast(tr("The %s is working again!") % name)
 
@@ -1465,7 +1465,7 @@ func _note_state(id: String, state: String) -> void:
 
 
 func _on_zone_bought(zone_id: String) -> void:
-	Sfx.play("flourish")
+	Audio.play("flourish")
 	var z := Game.zone_info(zone_id)
 	_dust(Vector2(float(z["x"]) + 240, 250), 30)
 	hud.toast(tr("The %s is yours!") % Ui.mid(tr(String(z.get("name", "")))))
@@ -1473,30 +1473,30 @@ func _on_zone_bought(zone_id: String) -> void:
 
 func _on_weather_changed(weather: String, before: String) -> void:
 	if weather == "rain":
-		Sfx.play("rain_start")
+		Audio.play("rain_start")
 		hud.toast(tr("Rain is falling: the fields are watered"))
 	elif weather == "mist" and Lighting.night_amount(Game.day_time) < 0.6:
 		Game.discover("sighting:mist")
 
 
 func _on_unlocked(_plot_index: int) -> void:
-	Sfx.play("unlock")
+	Audio.play("unlock")
 
 
 ## A new animal announces itself in its own voice.
 func _on_animal_added(kind: String) -> void:
-	Sfx.play({"hen": "cluck", "goat": "goat"}.get(kind, "unlock"))
+	Audio.play({"hen": "cluck", "goat": "goat"}.get(kind, "unlock"))
 
 
 ## A new helper arrives with a greeting.
 func _on_helper_arrived(id: String) -> void:
-	Sfx.play("rustle", -6.0)
-	Sfx.play("salve_woman" if id in WOMEN else "salve_man", -4.0)
+	Audio.play("rustle", -6.0)
+	Audio.play("salve_woman" if id in WOMEN else "salve_man", -4.0)
 
 
 ## A new decoration is knocked into place.
 func _on_decoration_bought(_id: String) -> void:
-	Sfx.play("made", -4.0)
+	Audio.play("made", -4.0)
 
 
 ## A cart sent off while the donkey is stabled has the donkey fetched and put in the shafts straight away.
@@ -1519,7 +1519,7 @@ func _on_cart_left(_items: int, value: int) -> void:
 		_show_cart_away()
 		return
 	_hitch_donkey()
-	Sfx.play("cart")
+	Audio.play("cart")
 	# A trader can send the cart off again while it is still driving home; it turns round, and is no longer returning.
 	if _cart_returning:
 		hud.toast(tr("The cart is back: +%d sestertii") % _coins_coming)
@@ -1533,7 +1533,7 @@ func _on_cart_left(_items: int, value: int) -> void:
 
 
 func _on_cart_returned(coins: int) -> void:
-	Sfx.play("cart")
+	Audio.play("cart")
 	# Coming home the donkey leads from the right, so the rig is mirrored with the donkey in front.
 	rig.face_rig(true)
 	_cart_returning = true
@@ -1550,7 +1550,7 @@ func _on_cart_home(coins: int) -> void:
 	_dust(Vector2(CART_HOME_X + 40, RIG_BASE), 10)
 	_cart_returning = false
 	rig.park_rig()
-	Sfx.play("coins")
+	Audio.play("coins")
 	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46) - _camera.position, "+%d" % coins)
 	_burst(Vector2(CART_HOME_X + 30, RIG_BASE - 20), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
 	hud.toast(tr("The cart is back: +%d sestertii") % coins)
@@ -1583,9 +1583,9 @@ func _show_cart_away() -> void:
 
 func _on_dog_petted(sleepy := false) -> void:
 	if sleepy:
-		Sfx.tail_thumps()
+		Audio.tail_thumps()
 	else:
-		Sfx.play("dog", -9.0, 0.06)
+		Audio.play("dog", -9.0, 0.06)
 	Game.add_stat("pets", 1)
 	_hearts(dog.position + Vector2(0, -32))
 
@@ -1602,7 +1602,7 @@ func _hearts(at: Vector2) -> void:
 
 
 func _on_build_started() -> void:
-	Sfx.play("hammer")
+	Audio.play("hammer")
 	villa.place_villa()
 	_villa_scaffold.visible = true
 	if not Settings.reduced_motion:
@@ -1617,7 +1617,7 @@ func _on_villa_finished() -> void:
 		_villa_scaffold.visible = false
 	else:
 		_villa_scaffold.sink().tween_callback(func(): _villa_scaffold.visible = Game.villa_build["active"])
-	Sfx.play("built")
+	Audio.play("built")
 	hud.toast(tr("The villa has been restored: %s!") % Ui.mid(tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"]))))
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
 	_villa.modulate = Color(1.6, 1.5, 1.3)
@@ -1663,7 +1663,7 @@ func _project_site(id: String) -> Rect2:
 
 
 func _on_upgrade_started(id: String) -> void:
-	Sfx.play("hammer")
+	Audio.play("hammer")
 	var site := _project_site(id)
 	_dust(Vector2(site.position.x + site.size.x / 2.0, site.end.y), 14)
 	hud.toast(tr("The builders have started work"))
@@ -1695,15 +1695,15 @@ func _on_upgrade_bought(id: String) -> void:
 	if id == "storage" and _store_scaffold.visible:
 		_store_scaffold.sink().tween_callback(func(): _store_scaffold.visible = Game.projects.has("storage"))
 	if id in Game.BUILT_UPGRADES:
-		Sfx.play("built")
+		Audio.play("built")
 		hud.toast(tr("The work is finished"))
 	if id == "cart_speed":
 		road.pave_road()
 		_dust(Vector2(cam_x + _view_size().x / 2.0, 280), 24)
 	if id == "cart_capacity":
 		# The new cart is knocked together on the spot and rolled out.
-		Sfx.play("made", -4.0)
-		Sfx.play("cart", -6.0)
+		Audio.play("made", -4.0)
+		Audio.play("cart", -6.0)
 		rig.size_cart()
 		_dust(Vector2(_cart.position.x + 30, RIG_BASE), 14)
 
@@ -1775,7 +1775,7 @@ func _spawn_pets() -> void:
 	cat.min_x = HOME + 385
 	cat.max_x = HOME + 452
 	cat.position = Vector2(HOME + 420, 246)
-	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Sfx.play("cat", -4.0, 0.08); Game.add_stat("pets", 1))
+	cat.petted.connect(func(): _hearts(cat.position + Vector2(0, -18)); Audio.play("cat", -4.0, 0.08); Game.add_stat("pets", 1))
 	world.add_child(cat)
 	dog = Dog.new()
 	dog.coat = String(Game.pets.get("dog", {}).get("coat", ""))

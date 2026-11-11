@@ -42,7 +42,7 @@ func build() -> void:
 				slider.min_value = 0.0
 				slider.max_value = 1.0
 				slider.step = 0.05
-				slider.value = Sfx.volumes[bus[0]]
+				slider.value = Audio.volumes[bus[0]]
 				slider.custom_minimum_size = Vector2(120, 8)
 				slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				r.add_child(slider)
@@ -52,8 +52,8 @@ func build() -> void:
 				amount.add_theme_color_override("font_color", UiTheme.MUTED)
 				slider.value_changed.connect(func(v):
 					amount.text = _percent(v)
-					Sfx.set_volume(bus[0], v))
-			var music := Ui.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
+					Audio.set_volume(bus[0], v))
+			var music := Ui.setting(body, tr("Your own music"), tr("Open folder"), func(): Audio.open_music_folder())
 			Ui.tip_on(music, "Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks.")
 			var sounds := {"full": "Full volume", "quieter": "Quieter", "muted": "Muted"}
 			Ui.setting(body, tr("While you use other windows"), tr(sounds.get(Settings.background_sound, "Full volume")),
