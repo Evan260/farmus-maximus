@@ -42,7 +42,7 @@ func draw_villa_overlay() -> void:
 ## stage of the farmhouse is drawn a different size.
 func villa_ladders() -> Array:
 	var width := villa_rect().size.x
-	return Balance.get_value("villa.ladders", []).map(func(share): return roundf(width * float(share)))
+	return Data.get_value("villa.ladders", []).map(func(share): return roundf(width * float(share)))
 
 
 func place_villa() -> void:

@@ -133,7 +133,7 @@ func _ready() -> void:
 	_base.scale = Vector2(DETAIL, DETAIL)
 	_base.position = -Vector2(SIDE, ABOVE)
 	_scene.add_child(_base)
-	for id in Balance.get_value("interior.furnishings", {}):
+	for id in Data.get_value("interior.furnishings", {}):
 		if not _spots.has(id) or not ResourceLoader.exists(DIR + id + ".png"):
 			continue
 		var s := Sprite2D.new()
@@ -457,7 +457,7 @@ func _draw_glow() -> void:
 func _draw_marks() -> void:
 	if ruined():
 		return
-	for id in Balance.get_value("interior.furnishings", {}):
+	for id in Data.get_value("interior.furnishings", {}):
 		var rects: Array = Game.furnishing_info(id).get("rects", [])
 		var shape := _shape(id)
 		if id == _hovered and not shape.is_empty():
@@ -568,7 +568,7 @@ func _shape(id: String) -> PackedVector2Array:
 func _spot_at(point: Vector2) -> String:
 	if ruined():
 		return ""
-	for id in Balance.get_value("interior.furnishings", {}):
+	for id in Data.get_value("interior.furnishings", {}):
 		var shape := _shape(id)
 		if not shape.is_empty():
 			if Geometry2D.is_point_in_polygon(point, shape):
@@ -725,7 +725,7 @@ func _refresh() -> void:
 		Ui.para(_list, tr("Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room."), 210)
 		return
 	_title.text = tr(String(Game.furnishing_info(_selected).get("name", ""))) if _selected != "" else tr("Furnish the house")
-	var ids: Array = [_selected] if _selected != "" else Balance.get_value("interior.furnishings", {}).keys()
+	var ids: Array = [_selected] if _selected != "" else Data.get_value("interior.furnishings", {}).keys()
 	for id in ids:
 		_furnishing_card(String(id), _selected == "")
 	if _selected != "":

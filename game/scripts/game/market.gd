@@ -26,9 +26,9 @@ func price(key: String) -> int:
 	p *= maxf(float(_cfg("demand_floor", 0.5)), 1.0 - float(_cfg("demand_step", 0.04)) * int(sold_today.get(base, 0)))
 	if base in favourites:
 		p *= float(_cfg("favourite_bonus", 1.5))
-	p *= float(Balance.get_value("items.%s.seasons.%s" % [base, _game.calendar.season_id()], 1.0))
+	p *= float(Data.get_value("items.%s.seasons.%s" % [base, _game.calendar.season_id()], 1.0))
 	if base in _game.calendar.festival().get("items", []):
-		p *= float(Balance.get_value("calendar.festival_bonus", 1.5))
+		p *= float(Data.get_value("calendar.festival_bonus", 1.5))
 	if _game.blessed("mercury"):
 		p *= float(_cfg("mercury_bonus", 1.15))
 	return maxi(1, int(round(p)))
@@ -98,8 +98,8 @@ func note_sold(key: String, amount: int) -> void:
 func new_day() -> void:
 	sold_today = {}
 	var pool: Array = []
-	for item in Balance.get_value("items", {}):
-		if Balance.get_value("items.%s.kind" % item, "good") == "good" and _game.journal.has("item:" + item):
+	for item in Data.get_value("items", {}):
+		if Data.get_value("items.%s.kind" % item, "good") == "good" and _game.journal.has("item:" + item):
 			pool.append(item)
 	if pool.size() < 4:
 		pool = ["lavender", "wheat", "olives", "dried_lavender", "honey", "flour"]
@@ -123,8 +123,8 @@ func advance(dt: float) -> void:
 func add_order() -> bool:
 	var festival: Dictionary = _game.calendar.festival()
 	var pool: Array = []
-	for item in Balance.get_value("items", {}):
-		if Balance.get_value("items.%s.kind" % item, "good") == "good" and _game.journal.has("item:" + item):
+	for item in Data.get_value("items", {}):
+		if Data.get_value("items.%s.kind" % item, "good") == "good" and _game.journal.has("item:" + item):
 			pool.append(item)
 	var themed := pool.filter(func(i): return i in festival.get("items", []))
 	if not themed.is_empty():
@@ -219,7 +219,7 @@ func buy(id: String, qty := 1) -> bool:
 
 
 func _cfg(path: String, fallback: Variant) -> Variant:
-	return Balance.get_value("market." + path, fallback)
+	return Data.get_value("market." + path, fallback)
 
 
 func to_dict() -> Dictionary:

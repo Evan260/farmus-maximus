@@ -216,8 +216,8 @@ func _show_aurora(delta: float, night: float) -> bool:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = evening * 7717 + 13
 	# Nobody should miss the lights by bad luck alone: after enough days without them, every clear night has them.
-	var overdue: bool = evening >= int(Balance.get_value("calendar.aurora_sure_after_days", 30)) and not Game.journal.has("sighting:aurora")
-	var tonight := force_aurora or overdue or rng.randf() < float(Balance.get_value("calendar.aurora_chance", 0.07))
+	var overdue: bool = evening >= int(Data.get_value("calendar.aurora_sure_after_days", 30)) and not Game.journal.has("sighting:aurora")
+	var tonight := force_aurora or overdue or rng.randf() < float(Data.get_value("calendar.aurora_chance", 0.07))
 	var rising := rng.randf() < 0.5 if aurora_shape == "" else aurora_shape == "vertical"
 	var clear: bool = Game.calendar.weather == "sun"
 	var target := smoothstep(0.75, 1.0, night) if tonight and clear else 0.0
@@ -244,8 +244,8 @@ func _show_galaxy(delta: float, night: float, aurora_tonight: bool) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = evening * 3191 + 7
 	var dark := _lit_share(posmod(evening, MOON_CYCLE)) <= 0.3
-	var overdue: bool = evening >= int(Balance.get_value("calendar.milky_way_sure_after_days", 20)) and not Game.journal.has("sighting:milky_way")
-	var chance := float(Balance.get_value("calendar.milky_way_chance", 0.5))
+	var overdue: bool = evening >= int(Data.get_value("calendar.milky_way_sure_after_days", 20)) and not Game.journal.has("sighting:milky_way")
+	var chance := float(Data.get_value("calendar.milky_way_chance", 0.5))
 	var tonight := force_galaxy or (dark and not aurora_tonight and (overdue or rng.randf() < chance))
 	var target := smoothstep(0.8, 1.0, night) if tonight and Game.calendar.weather == "sun" else 0.0
 	_galaxy_clock += delta

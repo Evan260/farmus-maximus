@@ -90,7 +90,7 @@ func _remember_slot() -> void:
 
 func _process(delta: float) -> void:
 	_timer += delta
-	if _timer >= float(Balance.get_value("save.interval_seconds", 60)):
+	if _timer >= float(Data.get_value("save.interval_seconds", 60)):
 		_timer = 0.0
 		save_game()
 
@@ -176,7 +176,7 @@ func load_game(n: int) -> void:
 		# so work that finished while the game was closed is finished on opening; only a longer absence gets a summary.
 		if Settings.offline_progress and away > 0.0:
 			var summary := Game.simulate_offline(away)
-			if away >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
+			if away >= float(Data.get_value("offline.min_seconds_for_summary", 30)):
 				pending_summary = summary
 		return
 	has_farm = false

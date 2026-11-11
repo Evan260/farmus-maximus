@@ -24,13 +24,13 @@ func _milestones() -> void:
 			all_top = false
 	if all_top:
 		_note("all_top", "every building at its top level")
-	if game.decorations.size() >= root.get_node("Balance").get_value("decorations", {}).size():
+	if game.decorations.size() >= root.get_node("Data").get_value("decorations", {}).size():
 		_note("all_decor", "every decoration bought")
 
 
 func _act() -> void:
 	# Sow something not yet grown wherever it will grow, before the usual planting fills the rest.
-	var balance := root.get_node("Balance")
+	var balance := root.get_node("Data")
 	for i in game.plots.size():
 		var p: Dictionary = game.plots[i]
 		if not p["unlocked"] or p["crop"] != "":
@@ -61,9 +61,9 @@ func _act() -> void:
 	for id in game.buildings:
 		_buy_materials(game.building_action(id).get("cost", {}))
 		game.do_building_action(id)
-	for id in root.get_node("Balance").get_value("decorations", {}):
+	for id in root.get_node("Data").get_value("decorations", {}):
 		game.buy_decoration(id)
-	for id in root.get_node("Balance").get_value("interior.furnishings", {}):
+	for id in root.get_node("Data").get_value("interior.furnishings", {}):
 		if game.furnishing_block(id) == "" and game.coins >= int(game.furnishing_info(id).get("price", 0)):
 			game.buy_furnishing(id)
 	# A player stops to pet the dog every so often.
@@ -73,7 +73,7 @@ func _act() -> void:
 
 func _report() -> void:
 	var missing := []
-	for a in root.get_node("Balance").get_value("achievements", []):
+	for a in root.get_node("Data").get_value("achievements", []):
 		if not game.journal.achievements.has(a["id"]):
 			missing.append(a["id"])
 	var pages := []
@@ -81,5 +81,5 @@ func _report() -> void:
 		if not game.journal.has(e["id"]):
 			pages.append(e["id"])
 	print("missing achievements: ", missing)
-	print("missing decorations: ", root.get_node("Balance").get_value("decorations", {}).keys().filter(func(d): return not game.decorations.has(d)), " aurei ", game.aureus)
+	print("missing decorations: ", root.get_node("Data").get_value("decorations", {}).keys().filter(func(d): return not game.decorations.has(d)), " aurei ", game.aureus)
 	print("missing journal pages: ", pages)

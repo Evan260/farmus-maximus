@@ -695,15 +695,15 @@ func _build_prices() -> void:
 		Ui.para(_list, "%s: %s" % [tr(String(festival["name"])), tr(String(festival.get("about", "")))], 280)
 	var fav := []
 	for item in Game.market.favourites:
-		fav.append(Ui.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
+		fav.append(Ui.mid(tr(String(Data.get_value("items.%s.name" % item, item)))))
 	Ui.para(_list, tr("Wanted today: %s") % ", ".join(fav), 280)
 	Ui.para(_list, tr("Selling many of one good lowers its price until tomorrow, so a mix pays best."), 280).add_theme_color_override("font_color", UiTheme.MUTED)
-	for item in Balance.get_value("items", {}):
-		if Balance.get_value("items.%s.kind" % item, "good") != "good" or not Game.journal.has("item:" + item):
+	for item in Data.get_value("items", {}):
+		if Data.get_value("items.%s.kind" % item, "good") != "good" or not Game.journal.has("item:" + item):
 			continue
 		var r := Ui.row(_list)
 		Ui.icon(r, item)
-		Ui.label(r, "%s: %d  (%s %d)" % [tr(String(Balance.get_value("items.%s.name" % item, item))), Game.market.price(item), tr("cart"), Game.market.cart_price(item)])
+		Ui.label(r, "%s: %d  (%s %d)" % [tr(String(Data.get_value("items.%s.name" % item, item))), Game.market.price(item), tr("cart"), Game.market.cart_price(item)])
 
 
 func _build_shop() -> void:
@@ -770,7 +770,7 @@ func _build_land() -> void:
 
 
 func _build_decorations() -> void:
-	for id in Balance.get_value("decorations", {}):
+	for id in Data.get_value("decorations", {}):
 		var d: Dictionary = Game.decoration_info(id)
 		var r := Ui.row(_list)
 		var tex := "res://assets/sprites/decorations/%s.png" % id

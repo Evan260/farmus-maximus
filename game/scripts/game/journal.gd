@@ -32,38 +32,38 @@ func catalogue() -> Array:
 			_catalogue.append({"section": section, "id": ids[i], "name": names[i]})
 	var crops := []
 	var crop_names := []
-	for c in Balance.get_value("crops", {}):
+	for c in Data.get_value("crops", {}):
 		crops.append("crop:" + c)
-		crop_names.append(Balance.get_value("crops.%s.name" % c, c))
+		crop_names.append(Data.get_value("crops.%s.name" % c, c))
 	add_section.call("Crops", crops, crop_names)
 	var goods := []
 	var good_names := []
-	var quality_names: Array = Balance.get_value("quality.names", ["Common", "Fine", "Excellent"])
-	for item in Balance.get_value("items", {}):
-		var name := String(Balance.get_value("items.%s.name" % item, item))
+	var quality_names: Array = Data.get_value("quality.names", ["Common", "Fine", "Excellent"])
+	for item in Data.get_value("items", {}):
+		var name := String(Data.get_value("items.%s.name" % item, item))
 		goods.append("item:" + item)
 		good_names.append(name)
-		if not Balance.get_value("items.%s.no_quality" % item, false):
-			for q in range(1, int(Balance.get_value("items.%s.best_quality" % item, 2)) + 1):
+		if not Data.get_value("items.%s.no_quality" % item, false):
+			for q in range(1, int(Data.get_value("items.%s.best_quality" % item, 2)) + 1):
 				goods.append("quality:%s:%d" % [item, q])
 				good_names.append("%s %s" % [quality_names[q], name.to_lower()])
 	add_section.call("Goods", goods, good_names)
 	var buildings := []
 	var building_names := []
-	for b in Balance.get_value("buildings", {}):
+	for b in Data.get_value("buildings", {}):
 		buildings.append("building:" + b)
-		building_names.append(Balance.get_value("buildings.%s.name" % b, b))
+		building_names.append(Data.get_value("buildings.%s.name" % b, b))
 	add_section.call("Buildings", buildings, building_names)
 	var helpers := []
 	var helper_names := []
-	for h in Balance.get_value("helpers", {}):
+	for h in Data.get_value("helpers", {}):
 		helpers.append("helper:" + h)
-		helper_names.append("%s the %s" % [Balance.get_value("helpers.%s.name" % h, h), String(Balance.get_value("helpers.%s.role" % h, "")).to_lower()])
+		helper_names.append("%s the %s" % [Data.get_value("helpers.%s.name" % h, h), String(Data.get_value("helpers.%s.role" % h, "")).to_lower()])
 	add_section.call("Helpers", helpers, helper_names)
 	for section in [["Animals", "animals", "animal"], ["Finds", "finds", "find"], ["Sightings", "sightings", "sighting"], ["Milestones", "milestones", "milestone"]]:
-		var d: Dictionary = Balance.get_value("journal." + section[1], {})
+		var d: Dictionary = Data.get_value("journal." + section[1], {})
 		add_section.call(section[0], d.keys().map(func(k): return "%s:%s" % [section[2], k]), d.values())
-	var festivals: Array = Balance.get_value("calendar.festivals", [])
+	var festivals: Array = Data.get_value("calendar.festivals", [])
 	add_section.call("Festivals", festivals.map(func(f): return "festival:" + String(f["id"])), festivals.map(func(f): return f["name"]))
 	return _catalogue
 
@@ -105,7 +105,7 @@ func met(cond: Dictionary) -> bool:
 
 ## Every achievement except the ones that are earned by earning the rest.
 func _other_achievements() -> Array:
-	return Balance.get_value("achievements", []).filter(func(a): return not a["when"].has("achievements")).map(func(a): return a["id"])
+	return Data.get_value("achievements", []).filter(func(a): return not a["when"].has("achievements")).map(func(a): return a["id"])
 
 
 ## How far along a countable condition is, as how many of how many, or an empty array for one that is simply met or not.
@@ -135,7 +135,7 @@ func progress(cond: Dictionary) -> Array:
 ## Unlocks every achievement whose condition now holds and returns the new ones.
 func check_achievements() -> Array:
 	var fresh := []
-	for a in Balance.get_value("achievements", []):
+	for a in Data.get_value("achievements", []):
 		if not achievements.has(a["id"]) and met(a["when"]):
 			achievements[a["id"]] = true
 			fresh.append(a)
@@ -146,14 +146,14 @@ func check_achievements() -> Array:
 func _check_milestones() -> void:
 	if _game.zones_owned.values().count(false) == 0:
 		_game.discover("milestone:all_zones")
-	if _game.working_buildings() >= Balance.get_value("buildings", {}).size():
+	if _game.working_buildings() >= Data.get_value("buildings", {}).size():
 		_game.discover("milestone:all_buildings")
 	if _game.villa_stage >= _game.villa_stages().size():
 		_game.discover("milestone:grand_estate")
-	if _game.helpers.size() >= Balance.get_value("helpers", {}).size():
+	if _game.helpers.size() >= Data.get_value("helpers", {}).size():
 		_game.discover("milestone:all_helpers")
 	var all_festivals := true
-	for f in Balance.get_value("calendar.festivals", []):
+	for f in Data.get_value("calendar.festivals", []):
 		all_festivals = all_festivals and entries.has("festival:" + String(f["id"]))
 	if all_festivals:
 		_game.discover("milestone:all_festivals")
@@ -165,7 +165,7 @@ func _check_milestones() -> void:
 func tutorial_step() -> Dictionary:
 	if int(_game.stats.get("guide_seen", 0)) >= 2:
 		return {}
-	for step in Balance.get_value("tutorial", []):
+	for step in Data.get_value("tutorial", []):
 		var key := "tutorial_" + String(step["id"])
 		if int(_game.stats.get(key, 0)) > 0:
 			continue

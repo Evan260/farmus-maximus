@@ -317,7 +317,7 @@ func greet() -> void:
 
 ## Something this person says when clicked: one of their own lines, or a common Latin exclamation of the day.
 func saying() -> String:
-	var all: Dictionary = Balance.get_value("sayings", {})
+	var all: Dictionary = Data.get_value("sayings", {})
 	var pool: Array = all.get(sayings, []).duplicate()
 	pool += all.get("woman" if voice == "salve_woman" else "any", [])
 	if voice == "salve_woman":

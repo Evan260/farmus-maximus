@@ -205,7 +205,7 @@ static func update_costs(lines: Array) -> void:
 		var key := String(l.get_meta("key"))
 		var need := int(l.get_meta("need"))
 		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
-		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key))))
+		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Data.get_value("items.%s.name" % key, key))))
 		l.text = "%s  %d / %d" % [mid(TranslationServer.translate(name)), mini(have, need), need]
 		l.add_theme_color_override("font_color", UiTheme.INK if have >= need else UiTheme.RED)
 
@@ -345,9 +345,9 @@ static func goods_text(goods: Dictionary) -> String:
 static func item_words(key: String, n: int) -> String:
 	if key == "provisions":
 		return TranslationServer.translate("bread or wine")
-	var name := String(Balance.get_value("items.%s.name" % key, key))
+	var name := String(Data.get_value("items.%s.name" % key, key))
 	if n != 1:
-		name = String(Balance.get_value("items.%s.plural" % key, name))
+		name = String(Data.get_value("items.%s.plural" % key, name))
 	return mid(TranslationServer.translate(name))
 
 

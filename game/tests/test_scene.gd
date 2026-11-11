@@ -44,7 +44,7 @@ func test_scene() -> void:
 	main._click_plot(i)
 	game.calendar.wet_left = 9999.0
 	# Each planting grows a little faster or slower than the crop's usual time, so allow for the slowest.
-	game.advance(60.0 * (1.0 + float(root.get_node("Balance").get_value("plots.growth_spread", 0.12))) + 1.0)
+	game.advance(60.0 * (1.0 + float(root.get_node("Data").get_value("plots.growth_spread", 0.12))) + 1.0)
 	await process_frame
 	_check(main._plot_at(empty.position + Vector2(14, -20)) == empty, "a grown plant responds where its leaves are")
 	main._click_plot(i)

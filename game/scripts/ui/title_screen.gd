@@ -141,5 +141,5 @@ func go_back() -> bool:
 
 
 func _suggestion() -> String:
-	var names: Array = Balance.get_value("farm_names", ["Villa Aurelia"])
+	var names: Array = Data.get_value("farm_names", ["Villa Aurelia"])
 	return tr(String(names[randi() % names.size()]))

@@ -246,7 +246,7 @@ func _heading(page: Node, text: String) -> void:
 
 func _entries() -> Array:
 	if section == "Achievements":
-		return Balance.get_value("achievements", []).map(func(a): return {"id": "achievement:" + String(a["id"]), "name": a["name"]})
+		return Data.get_value("achievements", []).map(func(a): return {"id": "achievement:" + String(a["id"]), "name": a["name"]})
 	# Fine and excellent goods are shown as badges on each good's page rather than as pages of their own.
 	return Game.journal.catalogue().filter(func(e): return e["section"] == section and not String(e["id"]).begins_with("quality:"))
 
@@ -333,9 +333,9 @@ func _detail(page: VBoxContainer, id: String) -> void:
 		return
 	_heading(page, tr(_name(id)))
 	Ui.para(page, _describe(id), TEXT_W)
-	if id.begins_with("item:") and not Balance.get_value("items.%s.no_quality" % id.get_slice(":", 1), false):
+	if id.begins_with("item:") and not Data.get_value("items.%s.no_quality" % id.get_slice(":", 1), false):
 		var badges := Ui.row(page)
-		var names: Array = Balance.get_value("quality.names", ["Common", "Fine", "Excellent"])
+		var names: Array = Data.get_value("quality.names", ["Common", "Fine", "Excellent"])
 		for q in 3:
 			var has: bool = q == 0 or Game.journal.has("quality:%s:%d" % [id.get_slice(":", 1), q])
 			var l := Ui.label(badges, tr(String(names[q])))
@@ -343,7 +343,7 @@ func _detail(page: VBoxContainer, id: String) -> void:
 
 
 func _achievement_progress(page: VBoxContainer, key: String) -> void:
-	for a in Balance.get_value("achievements", []):
+	for a in Data.get_value("achievements", []):
 		if a["id"] != key:
 			continue
 		var done: Array = Game.journal.progress(a["when"])
@@ -369,7 +369,7 @@ func _name(id: String) -> String:
 func _describe(id: String) -> String:
 	var kind := id.get_slice(":", 0)
 	var key := id.get_slice(":", 1)
-	var notes: Dictionary = Balance.get_value("journal.notes", {})
+	var notes: Dictionary = Data.get_value("journal.notes", {})
 	match kind:
 		"crop":
 			var c := Game.crop_info(key)
@@ -379,11 +379,11 @@ func _describe(id: String) -> String:
 			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), Ui.item_words(String(c.get("item", key)), int(c.get("yield", 1)))]
 		"item":
 			var lines := [tr("Worth about %d sestertii at market.") % int(Game.base_price(key))]
-			for crop in Balance.get_value("crops", {}):
+			for crop in Data.get_value("crops", {}):
 				if Game.crop_info(crop).get("item", "") == key:
 					lines.append(tr("Harvested from %s.") % Ui.mid(tr(String(Game.crop_info(crop).get("name", crop)))))
 					break
-			for b in Balance.get_value("buildings", {}):
+			for b in Data.get_value("buildings", {}):
 				for r in Game.building_info(b).get("recipes", []):
 					if r.get("out", {}).has(key):
 						lines.append(tr("Made in the %s.") % Ui.mid(tr(String(Game.building_info(b).get("name", b)))))
@@ -396,18 +396,18 @@ func _describe(id: String) -> String:
 			var outs := []
 			for r in info.get("recipes", []):
 				for item in r.get("out", {}):
-					outs.append(Ui.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
+					outs.append(Ui.mid(tr(String(Data.get_value("items.%s.name" % item, item)))))
 			var what := tr("Makes %s.") % ", ".join(outs) if not outs.is_empty() else ""
 			return (tr("Stands on the %s.") % Ui.mid(tr(zone))) + " " + what
 		"helper":
 			var h := Game.helper_info(key)
 			return "%s. \"%s\"" % [tr(String(h.get("does", ""))), tr(String(h.get("quote", "")))]
 		"festival":
-			for f in Balance.get_value("calendar.festivals", []):
+			for f in Data.get_value("calendar.festivals", []):
 				if f["id"] == key:
 					return tr(String(f.get("about", "")))
 		"achievement":
-			for a in Balance.get_value("achievements", []):
+			for a in Data.get_value("achievements", []):
 				if a["id"] == key:
 					return tr(String(a.get("desc", "")))
 	return tr(String(notes.get(id, "")))

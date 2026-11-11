@@ -207,7 +207,7 @@ func _ready() -> void:
 	road = _part(RoadWorks) as RoadWorks
 	rig = _part(CartRig) as CartRig
 	villa = _part(VillaView) as VillaView
-	estate_width = float(Balance.get_value("estate.width", 2400))
+	estate_width = float(Data.get_value("estate.width", 2400))
 	if Dev.state() != "":
 		debug_tools.load_demo_state()
 	# The sky has its own layer at screen resolution, outside the night tint, so clouds and the moon move smoothly
@@ -1425,7 +1425,7 @@ func _on_building_made(id: String, item: String, amount: int) -> void:
 	Sfx.play({"aged_wine": "cork", "bread": "oven", "herb_bread": "oven"}.get(item, "made"), -4.0)
 	for v in building_views:
 		if v.id == id:
-			hud.float_text(v.position + Vector2(-16, -v.local_rect().size.y - 14) - _camera.position, "+%d %s" % [amount, Ui.mid(tr(String(Balance.get_value("items.%s.name" % item, item))))])
+			hud.float_text(v.position + Vector2(-16, -v.local_rect().size.y - 14) - _camera.position, "+%d %s" % [amount, Ui.mid(tr(String(Data.get_value("items.%s.name" % item, item))))])
 			_burst(v.position + Vector2(0, -v.local_rect().size.y / 2), [Color(1, 0.9, 0.6), Color(0.95, 0.8, 0.5)], 6)
 
 

@@ -39,7 +39,7 @@ func day_of_season() -> int:
 
 ## Today's festival, or an empty dictionary on an ordinary day.
 func festival() -> Dictionary:
-	for f in Balance.get_value("calendar.festivals", []):
+	for f in Data.get_value("calendar.festivals", []):
 		if int(f["season"]) == season_index() and int(f["day"]) == day_of_season():
 			return f
 	return {}
@@ -76,10 +76,10 @@ func next_day() -> void:
 
 func _change_weather() -> void:
 	var before := weather
-	var odds: Dictionary = Balance.get_value("calendar.weather." + season_id(), {})
+	var odds: Dictionary = Data.get_value("calendar.weather." + season_id(), {})
 	var r: float = _game.rng.randf()
 	var hour: float = _game.day_time
-	if hour >= 4.0 and hour < 8.0 and r < float(Balance.get_value("calendar.mist_chance", 0.5)):
+	if hour >= 4.0 and hour < 8.0 and r < float(Data.get_value("calendar.mist_chance", 0.5)):
 		weather = "mist"
 	elif r < float(odds.get("rain", 0.2)):
 		weather = "rain"
@@ -89,22 +89,22 @@ func _change_weather() -> void:
 		weather = "sun"
 	weather_left = _weather_seconds()
 	if weather == "rain":
-		wet_left = float(Balance.get_value("calendar.wet_seconds", 240))
+		wet_left = float(Data.get_value("calendar.wet_seconds", 240))
 	if weather != before and not _game.quiet:
 		_game.weather_changed.emit(weather, before)
 
 
 func _weather_seconds() -> float:
-	var range_s: Array = Balance.get_value("calendar.weather_seconds", [180, 420])
+	var range_s: Array = Data.get_value("calendar.weather_seconds", [180, 420])
 	return _game.rng.randf_range(float(range_s[0]), float(range_s[1])) if _game.rng else float(range_s[0])
 
 
 func _days_per_season() -> int:
-	return int(Balance.get_value("calendar.days_per_season", 4))
+	return int(Data.get_value("calendar.days_per_season", 4))
 
 
 func _seasons() -> Array:
-	return Balance.get_value("calendar.seasons", [{"id": "spring", "name": "Spring"}])
+	return Data.get_value("calendar.seasons", [{"id": "spring", "name": "Spring"}])
 
 
 func to_dict() -> Dictionary:

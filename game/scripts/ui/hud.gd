@@ -532,7 +532,7 @@ func _update_tip() -> void:
 	elif ready and int(Game.stats.get("guide_seen", 0)) == 1:
 		# The goodbye stays a while, then he is gone for good.
 		if _uncle.showing() != "farewell":
-			_uncle.show_advice("farewell", tr(String(Balance.get_value("tutorial_farewell", ""))))
+			_uncle.show_advice("farewell", tr(String(Data.get_value("tutorial_farewell", ""))))
 			get_tree().create_timer(14.0).timeout.connect(func(): Game.stats["guide_seen"] = 2)
 	else:
 		_uncle.show_advice("", "")
@@ -549,7 +549,7 @@ func _on_discovered(id: String) -> void:
 
 
 func _on_festival(id: String) -> void:
-	for f in Balance.get_value("calendar.festivals", []):
+	for f in Data.get_value("calendar.festivals", []):
 		if f["id"] == id:
 			toast("%s! %s" % [tr(String(f["name"])), tr(String(f.get("about", "")))])
 
@@ -648,7 +648,7 @@ func _petal_texture() -> Texture2D:
 
 ## The farm catches up after every pause in play, but only a real absence is worth a summary.
 func _on_caught_up(summary: Dictionary) -> void:
-	if float(summary.get("seconds", 0)) >= float(Balance.get_value("offline.min_seconds_for_summary", 30)):
+	if float(summary.get("seconds", 0)) >= float(Data.get_value("offline.min_seconds_for_summary", 30)):
 		_show_away(summary)
 
 
@@ -846,7 +846,7 @@ func _update_toolbar() -> void:
 		Ui.clear(_tool_row)
 		_tool_buttons = {}
 		_tool_slot("harvest", load("res://assets/sprites/icons/tool_harvest.png"), tr("Harvest: click ripe plants to pick them"), Color.WHITE)
-		for crop in Balance.get_value("seeds", []):
+		for crop in Data.get_value("seeds", []):
 			if not Game.crop_unlocked(crop):
 				continue
 			var info := Game.crop_info(crop)

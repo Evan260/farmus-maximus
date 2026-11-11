@@ -12,7 +12,7 @@ func _init() -> void:
 
 func signature() -> String:
 	var parts := []
-	for id in Balance.get_value("helpers", {}):
+	for id in Data.get_value("helpers", {}):
 		parts.append("%s%d%s" % [id, int(Game.helpers.get(id, 0)), Game.helper_block(id)])
 	return ",".join(parts) + JSON.stringify(Game.pets)
 
@@ -20,7 +20,7 @@ func signature() -> String:
 func build() -> void:
 	_buttons = {}
 	var list := Ui.scroll(body, Vector2(270, 170))
-	for id in Balance.get_value("helpers", {}):
+	for id in Data.get_value("helpers", {}):
 		var info := Game.helper_info(id)
 		var r := Ui.row(Ui.card(list))
 		var face := TextureRect.new()

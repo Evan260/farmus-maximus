@@ -118,8 +118,8 @@ func test_every_string_in_the_code_is_in_the_sheet() -> void:
 	for key in keys:
 		if not sheet.has(key):
 			missing.append("%s (%s)" % [key, keys[key]])
-	var farm_names: Array = root.get_node("Balance").get_value("farm_names", [])
-	for s in _data_strings(root.get_node("Balance").data):
+	var farm_names: Array = root.get_node("Data").get_value("farm_names", [])
+	for s in _data_strings(root.get_node("Data").data):
 		if not sheet.has(s) and not s in farm_names:
 			missing.append(s)
 	check(missing.is_empty(), "every string the game shows is in the strings sheet (missing %s)" % ", ".join(missing.slice(0, 8)))

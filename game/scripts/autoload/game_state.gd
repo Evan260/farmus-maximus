@@ -110,10 +110,10 @@ var _last_wall := 0.0
 var _dark := 0.0
 var _dark_at := -1.0
 ## The data's tables, kept at hand because the rules read them on every step.
-var _crop_data: Dictionary = Balance.get_value("crops", {})
-var _building_data: Dictionary = Balance.get_value("buildings", {})
-var _helper_data: Dictionary = Balance.get_value("helpers", {})
-var _upgrade_data: Dictionary = Balance.get_value("upgrades", {})
+var _crop_data: Dictionary = Data.get_value("crops", {})
+var _building_data: Dictionary = Data.get_value("buildings", {})
+var _helper_data: Dictionary = Data.get_value("helpers", {})
+var _upgrade_data: Dictionary = Data.get_value("upgrades", {})
 
 
 func _ready() -> void:
@@ -128,7 +128,7 @@ func _process(delta: float) -> void:
 	var first := _last_wall <= 0.0
 	_last_wall = now
 	# Godot shortens a long frame's delta, so time spent asleep with the game open shows only on the wall clock.
-	if not first and gap > float(Balance.get_value("offline.long_frame_seconds", 10)) and Settings.offline_progress and Saves.has_farm:
+	if not first and gap > float(Data.get_value("offline.long_frame_seconds", 10)) and Settings.offline_progress and Saves.has_farm:
 		caught_up.emit(simulate_offline(gap))
 	else:
 		advance(delta * speed)
@@ -146,14 +146,14 @@ func new_game() -> void:
 	farm_name = ""
 	intro_seen = false
 	pets_chosen = false
-	coins = int(Balance.get_value("start.coins", 20))
+	coins = int(Data.get_value("start.coins", 20))
 	aureus = 0
 	storage = {}
 	plots = []
-	var unlocked_count := int(Balance.get_value("start.unlocked_plots", 4))
+	var unlocked_count := int(Data.get_value("start.unlocked_plots", 4))
 	# Home plots come first, so saves from before the estate grew still line up with the same plots.
 	var homes := 0
-	for group in Balance.get_value("plots.zones", [{"zone": "home", "count": 17}]):
+	for group in Data.get_value("plots.zones", [{"zone": "home", "count": 17}]):
 		for k in int(group["count"]):
 			var home: bool = group["zone"] == "home"
 			plots.append(_new_plot(String(group["zone"]), home and homes < unlocked_count))
@@ -163,19 +163,19 @@ func new_game() -> void:
 	for z in zones():
 		zones_owned[z["id"]] = int(z.get("deed", 0)) == 0
 	buildings = {}
-	for id in Balance.get_value("buildings", {}):
+	for id in Data.get_value("buildings", {}):
 		buildings[id] = _new_building()
 	levels = {"storage": 0, "cart_capacity": 0, "cart_speed": 0, "channels": 0}
 	projects = {}
 	keep_goods = {}
 	selected_seed = "lavender"
 	crops_unlocked = {}
-	for c in Balance.get_value("crops", {}):
-		if not Balance.get_value("crops.%s.locked" % c, false):
+	for c in Data.get_value("crops", {}):
+		if not Data.get_value("crops.%s.locked" % c, false):
 			crops_unlocked[c] = true
 	villa_stage = 1
 	villa_build = {"active": false, "time_left": 0.0}
-	day_time = float(Balance.get_value("time.start_hour", 16))
+	day_time = float(Data.get_value("time.start_hour", 16))
 	cart = _empty_cart()
 	helpers = {}
 	helper_timers = {}
@@ -209,7 +209,7 @@ static func item_quality(key: String) -> int:
 
 
 func item_name(key: String) -> String:
-	var name := tr(String(Balance.get_value("items.%s.name" % item_base(key), item_base(key))))
+	var name := tr(String(Data.get_value("items.%s.name" % item_base(key), item_base(key))))
 	var q := item_quality(key)
 	if q == 0:
 		return name
@@ -218,8 +218,8 @@ func item_name(key: String) -> String:
 
 ## The unchanging price of one unit, before the market's daily mood.
 func base_price(key: String) -> float:
-	var mult: Array = Balance.get_value("quality.price", [1, 1.5, 2.5])
-	return float(Balance.get_value("items.%s.price" % item_base(key), 0)) * float(mult[mini(item_quality(key), mult.size() - 1)])
+	var mult: Array = Data.get_value("quality.price", [1, 1.5, 2.5])
+	return float(Data.get_value("items.%s.price" % item_base(key), 0)) * float(mult[mini(item_quality(key), mult.size() - 1)])
 
 
 ## Kept for older callers: the market's full price for a good today.
@@ -230,7 +230,7 @@ func item_price(key: String) -> int:
 func count_item(base: String) -> int:
 	if base == "provisions":
 		var n := 0
-		for p in Balance.get_value("provisions", []):
+		for p in Data.get_value("provisions", []):
 			n += count_item(String(p))
 		return n
 	var keys: Array = _quality_keys.get(base, [])
@@ -263,14 +263,14 @@ func item_kind(key: String) -> String:
 func _info_of(key: String) -> Array:
 	var info: Variant = _key_info.get(key)
 	if info == null:
-		info = [item_base(key), item_quality(key), String(Balance.get_value("items.%s.kind" % item_base(key), "good"))]
+		info = [item_base(key), item_quality(key), String(Data.get_value("items.%s.kind" % item_base(key), "good"))]
 		_key_info[key] = info
 	return info
 
 
 ## Puts goods in the storehouse, as many as fit unless forced, and returns how many went in.
 func add_item(key: String, amount: int, force := false) -> int:
-	if Balance.get_value("items.%s.no_quality" % item_base(key), false):
+	if Data.get_value("items.%s.no_quality" % item_base(key), false):
 		key = item_base(key)
 	if not force and not is_material(key):
 		amount = mini(amount, holding_capacity() - stored_total())
@@ -310,7 +310,7 @@ func take_items(needs: Dictionary) -> float:
 	var quality_sum := 0.0
 	var counted := 0
 	for base in needs:
-		var bases: Array = Balance.get_value("provisions", []) if base == "provisions" else [base]
+		var bases: Array = Data.get_value("provisions", []) if base == "provisions" else [base]
 		var left := int(needs[base])
 		for q in 3:
 			for b in bases:
@@ -319,7 +319,7 @@ func take_items(needs: Dictionary) -> float:
 				if take > 0:
 					remove_key(key, take)
 					left -= take
-					if not Balance.get_value("items.%s.no_quality" % b, false):
+					if not Data.get_value("items.%s.no_quality" % b, false):
 						quality_sum += q * take
 						counted += take
 	return quality_sum / counted if counted > 0 else 0.0
@@ -396,7 +396,7 @@ func time_to_ready(plot: Dictionary) -> float:
 
 ## Plants are not all alike: each sowing and each regrowth takes a little more or less time than the crop's usual.
 func _new_pace() -> float:
-	var spread := float(Balance.get_value("plots.growth_spread", 0.12))
+	var spread := float(Data.get_value("plots.growth_spread", 0.12))
 	return rng.randf_range(1.0 - spread, 1.0 + spread)
 
 
@@ -420,7 +420,7 @@ func watered(i: int) -> bool:
 ## The young woman of the market town expecting a child: how far along she is, from the calendar. "expecting" grows
 ## from 0 to 1 over the days before the birth, and then she carries the baby for a while.
 func baby_story() -> Dictionary:
-	var story: Dictionary = Balance.get_value("story.baby", {})
+	var story: Dictionary = Data.get_value("story.baby", {})
 	if story.is_empty():
 		return {"stage": "none"}
 	var days := float(calendar.day) + day_time / 24.0 - float(story.get("starts_day", 3))
@@ -468,9 +468,9 @@ func growth_rate(i: int) -> float:
 	# Plants keep growing in the dark, but at about a third of their daytime pace.
 	rate *= 1.0 - 0.65 * night_amount()
 	if not watered(i):
-		rate *= float(Balance.get_value("calendar.dry_growth", 0.8))
+		rate *= float(Data.get_value("calendar.dry_growth", 0.8))
 	if p.get("manured", false):
-		rate *= float(Balance.get_value("calendar.manure_growth", 1.25))
+		rate *= float(Data.get_value("calendar.manure_growth", 1.25))
 	if info.get("grain", false) and blessed("ceres"):
 		rate *= 2.0
 	return rate
@@ -500,9 +500,9 @@ func unlock_cost() -> int:
 	for p in plots:
 		if p["unlocked"] and p["zone"] == "home":
 			unlocked_count += 1
-	var extra := unlocked_count - int(Balance.get_value("start.unlocked_plots", 4))
-	var base := float(Balance.get_value("plots.unlock_cost_base", 15))
-	return int(round(base * pow(float(Balance.get_value("plots.unlock_cost_growth", 1.3)), maxi(extra, 0))))
+	var extra := unlocked_count - int(Data.get_value("start.unlocked_plots", 4))
+	var base := float(Data.get_value("plots.unlock_cost_base", 15))
+	return int(round(base * pow(float(Data.get_value("plots.unlock_cost_growth", 1.3)), maxi(extra, 0))))
 
 
 ## The parts of the estate a crop can be planted in: lavender grows on the farm and in the grove, olives only in the grove.
@@ -549,7 +549,7 @@ func try_plant(i: int, crop_id := "") -> bool:
 	p["pace"] = _new_pace()
 	# The very first plant on a farm blooms within seconds, so a new player sees a harvest before their attention drifts.
 	if int(stats.get("planted", 0)) == 0:
-		p["pace"] = float(Balance.get_value("plots.first_crop_seconds", 12)) / float(crop_info(crop_id).get("grow_seconds", 60))
+		p["pace"] = float(Data.get_value("plots.first_crop_seconds", 12)) / float(crop_info(crop_id).get("grow_seconds", 60))
 		p["first"] = true
 	_apply_manure(p)
 	add_stat("planted", 1)
@@ -639,14 +639,14 @@ func _harvest(i: int, by_hand := false) -> int:
 ## Care makes better crops: manure, water, a well-timed harvest and Pomona's blessing each raise the odds.
 func _harvest_quality(i: int, by_hand: bool) -> int:
 	var p: Dictionary = plots[i]
-	if Balance.get_value("items.%s.no_quality" % String(crop_info(p["crop"]).get("item", "")), false):
+	if Data.get_value("items.%s.no_quality" % String(crop_info(p["crop"]).get("item", "")), false):
 		return 0
 	var points := 0.0
 	if p.get("manured", false):
 		points += 1.0
 	if watered(i):
 		points += 0.5
-	if by_hand and float(p.get("ready_age", 0.0)) <= float(Balance.get_value("quality.timely_seconds", 20)):
+	if by_hand and float(p.get("ready_age", 0.0)) <= float(Data.get_value("quality.timely_seconds", 20)):
 		points += 1.0
 	if crop_info(p["crop"]).get("fruit", false) and blessed("pomona"):
 		points += 1.5
@@ -745,7 +745,7 @@ func _finish_project(id: String) -> void:
 
 
 func villa_stages() -> Array:
-	return Balance.get_value("villa.stages", [])
+	return Data.get_value("villa.stages", [])
 
 
 ## The price of the next villa stage, or an empty dictionary when the villa is finished or being built.
@@ -881,7 +881,7 @@ func advance(dt: float) -> Dictionary:
 ## True when the purse cannot pay for the farm's first crop, lavender, and nothing is planted anywhere. A cheaper seed
 ## such as wheat may still be affordable, but a new player thinks of lavender, so this is when they feel stuck.
 func short_of_seed() -> bool:
-	if coins >= int(crop_info(String(Balance.get_value("start.seed", "lavender"))).get("plant_cost", 0)):
+	if coins >= int(crop_info(String(Data.get_value("start.seed", "lavender"))).get("plant_cost", 0)):
 		return false
 	for p in plots:
 		if p["crop"] != "":
@@ -898,7 +898,7 @@ func _rescue_if_stranded() -> void:
 	for id in buildings:
 		if buildings[id].get("busy", false):
 			return
-	var gift := int(Balance.get_value("start.rescue_coins", 10))
+	var gift := int(Data.get_value("start.rescue_coins", 10))
 	coins += gift
 	rescued.emit(gift)
 
@@ -906,8 +906,8 @@ func _rescue_if_stranded() -> void:
 ## Catches up on time the game was closed, in small steps so every rule applies in order. The farm runs as usual, but
 ## only a share of what it earns is kept, so coming back is a welcome bonus rather than a way to skip the game.
 func simulate_offline(seconds: float) -> Dictionary:
-	var remaining := minf(seconds, float(Balance.get_value("offline.max_hours", 12)) * 3600.0)
-	var step := float(Balance.get_value("offline.step_seconds", 5))
+	var remaining := minf(seconds, float(Data.get_value("offline.max_hours", 12)) * 3600.0)
+	var step := float(Data.get_value("offline.step_seconds", 5))
 	var start_coins := coins
 	# A cart already on the road was loaded and sold in play, so it pays in full when it comes home.
 	var on_road: bool = cart["away"]
@@ -929,7 +929,7 @@ func simulate_offline(seconds: float) -> Dictionary:
 	quiet = false
 	var earned := coins - start_coins - paid_in_full
 	if earned > 0:
-		var forgone := earned - int(earned * float(Balance.get_value("offline.earnings_share", 0.25)))
+		var forgone := earned - int(earned * float(Data.get_value("offline.earnings_share", 0.25)))
 		coins -= forgone
 		stats["earned"] = int(stats.get("earned", 0)) - forgone
 	summary["earned"] = coins - start_coins
@@ -944,7 +944,7 @@ func simulate_offline(seconds: float) -> Dictionary:
 
 ## Real seconds in one in-game day, as the player has set it.
 func day_seconds() -> float:
-	return float(Settings.day_minutes) * 60.0 if Settings.day_minutes > 0 else float(Balance.get_value("time.day_seconds", 1200))
+	return float(Settings.day_minutes) * 60.0 if Settings.day_minutes > 0 else float(Data.get_value("time.day_seconds", 1200))
 
 
 func blessed(god: String) -> bool:
@@ -954,7 +954,7 @@ func blessed(god: String) -> bool:
 # Estate -----------------------------------------------------------------
 
 func zones() -> Array:
-	return Balance.get_value("estate.zones", [])
+	return Data.get_value("estate.zones", [])
 
 
 func zone_info(zone_id: String) -> Dictionary:
@@ -971,7 +971,7 @@ func zone_owned(zone_id: String) -> bool:
 ## Why a zone's deed cannot be bought yet, or "" when it can.
 func zone_block(zone_id: String) -> String:
 	var z := zone_info(zone_id)
-	if is_demo() and not zone_id in Balance.get_value("demo.zones", []):
+	if is_demo() and not zone_id in Data.get_value("demo.zones", []):
 		return "Available in the full game"
 	var needs := int(z.get("requires_villa", 0))
 	if villa_stage < needs:
@@ -1001,7 +1001,7 @@ func is_demo() -> bool:
 
 
 func demo_capped_villa() -> bool:
-	return is_demo() and villa_stage >= int(Balance.get_value("demo.max_villa", 3))
+	return is_demo() and villa_stage >= int(Data.get_value("demo.max_villa", 3))
 
 
 # Buildings --------------------------------------------------------------
@@ -1216,7 +1216,7 @@ func sellable_goods() -> Dictionary:
 	var need := needed_goods()
 	# What the player needs is held back up to half the storehouse, so it cannot fill the storehouse either.
 	var room := storage_capacity() / 2
-	var provision_bases: Array = Balance.get_value("provisions", [])
+	var provision_bases: Array = Data.get_value("provisions", [])
 	var out := {}
 	var by_quality := [[], [], []]
 	for key in storage:
@@ -1554,7 +1554,7 @@ func manure_room(id := "barn") -> int:
 # The lararium -----------------------------------------------------------
 
 func gods() -> Dictionary:
-	return Balance.get_value("blessings.gods", {})
+	return Data.get_value("blessings.gods", {})
 
 
 func offer(god: String) -> bool:
@@ -1566,7 +1566,7 @@ func offer(god: String) -> bool:
 		return false
 	if not pay(gods().get(god, {}).get("offering", {})):
 		return false
-	blessing = {"god": god, "time_left": float(Balance.get_value("blessings.seconds", 1800))}
+	blessing = {"god": god, "time_left": float(Data.get_value("blessings.seconds", 1800))}
 	add_stat("blessings", 1)
 	blessing_started.emit(god)
 	return true
@@ -1691,7 +1691,7 @@ func _trader_check() -> void:
 	# The donkey spends the night in the barn, and the cart stays put while the player sells from it in town.
 	if cart["away"] or is_night() or market.cart_in_town:
 		return
-	var worth := mini(cart_capacity(), int(storage_capacity() * float(Balance.get_value("market.trader_fill", 0.6))))
+	var worth := mini(cart_capacity(), int(storage_capacity() * float(Data.get_value("market.trader_fill", 0.6))))
 	# Only part of what is stored can be sold, so a storehouse holding less than a cartload cannot fill one.
 	if stored_total() < worth:
 		return
@@ -1705,7 +1705,7 @@ func _trader_check() -> void:
 # Decorations and the dog ------------------------------------------------
 
 func decoration_info(id: String) -> Dictionary:
-	return Balance.get_value("decorations." + id, {})
+	return Data.get_value("decorations." + id, {})
 
 
 ## Why a decoration cannot be bought, or "" when it can.
@@ -1725,7 +1725,7 @@ func decoration_block(id: String) -> String:
 ## The farmhouse's furnishings ------------------------------------------
 
 func furnishing_info(id: String) -> Dictionary:
-	return Balance.get_value("interior.furnishings." + id, {})
+	return Data.get_value("interior.furnishings." + id, {})
 
 
 ## Why a furnishing cannot be bought, or "" when it can.
@@ -1753,7 +1753,7 @@ func buy_furnishing(id: String) -> bool:
 
 ## How much quicker the helpers work for a comfortable home: each furnishing adds a little.
 func comfort_factor() -> float:
-	return 1.0 + float(Balance.get_value("interior.comfort_speed", 0.02)) * furnishings.size()
+	return 1.0 + float(Data.get_value("interior.comfort_speed", 0.02)) * furnishings.size()
 
 
 func buy_decoration(id: String) -> bool:
@@ -1774,7 +1774,7 @@ func dog_dig() -> String:
 	if dog_timer > 0.0:
 		return ""
 	dog_timer = _next_dog_find()
-	var finds: Array = Balance.get_value("dog.finds", []).filter(func(f): return not (f.get("once", false) and journal.has("find:" + String(f["id"]))))
+	var finds: Array = Data.get_value("dog.finds", []).filter(func(f): return not (f.get("once", false) and journal.has("find:" + String(f["id"]))))
 	var total := 0.0
 	for f in finds:
 		total += float(f["weight"])
@@ -1790,7 +1790,7 @@ func dog_dig() -> String:
 			text = tr("%s dug up an old coin: +%d sestertii") % [pet_name("dog"), n]
 		elif f.has("item"):
 			add_item(String(f["item"]), 1, true)
-			text = tr("%s found a %s!") % [pet_name("dog"), Ui.mid(tr(String(Balance.get_value("items.%s.name" % f["item"], f["item"]))))]
+			text = tr("%s found a %s!") % [pet_name("dog"), Ui.mid(tr(String(Data.get_value("items.%s.name" % f["item"], f["item"]))))]
 		elif f.has("unlock_crop"):
 			unlock_crop(String(f["unlock_crop"]))
 			text = tr("%s dug up a rare seed: white lavender!") % pet_name("dog")
@@ -1810,7 +1810,7 @@ func pet_name(kind: String) -> String:
 
 
 func _next_dog_find() -> float:
-	var r: Array = Balance.get_value("dog.find_seconds", [240, 600])
+	var r: Array = Data.get_value("dog.find_seconds", [240, 600])
 	return rng.randf_range(float(r[0]), float(r[1]))
 
 
@@ -1922,7 +1922,7 @@ func from_dict(d: Dictionary) -> void:
 	# Only furnishings that still exist are kept; the rug, for one, became part of the room.
 	furnishings = {}
 	for id in d.get("furnishings", {}):
-		if Balance.get_value("interior.furnishings", {}).has(id):
+		if Data.get_value("interior.furnishings", {}).has(id):
 			furnishings[id] = true
 		elif id == "water":
 			# The rain pool is no longer sold, so a farm that bought one is paid back what it cost.
@@ -1940,7 +1940,7 @@ func from_dict(d: Dictionary) -> void:
 		for key in ["planted", "cart_trips"]:
 			stats[key] = maxi(int(stats.get(key, 0)), 1)
 		var dug := plots.filter(func(p): return p["unlocked"] and p["zone"] == "home").size()
-		if dug > int(Balance.get_value("start.unlocked_plots", 4)):
+		if dug > int(Data.get_value("start.unlocked_plots", 4)):
 			stats["plots_unlocked"] = maxi(int(stats.get("plots_unlocked", 0)), 1)
 	# A farmhouse already restored was looked at before the tutorial counted it.
 	if villa_stage >= 2:

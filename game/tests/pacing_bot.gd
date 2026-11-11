@@ -79,7 +79,7 @@ func _act() -> void:
 			var zone := String(game.plots[i]["zone"])
 			game.selected_seed = "wheat" if zone == "home" and i % 3 == 2 else "lavender"
 			if not zone in game.crop_zones(game.selected_seed):
-				for crop in root.get_node("Balance").get_value("crops", {}):
+				for crop in root.get_node("Data").get_value("crops", {}):
 					if game.crop_zones(crop)[0] == zone and game.crop_unlocked(crop):
 						game.selected_seed = crop
 						break
@@ -112,7 +112,7 @@ func _act() -> void:
 		_buy_materials(act["cost"])
 		if game.coins - int(act["cost"].get("coins", 0)) >= reserve / 2:
 			game.do_building_action(id)
-	for h in root.get_node("Balance").get_value("helpers", {}):
+	for h in root.get_node("Data").get_value("helpers", {}):
 		if game.helper_block(h) == "" and game.helper_cost(h) >= 0 and game.coins - game.helper_cost(h) >= reserve:
 			game.hire_helper(h)
 	for u in ["storage", "cart_capacity", "cart_speed", "channels"]:

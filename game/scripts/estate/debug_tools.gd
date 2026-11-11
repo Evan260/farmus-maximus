@@ -40,10 +40,10 @@ func load_demo_state() -> void:
 	Game.coins = 10000000
 	Game.aureus = 1000
 	Game.build_speed = 5.0
-	Game.levels["storage"] = Balance.get_value("upgrades.storage.values", [12]).size() - 1
+	Game.levels["storage"] = Data.get_value("upgrades.storage.values", [12]).size() - 1
 	Game.storage = {"stone": 999, "timber": 999, "tiles": 999}
-	for item in Balance.get_value("items", {}):
-		if String(Balance.get_value("items.%s.kind" % item, "good")) == "good":
+	for item in Data.get_value("items", {}):
+		if String(Data.get_value("items.%s.kind" % item, "good")) == "good":
 			Game.storage[item] = 4
 	Game.storage["bread"] = 15
 	var stages := [1.0, 1.0, 0.7, 1.0, 0.4, 1.0, 1.0, 0.1, 1.0, 1.0, 0.8, 1.0, 1.0, 0.3, 1.0, 1.0, 0.0]
@@ -64,7 +64,7 @@ func load_demo_state() -> void:
 			(func() -> void: m._sky_view.force_aurora = true; m._sky_view.aurora_shape = shape).call_deferred()
 		elif arg.begins_with("--furnish="):
 			var which := arg.trim_prefix("--furnish=")
-			for id in Balance.get_value("interior.furnishings", {}):
+			for id in Data.get_value("interior.furnishings", {}):
 				if which == "all" or id in which.split(","):
 					Game.furnishings[id] = true
 		elif arg.begins_with("--inside"):
@@ -83,7 +83,7 @@ func load_demo_state() -> void:
 			# Uncle Marcus's advice, from the start or from a later step such as "--guide=cart".
 			Settings.show_tutorial = true
 			var from := arg.trim_prefix("--guide=") if "=" in arg else ""
-			for step in Balance.get_value("tutorial", []):
+			for step in Data.get_value("tutorial", []):
 				if String(step["id"]) == from:
 					break
 				if step["done"].has("stat"):
@@ -98,7 +98,7 @@ func load_demo_state() -> void:
 			Game.quiet = true
 			for entry in Game.journal.catalogue():
 				Game.discover(String(entry["id"]))
-			for ach in Balance.get_value("achievements", []):
+			for ach in Data.get_value("achievements", []):
 				Game.journal.achievements[ach["id"]] = true
 			Game.quiet = false
 		elif arg.begins_with("--coins="):
@@ -167,11 +167,11 @@ func load_demo_state() -> void:
 		elif arg.begins_with("--achievement"):
 			# The named achievements, or the next two not yet earned, to see their cards slide in one after the other.
 			var named := arg.trim_prefix("--achievement=").split(",") if "=" in arg else PackedStringArray()
-			var fresh: Array = Balance.get_value("achievements", []).filter(func(a): return not a.get("special", false) and (a["id"] in named if not named.is_empty() else not Game.journal.achievements.has(a["id"])))
+			var fresh: Array = Data.get_value("achievements", []).filter(func(a): return not a.get("special", false) and (a["id"] in named if not named.is_empty() else not Game.journal.achievements.has(a["id"])))
 			for a in fresh.slice(0, 2 if named.is_empty() else named.size()):
 				Game.achievement_unlocked.emit.call_deferred(a)
 		elif arg == "--triumph":
-			for a in Balance.get_value("achievements", []):
+			for a in Data.get_value("achievements", []):
 				if not a.get("special", false):
 					Game.journal.achievements[a["id"]] = true
 			Game.check_achievements.call_deferred()
@@ -182,7 +182,7 @@ func demo_estate() -> void:
 	Game.villa_stage = maxi(Game.villa_stage, 5)
 	for z in Game.zones_owned:
 		Game.zones_owned[z] = true
-	for c in Balance.get_value("crops", {}):
+	for c in Data.get_value("crops", {}):
 		Game.unlock_crop(c)
 	var looks := {"drying_shed": "working", "mill": "working", "bakery": "repairing", "beehives": "working", "olive_press": "owned",
 		"unguent": "ruin", "wine_press": "working", "cellar": "working", "barn": "working", "dairy": "repairing", "lararium": "working"}
@@ -227,11 +227,11 @@ func demo_maxed() -> void:
 	for kind in ["chicken", "goat"]:
 		barn["animals"][kind] = Game.animal_capacity(kind)
 	barn["feed"] = 40
-	for h in Balance.get_value("helpers", {}):
+	for h in Data.get_value("helpers", {}):
 		Game.helpers[h] = Game.helper_info(h).get("costs", [0]).size()
 	for u in Game.levels:
-		Game.levels[u] = Balance.get_value("upgrades.%s.values" % u, [0]).size() - 1
-	for d in Balance.get_value("decorations", {}):
+		Game.levels[u] = Data.get_value("upgrades.%s.values" % u, [0]).size() - 1
+	for d in Data.get_value("decorations", {}):
 		Game.decorations[d] = true
 	var home_crops := ["lavender", "lavender_violet", "lavender_bluegrey", "lavender_white", "wheat", "lavender"]
 	for i in Game.plots.size():
@@ -243,9 +243,9 @@ func demo_maxed() -> void:
 	for entry in Game.journal.catalogue():
 		Game.discover(String(entry["id"]))
 	# The trader would carry the full storehouse off at once, so every good starts marked to keep.
-	for item in Balance.get_value("items", {}):
+	for item in Data.get_value("items", {}):
 		Game.keep_goods[item] = true
 	# A finished farm has earned every achievement already, the Triumph too, so none chimes in once play starts.
-	for ach in Balance.get_value("achievements", []):
+	for ach in Data.get_value("achievements", []):
 		Game.journal.achievements[ach["id"]] = true
 	Game.quiet = false

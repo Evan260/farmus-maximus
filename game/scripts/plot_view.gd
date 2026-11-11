@@ -68,7 +68,7 @@ func _process(delta: float) -> void:
 
 ## The picture for a crop at a stage, recoloured for lavender varieties and cached so each is made once.
 static func texture_for(crop: String, visual: String, variant := 0) -> Texture2D:
-	var info: Dictionary = Balance.get_value("crops." + crop, {})
+	var info: Dictionary = Data.get_value("crops." + crop, {})
 	var set_id := String(info.get("sprite", crop))
 	var dir: String = SETS.get(set_id, SETS["lavender"])
 	var name := visual

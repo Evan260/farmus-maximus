@@ -19,7 +19,7 @@ func _init() -> void:
 static func describe(info: Dictionary) -> String:
 	if info.is_empty():
 		return TranslationServer.translate("Empty")
-	var stages: Array = Balance.get_value("villa.stages", [])
+	var stages: Array = Data.get_value("villa.stages", [])
 	var stage: String = String(stages[clampi(int(info["villa"]) - 1, 0, stages.size() - 1)].get("name", "")) if not stages.is_empty() else ""
 	var name: String = String(info["name"]) if String(info["name"]) != "" else TranslationServer.translate("Your farm")
 	return "%s  -  %s  -  %s" % [name, TranslationServer.translate("day %d") % int(info["day"]), TranslationServer.translate(stage)]

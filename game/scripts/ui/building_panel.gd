@@ -195,7 +195,7 @@ func _build_cellar() -> void:
 
 func _cask_text() -> String:
 	var b: Dictionary = Game.buildings[id]
-	var names: Array = Balance.get_value("quality.names", ["Common", "Fine", "Excellent"])
+	var names: Array = Data.get_value("quality.names", ["Common", "Fine", "Excellent"])
 	var counts := {-1: 0, 0: 0, 1: 0, 2: 0}
 	for age in b["casks"]:
 		counts[Game.cask_quality(float(age), id)] += 1

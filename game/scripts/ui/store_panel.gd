@@ -27,7 +27,7 @@ func build() -> void:
 		Ui.icon(r, key)
 		var name := Ui.label(r, "%s  x%d" % [tr(Game.item_name(key)), int(Game.storage[key])])
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var kind := String(Balance.get_value("items.%s.kind" % Game.item_base(key), "good"))
+		var kind := String(Data.get_value("items.%s.kind" % Game.item_base(key), "good"))
 		if kind == "good":
 			# The trader only takes goods marked for sale; a click keeps a good at home instead.
 			var selling := Game.for_sale(key)

@@ -4,7 +4,7 @@ extends "res://tests/test_case.gd"
 
 func test_rules() -> void:
 	var game: Node = root.get_node("Game")
-	var data_file: Node = root.get_node("Balance")
+	var data_file: Node = root.get_node("Data")
 	var secs := func(path: String) -> float: return float(data_file.get_value(path, 0)) + 1.0
 	game.new_game()
 	game.day_time = 8.0
