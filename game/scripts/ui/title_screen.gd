@@ -52,6 +52,13 @@ func _ready() -> void:
 	# The farm list takes the menu's place while it is open.
 	_farms.closed.connect(func(): _card.visible = true)
 	_show_menu()
+	var version := UiKit.label(self, "v" + str(ProjectSettings.get_setting("application/config/version", "")), true)
+	version.modulate.a = 0.7
+	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	version.offset_right = -4
+	version.offset_bottom = -3
 	UiKit.fade_in(self, 0.8)
 
 
