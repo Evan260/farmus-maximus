@@ -42,7 +42,7 @@ func _sync() -> void:
 			continue
 		var d: Dictionary = Game.decoration_info(id)
 		var tex: Texture2D = load(DIR + id + ".png")
-		var used := tex.get_image().get_used_rect()
+		var used := Hit.used_rect(tex)
 		var s := Sprite2D.new()
 		s.texture = tex
 		s.centered = false

@@ -48,7 +48,7 @@ static func face(parent: Node, helper: String) -> TextureRect:
 	var path := "res://assets/sprites/people/%s/east.png" % helper
 	if ResourceLoader.exists(path):
 		var tex: Texture2D = load(path)
-		var used := tex.get_image().get_used_rect()
+		var used := Hit.used_rect(tex)
 		var cut := AtlasTexture.new()
 		cut.atlas = tex
 		cut.region = Rect2(used.position.x - 1, used.position.y, used.size.x + 2, mini(16, used.size.y))

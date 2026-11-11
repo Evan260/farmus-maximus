@@ -59,7 +59,7 @@ func _next() -> void:
 	var wreath := TextureRect.new()
 	var cropped := AtlasTexture.new()
 	cropped.atlas = LAUREL
-	cropped.region = Rect2(LAUREL.get_image().get_used_rect())
+	cropped.region = Rect2(Hit.used_rect(LAUREL))
 	wreath.texture = cropped
 	wreath.custom_minimum_size = cropped.region.size
 	wreath.size_flags_vertical = Control.SIZE_SHRINK_CENTER

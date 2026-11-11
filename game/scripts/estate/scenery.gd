@@ -123,7 +123,7 @@ func grow_wild(v: Node2D) -> Node2D:
 	var x := r.position.x - 8.0 + rng.randf_range(0.0, 10.0)
 	while x < r.end.x:
 		var tex: Texture2D = load("res://assets/sprites/wild/%s.png" % kinds[rng.randi() % kinds.size()])
-		var used := tex.get_image().get_used_rect()
+		var used := Hit.used_rect(tex)
 		plants.append([tex, Vector2(roundf(x - used.position.x), roundf(r.end.y + rng.randi_range(0, 2) - used.end.y)), used.end.y])
 		x += used.size.x * rng.randf_range(1.3, 2.2)
 	# ...and little tufts scattered over the ground in front, kept off the planting beds. They are drawn with the beds,

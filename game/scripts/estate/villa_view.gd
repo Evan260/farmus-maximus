@@ -49,7 +49,7 @@ func place_villa() -> void:
 	shown_stage = Game.villa_stage
 	var tex := villa_texture()
 	m._villa.texture = tex
-	var used := tex.get_image().get_used_rect()
+	var used := Hit.used_rect(tex)
 	m._villa.region_rect = used
 	m._villa.position = Vector2(round(Estate.VILLA_BASE.x - used.size.x / 2.0), Estate.VILLA_BASE.y - used.size.y + 1)
 	m._villa_shadow.texture = Lighting.ellipse_texture(used.size.x + 12, 7, Estate.SHADOW)

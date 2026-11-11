@@ -20,7 +20,7 @@ static func frame_rect(owner: Node2D, s: AnimatedSprite2D) -> Rect2:
 
 ## The picture's visible area, worked out once for each picture since reading a picture's pixels back is slow.
 static func used_rect(tex: Texture2D) -> Rect2i:
-	var key := tex.get_instance_id()
+	var key: Variant = cache_key(tex)
 	if not _used.has(key):
 		_used[key] = tex.get_image().get_used_rect()
 	return _used[key]
@@ -39,7 +39,7 @@ static func frame_has_pixel(owner: Node2D, s: AnimatedSprite2D, point: Vector2) 
 static func texture_has_pixel(tex: Texture2D, corner: Vector2, point: Vector2, flip := false) -> bool:
 	if tex == null:
 		return false
-	var key := tex.get_instance_id()
+	var key: Variant = cache_key(tex)
 	if not _images.has(key):
 		_images[key] = tex.get_image()
 	var img: Image = _images[key]
@@ -50,6 +50,11 @@ static func texture_has_pixel(tex: Texture2D, corner: Vector2, point: Vector2, f
 	if local.x < 0 or local.y < 0 or local.x >= size.x or local.y >= size.y:
 		return false
 	return img.get_pixelv(Vector2i(local)).a > 0.1
+
+
+## A picture loaded again after being let go is a new object, so files are known by their path.
+static func cache_key(tex: Texture2D) -> Variant:
+	return tex.resource_path if tex.resource_path != "" else tex.get_instance_id()
 
 
 ## Where a sprite stands in its owner's parent; a sprite that stands alone is its own owner and counts its position once.

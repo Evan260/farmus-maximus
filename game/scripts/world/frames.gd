@@ -21,7 +21,7 @@ static func add_folder(f: SpriteFrames, anim: String, folder: String, fps: float
 
 ## The row just below the lowest drawn pixel, where the figure stands.
 static func feet_line(tex: Texture2D) -> int:
-	return tex.get_image().get_used_rect().end.y
+	return Hit.used_rect(tex).end.y
 
 
 ## The offset that stands a figure's feet on its node's position, centred across, whatever the picture's size.

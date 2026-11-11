@@ -1693,7 +1693,7 @@ func _dress_storehouse() -> void:
 	if level < 1 or not ResourceLoader.exists(path):
 		return
 	var tex: Texture2D = load(path)
-	var used := tex.get_image().get_used_rect()
+	var used := Hit.used_rect(tex)
 	_storehouse.texture = tex
 	_storehouse.region_rect = used
 	_storehouse.position = Vector2(HOME + 198 - (STORE_HOUSE_AT.x - used.position.x), 236 - (STORE_HOUSE_AT.y - used.position.y))
@@ -1768,7 +1768,7 @@ func _add_texture(tex: Texture2D, pos: Vector2, parent: Node = null) -> Sprite2D
 ## Adds a sprite cropped to its visible pixels; with from_bottom, pos.y is ignored and the sprite stands on base_y.
 func _add_trimmed(tex: Texture2D, pos: Vector2, from_bottom := false, base_y := 0, parent: Node = null) -> Sprite2D:
 	var s := _add_texture(tex, pos, parent)
-	var used := tex.get_image().get_used_rect()
+	var used := Hit.used_rect(tex)
 	s.region_enabled = true
 	s.region_rect = used
 	if from_bottom:

@@ -67,7 +67,7 @@ func _portrait(path: String) -> Texture2D:
 	if not ResourceLoader.exists(path):
 		return null
 	var tex: Texture2D = load(path)
-	var used := tex.get_image().get_used_rect()
+	var used := Hit.used_rect(tex)
 	var a := AtlasTexture.new()
 	a.atlas = tex
 	a.region = Rect2(used.position.x + used.size.x / 2.0 - 12, used.position.y, 24, 24)

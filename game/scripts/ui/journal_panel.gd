@@ -527,7 +527,7 @@ const PlotViewScript := preload("res://scripts/plot_view.gd")
 
 ## A picture cut down to its visible pixels, so it fills its frame.
 func _trimmed(tex: Texture2D) -> Texture2D:
-	var used := tex.get_image().get_used_rect()
+	var used := Hit.used_rect(tex)
 	if used.size == Vector2i(tex.get_width(), tex.get_height()):
 		return tex
 	var a := AtlasTexture.new()

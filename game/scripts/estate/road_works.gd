@@ -173,7 +173,7 @@ func build_stone_cart() -> void:
 	_stone_cart = Node2D.new()
 	_stone_cart.visible = false
 	m.world.add_child(_stone_cart)
-	var used := Rect2(load("res://assets/sprites/farm/cart.png").get_image().get_used_rect())
+	var used := Rect2(Hit.used_rect(load("res://assets/sprites/farm/cart.png")))
 	var top := Estate.RIG_BASE - used.size.y
 	for part in ["cart_back", "heap", "cart_front"]:
 		if part == "heap":

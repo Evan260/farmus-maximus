@@ -67,6 +67,8 @@ var _carry: Sprite2D
 var _delivering := false
 ## The fade in or out, or the step through their door, that is under way; a new one stops it so two never pull apart.
 var _fade: Tween
+## Each walk's pace, measured once, since it reads every frame's pixels back.
+static var _paces := {}
 
 
 func _ready() -> void:
@@ -417,6 +419,13 @@ func _frames() -> SpriteFrames:
 ## How many pixels a second a walk animation's feet cover at its frame rate: two steps a cycle, each step as long as
 ## the feet are furthest apart.
 static func natural_pace(f: SpriteFrames, anim: String) -> float:
+	var key := "%s %s %d %f" % [Hit.cache_key(f.get_frame_texture(anim, 0)), anim, f.get_frame_count(anim), f.get_animation_speed(anim)]
+	if not _paces.has(key):
+		_paces[key] = _measure_pace(f, anim)
+	return _paces[key]
+
+
+static func _measure_pace(f: SpriteFrames, anim: String) -> float:
 	var spread := []
 	for i in f.get_frame_count(anim):
 		var img := f.get_frame_texture(anim, i).get_image()

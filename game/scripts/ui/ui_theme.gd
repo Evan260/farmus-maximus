@@ -150,7 +150,7 @@ static func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> Sty
 	var s := StyleBoxTexture.new()
 	s.texture = tex
 	# The generated images have transparent margins, so the skin is cut from the visible part only.
-	s.region_rect = tex.get_image().get_used_rect()
+	s.region_rect = Hit.used_rect(tex)
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		s.set_texture_margin(side, border)
 		s.set_content_margin(side, pad + 1)

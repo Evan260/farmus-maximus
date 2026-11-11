@@ -545,7 +545,7 @@ func _pet_at(point: Vector2) -> AnimatedSprite2D:
 		if pet.modulate.a < 0.5 or pet.sprite_frames == null or not pet.sprite_frames.has_animation(pet.animation):
 			continue
 		var tex: Texture2D = pet.sprite_frames.get_frame_texture(pet.animation, pet.frame)
-		var used := Rect2(tex.get_image().get_used_rect())
+		var used := Rect2(Hit.used_rect(tex))
 		var box := Rect2(pet.position + (pet.offset + used.position) * DETAIL, used.size * DETAIL)
 		if box.grow(2).has_point(point):
 			return pet

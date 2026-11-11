@@ -148,7 +148,7 @@ func harness_x(cart_x: float, homeward: bool) -> float:
 func size_cart() -> void:
 	var level := clampi(int(Game.levels.get("cart_capacity", 0)), 0, Estate.CART_GROW.size() - 1)
 	_cart_grow = Estate.CART_GROW[level]
-	var used := load("res://assets/sprites/farm/cart.png").get_image().get_used_rect() as Rect2i
+	var used := Hit.used_rect(load("res://assets/sprites/farm/cart.png")) as Rect2i
 	for pair in [[m._cart_back, "cart_back"], [m._cart, "cart_front"]]:
 		var s: Sprite2D = pair[0]
 		var path := "res://assets/sprites/farm/%s_%d.png" % [pair[1], level]
@@ -226,7 +226,7 @@ func update_cart_load() -> void:
 			var x := 4.0 + k * 8.0
 			# Each good sits down in the bed: its visible bottom is placed below the cart's rim, which hides it.
 			if not _icon_bottoms.has(paths[k]):
-				_icon_bottoms[paths[k]] = icon.texture.get_image().get_used_rect().end.y
+				_icon_bottoms[paths[k]] = Hit.used_rect(icon.texture).end.y
 			var bottom: int = _icon_bottoms[paths[k]]
 			icon.position = Vector2(x if not m._cart.flip_h else 60.0 + _cart_grow.x - x - 16.0, 9 - bottom - rail)
 
