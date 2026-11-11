@@ -28,13 +28,21 @@ static func night_amount(hour: float) -> float:
 	return clampf((1.0 - c.g) / (1.0 - 0.37), 0.0, 1.0)
 
 
+## Shadows of one size and colour share one picture.
+static var _ellipses := {}
+
+
 static func ellipse_texture(w: int, h: int, color: Color) -> ImageTexture:
+	var key := "%d %d %s" % [w, h, color]
+	if _ellipses.has(key):
+		return _ellipses[key]
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for x in w:
 		for y in h:
 			if pow((x - w / 2.0 + 0.5) / (w / 2.0), 2) + pow((y - h / 2.0 + 0.5) / (h / 2.0), 2) <= 1.0:
 				img.set_pixel(x, y, color)
-	return ImageTexture.create_from_image(img)
+	_ellipses[key] = ImageTexture.create_from_image(img)
+	return _ellipses[key]
 
 
 static func heart_texture() -> ImageTexture:
