@@ -327,7 +327,7 @@ func _check_trial_run() -> void:
 	_check(not settings.persist and settings.trial_run(), "a test run counts as a trial run")
 	if settings.persist:
 		return
-	var files := ["user://prefs.json", "user://settings.json", "user://window.json"]
+	var files := ["user://settings.cfg", "user://prefs.json", "user://settings.json", "user://window.json"]
 	var read := func() -> Array: return files.map(func(f): return FileAccess.get_file_as_string(f) if FileAccess.file_exists(f) else "-")
 	var before: Array = read.call()
 	var tips: bool = settings.show_tutorial

@@ -9,7 +9,6 @@ const MUSIC_DIR := "res://assets/audio/music/"
 const PLAYER_MUSIC_DIR := "user://music/"
 const MUSIC_TYPES := ["ogg", "mp3", "wav"]
 const BUSES := ["Music", "Ambience", "Effects"]
-const SETTINGS_PATH := "user://settings.json"
 
 ## Volume per bus, 0 to 1.
 var volumes := {"Master": 1.0, "Music": 0.7, "Ambience": 0.45, "Effects": 0.8}
@@ -155,11 +154,7 @@ func fade_out(p: AudioStreamPlayer, seconds := 1.0) -> void:
 func set_volume(bus: String, value: float) -> void:
 	volumes[bus] = clampf(value, 0.0, 1.0)
 	_apply(bus)
-	if not Settings.persist:
-		return
-	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({"volumes": volumes}))
+	Settings.store("sound", {bus.to_lower(): volumes[bus]})
 
 
 func _apply(bus: String) -> void:
@@ -175,12 +170,8 @@ func _apply(bus: String) -> void:
 
 
 func _load_settings() -> void:
-	if FileAccess.file_exists(SETTINGS_PATH):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS_PATH))
-		if typeof(parsed) == TYPE_DICTIONARY:
-			for bus in parsed.get("volumes", {}):
-				if volumes.has(bus):
-					volumes[bus] = float(parsed["volumes"][bus])
+	for bus in volumes:
+		volumes[bus] = float(Settings.cfg.get_value("sound", bus.to_lower(), volumes[bus]))
 	for bus in BUSES:
 		_apply(bus)
 

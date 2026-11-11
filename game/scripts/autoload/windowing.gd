@@ -3,7 +3,6 @@ extends Node
 
 signal view_changed
 
-const SETTINGS_PATH := "user://window.json"
 const BASE := Vector2i(480, 270)
 ## The narrowest stretch of the estate a tall window shows, in estate pixels: a little over half a zone.
 const NARROWEST := 300
@@ -372,11 +371,11 @@ func _update_fps() -> void:
 
 func _load() -> void:
 	# Trial runs ignore the player's window settings too, so they always start the same way.
-	if not Settings.persist or not FileAccess.file_exists(SETTINGS_PATH):
+	if not Settings.persist or not Settings.cfg.has_section("window"):
 		return
-	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS_PATH))
-	if typeof(d) != TYPE_DICTIONARY:
-		return
+	var d := {}
+	for key in Settings.cfg.get_section_keys("window"):
+		d[key] = Settings.cfg.get_value("window", key)
 	strip = bool(d.get("strip", false))
 	transparent = bool(d.get("transparent", true))
 	# Older settings kept one of three sizes, 2, 3 or 4 screen pixels to the estate pixel.
@@ -391,9 +390,5 @@ func _load() -> void:
 
 
 func _save() -> void:
-	if not Settings.persist:
-		return
-	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({"strip": strip, "transparent": transparent, "strip_scale": strip_scale,
-			"strip_width": strip_width, "offset_x": offset_x, "offset_y": offset_y, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen}))
+	Settings.store("window", {"strip": strip, "transparent": transparent, "strip_scale": strip_scale, "strip_width": strip_width,
+		"offset_x": offset_x, "offset_y": offset_y, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen})

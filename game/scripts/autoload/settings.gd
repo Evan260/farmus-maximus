@@ -3,7 +3,11 @@ extends Node
 
 signal changed
 
-const PATH := "user://prefs.json"
+const FILE := "settings.cfg"
+## The settings kept in each section of settings.cfg; the volumes and the strip's own are kept there by Sfx and Windowing.
+const PLAY := ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "show_title", "show_tutorial", "tooltips", "language", "day_minutes"]
+const DISPLAY := ["ui_scale_step", "fullscreen", "low_power"]
+const SOUND := ["background_sound"]
 ## Every rebindable action with its default key, and the gamepad button that also does it.
 const ACTIONS := {
 	"pan_left": {"name": "Scroll left", "key": KEY_A, "pad": -1},
@@ -43,11 +47,23 @@ var show_tutorial := true
 var keys := {}
 ## Off for trial runs (see trial_run), which never write the player's preferences, volumes or window settings.
 var persist := true
+## Where settings.cfg is kept; tests point it at a folder of their own.
+var folder := "user://"
+## Everything in settings.cfg, the volumes and the strip's settings included.
+var cfg := ConfigFile.new()
+var _defaults := {}
+
+
+func _init() -> void:
+	for name in PLAY + DISPLAY + SOUND:
+		_defaults[name] = get(name)
 
 
 func _ready() -> void:
 	persist = not trial_run()
-	_load()
+	# The tests start from the game's own settings every time, whatever the player has chosen.
+	if not Dev.checking():
+		load_from(folder)
 	if Dev.has("new-farm"):
 		show_tutorial = true
 	# --ui-size=-1 (Smaller), 0 (Normal), 1 (Larger) or 2 (Largest) tries an interface size without keeping it.
@@ -132,33 +148,68 @@ func _bind(action: String, keycode: int) -> void:
 	InputMap.action_add_event(action, key)
 
 
-func _load() -> void:
-	if not FileAccess.file_exists(PATH):
-		return
-	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	if typeof(d) != TYPE_DICTIONARY:
-		return
-	for name in ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "low_power", "show_title", "show_tutorial", "fullscreen", "tooltips"]:
-		if d.has(name):
-			set(name, bool(d[name]))
-	language = String(d.get("language", language))
-	background_sound = String(d.get("background_sound", background_sound))
-	ui_scale_step = int(d.get("ui_scale_step", 0))
+## Reads settings.cfg from a folder; the first time, it is made from the three files the settings used to be kept in.
+func load_from(dir: String) -> void:
+	folder = dir
+	cfg = ConfigFile.new()
+	if cfg.load(dir.path_join(FILE)) != OK:
+		cfg = ConfigFile.new()
+		_bring_old_files()
+	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"]]:
+		for name in list[0]:
+			set(name, cfg.get_value(list[1], name, _defaults[name]))
+	keys = {}
+	if cfg.has_section("keys"):
+		for action in cfg.get_section_keys("keys"):
+			keys[action] = int(cfg.get_value("keys", action))
+
+
+## The preferences, volumes and strip settings were once three JSON files, which settings.cfg takes over once.
+func _bring_old_files() -> void:
+	var prefs := _old_file("prefs.json")
+	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"]]:
+		for name in list[0]:
+			if prefs.has(name):
+				cfg.set_value(list[1], name, type_convert(prefs[name], typeof(_defaults[name])))
 	# Normal became one step smaller, so settings saved before that keep the same size on screen.
-	if d.has("ui_scale_step") and not d.has("ui_sizes"):
-		ui_scale_step = mini(ui_scale_step + 1, 2)
-	day_minutes = int(d.get("day_minutes", 20))
-	for action in d.get("keys", {}):
-		keys[action] = int(d["keys"][action])
+	if prefs.has("ui_scale_step") and not prefs.has("ui_sizes"):
+		cfg.set_value("display", "ui_scale_step", mini(int(prefs["ui_scale_step"]) + 1, 2))
+	for action in prefs.get("keys", {}):
+		cfg.set_value("keys", action, int(prefs["keys"][action]))
+	var volumes: Dictionary = _old_file("settings.json").get("volumes", {})
+	for bus in volumes:
+		cfg.set_value("sound", String(bus).to_lower(), float(volumes[bus]))
+	var window := _old_file("window.json")
+	for key in window:
+		cfg.set_value("window", key, window[key])
+	if not (prefs.is_empty() and volumes.is_empty() and window.is_empty()):
+		_write()
+
+
+func _old_file(name: String) -> Dictionary:
+	var path := folder.path_join(name)
+	if not FileAccess.file_exists(path):
+		return {}
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return d if typeof(d) == TYPE_DICTIONARY else {}
 
 
 func save() -> void:
-	if not persist:
-		return
-	var f := FileAccess.open(PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({
-			"offline_progress": offline_progress, "notifications": notifications, "large_text": large_text,
-			"reduced_motion": reduced_motion, "strong_cues": strong_cues, "low_power": low_power, "language": language,
-			"show_title": show_title, "show_tutorial": show_tutorial, "background_sound": background_sound, "keys": keys, "ui_scale_step": ui_scale_step, "ui_sizes": 2, "day_minutes": day_minutes, "fullscreen": fullscreen, "tooltips": tooltips,
-		}))
+	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"]]:
+		for name in list[0]:
+			cfg.set_value(list[1], name, get(name))
+	for action in keys:
+		cfg.set_value("keys", action, int(keys[action]))
+	_write()
+
+
+## Keeps values for another part of the game, such as the volumes or the strip's place, in a section of settings.cfg.
+func store(section: String, values: Dictionary) -> void:
+	for key in values:
+		cfg.set_value(section, key, values[key])
+	_write()
+
+
+func _write() -> void:
+	if persist:
+		cfg.save(folder.path_join(FILE))
