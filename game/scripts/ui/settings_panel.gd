@@ -27,11 +27,12 @@ func signature() -> String:
 
 
 func build() -> void:
-	var tabs := UiKit.row(top)
+	var tabs := UiKit.tab_row(top)
 	for t in ["Sound", "Display", "Gameplay", "Keys"]:
-		var b := UiKit.tab_button(tabs, tr(t), func(): tab = t; show_page())
-		b.toggle_mode = true
-		b.button_pressed = t == tab
+		UiKit.tab_button(tabs, tr(t), func(): tab = t; show_page()).button_pressed = t == tab
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 7)
+	top.add_child(gap)
 	match tab:
 		"Sound":
 			for bus in ["Music", "Ambience", "Effects"]:

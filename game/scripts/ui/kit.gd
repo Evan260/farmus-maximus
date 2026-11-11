@@ -20,6 +20,10 @@ const CREAM := Color(0.99, 0.95, 0.86)
 const FADED := Color(0.4, 0.27, 0.2)
 const SHORT := Color(0.66, 0.2, 0.14)
 const HEADING := Color(0.55, 0.27, 0.18)
+## The parchment of a window, the darker paper of a tab that is not open, and the line round tabs.
+const TAB_OPEN := Color8(243, 220, 171)
+const TAB_SHUT := Color8(219, 186, 136)
+const TAB_EDGE := Color8(158, 104, 70)
 
 
 static func label(parent: Node, text := "", over_scene := false) -> Label:
@@ -79,10 +83,47 @@ static func setting(parent: Node, text: String, value: String, action: Callable,
 
 
 ## A tab along the top of a window: it sounds like turning a page rather than pressing a button.
+## A row of tabs over a page, with a rule along its foot that the open tab stands on, joined to the page below it.
+static func tab_row(parent: Node) -> HBoxContainer:
+	var r := HBoxContainer.new()
+	r.add_theme_constant_override("separation", 1)
+	r.draw.connect(func(): r.draw_rect(Rect2(0, r.size.y - 1, r.size.x, 1), TAB_EDGE))
+	parent.add_child(r)
+	var indent := Control.new()
+	indent.custom_minimum_size = Vector2(3, 0)
+	r.add_child(indent)
+	return r
+
+
+## A paper tab in a `tab_row`: the open one is taller and the colour of the page, the others shorter and darker.
 static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
+	b.toggle_mode = true
+	b.size_flags_vertical = Control.SIZE_SHRINK_END
+	for state in ["normal", "hover", "pressed", "hover_pressed"]:
+		var open: bool = state.ends_with("pressed")
+		var box := StyleBoxFlat.new()
+		box.anti_aliasing = false
+		box.bg_color = TAB_OPEN if open else (TAB_SHUT.lightened(0.12) if state == "hover" else TAB_SHUT)
+		box.border_color = TAB_EDGE
+		box.border_width_left = 1
+		box.border_width_right = 1
+		box.border_width_top = 1
+		box.border_width_bottom = 0 if open else 1
+		box.corner_radius_top_left = 2
+		box.corner_radius_top_right = 2
+		box.content_margin_left = 7
+		box.content_margin_right = 7
+		box.content_margin_top = 4 if open else 2
+		box.content_margin_bottom = 3 if open else 2
+		b.add_theme_stylebox_override(state, box)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	for c in ["font_color", "font_hover_color"]:
+		b.add_theme_color_override(c, FADED)
+	for c in ["font_pressed_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(c, INK)
 	b.pressed.connect(func(): Sfx.play("tab", -4.0))
 	b.pressed.connect(action)
 	parent.add_child(b)
