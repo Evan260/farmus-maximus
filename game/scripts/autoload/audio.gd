@@ -24,7 +24,7 @@ var _rain: AudioStreamPlayer
 var _next := 0
 var _day: AudioStreamPlayer
 var _night: AudioStreamPlayer
-## Headless runs have no sound device to mix the endless loops, and an unmixed stream is never let go of at exit.
+## Headless runs have no sound device to mix sounds, and an unmixed stream is never let go of at exit.
 var _silent := DisplayServer.get_name() == "headless"
 
 
@@ -137,13 +137,15 @@ func play(sound: String, volume_db := 0.0, pitch_jitter := 0.06) -> AudioStreamP
 	p.stream = stream
 	p.volume_db = volume_db
 	p.pitch_scale = 1.0 + randf_range(-pitch_jitter, pitch_jitter)
-	p.play()
+	if not _silent:
+		p.play()
 	return p
 
 
 ## Lets a sound that is still playing die away, such as the cart's wheels as the scene changes.
 func fade_out(p: AudioStreamPlayer, seconds := 1.0) -> void:
-	if p == null or not p.playing:
+	# Headless runs play nothing, so their sounds still fade as if they were playing.
+	if p == null or not (p.playing or _silent):
 		return
 	if _fades.has(p):
 		_fades[p].kill()
