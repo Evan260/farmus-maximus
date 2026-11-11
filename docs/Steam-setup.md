@@ -78,7 +78,7 @@ Use Auto-Cloud; the game needs no code for it. Each farm slot is saved as `farm_
 
 `farm*.json` covers both `farms.json` and every `farm_N.json`. The patterns leave out `farm_N.json.tmp`, which only exists for the moment a save is being written. If the save files are ever renamed, these patterns must change with them in `game/scripts/autoload/save_service.gd`, or cloud saves quietly stop syncing.
 
-`prefs.json`, `settings.json` and `window.json` are per-computer settings (key bindings, volume, where the strip sits), so they stay out of the cloud.
+`settings.cfg` holds the per-computer settings (key bindings, volume, where the strip sits), so it stays out of the cloud, as do the older `prefs.json`, `settings.json` and `window.json` it was made from.
 
 ## 4. Demo
 

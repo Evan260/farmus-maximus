@@ -49,15 +49,14 @@ In development builds, F1 opens a debug panel with time speed-ups, free coins an
 Run from the project folder, with `GODOT` standing for the Godot console executable:
 
 ```
-GODOT --headless --path game --script res://tests/test_simulation.gd
-GODOT --headless --path game --script res://tests/test_scene.gd
+GODOT --headless --path game -- --run-tests
 ```
 
 After changing anything in `balance.json`, the pacing bot shows when each milestone arrives for a keen player, and the completion bot plays on towards 100%:
 
 ```
-GODOT --headless --path game --script res://tests/pacing_bot.gd -- --hours=20
-GODOT --headless --path game --script res://tests/completion_bot.gd -- --hours=40
+GODOT --headless --path game -- --pacing --hours=20
+GODOT --headless --path game -- --completion --hours=40
 ```
 
 After adding or changing any picture or sound, run `GODOT --headless --path game --import`, or the game keeps using the old file.
