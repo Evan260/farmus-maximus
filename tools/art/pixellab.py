@@ -188,8 +188,9 @@ def png_b64(im):
 def tiles(box, limit=256):
     # Pro Flash inpaints at most 256 pixels per side, so larger areas are split into overlapping tiles.
     x0, y0, x1, y1 = box
-    xs = list(range(x0, max(x0 + 1, x1 - limit + 1), limit - 32)) or [x0]
-    ys = list(range(y0, max(y0 + 1, y1 - limit + 1), limit - 32)) or [y0]
+    step = max(limit // 2, limit - 32)
+    xs = list(range(x0, max(x0 + 1, x1 - limit + 1), step)) or [x0]
+    ys = list(range(y0, max(y0 + 1, y1 - limit + 1), step)) or [y0]
     if xs[-1] + limit < x1:
         xs.append(x1 - limit)
     if ys[-1] + limit < y1:
@@ -219,8 +220,9 @@ def cmd_inpaint(a):
         sys.exit("mask is empty")
     W, H = image.size
     # PixelLab repaints areas from 32 to 256 pixels a side, so a thin area is sent with some of its surroundings.
-    tw = min(256, max(32, (bx[2] - bx[0] + 3) // 4 * 4), W // 4 * 4)
-    th = min(256, max(32, (bx[3] - bx[1] + 3) // 4 * 4), H // 4 * 4)
+    least = size(a.tile) if a.tile else {"width": 32, "height": 32}
+    tw = min(256, max(least["width"], (bx[2] - bx[0] + 3) // 4 * 4), W // 4 * 4)
+    th = min(256, max(least["height"], (bx[3] - bx[1] + 3) // 4 * 4), H // 4 * 4)
     done = Image.new("L", image.size, 0)
     for tx, ty in tiles(bx, max(tw, th)):
         tx = min((max(0, tx) + 3) // 4 * 4, (W - tw) // 4 * 4)
@@ -373,6 +375,7 @@ def main():
     s.add_argument("--out", required=True)
     s.add_argument("--transparent", action="store_true")
     s.add_argument("--no-context", action="store_true", help="do not send the full image; use when it contains what is being removed")
+    s.add_argument("--tile", help="WIDTHxHEIGHT, the least each tile sent may be, so a thin area is painted seeing more of the picture round it")
     s.set_defaults(fn=cmd_inpaint)
 
     s = sub.add_parser("proflash", help="Pro Flash image, optionally matching a style reference")
