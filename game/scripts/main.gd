@@ -372,6 +372,8 @@ func _ready() -> void:
 	interior = InteriorView.new()
 	interior.left_house.connect(func(): hud.visible = true)
 	add_child(interior)
+	market.visibility_changed.connect(_cover)
+	interior.visibility_changed.connect(_cover)
 	hud.house_requested.connect(go_inside)
 
 	Game.planted.connect(func(i): Audio.play("plant"); _view(i).bounce())
@@ -419,6 +421,14 @@ func _ready() -> void:
 			(func() -> void:
 				hud.visible = false
 				interior.enter()).call_deferred()
+
+
+## The market town and the farmhouse fill the window, so the estate behind them is not drawn while either is open.
+func _cover() -> void:
+	var shown := not (market.visible or interior.visible)
+	_container.visible = shown
+	_sky_view.visible = shown
+	_far_view.visible = shown
 
 
 ## The donkey sets off down the road with the cart before the market town comes into view.
