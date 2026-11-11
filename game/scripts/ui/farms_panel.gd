@@ -62,7 +62,9 @@ func build() -> void:
 ## A farm cannot be brought back, so deleting one asks for the word typed out, which no stray click can do.
 func _confirm_delete(card: VBoxContainer, n: int) -> void:
 	var word := tr("delete")
-	var ask := UiKit.para(card, tr("Type \"%s\" to delete this farm for good.") % word, 220)
+	var info := Saves.slot_info(n)
+	var name: String = String(info["name"]) if String(info["name"]) != "" else tr("Your farm")
+	var ask := UiKit.para(card, tr("%s, on day %d, will be gone for good. Type \"%s\" to delete it.") % [name, int(info["day"]), word], 220)
 	ask.add_theme_color_override("font_color", UiKit.SHORT)
 	var r := UiKit.row(card)
 	var field := LineEdit.new()
@@ -72,8 +74,10 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 	field.text = _typed
 	field.caret_column = _typed.length()
 	r.add_child(field)
+	# The English word works in every language too, for a player whose keyboard cannot easily type the translated one.
+	var typed := func(t: String) -> bool: return t.strip_edges().to_lower() in [word.to_lower(), "delete"]
 	var gone := func():
-		if field.text.strip_edges().to_lower() != word.to_lower():
+		if not typed.call(field.text):
 			return
 		_deleting = 0
 		var current := n == Saves.slot
@@ -86,8 +90,8 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 			on_change.call()
 		refresh()
 	var del := UiKit.button(r, tr("Delete"), gone)
-	del.disabled = _typed.strip_edges().to_lower() != word.to_lower()
-	field.text_changed.connect(func(t: String): _typed = t; del.disabled = t.strip_edges().to_lower() != word.to_lower())
+	del.disabled = not typed.call(_typed)
+	field.text_changed.connect(func(t: String): _typed = t; del.disabled = not typed.call(t))
 	field.text_submitted.connect(func(_t): gone.call())
 	UiKit.button(r, tr("Cancel"), func(): _deleting = 0; refresh())
 	field.grab_focus.call_deferred()

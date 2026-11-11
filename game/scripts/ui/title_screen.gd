@@ -67,7 +67,11 @@ func _show_menu() -> void:
 		var about := UiKit.label(_menu, FarmsPanel.describe(info))
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		about.add_theme_color_override("font_color", UiKit.FADED)
-	UiKit.button(_menu, tr("New farm"), _new_farm)
+	var fresh := UiKit.button(_menu, tr("New farm"), _new_farm)
+	# A farm is never written over, so with every slot taken one has to be deleted first.
+	if Saves.free_slot() == 0:
+		fresh.disabled = true
+		UiKit.tip_on(fresh, "You already keep three farms. Delete one to start another.")
 	if Saves.any_farm():
 		UiKit.button(_menu, tr("Farms"), _open_farms)
 	UiKit.button(_menu, tr("Settings"), func(): open_window.call("settings"))
@@ -84,13 +88,10 @@ func _continue() -> void:
 		queue_free())
 
 
-## A new farm goes in the first empty slot; with every slot taken, the farm list opens so one can be cleared.
 func _new_farm() -> void:
 	var n := Saves.free_slot()
-	if n == 0:
-		_open_farms()
-		return
-	_name_farm(n)
+	if n > 0:
+		_name_farm(n)
 
 
 func _open_farms() -> void:
