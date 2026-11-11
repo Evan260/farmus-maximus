@@ -1,10 +1,11 @@
-"""Make the farmhouse interior from its two paintings: the ruined room, and the restored room with every furnishing.
+"""Make the farmhouse interior from its painting of the restored room with every furnishing.
 
-The restored painting is cropped to the game's 480 x 270 and its colours reduced, so it sits on the same crisp pixel
-grid as the estate. The painted dog and cat are repainted away (the player's own animals nap there instead), and then
-each furnishing that can be bought is repainted away in turn with PixelLab's inpainting, leaving the empty room. Each
-furnishing is saved as its own picture, cut from the furnished room along its mask, so the game can lay the bought
-ones over the empty room.
+The painting is cropped to the game's 480 x 270 and its colours reduced, so it sits on the same crisp pixel grid as
+the estate. The painted dog and cat are repainted away (the player's own animals nap there instead), the old pool and
+rug are repainted into plain floor, and then each furnishing that can be bought is repainted away in turn with
+PixelLab's inpainting, leaving the empty room. The rug is drawn in code. Each furnishing is saved as its own picture,
+cut from the furnished room along its mask, so the game can lay the bought ones over the empty room. The rooms carry
+on past the painting at the sides and top, painted by PixelLab, so a wide or tall window shows more of the room.
 
 Usage:
     python tools/art/make_interior.py masks PREVIEW_DIR    draw every mask over the room to check them, spending nothing
@@ -18,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "tools" / "art" / "sources" / "interior"
@@ -37,8 +39,8 @@ def lum(a):
     return a[..., 0] * 0.3 + a[..., 1] * 0.59 + a[..., 2] * 0.11
 
 
-def shapes(polys=(), rects=(), ellipses=()):
-    m = Image.new("L", (W, H), 0)
+def shapes(polys=(), rects=(), ellipses=(), size=(W, H)):
+    m = Image.new("L", size, 0)
     d = ImageDraw.Draw(m)
     for p in polys:
         d.polygon(p, fill=255)
@@ -88,18 +90,12 @@ def heal(a, mask):
             todo[y, x] = False
 
 
-def water(room):
-    a = np.array(room).astype(int)
-    inside = shapes(polys=[[(186, 196), (226, 178), (322, 178), (350, 200), (300, 232), (206, 232)]])
-    return inside
-
-
 # Each step: a name, how to find its mask in the furnished room, and how to take it away: what PixelLab should paint
 # there instead, or for something as small as a flame, the pixels around it closing over it. A fourth part names an
 # earlier repaint to reuse, where two furnishings were taken away together.
 ANIMALS = ("animals", lambda room: shapes(ellipses=[(252, 90, 306, 121)]), "a red cushioned couch, empty, no animals")
-# The rug the painted dog lay on is painted again whole, without the dog; it is part of the room, the dog's own spot.
-RUG = [(14, 230), (56, 198), (148, 194), (196, 236), (174, 264), (48, 264)]
+# The rug the painted dog lay on is painted again whole, without the dog, before it and the pool become plain floor.
+OLD_RUG = [(14, 230), (56, 198), (148, 194), (196, 236), (174, 264), (48, 264)]
 RUG_WORDS = "one flat rectangular woven wool rug with orange, brown and cream stripes and a short fringe, lying on the stone floor, seen at an angle"
 FURNISHINGS = [
     ("fire", lambda room: shapes(rects=[(77, 88, 137, 155)]),
@@ -114,9 +110,101 @@ FURNISHINGS = [
      "an empty wooden shelf against a worn red plaster wall, nothing on the shelves", "amphorae"),
     ("panel", lambda room: shapes(rects=[(144, 13, 196, 85)]),
      "a plain worn red plaster wall with faded patches, no painting"),
-    ("water", water,
-     "an empty dry stone basin sunk in the floor, dusty grey flagstones, no water"),
 ]
+
+# The old rain pool and rug become plain flagstones; the plant pot that overlaps the rug's corner is kept.
+POOL_AREA = [(150, 200), (254, 164), (418, 192), (264, 256)]
+POT = [(0, 220), (30, 220), (33, 230), (45, 262), (46, 269), (0, 269)]
+FLOOR_WORDS = ("the same worn flagstone floor of irregular cream, grey and rust coloured stones, flat and unbroken, "
+               "no rug, no pool, no basin, no water")
+
+
+def floor_mask():
+    rug = grow(shapes(polys=[OLD_RUG, [(8, 238), (18, 222), (40, 218), (44, 232)]]), 3)
+    return (grow(shapes(polys=[POOL_AREA]), 4) | rug) & ~shapes(polys=[POT])
+
+
+# The rug's corners on the half-detail grid (back left, back right, front right, front left), and its stripes from
+# back to front as shares of its depth. It is drawn in code, so its edges are straight and all four corners show.
+RUG_CORNERS = [(32, 99), (80, 99), (97, 127), (10, 127)]
+CREAM, ORANGE, RUST, BROWN, BINDING = (218, 163, 102), (190, 98, 40), (150, 72, 37), (112, 57, 27), (86, 50, 30)
+RUG_BANDS = [(0.05, BINDING), (0.06, RUST), (0.12, ORANGE), (0.04, CREAM), (0.09, BROWN), (0.06, ORANGE), (0.04, CREAM),
+             (0.08, RUST), (0.04, CREAM), (0.06, ORANGE), (0.09, BROWN), (0.04, CREAM), (0.12, ORANGE), (0.06, RUST),
+             (0.05, BINDING)]
+
+
+def rug_outline():
+    """The rug's outline in the painting's pixels."""
+    return [(x * 2, y * 2) for x, y in RUG_CORNERS]
+
+
+def lay_rug(a):
+    """Draws the striped wool rug on a room picture, a half-detail pixel at a time: its stripes follow the floor's
+    perspective, its sides are bound in a darker edge, a fringe of cream threads hangs off its back and front, and its
+    front edge casts a thin shadow on the stones."""
+    import cv2
+    square = np.float32([(0, 0), (1, 0), (1, 1), (0, 1)])
+    back = cv2.getPerspectiveTransform(np.float32(RUG_CORNERS), square)
+    h, w = a.shape[0] // 2, a.shape[1] // 2
+    ys, xs = np.mgrid[0:h, 0:w]
+    pts = cv2.perspectiveTransform(np.dstack([xs + 0.5, ys + 0.5]).astype(np.float32).reshape(-1, 1, 2), back).reshape(h, w, 2)
+    u, v = pts[..., 0], pts[..., 1]
+    inside = (u >= 0) & (u < 1) & (v >= 0) & (v < 1)
+    ends = np.cumsum([b[0] for b in RUG_BANDS])
+    band = np.minimum(np.searchsorted(ends, v, side="right"), len(RUG_BANDS) - 1)
+    colours = np.array([b[1] for b in RUG_BANDS], float)[band]
+    # A dotted cream pattern runs along the middle stripe.
+    colours[(band == 7) & (xs % 3 == 0)] = CREAM
+    edge = (u < 0.035) | (u > 0.965)
+    colours[edge] = BINDING
+    colours *= (0.9 + 0.1 * v)[..., None]
+    # A soft grain of wool, and a little shade towards its sides, where it dips to the floor.
+    grain = np.random.default_rng(7).normal(0, 0.035, (h, w))
+    colours *= (1.0 + grain - 0.08 * np.clip(1.0 - np.minimum(u, 1 - u) / 0.12, 0, 1))[..., None]
+    top = np.full(w, -1)
+    bottom = np.full(w, -1)
+    for x in range(w):
+        rows = np.nonzero(inside[:, x])[0]
+        if len(rows):
+            top[x], bottom[x] = rows[0], rows[-1]
+            # The front edge is the rug's thickness, a shade darker.
+            colours[rows[-1], x] *= 0.8
+    rgb = a[..., :3]
+    for y, x in zip(*np.nonzero(inside)):
+        rgb[y * 2:y * 2 + 2, x * 2:x * 2 + 2] = colours[y, x]
+
+    def put(x, y, colour=None, dim=1.0):
+        if 0 <= x < w and 0 <= y < h and not inside[y, x]:
+            block = rgb[y * 2:y * 2 + 2, x * 2:x * 2 + 2]
+            block[:] = np.array(colour) if colour is not None else block * dim
+
+    for x in range(w):
+        if bottom[x] < 0 or edge[top[x], x]:
+            continue
+        # Threads every other pixel, longer at the front, which is nearer; between them the floor lies in shadow.
+        if x % 2 == 0:
+            put(x, top[x] - 1, np.array(CREAM) * 0.85)
+            put(x, bottom[x] + 1, CREAM)
+            put(x, bottom[x] + 2, np.array(CREAM) * 0.9)
+            put(x, bottom[x] + 3, dim=0.75)
+        else:
+            put(x, bottom[x] + 1, dim=0.7)
+    return a
+
+
+# The doorway's opening, where the estate's own sky and far hills show through; the game draws them.
+DOOR = (366, 20, 430, 132)
+# The wooden beam across the top of the doorway's stone frame, which the finished room does without.
+BEAM = (332, 2, 454, 22)
+BEAM_WORDS = ("the top of a pale cut limestone door frame: a lintel of cream stone blocks over the doorway joining the "
+              "two stone door posts, smooth red plaster wall above it, no wooden beam")
+# The rooms carry on this far past the painting on each side and above it, for wide and tall windows.
+SIDE = 84
+ABOVE = 90
+PLANT_WORDS = ("the rest of the potted plant's long spiky green leaves spreading over the flagstone floor, the same plant "
+               "carrying on, cozy pixel art")
+WIDE_WORDS = ("more of the same cozy Roman farmhouse room carrying on: red plaster walls over a low stone wall, the "
+              "flagstone floor, dark wooden ceiling beams above, plain and empty, no furniture, no doors, no windows")
 
 
 def inpaint(before, mask, description, out, context=False, blank=False):
@@ -133,6 +221,11 @@ def inpaint(before, mask, description, out, context=False, blank=False):
     subprocess.run([sys.executable, str(ROOT / "tools" / "art" / "pixellab.py"), "inpaint",
                     str(before.relative_to(ROOT)), str(tmp_mask.relative_to(ROOT)),
                     description + ", cozy pixel art, warm lamplit Roman room", "--out", str(out.relative_to(ROOT)), *flags], check=True)
+    # PixelLab paints in steps of four pixels, so rows below the last whole step take the row above's colours.
+    a = np.array(Image.open(out))
+    for y in range(a.shape[0] // 4 * 4, a.shape[0]):
+        a[y][mask[y]] = a[y - 1][mask[y]]
+    Image.fromarray(a).save(out)
 
 
 def preview_masks(room, folder):
@@ -155,24 +248,6 @@ def _shared_mask(room, step):
     return m
 
 
-def tidy_rug(img):
-    """The repainted rug leaves a sliver of stripes past its fringed left edge; the floor just beside it covers it."""
-    a = np.array(img.convert("RGB"))
-    sliver = shapes(polys=[[(18, 210), (38, 206), (31, 226), (27, 234), (18, 234)]])
-    for y, x in zip(*np.nonzero(sliver)):
-        a[y, x] = a[y, x - 18]
-    # Its top left corner was cut square by the area it was painted in: the fringe is carried on to the corner, and a
-    # woven binding runs down the left side, so the rug ends in a proper edge.
-    a[200:206, 43:50] = a[200:206, 50:57]
-    side = [(43, 205), (43, 210), (37, 220), (35, 230), (39, 240), (44, 250)]
-    for (x0, y0), (x1, y1) in zip(side, side[1:]):
-        for y in range(y0, y1):
-            x = round(x0 + (x1 - x0) * (y - y0) / (y1 - y0))
-            a[y, x - 1] = (86, 52, 34)
-            a[y, x] = (196, 160, 112) if y % 3 else (150, 96, 60)
-    return Image.fromarray(a)
-
-
 def soften_outlines(img):
     """The paintings outline everything in near black, which the estate's art does not; each thin dark line becomes a
     darker shade of the colours beside it instead. Wide dark areas, such as the firebox and deep shadows, stay."""
@@ -192,23 +267,12 @@ def soften_outlines(img):
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
-def open_sky(img, rects, blue):
-    """The picture with its painted sky cut out where the outdoors shows, so the game's own sky can show through: the
-    pale sunset sky in the restored room's doorway, or the blue sky in the ruin's doorway and broken roof. Trees, vines
-    and hills stay."""
-    a = np.array(img.convert("RGBA")).astype(int)
-    for x0, y0, x1, y1 in rects:
-        r = a[y0:y1, x0:x1]
-        light = lum(r) > 95
-        # The painted clouds go too, as the game's own clouds drift past instead.
-        sky = light & ((r[..., 2] > r[..., 0] + 20) | (lum(r) > 200) if blue else (r[..., 1] > 70))
-        r[..., 3][sky] = 0
-    return Image.fromarray(a.astype(np.uint8))
-
-
-# Where the outdoors shows, as rectangles in which painted sky is cut out.
-ROOM_SKY = [(366, 18, 432, 64)]
-RUIN_SKY = [(398, 62, 460, 116), (268, 0, 342, 26)]
+def cut_door(img, ox=0, oy=0):
+    """The picture with the doorway's opening made see-through, so the game's own sky and far hills show there."""
+    a = np.array(img.convert("RGBA"))
+    x0, y0, x1, y1 = DOOR
+    a[oy + y0:oy + y1, ox + x0:ox + x1, 3] = 0
+    return Image.fromarray(a)
 
 
 # The ruin is the restored room fallen into disrepair, drawn over the bare restored room so the hearth, the doorway
@@ -219,25 +283,27 @@ LEAVES = [np.array(c) for c in ([46, 74, 38], [72, 108, 48], [102, 138, 62])]
 TILE = [np.array(c) for c in ([176, 92, 54], [140, 70, 44], [112, 56, 38])]
 
 
-def _noise(rng, scale):
+def _noise(rng, scale, h=H, w=W):
     """Smooth random blobs over the room, from coarse random values scaled up."""
-    small = rng.random((H // scale + 2, W // scale + 2))
-    big = np.array(Image.fromarray((small * 255).astype(np.uint8)).resize(((W // scale + 2) * scale, (H // scale + 2) * scale), Image.BICUBIC))
-    return big[:H, :W] / 255.0
+    small = rng.random((h // scale + 2, w // scale + 2))
+    big = np.array(Image.fromarray((small * 255).astype(np.uint8)).resize(((w // scale + 2) * scale, (h // scale + 2) * scale), Image.BICUBIC))
+    return big[:h, :w] / 255.0
 
 
-def ruin_room(empty):
+def ruin_room(empty, ox=0, oy=0):
     """The restored room as a ruin: plaster fallen from the red walls, cracks, ivy climbing and hanging, cobwebs,
-    fallen roof tiles and rubble on the floor and in the dry pool, a hole torn in the roof, and dust over it all."""
+    fallen roof tiles and rubble on the floor, a hole torn in the roof, and dust over it all. The painting's own part
+    of the picture starts `ox` pixels in and `oy` down."""
     rng = np.random.default_rng(31)
     a = np.array(empty.convert("RGBA")).astype(float)
     rgb = a[..., :3]
+    H, W = a.shape[:2]
     ys, xs = np.mgrid[0:H, 0:W]
-    plaster = (rgb[..., 0] > rgb[..., 1] * 1.35) & (rgb[..., 0] > 90) & (ys < 100) & (a[..., 3] > 0)
+    plaster = (rgb[..., 0] > rgb[..., 1] * 1.35) & (rgb[..., 0] > 90) & (ys < oy + 100) & (a[..., 3] > 0)
     # Plaster gone in patches, showing the stone behind with a dark broken edge.
-    fallen = plaster & ((_noise(rng, 14) * 0.7 + _noise(rng, 5) * 0.3) > 0.64)
+    fallen = plaster & ((_noise(rng, 14, H, W) * 0.7 + _noise(rng, 5, H, W) * 0.3) > 0.64)
     edge = grow(fallen, 1) & ~fallen & plaster
-    shade = (_noise(rng, 3) - 0.5) * 30
+    shade = (_noise(rng, 3, H, W) - 0.5) * 30
     rgb[fallen] = np.clip(STONE + shade[fallen][:, None], 0, 255)
     rgb[edge] = rgb[edge] * 0.55
     # Cracks wander down the walls, now and then splitting.
@@ -253,7 +319,7 @@ def ruin_room(empty):
     # Ivy climbs from the foot of the walls and hangs from the broken roof.
     for x0, y0, up in [(6, 100, True), (128, 92, True), (338, 138, True), (440, 140, True), (300, 82, True),
                        (160, 0, False), (250, 0, False), (318, 0, False), (420, 0, False)]:
-        x, y = float(x0), float(y0)
+        x, y = float(ox + x0), float(oy + y0 if up else 0)
         for k in range(rng.integers(40, 80)):
             y += -1 if up else 1
             x += rng.normal(0, 0.6)
@@ -268,7 +334,7 @@ def ruin_room(empty):
                     if 0 <= px < W and 0 <= py < H and a[py, px, 3] > 0:
                         rgb[py, px] = c
     # Cobwebs hang in the top corners.
-    for cx, cy, flip in [(0, 0, 1), (479, 0, -1), (140, 0, 1)]:
+    for cx, cy, flip in [(0, 0, 1), (W - 1, 0, -1), (ox + 140, 0, 1)]:
         for r in range(4, 22, 5):
             for t in np.linspace(0, np.pi / 2, r * 2):
                 px, py = int(cx + flip * r * np.cos(t)), int(cy + r * np.sin(t))
@@ -280,17 +346,12 @@ def ruin_room(empty):
                 if 0 <= px < W and 0 <= py < H:
                     rgb[py, px] = rgb[py, px] * 0.6 + np.array([210, 205, 195]) * 0.4
     # The rug left behind is worn thin and grey with dust.
-    rug = shapes(polys=[RUG])
+    rug = shapes(polys=[[(ox + x, oy + y) for x, y in rug_outline()]], size=(W, H))
     rgb[rug] = rgb[rug] * 0.75 + (rgb[rug] @ [0.3, 0.59, 0.11])[:, None] * 0.25 * np.array([1.0, 0.95, 0.85])
-    # Fallen roof tiles and rubble, thickest under the hole in the roof and in the dry pool.
-    floor = (ys > 158) & (a[..., 3] > 0)
-    pool = shapes(polys=[[(196, 196), (228, 182), (320, 182), (344, 200), (300, 228), (210, 228)]])
-    for _ in range(170):
-        if rng.random() < 0.45:
-            cand = np.argwhere(pool)
-        else:
-            cand = np.argwhere(floor)
-        y, x = cand[rng.integers(len(cand))]
+    # Fallen roof tiles and rubble across the floor, kept off the rug.
+    floor = np.argwhere((ys > oy + 158) & (a[..., 3] > 0) & ~grow(rug, 3))
+    for _ in range(140):
+        y, x = floor[rng.integers(len(floor))]
         if rng.random() < 0.55:
             w, h, c = rng.integers(3, 7), rng.integers(2, 3), TILE[rng.integers(3)]
             for dy in range(h):
@@ -305,11 +366,13 @@ def ruin_room(empty):
             rgb[y, x] = [g + 10, g, g - 12]
             if x + 1 < W:
                 rgb[y, x + 1] = [g - 20, g - 26, g - 34]
-    # The roof is torn open at the top: the sky shows through a ragged hole edged with broken beams.
+    # The roof is torn open at the top: the sky shows through a ragged gap edged with broken beams, running down from
+    # the top of the picture to just inside the painting's own top edge.
     hx, hy, rx, ry = ROOF_HOLE
-    hole = ((xs - hx) / rx) ** 2 + ((ys - hy) / ry) ** 2 + (_noise(rng, 4) - 0.5) * 0.5 < 1.0
+    reach = (oy + ry) / 2.0
+    hole = ((xs - ox - hx) / rx) ** 2 + ((ys - (oy + ry) / 2.0) / reach) ** 2 + (_noise(rng, 4, H, W) - 0.5) * 0.5 < 1.0
     rim = grow(hole, 2) & ~hole
-    rgb[rim] = np.array([84, 56, 40]) + (_noise(rng, 2)[rim][:, None] - 0.5) * 40
+    rgb[rim] = np.array([84, 56, 40]) + (_noise(rng, 2, H, W)[rim][:, None] - 0.5) * 40
     a[hole, 3] = 0
     # Everything faded and dusty: colours drained towards a dusty grey, and the light dimmed.
     grey = (rgb @ [0.3, 0.59, 0.11])[..., None] * np.array([1.04, 1.0, 0.93])
@@ -352,6 +415,57 @@ def repaint_walls(img):
     return Image.fromarray(a)
 
 
+def smooth_plaster(img):
+    """The finished room's red plaster made smooth and even: each plaster pixel takes most of the average colour of
+    the plaster around it and keeps a little of its own, so the wall reads as fresh paint with a soft grain. Stone,
+    wood and everything else is left as it is."""
+    from scipy import ndimage
+    a = np.array(img.convert("RGBA")).astype(float)
+    rgb = a[..., :3]
+    red = (rgb[..., 0] > rgb[..., 1] * 1.6) & (rgb[..., 0] > 60) & (a[..., 3] > 0)
+    red = ndimage.binary_opening(red, np.ones((2, 2)))
+    # Worn patches are small areas ringed by plaster; they are painted over too.
+    labels, count = ndimage.label(~red)
+    worn = np.zeros_like(red)
+    for k, box in enumerate(ndimage.find_objects(labels), 1):
+        y0, y1 = max(0, box[0].start - 3), box[0].stop + 3
+        x0, x1 = max(0, box[1].start - 3), box[1].stop + 3
+        spot = labels[y0:y1, x0:x1] == k
+        if spot.sum() > 700:
+            continue
+        ring = ndimage.binary_dilation(spot, iterations=2) & ~spot
+        if red[y0:y1, x0:x1][ring].mean() > 0.85:
+            worn[y0:y1, x0:x1] |= spot
+    weight = ndimage.gaussian_filter(red.astype(float), 3.0)
+    mean = np.dstack([ndimage.gaussian_filter(rgb[..., c] * red, 3.0) for c in range(3)]) / np.maximum(weight, 1e-6)[..., None]
+    wide_weight = ndimage.gaussian_filter(red.astype(float), 9.0)
+    wide_mean = np.dstack([ndimage.gaussian_filter(rgb[..., c] * red, 9.0) for c in range(3)]) / np.maximum(wide_weight, 1e-6)[..., None]
+    rgb[worn] = wide_mean[worn]
+    rgb[red] = mean[red] * 0.8 + rgb[red] * 0.2
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+
+def widen(core, cached, redo):
+    """The room with more of it painted past the painting's sides and top. The margins are painted once and cached;
+    the painting itself is always laid in again, so later changes inside it show."""
+    if redo or not cached.exists():
+        canvas = Image.new("RGB", (W + SIDE * 2, H + ABOVE), (0, 0, 0))
+        canvas.paste(core.convert("RGB"), (SIDE, ABOVE))
+        canvas.save(STEPS / "wide_before.png")
+        margin = np.ones((H + ABOVE, W + SIDE * 2), bool)
+        margin[ABOVE:, SIDE:SIDE + W] = False
+        inpaint(STEPS / "wide_before.png", margin, WIDE_WORDS, cached, blank=True)
+        # The margins are painted in tiles that do not quite meet the painting or each other, so a band along every
+        # join, and across each tile's foot, is painted again with the room on both sides of it in the picture.
+        ys, xs = np.mgrid[0:H + ABOVE, 0:W + SIDE * 2]
+        joins = (((np.abs(xs - SIDE) < 10) | (np.abs(xs - SIDE - W) < 10)) & (ys > ABOVE - 10)) | (np.abs(ys - ABOVE) < 10)
+        joins |= (np.abs(ys - 253) < 8) | (ys > H + ABOVE - 6)
+        inpaint(cached, joins & margin, WIDE_WORDS, cached, blank=True)
+    wide = np.array(Image.open(cached).convert("RGB"))
+    wide[ABOVE:, SIDE:SIDE + W] = np.array(core.convert("RGB"))
+    return wide
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "build"
     room = load("room", 70)
@@ -370,41 +484,86 @@ def main():
     clean = STEPS / "clean.png"
     if "rug" in redo or not clean.exists():
         # The room is not sent along, as PixelLab then paints a small copy of the whole room on the floor.
-        inpaint(no_cat, shapes(polys=[RUG]), RUG_WORDS, clean, blank=True)
-    furnished = soften_outlines(tidy_rug(Image.open(clean)))
+        inpaint(no_cat, shapes(polys=[OLD_RUG]), RUG_WORDS, clean, blank=True)
+    bare = STEPS / "bare_floor.png"
+    if "floor" in redo or not bare.exists():
+        inpaint(clean, floor_mask(), FLOOR_WORDS, bare, context=True)
+    furnished = np.array(soften_outlines(Image.open(bare)))
     # Each furnishing is repainted away from the furnished room on its own, and the empty room gathers every repaint,
     # so one can be redone without the others.
-    empty = np.array(furnished).copy()
-    owns = {}
+    empty = furnished.copy()
     masks = [find(room) for _, find, *_ in FURNISHINGS]
     for k, (name, find, how, *shared) in enumerate(FURNISHINGS):
         mask = masks[k]
         if callable(how):
-            alone = np.array(furnished).astype(float)
+            alone = furnished.astype(float)
             how(alone, mask)
             empty[mask] = alone[mask].astype(np.uint8)
         else:
             step = STEPS / f"without_{shared[0] if shared else name}.png"
             if name in redo or not step.exists():
                 inpaint(clean, mask if not shared else _shared_mask(room, shared[0]), how, step)
-            empty[mask] = np.array(soften_outlines(tidy_rug(Image.open(step))))[mask]
-        a = np.array(furnished)
+            empty[mask] = np.array(soften_outlines(Image.open(step)))[mask]
+    lay_rug(furnished)
+    lay_rug(empty)
+    owns = {}
+    for k, (name, *_rest) in enumerate(FURNISHINGS):
         # Where two furnishings' areas overlap, the pixels belong to the later one, so neither draws over the other.
-        own = mask.copy()
+        own = masks[k].copy()
         for later in masks[k + 1:]:
             own &= ~later
         # Only the furnishing itself, not the wall or floor around it, so it sits on the walls however they are painted.
-        from scipy import ndimage
-        changed = own & (np.abs(a.astype(int) - empty.astype(int)).sum(axis=2) > 30)
+        changed = own & (np.abs(furnished.astype(int) - empty.astype(int)).sum(axis=2) > 30)
         # Solid shapes: specks of changed wall dropped, and the holes left where a colour happened to match filled in.
         owns[name] = own & ndimage.binary_fill_holes(ndimage.binary_opening(changed, np.ones((2, 2))))
+    # The finished room has a stone lintel over its doorway in place of the wooden beam.
+    lintel = STEPS / "without_beam.png"
+    if "beam" in redo or not lintel.exists():
+        inpaint(bare, shapes(rects=[BEAM]), BEAM_WORDS, lintel, blank=True)
+    finished = empty.copy()
+    beam = shapes(rects=[BEAM])
+    finished[beam] = np.array(soften_outlines(Image.open(lintel)))[beam]
+    wide = widen(Image.fromarray(empty), STEPS / "wide.png", "wide" in redo)
+    wide_finished = wide.copy()
+    wide_finished[ABOVE:, SIDE:SIDE + W] = np.array(repaint_walls(Image.fromarray(finished)).convert("RGB"))
+    # The plants in the bottom corners are cut by the painting's edges, so the rest of each is painted into the margin
+    # beside it and belongs to the plants.
+    furnished_wide = wide.copy()
+    furnished_wide[ABOVE:, SIDE:SIDE + W] = furnished
+    grown = STEPS / "plants_wide.png"
+    plants = np.zeros(wide.shape[:2], bool)
+    plants[ABOVE:, SIDE:SIDE + W] = owns["plants"]
+    beside = np.zeros_like(plants)
+    for x in (SIDE, SIDE + W - 1):
+        rows = np.nonzero(plants[:, x])[0]
+        side = slice(SIDE - 40, SIDE) if x == SIDE else slice(SIDE + W, SIDE + W + 40)
+        if len(rows):
+            beside[max(ABOVE, rows.min() - 12):, side] = True
+    if "plants" in redo or "wide" in redo or not grown.exists():
+        Image.fromarray(furnished_wide).save(STEPS / "plants_before.png")
+        inpaint(STEPS / "plants_before.png", beside, PLANT_WORDS, grown, blank=True)
+    painted_on = np.array(Image.open(grown).convert("RGB"))
+    changed = beside & (np.abs(painted_on.astype(int) - wide.astype(int)).sum(axis=2) > 40)
+    # Only leaf colours count, green or deep shadow, so floor the painting touched up stays floor.
+    r, g, b = (painted_on[..., c].astype(int) for c in range(3))
+    changed &= (g >= r - 8) | (r + g + b < 150)
+    changed = ndimage.binary_opening(changed, np.ones((2, 2)))
+    # Only the leaves joined to the plant in the painting are kept, so no stray blot stands apart from it.
+    labels, _n = ndimage.label(changed | plants)
+    keep = np.isin(labels, np.unique(labels[plants]))
+    furnished_wide[beside & changed & keep] = painted_on[beside & changed & keep]
+    wide_owns = {}
+    for name, own in owns.items():
+        mask = np.zeros(wide.shape[:2], bool)
+        mask[ABOVE:, SIDE:SIDE + W] = own
+        wide_owns[name] = mask | (beside & changed & keep if name == "plants" else False)
     rooms = {
-        "empty": open_sky(Image.fromarray(empty), ROOM_SKY, False),
-        "painted": repaint_walls(open_sky(Image.fromarray(empty), ROOM_SKY, False)),
-        "ruin": ruin_room(open_sky(Image.fromarray(empty), ROOM_SKY, False)),
-        "furnished": furnished.convert("RGBA"),
+        "empty": cut_door(Image.fromarray(wide), SIDE, ABOVE),
+        "painted": smooth_plaster(cut_door(Image.fromarray(wide_finished), SIDE, ABOVE)),
+        "ruin": ruin_room(cut_door(Image.fromarray(wide), SIDE, ABOVE), SIDE, ABOVE),
+        "furnished": Image.fromarray(furnished_wide).convert("RGBA"),
     }
-    write_half(rooms, owns)
+    write_half(rooms, wide_owns)
     print("wrote", OUT)
 
 
@@ -426,9 +585,10 @@ def halve(img):
 def write_half(rooms, owns):
     """The farm is drawn with far fewer pixels to an object than the paintings, so the room is kept at half their
     detail: every picture is halved and shares one palette of colours. Each furnishing is cut from the halved
-    furnished room, and its place is given in the halved room's pixels."""
+    furnished room, and its place is given in the halved painting's pixels, so a piece that reaches past the
+    painting's edge has a place below zero or past its width."""
     halves = {name: halve(img) for name, img in rooms.items()}
-    together = np.concatenate([h[..., :3] for h in halves.values()], axis=0).astype(np.uint8)
+    together = np.concatenate([h[..., :3].reshape(-1, 1, 3) for h in halves.values()], axis=0).astype(np.uint8)
     palette = Image.fromarray(together).quantize(colors=96, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
 
     def flat(a):
@@ -439,14 +599,15 @@ def write_half(rooms, owns):
         Image.fromarray(flat(halves[name])).save(OUT / f"{name}.png")
     furnished = flat(halves["furnished"])
     spots = {}
+    h, w = furnished.shape[:2]
     for name, own in owns.items():
-        small = own[: H // 2 * 2, : W // 2 * 2].reshape(H // 2, 2, W // 2, 2).mean(axis=(1, 3)) >= 0.5
+        small = own[: h * 2, : w * 2].reshape(h, 2, w, 2).mean(axis=(1, 3)) >= 0.5
         layer = np.zeros(furnished.shape, np.uint8)
         layer[small] = furnished[small]
         ys, xs = np.nonzero(small)
         box = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
         Image.fromarray(layer[box[1]:box[3], box[0]:box[2]]).save(OUT / f"{name}.png")
-        spots[name] = box
+        spots[name] = [box[0] - SIDE // 2, box[1] - ABOVE // 2, box[2] - SIDE // 2, box[3] - ABOVE // 2]
     (OUT / "furnished.png").unlink(missing_ok=True)
     (OUT / "furnishings.json").write_text(json.dumps(spots, indent="\t") + "\n", encoding="utf-8")
 

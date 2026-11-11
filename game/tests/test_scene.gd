@@ -187,6 +187,10 @@ func _run() -> void:
 	_check(int(game.stats.get("pets", 0)) == stroked + 1, "stroking a pet inside counts like petting it outside")
 	inside._weave()
 	_check(inside._weaving > 0.0, "clicking the loom sets it weaving")
+	_check(inside._far_land.region_rect.size * inside.DETAIL == inside.DOOR.size and inside._far_land.texture.resource_path.ends_with("layer_land.png"),
+		"the doorway shows the estate's own hills, a pixel of theirs to each of the room's")
+	_check(inside._base.texture.get_width() * inside.DETAIL == 480 + inside.SIDE * 2 and inside._base.texture_repeat != CanvasItem.TEXTURE_REPEAT_MIRROR,
+		"the room's picture carries on past the painting at the sides instead of mirroring it")
 	game.day_time = hour
 	main.interior.leave()
 	await create_timer(1.0).timeout

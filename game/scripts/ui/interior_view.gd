@@ -2,23 +2,25 @@ extends CanvasLayer
 ## Inside the farmhouse: a room of its own over the estate, like the market town. While the house is a ruin it is an
 ## empty shell open to the sky; once restored it is a bare room that the player furnishes piece by piece, each bought
 ## furnishing painted into place. The fire and lamps flicker, the loom weaves when clicked, the estate's own sky shows
-## through the doorway, and the player's own dog and cat nap on the rug and the couch and answer a stroke.
+## through the doorway over the estate's own hills, and the player's own dog and cat nap on the rug and the couch and
+## answer a stroke.
 
 signal left_house
 
 const DIR := "res://assets/backgrounds/interior/"
 const SkyView := preload("res://scripts/world/sky_view.gd")
 const FLAME := preload("res://assets/shaders/flame.gdshader")
-const WATER := preload("res://assets/shaders/water.gdshader")
-## The square of sky over the pool: an atrium's roof opens above its rain pool, out of sight above the picture, so
-## daylight falls on the water in a soft shaft and rain falls straight into it.
-const SHAFT := [Vector2(196, 0), Vector2(344, 0), Vector2(344, 200), Vector2(320, 182), Vector2(228, 182), Vector2(196, 196)]
-## The painted land seen through the doorway, which darkens at night like the estate.
-const LAND := Rect2(366, 56, 66, 78)
-## The ruin is the same room fallen apart, so its doorway is the same one.
-const RUIN_LAND := LAND
-## Which part of the estate's sky shows through the doorway: the room's pixel at the doorway's horizon, and the sky's.
-const SKY_AT := {"room": [Vector2(399, 57), Vector2(230, 170)], "ruin": [Vector2(399, 57), Vector2(230, 170)]}
+## The doorway's opening in the painting, and the pixel of the estate's far scenery at its top left corner: the
+## estate's own mountains, hills and sky show through it, a pixel of theirs to each of the room's.
+const DOOR := Rect2(366, 20, 64, 112)
+const VIEW_FROM := Vector2(400, 124)
+const FAR := "res://assets/backgrounds/estate/"
+## How far the room's pictures carry on past the painting on each side and above it, in the painting's pixels.
+const SIDE := 84.0
+const ABOVE := 90.0
+## Past the room's pictures, on a window wider or taller still, the walls fade into this shadow over FADE pixels.
+const DARK := Color(0.09, 0.05, 0.04)
+const FADE := 24.0
 ## The loom, and where its working parts are on the room's half-detail grid: the warp threads run from WARP_LEFT to
 ## WARP_RIGHT, the shed opens between them at SHED_Y, the heddle bar sits at HEDDLE_Y and the woven edge at FELL_Y.
 const LOOM := Rect2(155, 84, 85, 80)
@@ -42,8 +44,6 @@ const WEFT_SHADE := Color8(116, 92, 156)
 const DETAIL := 2.0
 const FIRE_GLOW := Vector2(101, 140)
 const LAMP_FLAMES := [Vector2(70, 49), Vector2(132, 53), Vector2(20, 119), Vector2(305, 102)]
-## The pool's surface, as a shape the shimmer stays inside.
-const POOL := [Vector2(196, 196), Vector2(228, 182), Vector2(320, 182), Vector2(344, 200), Vector2(300, 228), Vector2(210, 228)]
 const MARK := Color(1, 0.95, 0.75)
 
 var _scene: Node2D
@@ -64,12 +64,14 @@ var _weaving := 0.0
 var _woven := 0.0
 var _hearts: Array = []
 var _base: Sprite2D
-## Above the painting on a tall window, its top strip of wall and beams repeated upwards.
-var _top: Sprite2D
+## The shadow the room fades into past its pictures' edges.
+var _edges: Node2D
 var _light: CanvasModulate
 var _glow_layer: CanvasLayer
 var _glow: Node2D
-var _land: Node2D
+## The estate's mountains and hills seen through the doorway.
+var _far_mountains: Sprite2D
+var _far_land: Sprite2D
 ## The light the fire throws on the room around it, and each oil lamp's.
 var _fire_light: Lamp
 var _lamp_lights: Array[Lamp] = []
@@ -119,6 +121,8 @@ func _ready() -> void:
 	_sky = SkyView.new()
 	_sky.sky_visible = func() -> bool: return visible
 	_sky_layer.add_child(_sky)
+	_far_mountains = _far(FAR + "layer_mountains.png")
+	_far_land = _far(FAR + "layer_land.png")
 	_spots = JSON.parse_string(FileAccess.get_file_as_string(DIR + "furnishings.json")) if FileAccess.file_exists(DIR + "furnishings.json") else {}
 	_scene = Node2D.new()
 	_viewport.add_child(_scene)
@@ -127,15 +131,8 @@ func _ready() -> void:
 	_base = Sprite2D.new()
 	_base.centered = false
 	_base.scale = Vector2(DETAIL, DETAIL)
-	# Past the painting's edges its walls and floor carry on, mirrored.
-	_base.texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
+	_base.position = -Vector2(SIDE, ABOVE)
 	_scene.add_child(_base)
-	_top = Sprite2D.new()
-	_top.centered = false
-	_top.flip_v = true
-	_top.scale = Vector2(DETAIL, DETAIL)
-	_top.texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
-	_scene.add_child(_top)
 	for id in Balance.get_value("interior.furnishings", {}):
 		if not _spots.has(id) or not ResourceLoader.exists(DIR + id + ".png"):
 			continue
@@ -145,10 +142,6 @@ func _ready() -> void:
 		s.position = Vector2(_spots[id][0], _spots[id][1]) * DETAIL
 		s.scale = Vector2(DETAIL, DETAIL)
 		s.visible = false
-		if id == "water":
-			var ripple := ShaderMaterial.new()
-			ripple.shader = WATER
-			s.material = ripple
 		if id in ["fire", "lamps"]:
 			var flame := ShaderMaterial.new()
 			flame.shader = FLAME
@@ -170,6 +163,9 @@ func _ready() -> void:
 	_cat.centered = false
 	_cat.scale = Vector2(DETAIL, DETAIL)
 	_scene.add_child(_cat)
+	_edges = Node2D.new()
+	_edges.draw.connect(_draw_edges)
+	_scene.add_child(_edges)
 	_marks = Node2D.new()
 	_marks.draw.connect(_draw_marks)
 	_scene.add_child(_marks)
@@ -192,21 +188,22 @@ func _ready() -> void:
 	_glow = Node2D.new()
 	_glow.draw.connect(_draw_glow)
 	_glow_layer.add_child(_glow)
-	# The land seen through the doorway is lit as the estate is outside, not as the room is, so it darkens with the
-	# sky above it: the room's own light is taken off it again and the outdoor light put on, by multiplying.
-	_land = Node2D.new()
-	var mul := CanvasItemMaterial.new()
-	mul.blend_mode = CanvasItemMaterial.BLEND_MODE_MUL
-	_land.material = mul
-	_land.draw.connect(func():
-		var outdoor: Color = Lighting.color_at(Game.day_time) * Estate.SEASON_TINT.get(Game.calendar.season_id(), Color.WHITE)
-		var ratio := Color(minf(1.0, outdoor.r / maxf(_light.color.r, 0.01)), minf(1.0, outdoor.g / maxf(_light.color.g, 0.01)), minf(1.0, outdoor.b / maxf(_light.color.b, 0.01)))
-		var land: Rect2 = RUIN_LAND if ruined() else LAND
-		_dot(_land, land.position, land.size / DETAIL, ratio))
-	_glow_layer.add_child(_land)
 	_build_ui()
 	Windowing.view_changed.connect(_fit)
 	_fit()
+
+
+## A piece of the estate's far scenery, cut to the doorway and drawn behind the room.
+func _far(path: String) -> Sprite2D:
+	var s := Sprite2D.new()
+	s.texture = load(path)
+	s.centered = false
+	s.region_enabled = true
+	s.region_rect = Rect2(VIEW_FROM, DOOR.size / DETAIL)
+	s.position = DOOR.position
+	s.scale = Vector2(DETAIL, DETAIL)
+	_sky_layer.add_child(s)
+	return s
 
 
 func _shadow(at: Vector2, w: int, h: int) -> Sprite2D:
@@ -231,6 +228,8 @@ func _build_ui() -> void:
 	top.position = Vector2(4, 4)
 	_outside = UiKit.button(top, tr("Back outside"), leave)
 	_furnish = UiKit.button(top, tr("Furnish"), func(): _open(""))
+	for b in [_outside, _furnish]:
+		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var purse_box := PanelContainer.new()
 	top.add_child(purse_box)
 	var info := UiKit.column(purse_box)
@@ -255,7 +254,7 @@ func _build_ui() -> void:
 
 
 ## Each pixel of the half-detail canvas is shown at twice the estate's pixel size; a window of another shape shows
-## more of the room's walls and floor, the painting carried on past its edges.
+## more of the room's walls, floor and ceiling, which its pictures carry on past the painting.
 func _fit() -> void:
 	var view := get_viewport().get_visible_rect().size
 	var shown := Windowing.scale * DETAIL
@@ -271,21 +270,33 @@ func _fit() -> void:
 		l.transform = place
 	_display.scale = Vector2(shown, shown)
 	_display.position = ((view - canvas * shown) / 2.0).floor()
-	var spare := _origin / DETAIL
-	_base.region_enabled = true
-	_base.region_rect = Rect2(-spare.x, 0, 240 + spare.x * 2.0, 135)
-	_base.position = Vector2(-spare.x * DETAIL, 0)
-	_top.visible = spare.y > 0
-	_top.region_enabled = true
-	_top.region_rect = Rect2(-spare.x, 0, 240 + spare.x * 2.0, maxf(spare.y, 1.0))
-	_top.position = Vector2(-spare.x, -spare.y) * DETAIL
-	# The sky is drawn at the same coarseness, its horizon behind the doorway's.
-	var at: Array = SKY_AT["ruin" if ruined() else "room"]
+	_edges.queue_redraw()
+	# The sky is drawn at the same coarseness, lined up with the far hills under it.
 	_sky.scale = Vector2(DETAIL, DETAIL)
-	_sky.position = at[0] - at[1] * DETAIL
+	_sky.position = DOOR.position - VIEW_FROM * DETAIL
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
 	_panel.position = Vector2(_ui_root.size.x - 240, 30)
+
+
+## Where the window shows more than the room's pictures hold, the walls fade a pixel at a time into shadow.
+func _draw_edges() -> void:
+	var shown := Rect2(-_origin, Vector2(480, 270) + Vector2(_origin.x * 2.0, _origin.y))
+	var art := Rect2(-SIDE, -ABOVE, 480 + SIDE * 2.0, 270 + ABOVE)
+	if art.encloses(shown):
+		return
+	var steps := int(FADE / DETAIL)
+	for k in steps:
+		var a := 1.0 - float(k + 1) / (steps + 1)
+		var inset := k * DETAIL
+		if shown.position.x < art.position.x:
+			_edges.draw_rect(Rect2(art.position.x + inset, shown.position.y, DETAIL, shown.size.y), Color(DARK, a))
+			_edges.draw_rect(Rect2(art.end.x - inset - DETAIL, shown.position.y, DETAIL, shown.size.y), Color(DARK, a))
+		if shown.position.y < art.position.y:
+			_edges.draw_rect(Rect2(shown.position.x, art.position.y + inset, shown.size.x, DETAIL), Color(DARK, a))
+	_edges.draw_rect(Rect2(shown.position.x, shown.position.y, art.position.x - shown.position.x, shown.size.y), DARK)
+	_edges.draw_rect(Rect2(art.end.x, shown.position.y, shown.end.x - art.end.x, shown.size.y), DARK)
+	_edges.draw_rect(Rect2(shown.position.x, shown.position.y, shown.size.x, art.position.y - shown.position.y), DARK)
 
 
 func enter() -> void:
@@ -319,8 +330,6 @@ func _room_picture() -> String:
 func _dress_room() -> void:
 	_room = _room_picture()
 	_base.texture = load(DIR + _room)
-	# The top rows of the painting hold no open sky, so they can be carried on upwards without showing a hole.
-	_top.texture = ImageTexture.create_from_image(_base.texture.get_image().get_region(Rect2i(0, 0, 240, 8)))
 	for id in _sprites:
 		_sprites[id].visible = not ruined() and Game.furnishings.has(id)
 	for pet in [_dog, _cat, _dog_shadow, _cat_shadow]:
@@ -397,7 +406,10 @@ func _process(delta: float) -> void:
 		h["age"] += delta
 	_hearts = _hearts.filter(func(h): return h["age"] < 1.4)
 	_glow.queue_redraw()
-	_land.queue_redraw()
+	# The far hills are outdoors, so they take the estate's own light rather than the room's.
+	var outdoor: Color = Lighting.color_at(Game.day_time) * Estate.SEASON_TINT.get(Game.calendar.season_id(), Color.WHITE)
+	_far_land.modulate = Color(outdoor, 1.0)
+	_far_mountains.modulate = Color(outdoor * Color.WHITE.lerp(Color(0.62, 0.6, 0.7), night), 1.0)
 	_marks.queue_redraw()
 	_refresh()
 	if not Input.get_connected_joypads().is_empty():
@@ -423,7 +435,6 @@ func _dot(item: CanvasItem, at: Vector2, size: Vector2, colour: Color) -> void:
 
 func _draw_glow() -> void:
 	var night := Lighting.night_amount(Game.day_time)
-	# The painted land outside darkens with the evening, under the sky's own stars.
 	for h in _hearts:
 		var a: float = 1.0 - h["age"] / 1.4
 		var p: Vector2 = h["at"] + Vector2(sin(h["age"] * 5.0) * 3.0, -h["age"] * 20.0)
@@ -440,55 +451,6 @@ func _draw_glow() -> void:
 			var f := 0.85 + 0.15 * sin(_t * 6.0 + p.x)
 			_glow.draw_circle(p, 12.0, Color(1.0, 0.7, 0.35, 0.09 * night * f))
 			_glow.draw_circle(p, 5.0, Color(1.0, 0.8, 0.45, 0.15 * night * f))
-	_draw_atrium_sky(night)
-	if Game.furnishings.has("water"):
-		# Glints come and go across the water, a few at a time.
-		for k in 7:
-			var phase := fposmod(_t * 0.5 + k * 0.37, 1.0)
-			var seed := floorf(_t * 0.5 + k * 0.37) * 13.0 + k * 7.0
-			var at := Vector2(206 + fposmod(seed * 37.0, 130.0), 186 + fposmod(seed * 19.0, 38.0)).floor()
-			if Geometry2D.is_point_in_polygon(at, PackedVector2Array(POOL)):
-				_dot(_glow, at, Vector2(2, 1), Color(1.0, 0.95, 0.8, 0.5 * sin(phase * PI)))
-
-
-## The light and the rain that come down through the roof opening onto the pool.
-func _draw_atrium_sky(night: float) -> void:
-	var raining: bool = Game.calendar.raining()
-	var shaft := PackedVector2Array(SHAFT)
-	var pool := PackedVector2Array(POOL)
-	# Sunlight by day, a faint cool moonlight by night, both dimmed under rain clouds.
-	var light := Color(1.0, 0.95, 0.8).lerp(Color(0.6, 0.7, 1.0), night)
-	var strength := (0.12 - 0.08 * night) * (0.5 if raining else 1.0)
-	_glow.draw_colored_polygon(shaft, Color(light, strength))
-	# The water itself catches the light rather than a shape laid over the stone around it.
-	if _sprites.has("water"):
-		var lift := 1.0 + strength * 2.5
-		_sprites["water"].modulate = Color(lift, lift, lift * 0.98)
-	if not raining:
-		return
-	var water := Game.furnishings.has("water")
-	# Rain falls straight down the shaft; each streak is a short line of pale pixels.
-	for k in 26:
-		var x := 198.0 + fposmod(k * 53.7, 144.0)
-		var y := fposmod(_t * 190.0 + k * 41.3, 236.0) - 8.0
-		if Geometry2D.is_point_in_polygon(Vector2(x, y + 5), shaft):
-			_dot(_glow, Vector2(x, y), Vector2(1, 3), Color(0.82, 0.88, 0.97, 0.55))
-	# Where the drops land, rings spread on the water, or small splashes jump off the dry stone.
-	for k in 9:
-		var life := fposmod(_t * 1.3 + k * 0.29, 1.0)
-		var round_no := floorf(_t * 1.3 + k * 0.29)
-		var at := Vector2(206 + fposmod((round_no + k) * 47.0, 132.0), 188 + fposmod((round_no * 3.0 + k) * 13.0, 36.0)).floor()
-		if not Geometry2D.is_point_in_polygon(at, pool):
-			continue
-		var fade := 1.0 - life
-		if water:
-			var r := 1.0 + life * 6.0
-			for a in 16:
-				var angle := a * TAU / 16.0
-				_dot(_glow, at + Vector2(cos(angle) * r, sin(angle) * r * 0.4) * DETAIL, Vector2.ONE, Color(0.85, 0.92, 1.0, 0.5 * fade))
-		elif life < 0.3:
-			for d in [Vector2(-1, -1), Vector2(1, -1), Vector2(0, -2)]:
-				_dot(_glow, at + d * (1.0 + life * 4.0) * DETAIL, Vector2.ONE, Color(0.85, 0.9, 0.95, 0.6 * fade))
 
 
 ## Spots that can still be furnished twinkle softly, and the one under the pointer is outlined.
@@ -797,7 +759,7 @@ func _furnishing_card(id: String, named: bool) -> void:
 	var buy := UiKit.button(r, tr("Buy for %d sestertii") % int(f.get("price", 0)), func():
 		if Game.buy_furnishing(id):
 			Sfx.play("coins", -6.0)
-			# Each furnishing arrives with its own sound: water poured in, a fire lit, pots set down.
+			# Each furnishing arrives with its own sound: a fire lit, pots set down.
 			for sound in f.get("sounds", []):
 				Sfx.play(String(sound), -2.0)
 			_sprites[id].visible = true
