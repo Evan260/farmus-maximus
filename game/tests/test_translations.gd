@@ -154,12 +154,12 @@ func test_fonts_have_every_letter() -> void:
 	var missing := {}
 	for key in sheet:
 		for loc in sheet[key]:
-			var font := UiKit.ui_font(loc)
+			var font := UiTheme.ui_font(loc)
 			for c in str(sheet[key][loc]):
 				if c != "\n" and c != " " and not _draws(font, c.unicode_at(0)) and not str(missing.get(loc, "")).contains(c):
 					missing[loc] = str(missing.get(loc, "")) + c
 	for loc in SettingsPanel.NATIVE_NAMES:
 		for c in str(SettingsPanel.NATIVE_NAMES[loc]):
-			if c != " " and not _draws(UiKit.ui_font(loc), c.unicode_at(0)) and not str(missing.get(loc, "")).contains(c):
+			if c != " " and not _draws(UiTheme.ui_font(loc), c.unicode_at(0)) and not str(missing.get(loc, "")).contains(c):
 				missing[loc] = str(missing.get(loc, "")) + c
 	check(missing.is_empty(), "every language's font draws all its letters (missing %s)" % str(missing))

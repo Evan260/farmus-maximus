@@ -69,7 +69,7 @@ func _draw() -> void:
 		TinyFont.draw(self, at + Vector2(0, 1), _lines[i], INK)
 		TinyFont.draw(self, at, _lines[i], Color(0.99, 0.95, 0.86))
 	if hovered:
-		UiKit.outline(self, b, Color(1, 0.96, 0.85, 0.8))
+		Ui.outline(self, b, Color(1, 0.96, 0.85, 0.8))
 
 
 func contains(point: Vector2) -> bool:

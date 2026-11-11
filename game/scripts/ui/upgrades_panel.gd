@@ -17,13 +17,13 @@ func signature() -> String:
 
 func build() -> void:
 	_rows = {}
-	UiKit.para(body, tr("The cart and donkey carry the trader's loads to market."), WIDTH).add_theme_color_override("font_color", UiKit.MUTED)
+	Ui.para(body, tr("The cart and donkey carry the trader's loads to market."), WIDTH).add_theme_color_override("font_color", UiTheme.MUTED)
 	for id in IDS:
-		var card := UiKit.card(body)
-		var b := UiKit.setting(card, tr(String(Game.upgrade_info(id).get("name", id))), "", func(): Game.buy_upgrade(id), WIDTH - 10)
-		b.get_parent().get_child(0).add_theme_color_override("font_color", UiKit.HEADING)
-		var about := UiKit.para(card, "", WIDTH - 10)
-		about.add_theme_color_override("font_color", UiKit.MUTED)
+		var card := Ui.card(body)
+		var b := Ui.setting(card, tr(String(Game.upgrade_info(id).get("name", id))), "", func(): Game.buy_upgrade(id), WIDTH - 10)
+		b.get_parent().get_child(0).add_theme_color_override("font_color", UiTheme.HEADING)
+		var about := Ui.para(card, "", WIDTH - 10)
+		about.add_theme_color_override("font_color", UiTheme.MUTED)
 		_rows[id] = {"button": b, "about": about}
 
 
@@ -37,11 +37,11 @@ func tick() -> void:
 		var values: Array = info.get("values", [0])
 		var now := int(values[mini(level, values.size() - 1)])
 		var next := int(values[mini(level + 1, values.size() - 1)])
-		var build_time := UiKit.duration(Game.upgrade_seconds(id) / Game.build_speed)
+		var build_time := Ui.duration(Game.upgrade_seconds(id) / Game.build_speed)
 		if Game.projects.has(id):
 			b.text = tr("Building")
 			b.disabled = true
-			about.text = tr("Builders at work: %s left") % UiKit.duration(float(Game.projects[id]) / Game.build_speed)
+			about.text = tr("Builders at work: %s left") % Ui.duration(float(Game.projects[id]) / Game.build_speed)
 			continue
 		if cost < 0:
 			b.text = tr("Done")
@@ -54,7 +54,7 @@ func tick() -> void:
 				"channels":
 					about.text = tr("Water runs to the home farm, so it grows faster.")
 			continue
-		b.text = UiKit.cost_text({"coins": cost})
+		b.text = Ui.cost_text({"coins": cost})
 		b.disabled = Game.coins < cost
 		match id:
 			"cart_capacity":

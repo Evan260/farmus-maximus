@@ -163,18 +163,18 @@ func _ready() -> void:
 	_ui_layer.visible = false
 	add_child(_ui_layer)
 	_ui_root = Control.new()
-	_ui_root.theme = UiKit.make_theme()
+	_ui_root.theme = UiTheme.build()
 	# The whole screen listens for clicks on the painting; the windows on top take their own clicks first.
 	_ui_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	_ui_root.gui_input.connect(_on_picture_input)
 	_ui_layer.add_child(_ui_root)
-	var top := UiKit.row(_ui_root)
+	var top := Ui.row(_ui_root)
 	top.position = Vector2(4, 4)
-	_back = UiKit.button(top, tr("Back to the estate"), leave)
+	_back = Ui.button(top, tr("Back to the estate"), leave)
 	var purse_box := PanelContainer.new()
 	top.add_child(purse_box)
-	_purse = UiKit.label(purse_box)
-	_hover_label = UiKit.label(_ui_root, "", true)
+	_purse = Ui.label(purse_box)
+	_hover_label = Ui.label(_ui_root, "", true)
 	_hover_label.visible = false
 	_panel = PanelContainer.new()
 	_panel.visible = false
@@ -182,17 +182,17 @@ func _ready() -> void:
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	var col := UiKit.column(_panel)
+	var col := Ui.column(_panel)
 	col.custom_minimum_size = Vector2(310, 0)
-	var head := UiKit.row(col)
-	_title = UiKit.label(head)
+	var head := Ui.row(col)
+	_title = Ui.label(head)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UiKit.close_button(head, _close_panel)
-	_list = UiKit.scroll(col, Vector2(300, 160))
+	Ui.close_button(head, _close_panel)
+	_list = Ui.scroll(col, Vector2(300, 160))
 	# A gamepad cannot point at the painting, so it gets a row of the same places along the bottom.
-	_pad_bar = UiKit.row(_ui_root)
+	_pad_bar = Ui.row(_ui_root)
 	for spot in SPOTS:
-		UiKit.button(_pad_bar, tr(String(spot["name"])), func(): _open(String(spot["id"])))
+		Ui.button(_pad_bar, tr(String(spot["name"])), func(): _open(String(spot["id"])))
 	Windowing.view_changed.connect(_fit)
 	_fit()
 
@@ -323,7 +323,7 @@ func _open(id: String) -> void:
 	tab = id
 	_visited = id
 	if not _panel.visible:
-		UiKit.fade_in(_panel)
+		Ui.fade_in(_panel)
 	_signature = ""
 	Sfx.play("click", -8.0)
 	_refresh()
@@ -359,7 +359,7 @@ func _keep_pad_focus() -> void:
 	if get_viewport().gui_get_focus_owner() != null:
 		return
 	if _panel.visible:
-		UiKit.pad_focus(_panel)
+		Ui.pad_focus(_panel)
 		return
 	var at := 0
 	for i in SPOTS.size():
@@ -408,7 +408,7 @@ func _on_picture_input(event: InputEvent) -> void:
 		var head := func() -> Vector2:
 			var at: Vector2 = person.position if is_instance_valid(person) else Vector2.INF
 			return ((at + Vector2(0, -46)) * _scene.scale.x + _scene.position) / Windowing.ui_scale
-		UiKit.speech(_ui_root, head.call(), person.saying(), head)
+		Ui.speech(_ui_root, head.call(), person.saying(), head)
 		return
 	if event is InputEventMouseMotion:
 		var spot := _spot_at(event.position)
@@ -436,7 +436,7 @@ func _draw_props() -> void:
 	_draw_slate()
 	for spot in SPOTS:
 		if spot["id"] == _hovered:
-			UiKit.outline(_props, Rect2(spot["rect"]), Color(1, 0.95, 0.75, 0.9))
+			Ui.outline(_props, Rect2(spot["rect"]), Color(1, 0.95, 0.75, 0.9))
 
 
 func _px(x: float, y: float, w: float, h: float, c: Color) -> void:
@@ -619,8 +619,8 @@ func _refresh() -> void:
 	for spot in SPOTS:
 		if spot["id"] == tab:
 			_title.text = tr(String(spot["name"]))
-	var focus := UiKit.focus_hint(_panel)
-	UiKit.clear(_list)
+	var focus := Ui.focus_hint(_panel)
+	Ui.clear(_list)
 	match tab:
 		"Stalls":
 			_build_stalls()
@@ -634,23 +634,23 @@ func _refresh() -> void:
 			_build_land()
 		"Decorations":
 			_build_decorations()
-	# Through the market rather than UiKit, so a call left over when the scene is rebuilt is simply skipped.
-	(func(): UiKit.pad_focus(_panel, focus)).call_deferred()
+	# Through the market rather than Ui, so a call left over when the scene is rebuilt is simply skipped.
+	(func(): Ui.pad_focus(_panel, focus)).call_deferred()
 
 
 func _build_stalls() -> void:
 	var keys: Array = Game.market.brought.keys().filter(func(k): return int(Game.market.brought[k]) > 0 and int(Game.storage.get(k, 0)) > 0)
 	keys.sort_custom(func(a, b): return Game.market.price(a) > Game.market.price(b))
-	UiKit.para(_list, tr("The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first.") % [Game.market.brought_total(), Game.cart_capacity()], 280).add_theme_color_override("font_color", UiKit.MUTED)
+	Ui.para(_list, tr("The cart brought %d goods; it carries %d. It takes the goods marked for sale in the storehouse, the best paid first.") % [Game.market.brought_total(), Game.cart_capacity()], 280).add_theme_color_override("font_color", UiTheme.MUTED)
 	if keys.is_empty():
-		UiKit.para(_list, tr("Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut."), 280)
+		Ui.para(_list, tr("Nothing left to sell from the cart. Goods sold here fetch the full price, without the trader's cut."), 280)
 	for key in keys:
-		var r := UiKit.row(_list)
-		UiKit.icon(r, key)
-		var l := UiKit.label(r, "%s x%d  -  %d" % [tr(Game.item_name(key)), mini(int(Game.market.brought[key]), int(Game.storage[key])), Game.market.price(key)])
+		var r := Ui.row(_list)
+		Ui.icon(r, key)
+		var l := Ui.label(r, "%s x%d  -  %d" % [tr(Game.item_name(key)), mini(int(Game.market.brought[key]), int(Game.storage[key])), Game.market.price(key)])
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UiKit.button(r, tr("Sell 1"), func(): _sell(key, 1))
-		UiKit.button(r, tr("Sell all"), func(): _sell(key, int(Game.market.brought.get(key, 0))))
+		Ui.button(r, tr("Sell 1"), func(): _sell(key, 1))
+		Ui.button(r, tr("Sell all"), func(): _sell(key, int(Game.market.brought.get(key, 0))))
 
 
 func _sell(key: String, n: int) -> void:
@@ -661,22 +661,22 @@ func _sell(key: String, n: int) -> void:
 
 func _build_orders() -> void:
 	if Game.market.orders.is_empty():
-		UiKit.para(_list, tr("No requests today. New ones are pinned up through the day."), 280)
+		Ui.para(_list, tr("No requests today. New ones are pinned up through the day."), 280)
 	for i in Game.market.orders.size():
 		if i > 0:
-			UiKit.divider(_list)
+			Ui.divider(_list)
 		var o: Dictionary = Game.market.orders[i]
-		var box := UiKit.column(_list)
-		UiKit.para(box, "%s (%s): \"%s\"" % [o["who"], UiKit.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
-		var r := UiKit.row(box)
-		UiKit.icon(r, String(o["item"]))
+		var box := Ui.column(_list)
+		Ui.para(box, "%s (%s): \"%s\"" % [o["who"], Ui.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
+		var r := Ui.row(box)
+		Ui.icon(r, String(o["item"]))
 		var reward := tr("Pays %d sestertii") % int(o["coins"])
 		if int(o["aureus"]) > 0:
 			reward += " " + tr("and a gold aureus")
 		if String(o.get("seed", "")) != "":
 			reward += " " + tr("and a rare seed")
-		UiKit.label(r, "%s  (%s: %d)" % [reward, tr("you have"), Game.count_item(String(o["item"]))])
-		var b := UiKit.button(r, tr("Deliver"), func(): _deliver(o))
+		Ui.label(r, "%s  (%s: %d)" % [reward, tr("you have"), Game.count_item(String(o["item"]))])
+		var b := Ui.button(r, tr("Deliver"), func(): _deliver(o))
 		b.disabled = not Game.market.can_deliver(i)
 
 
@@ -692,18 +692,18 @@ func _deliver(order: Dictionary) -> void:
 func _build_prices() -> void:
 	var festival: Dictionary = Game.calendar.festival()
 	if not festival.is_empty():
-		UiKit.para(_list, "%s: %s" % [tr(String(festival["name"])), tr(String(festival.get("about", "")))], 280)
+		Ui.para(_list, "%s: %s" % [tr(String(festival["name"])), tr(String(festival.get("about", "")))], 280)
 	var fav := []
 	for item in Game.market.favourites:
-		fav.append(UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
-	UiKit.para(_list, tr("Wanted today: %s") % ", ".join(fav), 280)
-	UiKit.para(_list, tr("Selling many of one good lowers its price until tomorrow, so a mix pays best."), 280).add_theme_color_override("font_color", UiKit.MUTED)
+		fav.append(Ui.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
+	Ui.para(_list, tr("Wanted today: %s") % ", ".join(fav), 280)
+	Ui.para(_list, tr("Selling many of one good lowers its price until tomorrow, so a mix pays best."), 280).add_theme_color_override("font_color", UiTheme.MUTED)
 	for item in Balance.get_value("items", {}):
 		if Balance.get_value("items.%s.kind" % item, "good") != "good" or not Game.journal.has("item:" + item):
 			continue
-		var r := UiKit.row(_list)
-		UiKit.icon(r, item)
-		UiKit.label(r, "%s: %d  (%s %d)" % [tr(String(Balance.get_value("items.%s.name" % item, item))), Game.market.price(item), tr("cart"), Game.market.cart_price(item)])
+		var r := Ui.row(_list)
+		Ui.icon(r, item)
+		Ui.label(r, "%s: %d  (%s %d)" % [tr(String(Balance.get_value("items.%s.name" % item, item))), Game.market.price(item), tr("cart"), Game.market.cart_price(item)])
 
 
 func _build_shop() -> void:
@@ -711,24 +711,24 @@ func _build_shop() -> void:
 		var block: String = Game.market.catalog_block(entry)
 		if block == "Bought":
 			continue
-		var r := UiKit.row(_list)
+		var r := Ui.row(_list)
 		if entry.has("item"):
-			UiKit.icon(r, String(entry["item"]))
+			Ui.icon(r, String(entry["item"]))
 		var price := {"coins": int(entry.get("price", 0)), "aureus": int(entry.get("aureus", 0))}
-		var l := UiKit.para(r, "%s  -  %s" % [tr(String(entry["name"])), UiKit.cost_text(price)], 170)
+		var l := Ui.para(r, "%s  -  %s" % [tr(String(entry["name"])), Ui.cost_text(price)], 170)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var owned := _owned_text(entry)
 		if owned != "":
-			var have := UiKit.label(r, owned)
+			var have := Ui.label(r, owned)
 			have.custom_minimum_size = Vector2(62, 0)
-			have.add_theme_color_override("font_color", UiKit.MUTED)
+			have.add_theme_color_override("font_color", UiTheme.MUTED)
 		if block != "":
-			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.MUTED)
+			Ui.label(r, tr(block)).add_theme_color_override("font_color", UiTheme.MUTED)
 			continue
-		var buy := UiKit.button(r, tr("Buy"), func(): if Game.market.buy(String(entry["id"])): Sfx.play("coins"))
+		var buy := Ui.button(r, tr("Buy"), func(): if Game.market.buy(String(entry["id"])): Sfx.play("coins"))
 		buy.disabled = Game.missing(price) != ""
 		if entry.has("item"):
-			var five := UiKit.button(r, tr("Buy 5"), func(): if Game.market.buy(String(entry["id"]), 5): Sfx.play("coins"))
+			var five := Ui.button(r, tr("Buy 5"), func(): if Game.market.buy(String(entry["id"]), 5): Sfx.play("coins"))
 			five.disabled = Game.missing({"coins": int(entry["price"]) * 5}) != ""
 
 
@@ -747,7 +747,7 @@ func _owned_text(entry: Dictionary) -> String:
 ## The temple's land registry: a deed for every part of the estate, sealed for the land that is already the family's.
 func _build_land() -> void:
 	var owned := Game.zones().filter(func(z): return Game.zone_owned(String(z["id"]))).size()
-	UiKit.label(_list, tr("Your land: %d of %d") % [owned, Game.zones().size()])
+	Ui.label(_list, tr("Your land: %d of %d") % [owned, Game.zones().size()])
 	# Three deeds to a row, with a shorter last row centred under the others.
 	var grid := HFlowContainer.new()
 	grid.alignment = FlowContainer.ALIGNMENT_CENTER
@@ -758,21 +758,21 @@ func _build_land() -> void:
 	_list.add_child(grid)
 	for z in Game.zones():
 		var id := String(z["id"])
-		var col := UiKit.column(grid)
+		var col := Ui.column(grid)
 		var deed := DeedCard.new()
 		deed.title = tr(String(z["name"]))
 		deed.price = int(z.get("deed", 0))
 		deed.state = "owned" if Game.zone_owned(id) else ("sale" if Game.zone_block(id) == "" else "later")
 		col.add_child(deed)
 		if deed.state == "sale":
-			var b := UiKit.button(col, tr("Buy"), func(): Game.buy_zone(id))
+			var b := Ui.button(col, tr("Buy"), func(): Game.buy_zone(id))
 			b.disabled = Game.coins < deed.price
 
 
 func _build_decorations() -> void:
 	for id in Balance.get_value("decorations", {}):
 		var d: Dictionary = Game.decoration_info(id)
-		var r := UiKit.row(_list)
+		var r := Ui.row(_list)
 		var tex := "res://assets/sprites/decorations/%s.png" % id
 		if ResourceLoader.exists(tex):
 			var t := TextureRect.new()
@@ -782,11 +782,11 @@ func _build_decorations() -> void:
 			t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			r.add_child(t)
 		var price := {"coins": int(d.get("price", 0)), "aureus": int(d.get("aureus", 0))}
-		var l := UiKit.label(r, "%s  -  %s" % [tr(String(d["name"])), UiKit.cost_text(price)])
+		var l := Ui.label(r, "%s  -  %s" % [tr(String(d["name"])), Ui.cost_text(price)])
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var block: String = Game.decoration_block(id)
 		if block != "":
-			UiKit.label(r, tr(block)).add_theme_color_override("font_color", UiKit.MUTED)
+			Ui.label(r, tr(block)).add_theme_color_override("font_color", UiTheme.MUTED)
 		else:
-			var b := UiKit.button(r, tr("Buy"), func(): if Game.buy_decoration(id): Sfx.play("coins"))
+			var b := Ui.button(r, tr("Buy"), func(): if Game.buy_decoration(id): Sfx.play("coins"))
 			b.disabled = Game.missing(price) != ""

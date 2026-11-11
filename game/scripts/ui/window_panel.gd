@@ -30,12 +30,12 @@ var _purse := Vector2i.ZERO
 func _init(title := "") -> void:
 	_col = VBoxContainer.new()
 	add_child(_col)
-	var head := UiKit.row(_col)
-	_title = UiKit.label(head, title)
+	var head := Ui.row(_col)
+	_title = Ui.label(head, title)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UiKit.close_button(head, close)
-	top = UiKit.column(_col)
-	body = UiKit.column(_col)
+	Ui.close_button(head, close)
+	top = Ui.column(_col)
+	body = Ui.column(_col)
 	visible = false
 
 
@@ -43,7 +43,7 @@ func _ready() -> void:
 	# The page scrolls inside the window: at a fixed size, so the window is the same size on every tab, or otherwise
 	# only once it is taller than the screen, so a long page never runs off the bottom.
 	_scroll = ScrollContainer.new()
-	UiKit.touch_scroll(_scroll)
+	Ui.touch_scroll(_scroll)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.follow_focus = true
 	_col.remove_child(body)
@@ -67,7 +67,7 @@ func set_title(text: String) -> void:
 
 func open() -> void:
 	if not visible:
-		UiKit.fade_in(self)
+		Ui.fade_in(self)
 	_signature = ""
 	_reset_scroll = true
 	refresh()
@@ -106,9 +106,9 @@ func refresh() -> void:
 	_signature = sig
 	var scrolled: Array = [] if _reset_scroll else _scroll_positions()
 	_reset_scroll = false
-	var focus := UiKit.focus_hint(self)
-	UiKit.clear(top)
-	UiKit.clear(body)
+	var focus := Ui.focus_hint(self)
+	Ui.clear(top)
+	Ui.clear(body)
 	build()
 	for b in top.find_children("*", "Button", true, false) + body.find_children("*", "Button", true, false):
 		b.pressed.connect(_acted)
@@ -122,12 +122,12 @@ func refresh() -> void:
 			s.scroll_vertical = 0
 	else:
 		_restore_scroll.call_deferred(scrolled)
-	# A method of the window rather than of UiKit, so a window freed before the call is simply skipped.
+	# A method of the window rather than of Ui, so a window freed before the call is simply skipped.
 	_pad_focus.call_deferred(focus)
 
 
 func _pad_focus(was: Dictionary) -> void:
-	UiKit.pad_focus(self, was)
+	Ui.pad_focus(self, was)
 
 
 ## After a button's action the window shows the result at once, and after a purchase it waits a moment, so a double-click never pays twice.

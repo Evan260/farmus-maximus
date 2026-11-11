@@ -27,17 +27,17 @@ func signature() -> String:
 
 
 func build() -> void:
-	var tabs := UiKit.tab_row(top)
+	var tabs := Ui.tab_row(top)
 	for t in ["Sound", "Display", "Gameplay", "Keys"]:
-		UiKit.tab_button(tabs, tr(t), func(): tab = t; show_page()).button_pressed = t == tab
+		Ui.tab_button(tabs, tr(t), func(): tab = t; show_page()).button_pressed = t == tab
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 7)
 	top.add_child(gap)
 	match tab:
 		"Sound":
 			for bus in [["Master", "Everything"], ["Music", "Music"], ["Effects", "Effects"], ["Ambience", "Ambience"]]:
-				var r := UiKit.row(body)
-				UiKit.label(r, tr(bus[1])).custom_minimum_size = Vector2(70, 0)
+				var r := Ui.row(body)
+				Ui.label(r, tr(bus[1])).custom_minimum_size = Vector2(70, 0)
 				var slider := HSlider.new()
 				slider.min_value = 0.0
 				slider.max_value = 1.0
@@ -46,63 +46,63 @@ func build() -> void:
 				slider.custom_minimum_size = Vector2(120, 8)
 				slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				r.add_child(slider)
-				var amount := UiKit.label(r, _percent(slider.value))
+				var amount := Ui.label(r, _percent(slider.value))
 				amount.custom_minimum_size = Vector2(30, 0)
 				amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-				amount.add_theme_color_override("font_color", UiKit.MUTED)
+				amount.add_theme_color_override("font_color", UiTheme.MUTED)
 				slider.value_changed.connect(func(v):
 					amount.text = _percent(v)
 					Sfx.set_volume(bus[0], v))
-			var music := UiKit.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
-			UiKit.tip_on(music, "Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks.")
+			var music := Ui.setting(body, tr("Your own music"), tr("Open folder"), func(): Sfx.open_music_folder())
+			Ui.tip_on(music, "Music you put in this folder (.ogg, .mp3 or .wav) plays between the game's own tracks.")
 			var sounds := {"full": "Full volume", "quieter": "Quieter", "muted": "Muted"}
-			UiKit.setting(body, tr("While you use other windows"), tr(sounds.get(Settings.background_sound, "Full volume")),
+			Ui.setting(body, tr("While you use other windows"), tr(sounds.get(Settings.background_sound, "Full volume")),
 				func(): Settings.set_value("background_sound", {"full": "quieter", "quieter": "muted", "muted": "full"}.get(Settings.background_sound, "full")))
 		"Display":
 			var sizes := {-1: "Smaller", 0: "Normal", 1: "Larger", 2: "Largest"}
-			UiKit.setting(body, tr("Interface size"), tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))
+			Ui.setting(body, tr("Interface size"), tr(sizes.get(Settings.ui_scale_step, "Normal")), func(): Settings.set_value("ui_scale_step", (Settings.ui_scale_step + 2) % 4 - 1))
 			_toggle("Full screen (F11)", Windowing.is_fullscreen(), func(_v): Windowing.toggle_fullscreen())
 			_toggle(tr("Desktop strip (%s)") % _key_name("toggle_strip"), Windowing.strip, func(_v): Windowing.toggle_strip())
 			_toggle("Focus mode: a quieter, slower strip", Windowing.focus_mode, func(v): Windowing.set_focus_mode(v))
 			_toggle("Strip follows the busiest zone", Windowing.follow, func(v): Windowing.set_follow(v))
 			_toggle("Low power", Settings.low_power, func(v): Settings.set_value("low_power", v); Windowing._update_fps())
-			UiKit.para(body, tr("Point at the strip to change its size, width, place and sky. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiKit.MUTED)
+			Ui.para(body, tr("Point at the strip to change its size, width, place and sky. %s puts it back in the middle.") % _key_name("reset_strip"), 230).add_theme_color_override("font_color", UiTheme.MUTED)
 		"Gameplay":
 			var locales := TranslationServer.get_loaded_locales()
 			if locales.size() > 1:
-				UiKit.section(body, tr("Language"))
+				Ui.section(body, tr("Language"))
 				var grid := GridContainer.new()
 				grid.columns = 3
 				body.add_child(grid)
 				# Each language is named in its own words and its own font, so a player can find theirs whatever is showing now.
 				for loc in NATIVE_NAMES.keys().filter(func(l: String) -> bool: return l in locales):
-					var b := UiKit.button(grid, NATIVE_NAMES[loc], func(): Settings.set_value("language", loc))
+					var b := Ui.button(grid, NATIVE_NAMES[loc], func(): Settings.set_value("language", loc))
 					b.toggle_mode = true
 					b.button_pressed = TranslationServer.get_locale() == loc
 					b.custom_minimum_size = Vector2(76, 0)
 					b.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-					b.add_theme_font_override("font", UiKit.ui_font(loc))
-					b.add_theme_font_size_override("font_size", UiKit.text_size(loc))
+					b.add_theme_font_override("font", UiTheme.ui_font(loc))
+					b.add_theme_font_size_override("font_size", UiTheme.text_size(loc))
 			_toggle("Uncle Marcus's advice", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
 			_toggle("Tips when you point at a button", Settings.tooltips, func(v): Settings.set_value("tooltips", v))
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
 			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))
-			UiKit.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
-			UiKit.setting(body, tr("Length of a day"), tr("%d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
+			Ui.setting(body, tr("Your dog and cat: names and coats"), tr("Change"), func(): get_tree().call_group("hud", "open_window", "companions"))
+			Ui.setting(body, tr("Length of a day"), tr("%d minutes") % Settings.day_minutes, func(): Settings.set_value("day_minutes", {10: 20, 20: 30, 30: 60, 60: 10}.get(Settings.day_minutes, 20)))
 			_toggle("Progress while the game is closed", Settings.offline_progress, func(v): Settings.set_value("offline_progress", v))
 			_toggle("Flash the taskbar when something needs you", Settings.notifications, func(v): Settings.set_value("notifications", v))
 			_toggle("Open on the title screen", Settings.show_title, func(v): Settings.set_value("show_title", v))
 			_toggle("Clear marker on ready plants", Settings.strong_cues, func(v): Settings.set_value("strong_cues", v))
 		"Keys":
 			for action in Settings.ACTIONS:
-				var r := UiKit.row(body)
-				UiKit.label(r, tr(String(Settings.ACTIONS[action]["name"]))).custom_minimum_size = Vector2(130, 0)
+				var r := Ui.row(body)
+				Ui.label(r, tr(String(Settings.ACTIONS[action]["name"]))).custom_minimum_size = Vector2(130, 0)
 				var text := tr("Press a key...") if _waiting_for == action else _key_name(action)
-				UiKit.button(r, text, func(): _waiting_for = action; refresh()).custom_minimum_size = Vector2(80, 0)
+				Ui.button(r, text, func(): _waiting_for = action; refresh()).custom_minimum_size = Vector2(80, 0)
 
 
 func _toggle(text: String, on: bool, action: Callable) -> void:
-	UiKit.setting(body, tr(text), tr("On") if on else tr("Off"), func(): action.call(not on))
+	Ui.setting(body, tr(text), tr("On") if on else tr("Off"), func(): action.call(not on))
 
 
 func _percent(v: float) -> String:

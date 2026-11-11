@@ -42,19 +42,19 @@ func signature() -> String:
 func build() -> void:
 	for n in range(1, Saves.SLOTS + 1):
 		var info := Saves.slot_info(n)
-		var card := UiKit.card(body)
-		var r := UiKit.row(card)
-		var text := UiKit.para(r, describe(info), 150)
+		var card := Ui.card(body)
+		var r := Ui.row(card)
+		var text := Ui.para(r, describe(info), 150)
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		if not info.is_empty():
-			text.add_theme_color_override("font_color", UiKit.HEADING if n == Saves.slot else UiKit.INK)
+			text.add_theme_color_override("font_color", UiTheme.HEADING if n == Saves.slot else UiTheme.INK)
 		if info.is_empty():
-			UiKit.button(r, tr("New farm"), func(): on_new.call(n))
+			Ui.button(r, tr("New farm"), func(): on_new.call(n))
 			continue
-		UiKit.button(r, tr("Play"), func(): Saves.play(n))
+		Ui.button(r, tr("Play"), func(): Saves.play(n))
 		if _deleting != n:
-			UiKit.button(r, tr("Delete"), func(): _deleting = n; _typed = ""; refresh())
+			Ui.button(r, tr("Delete"), func(): _deleting = n; _typed = ""; refresh())
 			continue
 		_confirm_delete(card, n)
 
@@ -64,9 +64,9 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 	var word := tr("delete")
 	var info := Saves.slot_info(n)
 	var name: String = String(info["name"]) if String(info["name"]) != "" else tr("Your farm")
-	var ask := UiKit.para(card, tr("%s, on day %d, will be gone for good. Type \"%s\" to delete it.") % [name, int(info["day"]), word], 220)
-	ask.add_theme_color_override("font_color", UiKit.RED)
-	var r := UiKit.row(card)
+	var ask := Ui.para(card, tr("%s, on day %d, will be gone for good. Type \"%s\" to delete it.") % [name, int(info["day"]), word], 220)
+	ask.add_theme_color_override("font_color", UiTheme.RED)
+	var r := Ui.row(card)
 	var field := LineEdit.new()
 	field.placeholder_text = word
 	field.max_length = 20
@@ -89,9 +89,9 @@ func _confirm_delete(card: VBoxContainer, n: int) -> void:
 		if on_change.is_valid():
 			on_change.call()
 		refresh()
-	var del := UiKit.button(r, tr("Delete"), gone)
+	var del := Ui.button(r, tr("Delete"), gone)
 	del.disabled = not typed.call(_typed)
 	field.text_changed.connect(func(t: String): _typed = t; del.disabled = not typed.call(t))
 	field.text_submitted.connect(func(_t): gone.call())
-	UiKit.button(r, tr("Cancel"), func(): _deleting = 0; refresh())
+	Ui.button(r, tr("Cancel"), func(): _deleting = 0; refresh())
 	field.grab_focus.call_deferred()

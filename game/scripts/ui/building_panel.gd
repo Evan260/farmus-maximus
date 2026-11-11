@@ -57,18 +57,18 @@ func build() -> void:
 		return
 	var level := ("   " + tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]) if b["state"] == "working" and not levels.is_empty() else ""
 	set_title(tr(String(info.get("name", id))) + level)
-	_status = UiKit.para(body, "", WIDTH)
-	_status.add_theme_color_override("font_color", UiKit.MUTED)
+	_status = Ui.para(body, "", WIDTH)
+	_status.add_theme_color_override("font_color", UiTheme.MUTED)
 	match b["state"]:
 		"ruin":
-			UiKit.section(body, tr("For sale"))
+			Ui.section(body, tr("For sale"))
 			_next_step(Game.building_action(id)["cost"], tr("Buy this ruin"))
 		"owned":
-			UiKit.section(body, tr("Repairs"))
-			UiKit.para(body, tr("Builders work on it for %s once the repairs begin.") % UiKit.duration(float(info.get("repair_seconds", 30)) / Game.build_speed), WIDTH)
+			Ui.section(body, tr("Repairs"))
+			Ui.para(body, tr("Builders work on it for %s once the repairs begin.") % Ui.duration(float(info.get("repair_seconds", 30)) / Game.build_speed), WIDTH)
 			_next_step(Game.building_action(id)["cost"], tr("Start the repairs"))
 		"repairing", "upgrading":
-			_bar = UiKit.progress(body)
+			_bar = Ui.progress(body)
 		"working":
 			match Game.building_kind(id):
 				"cellar":
@@ -79,19 +79,19 @@ func build() -> void:
 					_build_shrine()
 			var act := Game.building_action(id)
 			if not act.is_empty():
-				UiKit.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
-				UiKit.para(body, _upgrade_text(levels[int(b["level"])]) + " " + tr("Builders work on it for %s, and it makes nothing meanwhile.") % UiKit.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH)
+				Ui.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
+				Ui.para(body, _upgrade_text(levels[int(b["level"])]) + " " + tr("Builders work on it for %s, and it makes nothing meanwhile.") % Ui.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH)
 				_next_step(act["cost"], tr("Upgrade"))
 
 
 ## A checklist of what the next step needs, and the button that takes it, on a row other buttons can join.
 func _next_step(cost: Dictionary, verb: String) -> HBoxContainer:
-	_costs = UiKit.cost_list(body, cost)
-	var row := UiKit.row(body)
-	_action = UiKit.button(row, verb, _do_action)
+	_costs = Ui.cost_list(body, cost)
+	var row := Ui.row(body)
+	_action = Ui.button(row, verb, _do_action)
 	_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_note = UiKit.label(body)
-	_note.add_theme_color_override("font_color", UiKit.RED)
+	_note = Ui.label(body)
+	_note.add_theme_color_override("font_color", UiTheme.RED)
 	return row
 
 
@@ -141,13 +141,13 @@ func tick() -> void:
 	if _feed:
 		_feed.text = tr("Feed in the troughs: %d of %d") % [int(b["feed"]), Game.feed_capacity(id)]
 	if _blessing:
-		_blessing.text = tr("%s blesses the estate: %s left") % [tr(String(Game.gods()[Game.blessing["god"]]["name"])), UiKit.duration(float(Game.blessing["time_left"]))] if not Game.blessing.is_empty() else tr("Leave an offering for one blessing at a time.")
+		_blessing.text = tr("%s blesses the estate: %s left") % [tr(String(Game.gods()[Game.blessing["god"]]["name"])), Ui.duration(float(Game.blessing["time_left"]))] if not Game.blessing.is_empty() else tr("Leave an offering for one blessing at a time.")
 		for god in _offer_buttons:
 			_offer_buttons[god].disabled = not Game.blessing.is_empty() or Game.missing(Game.gods()[god]["offering"]) != ""
 
 
 func _tick_action(cost: Dictionary, block: String) -> void:
-	UiKit.update_costs(_costs)
+	Ui.update_costs(_costs)
 	if not _action:
 		return
 	_action.disabled = block != "" or Game.missing(cost) != ""
@@ -169,7 +169,7 @@ func _working_status() -> String:
 				return tr("Empty. Buy hens and goats at the market.")
 			if int(b["feed"]) == 0:
 				return tr("The animals are resting: the troughs are empty.")
-			return tr("Next eggs and milk in %s") % UiKit.duration((float(Game.building_info(id).get("cycle_seconds", 60)) - float(b["progress"])) / Game.building_speed(id))
+			return tr("Next eggs and milk in %s") % Ui.duration((float(Game.building_info(id).get("cycle_seconds", 60)) - float(b["progress"])) / Game.building_speed(id))
 		"shrine":
 			return tr("The household gods watch over the estate.")
 	if b["paused"]:
@@ -184,13 +184,13 @@ func _working_status() -> String:
 
 
 func _build_cellar() -> void:
-	UiKit.section(body, tr("Casks"))
-	_casks = UiKit.para(body, "", WIDTH)
-	var r := UiKit.row(body)
-	UiKit.button(r, tr("Fill casks"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("No young wine, or no empty casks")))
-	UiKit.button(r, tr("Draw wine"), func(): if Game.draw_wine(id) == 0: Game.message.emit(tr("No wine is ready yet")))
+	Ui.section(body, tr("Casks"))
+	_casks = Ui.para(body, "", WIDTH)
+	var r := Ui.row(body)
+	Ui.button(r, tr("Fill casks"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("No young wine, or no empty casks")))
+	Ui.button(r, tr("Draw wine"), func(): if Game.draw_wine(id) == 0: Game.message.emit(tr("No wine is ready yet")))
 	if Game.helpers.has("presser"):
-		UiKit.para(body, tr("Titus fills the casks and draws the wine when it is excellent."), WIDTH)
+		Ui.para(body, tr("Titus fills the casks and draws the wine when it is excellent."), WIDTH)
 
 
 func _cask_text() -> String:
@@ -204,35 +204,35 @@ func _cask_text() -> String:
 		lines.append(tr("Still resting: %d") % counts[-1])
 	for q in 3:
 		if counts[q] > 0:
-			lines.append(tr("Ready as %s wine: %d") % [UiKit.mid(tr(String(names[q]))), counts[q]])
+			lines.append(tr("Ready as %s wine: %d") % [Ui.mid(tr(String(names[q]))), counts[q]])
 	return "\n".join(lines)
 
 
 func _build_barn() -> void:
 	var b: Dictionary = Game.buildings[id]
-	UiKit.section(body, tr("Animals"))
+	Ui.section(body, tr("Animals"))
 	for kind in ["chicken", "goat"]:
-		UiKit.label(body, tr("%s: %d of %d") % [tr("Hens" if kind == "chicken" else "Goats"), int(b["animals"].get(kind, 0)), Game.animal_capacity(kind, id)])
-	UiKit.para(body, tr("Hens lay eggs and goats give milk; all of them leave manure for the fields."), WIDTH).add_theme_color_override("font_color", UiKit.MUTED)
-	UiKit.section(body, tr("Feed"))
-	_feed = UiKit.label(body)
+		Ui.label(body, tr("%s: %d of %d") % [tr("Hens" if kind == "chicken" else "Goats"), int(b["animals"].get(kind, 0)), Game.animal_capacity(kind, id)])
+	Ui.para(body, tr("Hens lay eggs and goats give milk; all of them leave manure for the fields."), WIDTH).add_theme_color_override("font_color", UiTheme.MUTED)
+	Ui.section(body, tr("Feed"))
+	_feed = Ui.label(body)
 	if Game.helpers.has("stablehand"):
-		UiKit.para(body, tr("Julia keeps the troughs full."), WIDTH)
+		Ui.para(body, tr("Julia keeps the troughs full."), WIDTH)
 	else:
-		UiKit.button(body, tr("Fill the troughs with straw or wheat"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("No straw or wheat in the storehouse")))
+		Ui.button(body, tr("Fill the troughs with straw or wheat"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("No straw or wheat in the storehouse")))
 
 
 func _build_shrine() -> void:
-	UiKit.section(body, tr("Offerings"))
-	_blessing = UiKit.para(body, "", WIDTH)
-	var list := UiKit.scroll(body, Vector2(WIDTH + 10, 110))
+	Ui.section(body, tr("Offerings"))
+	_blessing = Ui.para(body, "", WIDTH)
+	var list := Ui.scroll(body, Vector2(WIDTH + 10, 110))
 	for god in Game.gods():
 		var g: Dictionary = Game.gods()[god]
-		var r := UiKit.row(list)
-		var b := UiKit.button(r, tr("Offer"), func(): Game.offer(god))
+		var r := Ui.row(list)
+		var b := Ui.button(r, tr("Offer"), func(): Game.offer(god))
 		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		_offer_buttons[god] = b
-		UiKit.para(r, "%s: %s (%s)" % [tr(String(g["name"])), tr(String(g["does"])), UiKit.cost_text(g["offering"])], WIDTH - 40)
+		Ui.para(r, "%s: %s (%s)" % [tr(String(g["name"])), tr(String(g["does"])), Ui.cost_text(g["offering"])], WIDTH - 40)
 
 
 func _do_action() -> void:
@@ -243,25 +243,25 @@ func _build_villa() -> void:
 	var stages := Game.villa_stages()
 	var stage := clampi(Game.villa_stage - 1, 0, stages.size() - 1)
 	set_title(tr(String(stages[stage]["name"])) + "   " + tr("Stage %d of %d") % [Game.villa_stage, stages.size()])
-	_status = UiKit.para(body, "", WIDTH)
-	_status.add_theme_color_override("font_color", UiKit.MUTED)
+	_status = Ui.para(body, "", WIDTH)
+	_status.add_theme_color_override("font_color", UiTheme.MUTED)
 	if not Windowing.strip:
-		UiKit.button(body, tr("Go inside"), func(): get_tree().call_group("hud", "request_house"))
+		Ui.button(body, tr("Go inside"), func(): get_tree().call_group("hud", "request_house"))
 	if Game.villa_build["active"]:
-		_bar = UiKit.progress(body)
+		_bar = Ui.progress(body)
 		return
 	if Game.villa_stage >= stages.size() or Game.demo_capped_villa():
 		return
 	var next: Dictionary = stages[Game.villa_stage]
-	UiKit.section(body, tr("Next improvement: %s") % tr(String(next["name"])))
-	UiKit.para(body, tr("Brings: %s.") % tr(String(next.get("unlocks", ""))), WIDTH)
-	UiKit.para(body, tr("Builders work on it for %s.") % UiKit.duration(float(next.get("build_seconds", 0)) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiKit.MUTED)
-	_costs = UiKit.cost_list(body, Game.villa_next_price())
-	_action = UiKit.button(body, tr("Build the %s") % UiKit.mid(tr(String(next["name"]))), func(): Game.upgrade_villa())
-	_note = UiKit.label(body)
-	_note.add_theme_color_override("font_color", UiKit.RED)
+	Ui.section(body, tr("Next improvement: %s") % tr(String(next["name"])))
+	Ui.para(body, tr("Brings: %s.") % tr(String(next.get("unlocks", ""))), WIDTH)
+	Ui.para(body, tr("Builders work on it for %s.") % Ui.duration(float(next.get("build_seconds", 0)) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiTheme.MUTED)
+	_costs = Ui.cost_list(body, Game.villa_next_price())
+	_action = Ui.button(body, tr("Build the %s") % Ui.mid(tr(String(next["name"]))), func(): Game.upgrade_villa())
+	_note = Ui.label(body)
+	_note.add_theme_color_override("font_color", UiTheme.RED)
 	if Game.count_item("stone") + Game.count_item("tiles") + Game.count_item("timber") == 0:
-		UiKit.para(body, tr("Stone, timber and roof tiles are sold at the market town."), WIDTH).add_theme_color_override("font_color", UiKit.MUTED)
+		Ui.para(body, tr("Stone, timber and roof tiles are sold at the market town."), WIDTH).add_theme_color_override("font_color", UiTheme.MUTED)
 
 
 ## Building work stops at night, so then the time left stands still and the window says why.
@@ -269,15 +269,15 @@ func _work_text(day_text: String, left: float) -> String:
 	# Times are shown as they will pass on the clock, which a faster build speed shortens.
 	var real := left / Game.build_speed
 	if Game.is_night():
-		return tr("The builders have gone home for the night and come back in %s. %s of work left.") % [UiKit.duration(Game.seconds_until_day()), UiKit.duration(real)]
-	return day_text % UiKit.duration(real)
+		return tr("The builders have gone home for the night and come back in %s. %s of work left.") % [Ui.duration(Game.seconds_until_day()), Ui.duration(real)]
+	return day_text % Ui.duration(real)
 
 
 func _tick_villa() -> void:
 	var stages := Game.villa_stages()
 	if Game.villa_build["active"]:
 		var next: Dictionary = stages[mini(Game.villa_stage, stages.size() - 1)]
-		_status.text = _work_text(tr("Builders at work on the %s: %%s left") % UiKit.mid(tr(String(next["name"]))), float(Game.villa_build["time_left"]))
+		_status.text = _work_text(tr("Builders at work on the %s: %%s left") % Ui.mid(tr(String(next["name"]))), float(Game.villa_build["time_left"]))
 		if _bar:
 			_bar.value = 1.0 - float(Game.villa_build["time_left"]) / maxf(1.0, float(next.get("build_seconds", 1)))
 	elif Game.villa_stage >= stages.size():
@@ -298,7 +298,7 @@ func _build_workshop_view() -> void:
 	var list := Game.recipes(id)
 	# A choice of products shows as their pictures, the chosen one pressed in.
 	if list.size() > 1:
-		var choices := UiKit.row(body)
+		var choices := Ui.row(body)
 		choices.alignment = BoxContainer.ALIGNMENT_CENTER
 		for k in list.size():
 			var outs: Dictionary = list[k]["out"]
@@ -314,7 +314,7 @@ func _build_workshop_view() -> void:
 	var ins: Dictionary = recipe.get("in", {})
 	var outs: Dictionary = recipe.get("out", {})
 	var batch := Game.building_batch(id)
-	var line := UiKit.row(body)
+	var line := Ui.row(body)
 	line.alignment = BoxContainer.ALIGNMENT_CENTER
 	line.add_theme_constant_override("separation", 6)
 	if ins.is_empty():
@@ -329,15 +329,15 @@ func _build_workshop_view() -> void:
 	for item in outs:
 		_out_counts[item] = WorkshopParts.slot_with_caption(line, item, "x%d" % (int(outs[item]) * batch))
 	if not ins.is_empty():
-		var feed := UiKit.row(body)
+		var feed := Ui.row(body)
 		feed.alignment = BoxContainer.ALIGNMENT_CENTER
 		var helper := String(Game.building_info(id).get("helper", ""))
 		if Game.helpers.has(helper):
 			# The helper who keeps it loaded stands in for the load button.
 			WorkshopParts.face(feed, helper)
 		else:
-			_load = UiKit.button(feed, tr("Load"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
-		var boxes := UiKit.row(feed)
+			_load = Ui.button(feed, tr("Load"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
+		var boxes := Ui.row(feed)
 		boxes.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var first := String(ins.keys()[0])
 		for k in Game.building_queue_max(id):
@@ -350,20 +350,20 @@ func _build_workshop_view() -> void:
 			box.custom_minimum_size = Vector2(16, 16)
 			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var pic := TextureRect.new()
-			pic.texture = load(UiKit.ICONS + Game.item_base(first) + ".png") if ResourceLoader.exists(UiKit.ICONS + Game.item_base(first) + ".png") else null
+			pic.texture = load(Ui.ICONS + Game.item_base(first) + ".png") if ResourceLoader.exists(Ui.ICONS + Game.item_base(first) + ".png") else null
 			pic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 			pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			box.add_child(pic)
 			boxes.add_child(box)
 			_queue_boxes.append(pic)
 	elif recipe.get("lavender_honey", false):
-		UiKit.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), WIDTH).add_theme_color_override("font_color", UiKit.MUTED)
-	_state_note = UiKit.label(body)
+		Ui.para(body, tr("When lavender blooms on the farm, the bees make lavender honey."), WIDTH).add_theme_color_override("font_color", UiTheme.MUTED)
+	_state_note = Ui.label(body)
 	_state_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_state_note.add_theme_color_override("font_color", UiKit.RED)
-	UiKit.divider(body)
+	_state_note.add_theme_color_override("font_color", UiTheme.RED)
+	Ui.divider(body)
 	# The level, what the next one brings as small pictures, its cost, and the buttons, in two short rows.
-	UiKit.label(body, tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]).add_theme_color_override("font_color", UiKit.HEADING)
+	Ui.label(body, tr("Level %d of %d") % [int(b["level"]) + 1, levels.size() + 1]).add_theme_color_override("font_color", UiTheme.HEADING)
 	var act := Game.building_action(id)
 	if not act.is_empty():
 		# What the next level brings, as short tags that wrap onto a second line if the window is narrow.
@@ -372,7 +372,7 @@ func _build_workshop_view() -> void:
 		gains.add_theme_constant_override("h_separation", 4)
 		gains.add_theme_constant_override("v_separation", 3)
 		body.add_child(gains)
-		UiKit.label(gains, tr("Next level:")).add_theme_color_override("font_color", UiKit.MUTED)
+		Ui.label(gains, tr("Next level:")).add_theme_color_override("font_color", UiTheme.MUTED)
 		WorkshopParts.tag(gains, tr("%s× speed") % str(next.get("speed", 1)))
 		if next.has("queue"):
 			WorkshopParts.tag(gains, tr("%d batch slots") % int(next["queue"]))
@@ -380,28 +380,28 @@ func _build_workshop_view() -> void:
 			WorkshopParts.tag(gains, tr("%d per batch") % int(next["batch"]))
 		if int(next.get("quality", 0)) > 0:
 			WorkshopParts.tag(gains, tr("Better goods"))
-	var bottom := UiKit.row(body)
+	var bottom := Ui.row(body)
 	bottom.add_theme_constant_override("separation", 6)
 	if not act.is_empty():
 		for key in act["cost"]:
 			if int(act["cost"][key]) <= 0:
 				continue
-			var c := UiKit.row(bottom)
+			var c := Ui.row(bottom)
 			c.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			UiKit.icon(c, {"coins": "sestertius", "aureus": "aureus", "provisions": "bread"}.get(key, key))
-			var n := UiKit.label(c, str(int(act["cost"][key])))
+			Ui.icon(c, {"coins": "sestertius", "aureus": "aureus", "provisions": "bread"}.get(key, key))
+			var n := Ui.label(c, str(int(act["cost"][key])))
 			n.set_meta("key", key)
 			n.set_meta("need", int(act["cost"][key]))
 			_cost_chips.append(n)
 		var spacer := Control.new()
 		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bottom.add_child(spacer)
-		_action = UiKit.button(bottom, tr("Upgrade"), _do_action)
+		_action = Ui.button(bottom, tr("Upgrade"), _do_action)
 	else:
 		var spacer := Control.new()
 		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bottom.add_child(spacer)
-	UiKit.button(bottom, ">" if b["paused"] else "||", func(): Game.set_building_paused(id, not b["paused"]))
+	Ui.button(bottom, ">" if b["paused"] else "||", func(): Game.set_building_paused(id, not b["paused"]))
 	_tick_workshop_view()
 
 
@@ -413,7 +413,7 @@ func _tick_workshop_view() -> void:
 		var l: Label = _in_counts[item][0]
 		l.text = str(have)
 		# Too little for a batch shows in red, the same warning colour as a short cost.
-		l.add_theme_color_override("font_color", UiKit.CREAM if have >= int(_in_counts[item][1]) else Color(1.0, 0.55, 0.45))
+		l.add_theme_color_override("font_color", UiTheme.CREAM if have >= int(_in_counts[item][1]) else Color(1.0, 0.55, 0.45))
 	for item in _out_counts:
 		_out_counts[item].text = str(Game.count_item(item))
 	for k in _queue_boxes.size():
@@ -431,7 +431,7 @@ func _tick_workshop_view() -> void:
 		var key := String(n.get_meta("key"))
 		var need := int(n.get_meta("need"))
 		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
-		n.add_theme_color_override("font_color", UiKit.INK if have >= need else UiKit.RED)
+		n.add_theme_color_override("font_color", UiTheme.INK if have >= need else UiTheme.RED)
 	if _action:
 		var block := Game.building_block(id)
 		_action.disabled = block != "" or Game.missing(Game.building_action(id).get("cost", {})) != ""

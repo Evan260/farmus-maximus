@@ -1,25 +1,7 @@
-class_name UiKit
-## Shared building blocks for the interface: the parchment theme, labels, buttons, item icons and price text.
+class_name Ui
+## Shared building blocks for the interface: labels, buttons, windows' parts, tips, item icons and price text.
 
-const FONT := preload("res://assets/fonts/Silkscreen-Regular.ttf")
-const FUSION := "res://assets/fonts/"
-## Languages whose letters the 8-pixel fonts lack (Cyrillic, and the Polish and Turkish accented letters), so their
-## whole interface uses a 10-pixel font instead.
-const TEN_PIXEL := ["ru", "uk", "be", "bg", "pl", "tr"]
-const PANEL_TEX := preload("res://assets/ui/panel.png")
-
-## The interface fonts made so far, one per language, and the shared 10-pixel font.
-static var _fonts := {}
-static var _ten_pixel: FontFile
-const BUTTON_TEX := preload("res://assets/ui/button.png")
 const ICONS := "res://assets/sprites/icons/"
-## Dark ink for text on parchment, and cream for text on terracotta buttons or straight over the scene.
-const INK := Color(0.29, 0.18, 0.14)
-const CREAM := Color(0.99, 0.95, 0.86)
-## Secondary text: lighter than the main ink but still dark and solid, so it reads on dim or poor screens.
-const MUTED := Color(0.4, 0.27, 0.2)
-const RED := Color(0.66, 0.2, 0.14)
-const HEADING := Color(0.55, 0.27, 0.18)
 ## The parchment of a window, the darker paper of a tab that is not open, and the line round tabs.
 const TAB_OPEN := Color8(243, 220, 171)
 const TAB_SHUT := Color8(219, 186, 136)
@@ -32,7 +14,7 @@ static func label(parent: Node, text := "", over_scene := false) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if over_scene:
 		# Text drawn straight over the farm needs light ink and an outline to stay readable on any background.
-		l.add_theme_color_override("font_color", CREAM)
+		l.add_theme_color_override("font_color", UiTheme.CREAM)
 		l.add_theme_color_override("font_outline_color", Color(0.2, 0.12, 0.12))
 		l.add_theme_constant_override("outline_size", 2)
 	parent.add_child(l)
@@ -90,7 +72,6 @@ static func setting(parent: Node, text: String, value: String, action: Callable,
 	return b
 
 
-## A tab along the top of a window: it sounds like turning a page rather than pressing a button.
 ## A row of tabs over a page, with a rule along its foot that the open tab stands on, joined to the page below it.
 static func tab_row(parent: Node) -> HBoxContainer:
 	var r := HBoxContainer.new()
@@ -104,6 +85,7 @@ static func tab_row(parent: Node) -> HBoxContainer:
 
 
 ## A paper tab in a `tab_row`: the open one is taller and the colour of the page, the others shorter and darker.
+## It sounds like turning a page rather than pressing a button.
 static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
@@ -129,9 +111,9 @@ static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 		b.add_theme_stylebox_override(state, box)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	for c in ["font_color", "font_hover_color"]:
-		b.add_theme_color_override(c, MUTED)
+		b.add_theme_color_override(c, UiTheme.MUTED)
 	for c in ["font_pressed_color", "font_hover_pressed_color"]:
-		b.add_theme_color_override(c, INK)
+		b.add_theme_color_override(c, UiTheme.INK)
 	b.pressed.connect(func(): Sfx.play("tab", -4.0))
 	b.pressed.connect(action)
 	parent.add_child(b)
@@ -149,13 +131,12 @@ static func close_button(parent: Node, action: Callable) -> Button:
 	cross.draw.connect(func():
 		var c := Rect2(Vector2.ZERO, cross.size).get_center().floor()
 		for i in range(-2, 3):
-			cross.draw_rect(Rect2(c + Vector2(i, i), Vector2.ONE), CREAM)
-			cross.draw_rect(Rect2(c + Vector2(i, -i), Vector2.ONE), CREAM))
+			cross.draw_rect(Rect2(c + Vector2(i, i), Vector2.ONE), UiTheme.CREAM)
+			cross.draw_rect(Rect2(c + Vector2(i, -i), Vector2.ONE), UiTheme.CREAM))
 	b.add_child(cross)
 	return b
 
 
-## A heading that opens a section of a window, with a thin rule under it.
 ## Shows a window by fading it in, so it does not pop up all at once.
 static func fade_in(item: CanvasItem, seconds := 0.18) -> void:
 	item.visible = true
@@ -163,6 +144,7 @@ static func fade_in(item: CanvasItem, seconds := 0.18) -> void:
 	item.create_tween().tween_property(item, "modulate:a", 1.0, seconds).set_ease(Tween.EASE_OUT)
 
 
+## A heading that opens a section of a window, with a thin rule under it.
 static func section(parent: Node, text: String) -> Label:
 	# A gap above the heading shows it starts something new rather than finishing what came before.
 	if parent.get_child_count() > 0:
@@ -171,7 +153,7 @@ static func section(parent: Node, text: String) -> Label:
 		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(gap)
 	var l := label(parent, text)
-	l.add_theme_color_override("font_color", HEADING)
+	l.add_theme_color_override("font_color", UiTheme.HEADING)
 	var rule := ColorRect.new()
 	rule.color = Color(0.55, 0.27, 0.18, 0.35)
 	rule.custom_minimum_size = Vector2(0, 1)
@@ -225,7 +207,7 @@ static func update_costs(lines: Array) -> void:
 		var have: int = Game.coins if key == "coins" else (Game.aureus if key == "aureus" else Game.count_item(key))
 		var name: String = "sestertii" if key == "coins" else ("aurei" if key == "aureus" else ("bread or wine" if key == "provisions" else String(Balance.get_value("items.%s.name" % key, key))))
 		l.text = "%s  %d / %d" % [mid(TranslationServer.translate(name)), mini(have, need), need]
-		l.add_theme_color_override("font_color", INK if have >= need else RED)
+		l.add_theme_color_override("font_color", UiTheme.INK if have >= need else UiTheme.RED)
 
 
 static func progress(parent: Node) -> ProgressBar:
@@ -388,144 +370,6 @@ static func duration(seconds: float) -> String:
 	return TranslationServer.translate("%ds") % s
 
 
-static func make_theme() -> Theme:
-	var t := Theme.new()
-	t.default_font = ui_font()
-	t.default_font_size = text_size()
-	t.set_color("font_color", "Label", INK)
-	t.set_constant("separation", "VBoxContainer", 2)
-	t.set_constant("separation", "HBoxContainer", 2)
-	t.set_stylebox("panel", "PanelContainer", _textured(PANEL_TEX, 6, Color.WHITE, 5))
-	t.set_stylebox("normal", "Button", _textured(BUTTON_TEX, 4, Color.WHITE, 3))
-	t.set_stylebox("hover", "Button", _textured(BUTTON_TEX, 4, Color(1.12, 1.08, 1.05), 3))
-	t.set_stylebox("pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.72, 0.6, 0.55), 3))
-	t.set_stylebox("hover_pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.78, 0.66, 0.6), 3))
-	t.set_stylebox("disabled", "Button", _textured(BUTTON_TEX, 4, Color(0.5, 0.44, 0.42), 3))
-	var focus := StyleBoxFlat.new()
-	focus.draw_center = false
-	focus.set_border_width_all(1)
-	focus.border_color = Color(1, 0.95, 0.7)
-	t.set_stylebox("focus", "Button", focus)
-	t.set_color("font_color", "Button", CREAM)
-	t.set_color("font_hover_color", "Button", Color(1, 1, 0.94))
-	t.set_color("font_pressed_color", "Button", Color(1, 0.93, 0.78))
-	t.set_color("font_hover_pressed_color", "Button", Color(1, 0.93, 0.78))
-	t.set_color("font_disabled_color", "Button", Color(0.93, 0.88, 0.82))
-	# A clear scrollbar: a dark track with a terracotta handle, wide enough to see and to grab.
-	var track := _flat(Color(0.29, 0.18, 0.14, 0.3), 2)
-	t.set_stylebox("scroll", "VScrollBar", track)
-	t.set_stylebox("scroll_focus", "VScrollBar", track)
-	t.set_stylebox("grabber", "VScrollBar", _flat(Color(0.7, 0.38, 0.25), 2))
-	t.set_stylebox("grabber_highlight", "VScrollBar", _flat(Color(0.8, 0.46, 0.3), 2))
-	t.set_stylebox("grabber_pressed", "VScrollBar", _flat(Color(0.6, 0.3, 0.2), 2))
-	# Sliders: the knob is a small pixel block that travels the whole track, end to end.
-	t.set_stylebox("slider", "HSlider", _flat(Color(0.29, 0.18, 0.14, 0.35), 0, 2))
-	t.set_stylebox("grabber_area", "HSlider", _flat(Color(0.7, 0.38, 0.25), 0, 2))
-	t.set_stylebox("grabber_area_highlight", "HSlider", _flat(Color(0.8, 0.46, 0.3), 0, 2))
-	var knob := _knob()
-	t.set_icon("grabber", "HSlider", knob)
-	t.set_icon("grabber_highlight", "HSlider", knob)
-	t.set_icon("grabber_disabled", "HSlider", knob)
-	t.set_constant("center_grabber", "HSlider", 0)
-	var field := _flat(Color(0.99, 0.96, 0.88), 3, 2)
-	field.border_color = Color(0.55, 0.36, 0.25)
-	field.set_border_width_all(1)
-	t.set_stylebox("normal", "LineEdit", field)
-	t.set_stylebox("focus", "LineEdit", field)
-	t.set_color("font_color", "LineEdit", INK)
-	t.set_color("caret_color", "LineEdit", INK)
-	t.set_stylebox("background", "ProgressBar", _flat(Color(0.29, 0.18, 0.14, 0.3), 0))
-	t.set_stylebox("fill", "ProgressBar", _flat(Color(0.7, 0.38, 0.25), 0))
-	return t
-
-
-## The interface font for the current language: the Silkscreen pixel font, falling back to a pixel font with the
-## accented letters and the Chinese, Japanese and Korean characters it lacks, in the forms the language uses.
-## Each language's font is made once and kept, because text drawn with a font that is then thrown away loses its
-## letters and shows as solid blocks.
-static func ui_font(locale := "") -> Font:
-	if locale == "":
-		locale = TranslationServer.get_locale()
-	if not _fonts.has(locale):
-		_fonts[locale] = _make_ui_font(locale)
-	return _fonts[locale]
-
-
-static func _make_ui_font(locale: String) -> Font:
-	var cyrillic := ten_pixel_font()
-	if locale.get_slice("_", 0) in TEN_PIXEL:
-		return cyrillic
-	var han := "zh_hans"
-	if locale.begins_with("zh_TW") or locale.begins_with("zh_HK") or locale.begins_with("zh_Hant"):
-		han = "zh_tw"
-	elif locale.begins_with("ja"):
-		han = "ja"
-	elif locale.begins_with("ko"):
-		han = "ko"
-	var font := _crisp(FONT)
-	# Cyrillic comes last, so a language list can still name Russian in its own letters.
-	font.fallbacks = [_crisp(load(FUSION + "fusion-pixel-8px-proportional-%s.ttf.woff2" % han)), cyrillic]
-	return font
-
-
-## The 10-pixel font with Cyrillic and every accented Latin letter, drawn at size 10.
-static func ten_pixel_font() -> FontFile:
-	if _ten_pixel == null:
-		_ten_pixel = _crisp(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
-	return _ten_pixel
-
-
-## The interface's text size in pixels, which is the size its pixel font is drawn for.
-static func text_size(locale := "") -> int:
-	if locale == "":
-		locale = TranslationServer.get_locale()
-	return 10 if locale.get_slice("_", 0) in TEN_PIXEL else 8
-
-
-## A copy of a pixel font drawn without smoothing, so it stays crisp at the game's low resolution.
-static func _crisp(source: FontFile) -> FontFile:
-	var font: FontFile = source.duplicate()
-	font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-	font.hinting = TextServer.HINTING_NONE
-	font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-	return font
-
-
-static func _flat(c: Color, width: int, height := 0) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = c
-	s.content_margin_left = width
-	s.content_margin_right = width
-	s.content_margin_top = height
-	s.content_margin_bottom = height
-	return s
-
-
-static func _knob() -> ImageTexture:
-	var img := Image.create(5, 9, false, Image.FORMAT_RGBA8)
-	img.fill(CREAM)
-	for y in 9:
-		img.set_pixel(0, y, Color(0.36, 0.2, 0.15))
-		img.set_pixel(4, y, Color(0.36, 0.2, 0.15))
-	for x in 5:
-		img.set_pixel(x, 0, Color(0.36, 0.2, 0.15))
-		img.set_pixel(x, 8, Color(0.36, 0.2, 0.15))
-	return ImageTexture.create_from_image(img)
-
-
-## A stretchable panel or button skin cut from one small image: the corners stay sharp, the middle stretches.
-static func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> StyleBoxTexture:
-	var s := StyleBoxTexture.new()
-	s.texture = tex
-	# The generated images have transparent margins, so the skin is cut from the visible part only.
-	s.region_rect = tex.get_image().get_used_rect()
-	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-		s.set_texture_margin(side, border)
-		s.set_content_margin(side, pad + 1)
-	s.modulate_color = tint
-	return s
-
-
 ## A speech bubble over someone's head: a small parchment note with a tail pointing down at them, which fades after
 ## a few seconds. One person speaks at a time, so a new bubble replaces any still showing. With `follow`, which returns
 ## where the speaker is now, the bubble stays over them as they walk or the view scrolls, and hides while they are out of view.
@@ -540,7 +384,7 @@ static func speech(parent: Control, at: Vector2, text: String, follow := Callabl
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.99, 0.95, 0.86)
-	box.border_color = INK
+	box.border_color = UiTheme.INK
 	box.set_border_width_all(1)
 	box.set_content_margin_all(4)
 	bubble.add_theme_stylebox_override("panel", box)
@@ -551,9 +395,9 @@ static func speech(parent: Control, at: Vector2, text: String, follow := Callabl
 	tail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tail.draw.connect(func():
 		for k in 4:
-			tail.draw_rect(Rect2(-3 + k, k, 7 - k * 2, 1), INK if k == 3 else Color(0.99, 0.95, 0.86))
-			tail.draw_rect(Rect2(-4 + k, k, 1, 1), INK)
-			tail.draw_rect(Rect2(3 - k, k, 1, 1), INK))
+			tail.draw_rect(Rect2(-3 + k, k, 7 - k * 2, 1), UiTheme.INK if k == 3 else Color(0.99, 0.95, 0.86))
+			tail.draw_rect(Rect2(-4 + k, k, 1, 1), UiTheme.INK)
+			tail.draw_rect(Rect2(3 - k, k, 1, 1), UiTheme.INK))
 	bubble.add_child(tail)
 	var place := func(_t := 0.0) -> void:
 		var spot: Vector2 = follow.call() if follow.is_valid() else at

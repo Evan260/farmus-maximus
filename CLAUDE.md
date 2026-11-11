@@ -8,9 +8,9 @@ A cozy semi-idle Roman lavender-farming game for Steam (Windows, Mac, Linux, Ste
 |---|---|
 | `game/` | Godot 4.7 project (GDScript, Compatibility renderer) |
 | `game/scripts/autoload/dev.gd` | `Dev`: the command-line options for checks and screenshots (below), and `Dev.no_save()`, true for every run that must leave the player's farms and settings alone |
-| `game/scripts/autoload/tips.gd` | `Tips`: tooltips drawn at the interface's scale; give a control one with `UiKit.tip_on(control, text)`, never `tooltip_text`. Settings > Gameplay turns them off |
+| `game/scripts/autoload/tips.gd` | `Tips`: tooltips drawn at the interface's scale; give a control one with `Ui.tip_on(control, text)`, never `tooltip_text`. Settings > Gameplay turns them off |
 | `game/scripts/autoload/game_state.gd` | The estate's rules (`Game`); `scripts/game/` holds its calendar, market and journal modules |
-| `game/scripts/ui/` | The interface: `hud.gd`, one script per window, `market_view.gd` for the market town, `kit.gd` for shared widgets |
+| `game/scripts/ui/` | The interface: `hud.gd`, one script per window, `market_view.gd` for the market town, `ui.gd` (`Ui`) for shared widgets and `ui_theme.gd` (`UiTheme`) for the colours, fonts and theme |
 | `game/scripts/world/` | Scene life: walkers (people and animals), weather, wildlife, the pasture, decorations |
 | `game/data/balance.json` | Every number and name: crops, goods, buildings, helpers, market, calendar, achievements, tutorial |
 | `game/translations/strings.csv` | Every player-facing string, one column per language; regenerate with `python tools/extract_strings.py` |

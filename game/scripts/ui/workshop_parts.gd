@@ -31,7 +31,7 @@ static func slot(parent: Node, item: String, size := 40) -> Label:
 	var count := Label.new()
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	count.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	count.add_theme_color_override("font_color", UiKit.CREAM)
+	count.add_theme_color_override("font_color", UiTheme.CREAM)
 	count.add_theme_color_override("font_outline_color", SLOT_EDGE)
 	count.add_theme_constant_override("outline_size", 3)
 	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -62,15 +62,15 @@ static func face(parent: Node, helper: String) -> TextureRect:
 
 ## A small caption under a slot, such as how many go into one batch.
 static func caption(parent: Node, text: String) -> Label:
-	var l := UiKit.label(parent, text)
+	var l := Ui.label(parent, text)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_color_override("font_color", UiKit.MUTED)
+	l.add_theme_color_override("font_color", UiTheme.MUTED)
 	return l
 
 
 ## A slot with its caption below it, both centred in a column.
 static func slot_with_caption(parent: Node, item: String, text: String) -> Label:
-	var col := UiKit.column(parent)
+	var col := Ui.column(parent)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	var count := slot(col, item)
 	caption(col, text)
@@ -98,7 +98,7 @@ class Arrow extends Control:
 			var half := 2.0 if x < shaft_end else maxf(0.0, (size.x - 1.0 - x) * 0.9)
 			if x >= shaft_end:
 				half = minf(8.0, half)
-			var c: Color = UiKit.HEADING if x < fill_to else WorkshopParts.SLOT_SHADE
+			var c: Color = UiTheme.HEADING if x < fill_to else WorkshopParts.SLOT_SHADE
 			draw_rect(Rect2(x, mid - half, 1, half * 2.0 + 1.0), c)
 
 
@@ -114,4 +114,4 @@ static func tag(parent: Node, text: String) -> Label:
 	plate.add_theme_stylebox_override("panel", style)
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(plate)
-	return UiKit.label(plate, text)
+	return Ui.label(plate, text)

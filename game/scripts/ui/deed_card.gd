@@ -47,8 +47,8 @@ func _draw() -> void:
 		for side in [0.0, w - 3.0]:
 			for r in ROD.size():
 				_rect(Rect2(side, end_y + 1 + r, 3, 1), ROD[r])
-	var font := UiKit.ui_font()
-	var size := UiKit.text_size()
+	var font := UiTheme.ui_font()
+	var size := UiTheme.text_size()
 	var step := size + 1
 	var header := tr("DEED")
 	var hw := font.get_string_size(header, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x

@@ -30,7 +30,7 @@ func _ready() -> void:
 	var logo := Label.new()
 	logo.text = tr("Farmus Maximus").to_upper()
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	logo.add_theme_font_override("font", UiKit.FONT)
+	logo.add_theme_font_override("font", UiTheme.FONT)
 	logo.add_theme_font_size_override("font_size", 48)
 	logo.add_theme_color_override("font_color", LOGO)
 	logo.add_theme_color_override("font_shadow_color", LOGO_SHADOW)
@@ -39,12 +39,12 @@ func _ready() -> void:
 	logo.add_theme_constant_override("outline_size", 8)
 	logo.add_theme_color_override("font_outline_color", LOGO_SHADOW)
 	col.add_child(logo)
-	var tagline := UiKit.label(col, tr("A Roman farm, slowly brought back to life"), true)
+	var tagline := Ui.label(col, tr("A Roman farm, slowly brought back to life"), true)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card = PanelContainer.new()
 	_card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(_card)
-	_menu = UiKit.column(_card)
+	_menu = Ui.column(_card)
 	_farms = FarmsPanel.new()
 	_farms.on_new = _name_farm
 	_farms.on_change = _show_menu
@@ -52,38 +52,38 @@ func _ready() -> void:
 	# The farm list takes the menu's place while it is open.
 	_farms.closed.connect(func(): _card.visible = true)
 	_show_menu()
-	var version := UiKit.label(self, "v" + str(ProjectSettings.get_setting("application/config/version", "")), true)
+	var version := Ui.label(self, "v" + str(ProjectSettings.get_setting("application/config/version", "")), true)
 	version.modulate.a = 0.7
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	version.offset_right = -4
 	version.offset_bottom = -3
-	UiKit.fade_in(self, 0.8)
+	Ui.fade_in(self, 0.8)
 
 
 func _show_menu() -> void:
 	_naming = false
-	UiKit.clear(_menu)
+	Ui.clear(_menu)
 	_menu.custom_minimum_size = Vector2(150, 0)
 	if Saves.has_farm:
-		var go := UiKit.button(_menu, tr("Continue"), _continue)
+		var go := Ui.button(_menu, tr("Continue"), _continue)
 		go.focus_mode = Control.FOCUS_ALL
 		go.grab_focus.call_deferred()
 		var info := Saves.slot_info(Saves.slot)
-		var about := UiKit.label(_menu, FarmsPanel.describe(info))
+		var about := Ui.label(_menu, FarmsPanel.describe(info))
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		about.add_theme_color_override("font_color", UiKit.MUTED)
-	var fresh := UiKit.button(_menu, tr("New farm"), _new_farm)
+		about.add_theme_color_override("font_color", UiTheme.MUTED)
+	var fresh := Ui.button(_menu, tr("New farm"), _new_farm)
 	# A farm is never written over, so with every slot taken one has to be deleted first.
 	if Saves.free_slot() == 0:
 		fresh.disabled = true
-		UiKit.tip_on(fresh, "You already keep three farms. Delete one to start another.")
+		Ui.tip_on(fresh, "You already keep three farms. Delete one to start another.")
 	if Saves.any_farm():
-		UiKit.button(_menu, tr("Farms"), _open_farms)
-	UiKit.button(_menu, tr("Settings"), func(): open_window.call("settings"))
+		Ui.button(_menu, tr("Farms"), _open_farms)
+	Ui.button(_menu, tr("Settings"), func(): open_window.call("settings"))
 	# Quitting here does what closing the window does: the farm is saved and the window remembers its monitor.
-	UiKit.button(_menu, tr("Quit"), func(): get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST); get_tree().quit())
+	Ui.button(_menu, tr("Quit"), func(): get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST); get_tree().quit())
 
 
 func _continue() -> void:
@@ -109,24 +109,24 @@ func _open_farms() -> void:
 ## Asks for the new farm's name, offering a Roman one to start from, then starts the farm in that slot.
 func _name_farm(n: int) -> void:
 	_farms.close()
-	UiKit.clear(_menu)
+	Ui.clear(_menu)
 	_naming = true
 	_menu.custom_minimum_size = Vector2(190, 0)
-	UiKit.label(_menu, tr("Name your farm"))
-	var r := UiKit.row(_menu)
+	Ui.label(_menu, tr("Name your farm"))
+	var r := Ui.row(_menu)
 	var field := LineEdit.new()
 	field.max_length = 22
 	field.text = _suggestion()
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	r.add_child(field)
-	UiKit.button(r, tr("Another"), func(): field.text = _suggestion())
+	Ui.button(r, tr("Another"), func(): field.text = _suggestion())
 	field.grab_focus.call_deferred()
 	var start := func():
 		var chosen := field.text.strip_edges()
 		Saves.create(n, chosen if chosen != "" else _suggestion())
 	field.text_submitted.connect(func(_t): start.call())
-	UiKit.button(_menu, tr("Begin"), start)
-	UiKit.button(_menu, tr("Back"), _show_menu)
+	Ui.button(_menu, tr("Begin"), start)
+	Ui.button(_menu, tr("Back"), _show_menu)
 
 
 ## Escape or B steps back from the farm list or the naming of a farm to the menu; true if there was a step to take.

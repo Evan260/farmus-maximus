@@ -28,7 +28,7 @@ func villa_rect() -> Rect2:
 func draw_villa_overlay() -> void:
 	var r := villa_rect()
 	if m._villa_hovered:
-		UiKit.outline(m._villa_outline, r, Color(1, 0.96, 0.85, 0.7))
+		Ui.outline(m._villa_outline, r, Color(1, 0.96, 0.85, 0.7))
 	if not Game.villa_build["active"]:
 		return
 	var total := float(Game.villa_stages()[mini(Game.villa_stage, Game.villa_stages().size() - 1)].get("build_seconds", 1))

@@ -146,7 +146,7 @@ func add_order() -> bool:
 	var seed := "lavender_white" if not _game.crop_unlocked("lavender_white") and _game.rng.randf() < float(_cfg("orders.rare_seed_chance", 0.06)) else ""
 	orders.append({
 		"who": who.get("name", ""), "role": who.get("role", ""), "item": item, "amount": n, "coins": reward, "aureus": aureus, "seed": seed,
-		"text": tr(String(who.get("line", "{n} {item}"))).format({"n": n, "item": UiKit.item_words(item, n)}),
+		"text": tr(String(who.get("line", "{n} {item}"))).format({"n": n, "item": Ui.item_words(item, n)}),
 	})
 	if not _game.quiet:
 		_game.order_added.emit()
@@ -183,9 +183,9 @@ func catalog_block(entry: Dictionary) -> String:
 	if entry.has("unlock_crop") and _game.crop_unlocked(String(entry["unlock_crop"])):
 		return "Bought"
 	if int(entry.get("requires_villa", 0)) > _game.villa_stage:
-		return tr("Needs the %s") % UiKit.mid(tr(String(_game.villa_stages()[int(entry["requires_villa"]) - 1]["name"])))
+		return tr("Needs the %s") % Ui.mid(tr(String(_game.villa_stages()[int(entry["requires_villa"]) - 1]["name"])))
 	if entry.has("requires_zone") and not _game.zone_owned(String(entry["requires_zone"])):
-		return tr("Needs the %s") % UiKit.mid(tr(String(_game.zone_info(String(entry["requires_zone"])).get("name", ""))))
+		return tr("Needs the %s") % Ui.mid(tr(String(_game.zone_info(String(entry["requires_zone"])).get("name", ""))))
 	if entry.has("animal"):
 		return _game.barn_room_block(String(entry["animal"]))
 	return ""

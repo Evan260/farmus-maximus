@@ -41,15 +41,15 @@ func _ready() -> void:
 	_box = PanelContainer.new()
 	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_box)
-	var col := UiKit.column(_box)
-	UiKit.label(col, tr("Uncle Marcus")).add_theme_color_override("font_color", UiKit.HEADING)
-	_text = UiKit.para(col, "", 170)
-	var buttons := UiKit.row(col)
+	var col := Ui.column(_box)
+	Ui.label(col, tr("Uncle Marcus")).add_theme_color_override("font_color", UiTheme.HEADING)
+	_text = Ui.para(col, "", 170)
+	var buttons := Ui.row(col)
 	buttons.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_skip = UiKit.button(buttons, tr("Skip the guide"), func():
+	_skip = Ui.button(buttons, tr("Skip the guide"), func():
 		Settings.set_value("show_tutorial", false)
 		visible = false)
-	UiKit.button(buttons, tr("Got it"), func():
+	Ui.button(buttons, tr("Got it"), func():
 		_dismissed_id = _shown_id
 		visible = false).custom_minimum_size = Vector2(40, 0)
 

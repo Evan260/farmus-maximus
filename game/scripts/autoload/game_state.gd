@@ -213,7 +213,7 @@ func item_name(key: String) -> String:
 	var q := item_quality(key)
 	if q == 0:
 		return name
-	return (tr("Excellent %s") if q == 2 else tr("Fine %s")) % UiKit.mid(name)
+	return (tr("Excellent %s") if q == 2 else tr("Fine %s")) % Ui.mid(name)
 
 
 ## The unchanging price of one unit, before the market's daily mood.
@@ -336,7 +336,7 @@ func missing(cost: Dictionary) -> String:
 			continue
 		var short := int(cost[key]) - count_item(String(key))
 		if short > 0:
-			return tr("Needs %d more %s") % [short, UiKit.item_words(String(key), short)]
+			return tr("Needs %d more %s") % [short, Ui.item_words(String(key), short)]
 	return ""
 
 
@@ -524,7 +524,7 @@ func seed_for_plot(i: int) -> String:
 func seed_block(i: int) -> String:
 	if not crop_unlocked(selected_seed):
 		return "Buy cuttings for this land at the market"
-	var where := tr(" or ").join(crop_zones(selected_seed).map(func(z): return UiKit.mid(tr(String(zone_info(z).get("name", ""))))))
+	var where := tr(" or ").join(crop_zones(selected_seed).map(func(z): return Ui.mid(tr(String(zone_info(z).get("name", ""))))))
 	return tr("%s grows on the %s: choose another seed for this land") % [tr(String(crop_info(selected_seed).get("name", selected_seed))), where]
 
 
@@ -975,7 +975,7 @@ func zone_block(zone_id: String) -> String:
 		return "Available in the full game"
 	var needs := int(z.get("requires_villa", 0))
 	if villa_stage < needs:
-		return tr("Restore the villa first: %s") % UiKit.mid(tr(String(villa_stages()[needs - 1]["name"])))
+		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[needs - 1]["name"])))
 	return ""
 
 
@@ -1109,7 +1109,7 @@ func building_block(id: String) -> String:
 		return "Buy this land first"
 	var needs := int(info.get("requires_villa", 0))
 	if villa_stage < needs:
-		return tr("Restore the villa first: %s") % UiKit.mid(tr(String(villa_stages()[needs - 1]["name"])))
+		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[needs - 1]["name"])))
 	return ""
 
 
@@ -1584,7 +1584,7 @@ func helper_block(id: String) -> String:
 	if unlock.has("villa") and villa_stage < int(unlock["villa"]):
 		return "Restore the villa first"
 	if unlock.has("building") and buildings[unlock["building"]]["state"] != "working":
-		return tr("Repair the %s first") % UiKit.mid(tr(String(building_info(String(unlock["building"])).get("name", ""))))
+		return tr("Repair the %s first") % Ui.mid(tr(String(building_info(String(unlock["building"])).get("name", ""))))
 	if unlock.has("purchase") and not market.purchases.has(unlock["purchase"]):
 		return "Buy a second cart at the market"
 	return ""
@@ -1714,7 +1714,7 @@ func decoration_block(id: String) -> String:
 	if decorations.has(id):
 		return "Owned"
 	if villa_stage < int(d.get("requires_villa", 0)):
-		return tr("Restore the villa first: %s") % UiKit.mid(tr(String(villa_stages()[int(d["requires_villa"]) - 1]["name"])))
+		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[int(d["requires_villa"]) - 1]["name"])))
 	if not zone_owned(String(d.get("zone", "home"))):
 		return "Buy this land first"
 	if d.has("festival") and calendar.festival().get("id", "") != d["festival"] and not journal.has("festival:" + String(d["festival"])):
@@ -1734,7 +1734,7 @@ func furnishing_block(id: String) -> String:
 	if furnishings.has(id):
 		return "Already in the house"
 	if villa_stage < int(f.get("requires_villa", 2)):
-		return tr("Restore the villa first: %s") % UiKit.mid(tr(String(villa_stages()[int(f.get("requires_villa", 2)) - 1]["name"])))
+		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[int(f.get("requires_villa", 2)) - 1]["name"])))
 	return ""
 
 
@@ -1790,7 +1790,7 @@ func dog_dig() -> String:
 			text = tr("%s dug up an old coin: +%d sestertii") % [pet_name("dog"), n]
 		elif f.has("item"):
 			add_item(String(f["item"]), 1, true)
-			text = tr("%s found a %s!") % [pet_name("dog"), UiKit.mid(tr(String(Balance.get_value("items.%s.name" % f["item"], f["item"]))))]
+			text = tr("%s found a %s!") % [pet_name("dog"), Ui.mid(tr(String(Balance.get_value("items.%s.name" % f["item"], f["item"]))))]
 		elif f.has("unlock_crop"):
 			unlock_crop(String(f["unlock_crop"]))
 			text = tr("%s dug up a rare seed: white lavender!") % pet_name("dog")

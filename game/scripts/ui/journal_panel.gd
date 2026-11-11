@@ -39,7 +39,7 @@ func _init() -> void:
 	cover.set_border_width_all(2)
 	cover.set_content_margin_all(7)
 	add_theme_stylebox_override("panel", cover)
-	_title.add_theme_color_override("font_color", UiKit.CREAM)
+	_title.add_theme_color_override("font_color", UiTheme.CREAM)
 
 
 func signature() -> String:
@@ -48,9 +48,9 @@ func signature() -> String:
 
 func build() -> void:
 	set_title(tr("Farmer's journal"))
-	var spread := UiKit.row(body)
+	var spread := Ui.row(body)
 	spread.add_theme_constant_override("separation", 0)
-	var marks := UiKit.column(spread)
+	var marks := Ui.column(spread)
 	marks.add_theme_constant_override("separation", 1)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 5)
@@ -73,8 +73,8 @@ func build() -> void:
 	right_view.position = Vector2(right_x + MARGIN, MARGIN)
 	right_view.size = Vector2(PAGE_W - MARGIN - 4, PAGE_H - MARGIN * 2)
 	book.add_child(right_view)
-	UiKit.touch_scroll(right_view)
-	var right := UiKit.column(right_view)
+	Ui.touch_scroll(right_view)
+	var right := Ui.column(right_view)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_page_views = [left_view, right_view]
 	var entries := _entries()
@@ -107,10 +107,10 @@ func _bookmark(parent: Node, s: String) -> void:
 		box.content_margin_bottom = 2
 		if state == "focus" and not open:
 			box.draw_center = false
-			box.border_color = UiKit.CREAM
+			box.border_color = UiTheme.CREAM
 		b.add_theme_stylebox_override(state, box)
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
-		b.add_theme_color_override(c, UiKit.INK if open else UiKit.INK.lightened(0.15))
+		b.add_theme_color_override(c, UiTheme.INK if open else UiTheme.INK.lightened(0.15))
 	b.pressed.connect(func(): _turn_to(s))
 	parent.add_child(b)
 
@@ -165,7 +165,7 @@ func _landed() -> void:
 ## A page of the journal as it is laid out, to be pictured with its paper: 0 the left page, 1 the right.
 func _shot(side: int) -> Dictionary:
 	return {"page": _page_views[side], "paper": _paper(side == 0), "at": Vector2(MARGIN, MARGIN),
-		"size": Vector2(PAGE_W, PAGE_H), "theme": UiKit.make_theme()}
+		"size": Vector2(PAGE_W, PAGE_H), "theme": UiTheme.build()}
 ## The left page holds the story of the chosen entry and scrolls when the story runs long, so the book never grows.
 func _page(book: Control, x: int, _left: bool) -> VBoxContainer:
 	var area := ScrollContainer.new()
@@ -173,7 +173,7 @@ func _page(book: Control, x: int, _left: bool) -> VBoxContainer:
 	area.position = Vector2(x + MARGIN, MARGIN)
 	area.size = Vector2(PAGE_W - MARGIN - 4, PAGE_H - MARGIN * 2)
 	book.add_child(area)
-	UiKit.touch_scroll(area)
+	Ui.touch_scroll(area)
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	area.add_child(col)
@@ -241,7 +241,7 @@ func _paper(gutter_right: bool) -> Texture2D:
 
 
 func _heading(page: Node, text: String) -> void:
-	UiKit.section(page, text)
+	Ui.section(page, text)
 
 
 func _entries() -> Array:
@@ -292,14 +292,14 @@ func _section_story(page: VBoxContainer, entries: Array) -> void:
 	var discovered: Array = entries.filter(func(e): return _found(e["id"]))
 	if discovered.is_empty():
 		_heading(page, tr(section))
-		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.MUTED)
+		Ui.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiTheme.MUTED)
 		return
 	var id := String(discovered[0]["id"])
 	_heading(page, tr(_name(id)))
 	var story := _describe(id)
 	if story.is_empty():
-		story = tr("A record from the %s pages of the journal.") % UiKit.mid(tr(section))
-	UiKit.para(page, story, TEXT_W)
+		story = tr("A record from the %s pages of the journal.") % Ui.mid(tr(section))
+	Ui.para(page, story, TEXT_W)
 
 
 func _detail(page: VBoxContainer, id: String) -> void:
@@ -324,22 +324,22 @@ func _detail(page: VBoxContainer, id: String) -> void:
 	# An achievement still to earn shows its name and what it asks for, so the player knows what to aim at.
 	if not got and id.begins_with("achievement:"):
 		_heading(page, tr(_name(id)))
-		UiKit.para(page, _describe(id), TEXT_W)
+		Ui.para(page, _describe(id), TEXT_W)
 		_achievement_progress(page, id.get_slice(":", 1))
 		return
 	if not got:
 		_heading(page, "? ? ?")
-		UiKit.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiKit.MUTED)
+		Ui.para(page, tr("Not discovered yet."), TEXT_W).add_theme_color_override("font_color", UiTheme.MUTED)
 		return
 	_heading(page, tr(_name(id)))
-	UiKit.para(page, _describe(id), TEXT_W)
+	Ui.para(page, _describe(id), TEXT_W)
 	if id.begins_with("item:") and not Balance.get_value("items.%s.no_quality" % id.get_slice(":", 1), false):
-		var badges := UiKit.row(page)
+		var badges := Ui.row(page)
 		var names: Array = Balance.get_value("quality.names", ["Common", "Fine", "Excellent"])
 		for q in 3:
 			var has: bool = q == 0 or Game.journal.has("quality:%s:%d" % [id.get_slice(":", 1), q])
-			var l := UiKit.label(badges, tr(String(names[q])))
-			l.add_theme_color_override("font_color", UiKit.INK if has else Color(0.62, 0.55, 0.45))
+			var l := Ui.label(badges, tr(String(names[q])))
+			l.add_theme_color_override("font_color", UiTheme.INK if has else Color(0.62, 0.55, 0.45))
 
 
 func _achievement_progress(page: VBoxContainer, key: String) -> void:
@@ -352,13 +352,13 @@ func _achievement_progress(page: VBoxContainer, key: String) -> void:
 			text = tr("Not earned yet: the journal is %d%% full so far.") % done[0]
 		elif not done.is_empty():
 			text = tr("Not earned yet: %d of %d so far.") % [mini(done[0], done[1]), done[1]]
-		UiKit.para(page, text, TEXT_W).add_theme_color_override("font_color", UiKit.MUTED)
+		Ui.para(page, text, TEXT_W).add_theme_color_override("font_color", UiTheme.MUTED)
 
 
 func _name(id: String) -> String:
 	if id.begins_with("helper:"):
 		var h := Game.helper_info(id.get_slice(":", 1))
-		return tr("%s the %s") % [h.get("name", ""), UiKit.mid(tr(String(h.get("role", ""))))]
+		return tr("%s the %s") % [h.get("name", ""), Ui.mid(tr(String(h.get("role", ""))))]
 	for e in _entries():
 		if e["id"] == id:
 			return String(e["name"])
@@ -373,22 +373,22 @@ func _describe(id: String) -> String:
 	match kind:
 		"crop":
 			var c := Game.crop_info(key)
-			var zone := tr(" and the ").join(Game.crop_zones(key).map(func(z): return UiKit.mid(tr(String(Game.zone_info(z).get("name", ""))))))
-			var text := tr("Grows on the %s. Ready after %s") % [zone, UiKit.duration(float(c.get("grow_seconds", 60)))]
-			text += (tr(", then again every %s.") % UiKit.duration(float(c["regrow_seconds"]))) if c.get("perennial", false) else tr(", then needs replanting.")
-			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), UiKit.item_words(String(c.get("item", key)), int(c.get("yield", 1)))]
+			var zone := tr(" and the ").join(Game.crop_zones(key).map(func(z): return Ui.mid(tr(String(Game.zone_info(z).get("name", ""))))))
+			var text := tr("Grows on the %s. Ready after %s") % [zone, Ui.duration(float(c.get("grow_seconds", 60)))]
+			text += (tr(", then again every %s.") % Ui.duration(float(c["regrow_seconds"]))) if c.get("perennial", false) else tr(", then needs replanting.")
+			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), Ui.item_words(String(c.get("item", key)), int(c.get("yield", 1)))]
 		"item":
 			var lines := [tr("Worth about %d sestertii at market.") % int(Game.base_price(key))]
 			for crop in Balance.get_value("crops", {}):
 				if Game.crop_info(crop).get("item", "") == key:
-					lines.append(tr("Harvested from %s.") % UiKit.mid(tr(String(Game.crop_info(crop).get("name", crop)))))
+					lines.append(tr("Harvested from %s.") % Ui.mid(tr(String(Game.crop_info(crop).get("name", crop)))))
 					break
 			for b in Balance.get_value("buildings", {}):
 				for r in Game.building_info(b).get("recipes", []):
 					if r.get("out", {}).has(key):
-						lines.append(tr("Made in the %s.") % UiKit.mid(tr(String(Game.building_info(b).get("name", b)))))
+						lines.append(tr("Made in the %s.") % Ui.mid(tr(String(Game.building_info(b).get("name", b)))))
 					if r.get("in", {}).has(key):
-						lines.append(tr("Used by the %s.") % UiKit.mid(tr(String(Game.building_info(b).get("name", b)))))
+						lines.append(tr("Used by the %s.") % Ui.mid(tr(String(Game.building_info(b).get("name", b)))))
 			return " ".join(lines)
 		"building":
 			var info := Game.building_info(key)
@@ -396,9 +396,9 @@ func _describe(id: String) -> String:
 			var outs := []
 			for r in info.get("recipes", []):
 				for item in r.get("out", {}):
-					outs.append(UiKit.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
+					outs.append(Ui.mid(tr(String(Balance.get_value("items.%s.name" % item, item)))))
 			var what := tr("Makes %s.") % ", ".join(outs) if not outs.is_empty() else ""
-			return (tr("Stands on the %s.") % UiKit.mid(tr(zone))) + " " + what
+			return (tr("Stands on the %s.") % Ui.mid(tr(zone))) + " " + what
 		"helper":
 			var h := Game.helper_info(key)
 			return "%s. \"%s\"" % [tr(String(h.get("does", ""))), tr(String(h.get("quote", "")))]

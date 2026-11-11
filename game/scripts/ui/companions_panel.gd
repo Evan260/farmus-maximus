@@ -25,14 +25,14 @@ func signature() -> String:
 
 
 func build() -> void:
-	UiKit.para(body, tr("Every farm needs a dog and a cat. Choose their breeds and coats and give them names."), 240)
-	var pair := UiKit.row(body)
+	Ui.para(body, tr("Every farm needs a dog and a cat. Choose their breeds and coats and give them names."), 240)
+	var pair := Ui.row(body)
 	pair.add_theme_constant_override("separation", 12)
 	pair.alignment = BoxContainer.ALIGNMENT_CENTER
 	for kind in ["dog", "cat"]:
-		var col := UiKit.column(pair)
+		var col := Ui.column(pair)
 		col.custom_minimum_size = Vector2(COLUMN, 0)
-		UiKit.section(col, tr("Your dog") if kind == "dog" else tr("Your cat"))
+		Ui.section(col, tr("Your dog") if kind == "dog" else tr("Your cat"))
 		var pic := TextureRect.new()
 		pic.custom_minimum_size = Vector2(COLUMN, 52)
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
@@ -49,19 +49,19 @@ func build() -> void:
 		col.add_child(name)
 		_names[kind] = name
 		_show(kind)
-	UiKit.button(body, tr("That's them"), _done)
+	Ui.button(body, tr("That's them"), _done)
 
 
 ## A row with arrows either side of a label, for stepping through a list of choices.
 func _chooser(parent: Node, step: Callable) -> Label:
-	var r := UiKit.row(parent)
-	UiKit.button(r, "<", func(): step.call(-1))
-	var label := UiKit.label(r)
+	var r := Ui.row(parent)
+	Ui.button(r, "<", func(): step.call(-1))
+	var label := Ui.label(r)
 	# The label takes the room between the arrows, so both rows are the same width and their arrows line up.
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.clip_text = true
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UiKit.button(r, ">", func(): step.call(1))
+	Ui.button(r, ">", func(): step.call(1))
 	return label
 
 

@@ -34,11 +34,11 @@ var _pinned := "--strip-controls" in OS.get_cmdline_user_args()
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	modulate.a = 0.0
-	var row := UiKit.row(self)
+	var row := Ui.row(self)
 	row.add_theme_constant_override("separation", 2)
 	_icon_button(row, "left", func(): pan_requested.emit(-1))
 	_icon_button(row, "smaller", func(): Windowing.change_strip_scale(-1))
-	_scale_label = UiKit.label(row)
+	_scale_label = Ui.label(row)
 	_icon_button(row, "larger", func(): Windowing.change_strip_scale(1))
 	_grip(_icon_button(row, "move", Callable()), "move")
 	_grip(_icon_button(row, "width", Callable()), "width")
@@ -120,6 +120,6 @@ static func _texture(name: String) -> Texture2D:
 		for y in rows.size():
 			for x in 7:
 				if String(rows[y])[x] == "X":
-					img.set_pixel(x, top + y, UiKit.INK)
+					img.set_pixel(x, top + y, UiTheme.INK)
 		_textures[name] = ImageTexture.create_from_image(img)
 	return _textures[name]

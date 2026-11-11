@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var r := local_rect()
 	if hovered:
-		UiKit.outline(self, r, Color(1, 0.96, 0.85, 0.7))
+		Ui.outline(self, r, Color(1, 0.96, 0.85, 0.7))
 	var b: Dictionary = Game.buildings[id]
 	var bar := Rect2(Vector2(r.position.x + r.size.x / 2 - 12, r.position.y - 5), Vector2(24, 3))
 	var fill := -1.0

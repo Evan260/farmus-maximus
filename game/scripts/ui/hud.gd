@@ -90,7 +90,7 @@ func _ready() -> void:
 	_root = Control.new()
 	# Clicks on empty parts of the interface pass through to the farm.
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.theme = UiKit.make_theme()
+	_root.theme = UiTheme.build()
 	add_child(_root)
 	Windowing.view_changed.connect(_fit)
 	_fit()
@@ -98,12 +98,12 @@ func _ready() -> void:
 	_stats_panel = PanelContainer.new()
 	_stats_panel.position = Vector2(4, 4)
 	_root.add_child(_stats_panel)
-	var col := UiKit.column(_stats_panel)
-	_coins = UiKit.label(col)
-	_storage = UiKit.label(col)
-	_cart = UiKit.label(col)
-	_calendar = UiKit.label(col)
-	_sleep_button = UiKit.button(col, tr("Sleep until morning"), _start_sleep)
+	var col := Ui.column(_stats_panel)
+	_coins = Ui.label(col)
+	_storage = Ui.label(col)
+	_cart = Ui.label(col)
+	_calendar = Ui.label(col)
+	_sleep_button = Ui.button(col, tr("Sleep until morning"), _start_sleep)
 
 	_buttons = VBoxContainer.new()
 	_root.add_child(_buttons)
@@ -121,10 +121,10 @@ func _ready() -> void:
 	var home := _top_button(_buttons, "Save and go back to the title", house, back_to_title)
 	home.name = "TitleButton"
 
-	_info = UiKit.label(_root, "", true)
+	_info = Ui.label(_root, "", true)
 	_info.visible = false
-	_tip = UiKit.label(_root, "", true)
-	_toast = UiKit.label(_root, "", true)
+	_tip = Ui.label(_root, "", true)
+	_toast = Ui.label(_root, "", true)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Drawn over the windows, so a message about one is never hidden behind it.
@@ -252,9 +252,9 @@ func _process(delta: float) -> void:
 	if titled:
 		_title.visible = not in_strip
 		if not _any_window():
-			UiKit.pad_focus(_title, _title_focus)
+			Ui.pad_focus(_title, _title_focus)
 	elif visible and not _any_window() and not _open_cards().is_empty():
-		UiKit.pad_focus(_cards.back())
+		Ui.pad_focus(_cards.back())
 	if _bar_armed and not _bar_focused():
 		_pad_bar(false)
 	if _compact_market.visible == titled:
@@ -270,7 +270,7 @@ func _process(delta: float) -> void:
 	_coins.text = tr("Sestertii  %d") % Game.coins + (("   " + tr("Aurei  %d") % Game.aureus) if Game.aureus > 0 else "")
 	_storage.text = tr("Storehouse  %d / %d") % [Game.in_storehouse(), Game.storage_capacity()]
 	if Game.cart["away"]:
-		_cart.text = tr("Trader back in  %s") % UiKit.duration(float(Game.cart["time_left"]))
+		_cart.text = tr("Trader back in  %s") % Ui.duration(float(Game.cart["time_left"]))
 	elif Game.helpers.has("trader"):
 		_cart.text = tr("Trader's cart  %d / %d") % [Game.on_cart(), Game.cart_capacity()]
 	else:
@@ -401,7 +401,7 @@ func request_house() -> void:
 func open_window(name: String) -> void:
 	var w: WindowPanel = {"store": _store, "helpers": _helpers, "journal": _journal, "settings": _settings, "upgrades": _upgrades, "companions": _companions}.get(name)
 	if _title:
-		_title_focus = UiKit.focus_hint(_title)
+		_title_focus = Ui.focus_hint(_title)
 	if w and not w.visible:
 		_open(w)
 
@@ -461,12 +461,12 @@ func _show_toast(text: String) -> void:
 ## relative to the view's corner.
 func say(spot: Callable, text: String) -> void:
 	var on_screen := func() -> Vector2: return (spot.call() * Windowing.scale / Windowing.ui_scale).round()
-	UiKit.speech(_root, on_screen.call(), text, on_screen)
+	Ui.speech(_root, on_screen.call(), text, on_screen)
 
 
 ## Text that floats up from a spot on screen; pos is in estate pixels relative to the view's corner.
 func float_text(pos: Vector2, text: String) -> void:
-	var l := UiKit.label(_root, text, true)
+	var l := Ui.label(_root, text, true)
 	pos = (pos * Windowing.scale / Windowing.ui_scale).round()
 	l.position = pos
 	var t := create_tween().set_parallel()
@@ -496,7 +496,7 @@ func _add_window(w: WindowPanel) -> WindowPanel:
 
 func _apply_text_size() -> void:
 	for l in [_info, _toast, _tip]:
-		l.add_theme_font_size_override("font_size", UiKit.text_size() * (2 if Settings.large_text else 1))
+		l.add_theme_font_size_override("font_size", UiTheme.text_size() * (2 if Settings.large_text else 1))
 
 
 ## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
@@ -559,7 +559,7 @@ func _build_zone_bar() -> void:
 	_root.add_child(_zone_bar)
 	for z in Game.zones():
 		var id: String = z["id"]
-		var b := UiKit.button(_zone_bar, tr(SHORT_ZONES.get(id, id)), func(): zone_chosen.emit(id))
+		var b := Ui.button(_zone_bar, tr(SHORT_ZONES.get(id, id)), func(): zone_chosen.emit(id))
 		b.toggle_mode = true
 		_zone_buttons[id] = b
 	_zone_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
@@ -623,8 +623,8 @@ func _triumph() -> void:
 	get_tree().create_timer(12.0).timeout.connect(petals.queue_free)
 	var p := PanelContainer.new()
 	_root.add_child(p)
-	var col := UiKit.column(p)
-	var head := UiKit.label(col, tr("Triumph!"))
+	var col := Ui.column(p)
+	var head := Ui.label(col, tr("Triumph!"))
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head.add_theme_color_override("font_color", Color(0.62, 0.2, 0.14))
 	var wreath := TextureRect.new()
@@ -632,10 +632,10 @@ func _triumph() -> void:
 	wreath.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	wreath.custom_minimum_size = Vector2(32, 32)
 	col.add_child(wreath)
-	UiKit.para(col, tr("Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door."), 200)
-	UiKit.button(col, tr("Ave!"), p.queue_free)
+	Ui.para(col, tr("Every achievement on the estate is yours. Rome honours you with a triumph, and a golden laurel wreath now hangs above the villa door."), 200)
+	Ui.button(col, tr("Ave!"), p.queue_free)
 	_centre_card(p)
-	UiKit.fade_in(p, 0.6)
+	Ui.fade_in(p, 0.6)
 
 
 ## A rose petal a few pixels across, white so the particles can colour it.
@@ -666,7 +666,7 @@ func _show_away(news: Dictionary) -> void:
 	var p := PanelContainer.new()
 	_away = p
 	_root.add_child(p)
-	var col := UiKit.column(p)
+	var col := Ui.column(p)
 	var hours := float(summary.get("seconds", 0)) / 3600.0
 	var lines := [tr("While you were away"), "(%s)" % ((tr("%.1f hours") % hours) if hours >= 1.0 else (tr("%d minutes") % int(hours * 60)))]
 	if int(summary.get("harvested", 0)) > 0:
@@ -680,8 +680,8 @@ func _show_away(news: Dictionary) -> void:
 	if summary.get("storage_full", false):
 		lines.append(tr("The storehouse and the cart are full"))
 	for line in lines:
-		UiKit.label(col, line)
-	UiKit.button(col, tr("Lovely"), func():
+		Ui.label(col, line)
+	Ui.button(col, tr("Lovely"), func():
 		p.queue_free()
 		_away_summary = {})
 	_centre_card(p)
@@ -700,10 +700,10 @@ func _centre_card(p: PanelContainer) -> void:
 func _build_compact() -> void:
 	_compact = PanelContainer.new()
 	_root.add_child(_compact)
-	var row := UiKit.row(_compact)
-	_compact_label = UiKit.label(row)
-	_compact_market = UiKit.button(row, tr("Market"), func(): Windowing.toggle_strip(); town_requested.emit())
-	UiKit.button(row, tr("Expand"), func(): Windowing.toggle_strip())
+	var row := Ui.row(_compact)
+	_compact_label = Ui.label(row)
+	_compact_market = Ui.button(row, tr("Market"), func(): Windowing.toggle_strip(); town_requested.emit())
+	Ui.button(row, tr("Expand"), func(): Windowing.toggle_strip())
 	# Top-left, where the strip shows only sky or desktop, so it never covers the cart or the plots.
 	_compact.position = Vector2(4, 4)
 	_compact.visible = false
@@ -717,24 +717,24 @@ func _build_debug() -> void:
 	_debug_layer.scale = scale
 	add_child.call_deferred(_debug_layer)
 	var holder := Control.new()
-	holder.theme = UiKit.make_theme()
+	holder.theme = UiTheme.build()
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_debug_layer.add_child(holder)
 	_debug = PanelContainer.new()
 	_debug.position = Vector2(4, 70)
 	_debug.visible = false
 	holder.add_child(_debug)
-	var col := UiKit.column(_debug)
-	UiKit.label(col, "Debug (F1)")
+	var col := Ui.column(_debug)
+	Ui.label(col, "Debug (F1)")
 	for s in [1, 10, 60]:
-		UiKit.button(col, "Speed x%d" % s, func(): Game.speed = s; toast("Time speed x%d" % s))
-	UiKit.button(col, "Skip 1 hour", func(): _show_away(Game.simulate_offline(3600)))
-	UiKit.button(col, "+10000 sestertii", func(): Game.coins += 10000)
-	UiKit.button(col, "+10 materials", func(): for m in ["stone", "timber", "tiles", "bread"]: Game.add_item(m, 10, true))
-	UiKit.button(col, "Rain", func(): Game.calendar.weather_left = 0.0; Game.calendar.weather = "rain"; Game.calendar.wet_left = 240.0)
-	UiKit.button(col, "Next day", func(): Game.calendar.next_day(); Game.market.new_day())
-	UiKit.button(col, "Save now", func(): Saves.save_game(); toast("Saved"))
-	UiKit.button(col, "Reset farm", func(): Saves.reset(); get_tree().reload_current_scene())
+		Ui.button(col, "Speed x%d" % s, func(): Game.speed = s; toast("Time speed x%d" % s))
+	Ui.button(col, "Skip 1 hour", func(): _show_away(Game.simulate_offline(3600)))
+	Ui.button(col, "+10000 sestertii", func(): Game.coins += 10000)
+	Ui.button(col, "+10 materials", func(): for m in ["stone", "timber", "tiles", "bread"]: Game.add_item(m, 10, true))
+	Ui.button(col, "Rain", func(): Game.calendar.weather_left = 0.0; Game.calendar.weather = "rain"; Game.calendar.wet_left = 240.0)
+	Ui.button(col, "Next day", func(): Game.calendar.next_day(); Game.market.new_day())
+	Ui.button(col, "Save now", func(): Saves.save_game(); toast("Saved"))
+	Ui.button(col, "Reset farm", func(): Saves.reset(); get_tree().reload_current_scene())
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -812,15 +812,15 @@ func _build_toolbar() -> void:
 	frame.set_content_margin_all(2)
 	_toolbar.add_theme_stylebox_override("panel", frame)
 	_root.add_child(_toolbar)
-	_tool_row = UiKit.row(_toolbar)
+	_tool_row = Ui.row(_toolbar)
 	_tool_row.add_theme_constant_override("separation", 1)
 
 
 ## Small picture buttons for the estate's main windows, matching the illustrated controls in Fishus Maximus.
 func _top_button(parent: Node, label: String, picture: Texture2D, action: Callable) -> Button:
-	var b := UiKit.button(parent, "", action)
+	var b := Ui.button(parent, "", action)
 	b.name = label.replace(" ", "") + "Button"
-	UiKit.tip_on(b, label)
+	Ui.tip_on(b, label)
 	b.custom_minimum_size = Vector2(20, 20)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var image := TextureRect.new()
@@ -843,7 +843,7 @@ func _update_toolbar() -> void:
 	var sig := JSON.stringify(Game.crops_unlocked)
 	if sig != _tool_signature:
 		_tool_signature = sig
-		UiKit.clear(_tool_row)
+		Ui.clear(_tool_row)
 		_tool_buttons = {}
 		_tool_slot("harvest", load("res://assets/sprites/icons/tool_harvest.png"), tr("Harvest: click ripe plants to pick them"), Color.WHITE)
 		for crop in Balance.get_value("seeds", []):
@@ -853,7 +853,7 @@ func _update_toolbar() -> void:
 			var item := String(info.get("item", crop))
 			var path := "res://assets/sprites/icons/%s.png" % item
 			var tint: Color = SEED_TINTS.get(crop, Color.WHITE)
-			var text := tr("Plant %s: %d sestertii") % [UiKit.mid(tr(String(info.get("name", crop)))), int(info.get("plant_cost", 0))]
+			var text := tr("Plant %s: %d sestertii") % [Ui.mid(tr(String(info.get("name", crop)))), int(info.get("plant_cost", 0))]
 			_tool_slot("seed:" + crop, load(path) if ResourceLoader.exists(path) else null, text, tint)
 		_tool_slot("dig", load("res://assets/sprites/icons/tool_dig.png"), tr("Dig up: clear a plant from its bed"), Color.WHITE)
 	var current := "seed:" + Game.selected_seed if tool == "seed" else tool
@@ -879,7 +879,7 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 		# The slot a gamepad is on is ringed in cream over its own look, as the interface's other buttons are.
 		if state == "focus":
 			box.draw_center = false
-			box.border_color = UiKit.CREAM
+			box.border_color = UiTheme.CREAM
 		b.add_theme_stylebox_override(state, box)
 	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
 		b.add_theme_color_override(state, tint)
@@ -888,7 +888,7 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 		select_tool(id)
 		if _bar_armed:
 			_pad_bar(false))
-	UiKit.tip_on(b, text)
+	Ui.tip_on(b, text)
 	_tool_row.add_child(b)
 	_tool_buttons[id] = b
 

@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## Tooltips drawn in the interface's own pixels, so they grow with the interface size like everything else.
-## A control asks for one with UiKit.tip_on(control, text); the text is read every frame, so it can change while shown.
+## A control asks for one with Ui.tip_on(control, text); the text is read every frame, so it can change while shown.
 
 const DELAY := 0.35
 const WRAP := 170.0
@@ -17,14 +17,14 @@ var _mouse := Vector2.ZERO
 func _ready() -> void:
 	layer = 60
 	_root = Control.new()
-	_root.theme = UiKit.make_theme()
+	_root.theme = UiTheme.build()
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	_panel = PanelContainer.new()
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := StyleBoxFlat.new()
-	box.bg_color = UiKit.CREAM
-	box.border_color = UiKit.INK
+	box.bg_color = UiTheme.CREAM
+	box.border_color = UiTheme.INK
 	box.set_border_width_all(1)
 	box.content_margin_left = 3
 	box.content_margin_right = 3
@@ -32,7 +32,7 @@ func _ready() -> void:
 	box.content_margin_bottom = 3
 	_panel.add_theme_stylebox_override("panel", box)
 	_root.add_child(_panel)
-	_label = UiKit.label(_panel)
+	_label = Ui.label(_panel)
 	_panel.visible = false
 	Windowing.view_changed.connect(_fit)
 	_fit()
@@ -78,8 +78,8 @@ func _tip_owner(c: Control) -> Control:
 
 func _show(text: String) -> void:
 	# The language can change while the game runs, and with it the font, so the tip follows it.
-	if _root.theme.default_font != UiKit.ui_font():
-		_root.theme = UiKit.make_theme()
+	if _root.theme.default_font != UiTheme.ui_font():
+		_root.theme = UiTheme.build()
 	var lines := _wrap(text)
 	if _label.text != lines or not _panel.visible:
 		_label.text = lines
@@ -97,8 +97,8 @@ func _show(text: String) -> void:
 
 ## Breaks a tip into lines by hand, between letters where a language leaves no spaces, as a self-sizing panel can't.
 func _wrap(text: String) -> String:
-	var font := UiKit.ui_font()
-	var size := UiKit.text_size()
+	var font := UiTheme.ui_font()
+	var size := UiTheme.text_size()
 	var out := PackedStringArray()
 	var line := ""
 	for word in text.split(" "):

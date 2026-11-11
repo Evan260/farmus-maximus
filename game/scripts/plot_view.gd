@@ -101,7 +101,7 @@ static func _recolor(tex: Texture2D, how: String) -> Texture2D:
 
 func _draw() -> void:
 	if hovered:
-		UiKit.outline(self, _hit, Color(1, 0.96, 0.85, 0.7))
+		Ui.outline(self, _hit, Color(1, 0.96, 0.85, 0.7))
 	match _visual:
 		"bloom":
 			var top := _crop.position.y - 2

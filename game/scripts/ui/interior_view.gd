@@ -220,34 +220,34 @@ func _build_ui() -> void:
 	_ui_layer.visible = false
 	add_child(_ui_layer)
 	_ui_root = Control.new()
-	_ui_root.theme = UiKit.make_theme()
+	_ui_root.theme = UiTheme.build()
 	_ui_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	_ui_root.gui_input.connect(_on_picture_input)
 	_ui_layer.add_child(_ui_root)
-	var top := UiKit.row(_ui_root)
+	var top := Ui.row(_ui_root)
 	top.position = Vector2(4, 4)
-	_outside = UiKit.button(top, tr("Back outside"), leave)
-	_furnish = UiKit.button(top, tr("Furnish"), func(): _open(""))
+	_outside = Ui.button(top, tr("Back outside"), leave)
+	_furnish = Ui.button(top, tr("Furnish"), func(): _open(""))
 	for b in [_outside, _furnish]:
 		b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var purse_box := PanelContainer.new()
 	top.add_child(purse_box)
-	var info := UiKit.column(purse_box)
-	_purse = UiKit.label(info)
-	_comfort = UiKit.label(info)
-	_comfort.add_theme_color_override("font_color", UiKit.MUTED)
-	_hover_label = UiKit.label(_ui_root, "", true)
+	var info := Ui.column(purse_box)
+	_purse = Ui.label(info)
+	_comfort = Ui.label(info)
+	_comfort.add_theme_color_override("font_color", UiTheme.MUTED)
+	_hover_label = Ui.label(_ui_root, "", true)
 	_hover_label.visible = false
 	_panel = PanelContainer.new()
 	_panel.visible = false
 	_ui_root.add_child(_panel)
-	var col := UiKit.column(_panel)
+	var col := Ui.column(_panel)
 	col.custom_minimum_size = Vector2(230, 0)
-	var head := UiKit.row(col)
-	_title = UiKit.label(head)
+	var head := Ui.row(col)
+	_title = Ui.label(head)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UiKit.close_button(head, _close_panel)
-	_list = UiKit.scroll(col, Vector2(220, 170))
+	Ui.close_button(head, _close_panel)
+	_list = Ui.scroll(col, Vector2(220, 170))
 	_scroll = _list
 	while _scroll and not _scroll is ScrollContainer:
 		_scroll = _scroll.get_parent()
@@ -423,7 +423,7 @@ func _keep_pad_focus() -> void:
 	if get_viewport().gui_get_focus_owner() != null:
 		return
 	if _panel.visible:
-		UiKit.pad_focus(_panel)
+		Ui.pad_focus(_panel)
 	else:
 		_furnish.grab_focus()
 
@@ -696,7 +696,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _open(id: String) -> void:
 	_selected = id
 	if not _panel.visible:
-		UiKit.fade_in(_panel)
+		Ui.fade_in(_panel)
 	_panel.visible = true
 	_signature = ""
 	Sfx.play("click", -8.0)
@@ -717,19 +717,19 @@ func _refresh() -> void:
 	if sig == _signature:
 		return
 	_signature = sig
-	var focus := UiKit.focus_hint(_panel)
-	UiKit.clear(_list)
-	(func(): UiKit.pad_focus(_panel, focus)).call_deferred()
+	var focus := Ui.focus_hint(_panel)
+	Ui.clear(_list)
+	(func(): Ui.pad_focus(_panel, focus)).call_deferred()
 	if ruined():
 		_title.text = tr("A ruin")
-		UiKit.para(_list, tr("Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room."), 210)
+		Ui.para(_list, tr("Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room."), 210)
 		return
 	_title.text = tr(String(Game.furnishing_info(_selected).get("name", ""))) if _selected != "" else tr("Furnish the house")
 	var ids: Array = [_selected] if _selected != "" else Balance.get_value("interior.furnishings", {}).keys()
 	for id in ids:
 		_furnishing_card(String(id), _selected == "")
 	if _selected != "":
-		UiKit.button(_list, tr("See everything"), func(): _open(""))
+		Ui.button(_list, tr("See everything"), func(): _open(""))
 	_size_panel.call_deferred()
 
 
@@ -744,25 +744,25 @@ func _size_panel() -> void:
 
 func _furnishing_card(id: String, named: bool) -> void:
 	var f := Game.furnishing_info(id)
-	var card := UiKit.card(_list)
+	var card := Ui.card(_list)
 	if named:
-		UiKit.label(card, tr(String(f.get("name", "")))).add_theme_color_override("font_color", UiKit.HEADING)
-	UiKit.para(card, tr(String(f.get("desc", ""))), 200)
+		Ui.label(card, tr(String(f.get("name", "")))).add_theme_color_override("font_color", UiTheme.HEADING)
+	Ui.para(card, tr(String(f.get("desc", ""))), 200)
 	if Game.furnishings.has(id):
-		UiKit.label(card, tr("In place")).add_theme_color_override("font_color", UiKit.MUTED)
+		Ui.label(card, tr("In place")).add_theme_color_override("font_color", UiTheme.MUTED)
 		return
 	var block := Game.furnishing_block(id)
 	if block != "":
-		UiKit.para(card, tr(block), 200).add_theme_color_override("font_color", UiKit.RED)
+		Ui.para(card, tr(block), 200).add_theme_color_override("font_color", UiTheme.RED)
 		return
-	var r := UiKit.row(card)
-	var buy := UiKit.button(r, tr("Buy for %d sestertii") % int(f.get("price", 0)), func():
+	var r := Ui.row(card)
+	var buy := Ui.button(r, tr("Buy for %d sestertii") % int(f.get("price", 0)), func():
 		if Game.buy_furnishing(id):
 			Sfx.play("coins", -6.0)
 			# Each furnishing arrives with its own sound: a fire lit, pots set down.
 			for sound in f.get("sounds", []):
 				Sfx.play(String(sound), -2.0)
 			_sprites[id].visible = true
-			UiKit.fade_in(_sprites[id], 0.6)
+			Ui.fade_in(_sprites[id], 0.6)
 			_signature = "")
 	buy.disabled = Game.coins < int(f.get("price", 0))

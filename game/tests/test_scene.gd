@@ -154,7 +154,7 @@ func test_scene() -> void:
 	var holder := Control.new()
 	holder.size = Vector2(200, 100)
 	main.hud._root.add_child(holder)
-	var kit: GDScript = load("res://scripts/ui/kit.gd")
+	var kit: GDScript = load("res://scripts/ui/ui.gd")
 	var list: VBoxContainer = kit.scroll(holder, Vector2(120, 60))
 	for k in 20:
 		kit.button(list, "Row %d" % k, func(): pass)
