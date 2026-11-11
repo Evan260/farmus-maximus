@@ -85,7 +85,7 @@ func build() -> void:
 					if loc.get_slice("_", 0) in UiKit.TEN_PIXEL:
 						b.add_theme_font_override("font", UiKit.ten_pixel_font())
 						b.add_theme_font_size_override("font_size", 10)
-			_toggle("Show tips", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
+			_toggle("Uncle Marcus's advice", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
 			_toggle("Tips when you point at a button", Settings.tooltips, func(v): Settings.set_value("tooltips", v))
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
 			_toggle("Reduced motion", Settings.reduced_motion, func(v): Settings.set_value("reduced_motion", v))

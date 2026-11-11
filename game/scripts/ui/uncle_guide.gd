@@ -17,8 +17,9 @@ const FIELDS_CLEAR := 72.0
 var _portrait: TextureRect
 var _box: PanelContainer
 var _text: Label
+var _skip: Button
 var _shown_id := ""
-## Advice the player has closed with OK; he stays away until he has something new to say.
+## Advice the player has closed with Got it; he stays away until he has something new to say.
 var _dismissed_id := ""
 var _folded := false
 var _t := 0.0
@@ -43,15 +44,18 @@ func _ready() -> void:
 	var col := UiKit.column(_box)
 	UiKit.label(col, tr("Uncle Marcus")).add_theme_color_override("font_color", UiKit.HEADING)
 	_text = UiKit.para(col, "", 170)
-	var ok := UiKit.button(col, tr("OK"), func():
-		_dismissed_id = _shown_id
+	var buttons := UiKit.row(col)
+	buttons.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_skip = UiKit.button(buttons, tr("Skip the guide"), func():
+		Settings.set_value("show_tutorial", false)
 		visible = false)
-	ok.size_flags_horizontal = Control.SIZE_SHRINK_END
-	ok.custom_minimum_size = Vector2(40, 0)
+	UiKit.button(buttons, tr("Got it"), func():
+		_dismissed_id = _shown_id
+		visible = false).custom_minimum_size = Vector2(40, 0)
 
 
-## Shows a piece of advice, sliding it in when it is new; an empty id hides him.
-func show_advice(id: String, text: String) -> void:
+## Shows a piece of advice, sliding it in when it is new; an empty id hides him. A step of the guide can be skipped.
+func show_advice(id: String, text: String, guide := false) -> void:
 	if id == "":
 		visible = false
 		_shown_id = ""
@@ -60,6 +64,7 @@ func show_advice(id: String, text: String) -> void:
 		visible = false
 		return
 	visible = true
+	_skip.visible = guide
 	if id == _shown_id:
 		return
 	_shown_id = id
@@ -76,12 +81,12 @@ func show_advice(id: String, text: String) -> void:
 	Sfx.play("advice", -3.0)
 
 
-## The advice the player last closed with OK.
+## The advice the player last closed with Got it.
 func dismissed() -> String:
 	return _dismissed_id
 
 
-## The advice he is on, even while it is tucked away behind a window or closed with OK.
+## The advice he is on, even while it is tucked away behind a window or closed with Got it.
 func showing() -> String:
 	return _shown_id
 

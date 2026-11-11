@@ -326,7 +326,7 @@ func _open_cards() -> Array:
 
 
 ## The interface's own buttons on the estate, which a gamepad reaches with Start: the toolbar, the windows' buttons,
-## the zone bar, the sleep button and Uncle Marcus's OK.
+## the zone bar, the sleep button and Uncle Marcus's buttons.
 func _bar_buttons() -> Array:
 	var all: Array = [_sleep_button]
 	for row in [_tool_row, _buttons, _zone_bar]:
@@ -524,7 +524,7 @@ func _update_tip() -> void:
 		return
 	if not step.is_empty():
 		Game.stats["guide_seen"] = 1
-		_uncle.show_advice(String(step["id"]), tr(String(step["text"])))
+		_uncle.show_advice(String(step["id"]), tr(String(step["text"])), true)
 	elif ready and int(Game.stats.get("guide_seen", 0)) == 1:
 		# The goodbye stays a while, then he is gone for good.
 		if _uncle.showing() != "farewell":
