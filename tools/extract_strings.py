@@ -20,7 +20,7 @@ DATA_FIELDS = {"name", "plural", "praise", "role", "does", "about", "text", "des
 LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # Lines that pass strings to the engine rather than to the player.
 ENGINE_LINE = re.compile(r"Sfx\.|get_node|res://|user://|push_|print|has_method|connect\(|add_theme|set_stylebox|set_color|"
-                         r"set_constant|set_icon|find_children|Engine\.|AudioServer|\.bus\b|path_join|InputMap|is_action|load\(|BUSES")
+                         r"set_constant|set_icon|find_children|Engine\.|AudioServer|\.bus\b|path_join|InputMap|is_action|load\(|BUSES|\.name = ")
 # Names that stay as they are in every language: the default pet and farm names, the store, and a locale code.
 KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Hant"}
 

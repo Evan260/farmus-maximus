@@ -298,7 +298,7 @@ func _section_story(page: VBoxContainer, entries: Array) -> void:
 	_heading(page, tr(_name(id)))
 	var story := _describe(id)
 	if story.is_empty():
-		story = tr("A record from the %s pages of the journal.") % tr(section.to_lower())
+		story = tr("A record from the %s pages of the journal.") % UiKit.mid(tr(section))
 	UiKit.para(page, story, TEXT_W)
 
 
