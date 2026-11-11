@@ -40,6 +40,7 @@ DEMO_PRESETS = {
 
 
 CREDITS_FILE = "Credits and licences.txt"
+LAUNCHER = "Farmus Maximus - everything unlocked.bat"
 
 
 def fail(text):
@@ -67,7 +68,17 @@ def export(platform, folder, demo):
                    capture_output=True, text=True)
     if not credits.exists():
         fail(f"could not write {CREDITS_FILE} for {platform}")
+    if platform == "windows" and not demo:
+        write_launcher(folder, name)
     print(f"built {platform}: {folder / name}")
+
+
+def write_launcher(folder, exe):
+    """A launcher beside the game that opens the maxed farm, with everything built and unlocked, which saves nothing."""
+    (folder / LAUNCHER).write_bytes((
+        "@echo off\r\n"
+        "rem Opens the farm with everything built, bought and unlocked, to look around; nothing is saved.\r\n"
+        f'start "" "%~dp0{exe}" -- --max-state\r\n').encode("ascii"))
 
 
 def vdf(target, note, content, output):
