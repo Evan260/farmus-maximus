@@ -443,8 +443,9 @@ static func make_theme() -> Theme:
 ## accented letters and the Chinese, Japanese and Korean characters it lacks, in the forms the language uses.
 ## Each language's font is made once and kept, because text drawn with a font that is then thrown away loses its
 ## letters and shows as solid blocks.
-static func ui_font() -> Font:
-	var locale := TranslationServer.get_locale()
+static func ui_font(locale := "") -> Font:
+	if locale == "":
+		locale = TranslationServer.get_locale()
 	if not _fonts.has(locale):
 		_fonts[locale] = _make_ui_font(locale)
 	return _fonts[locale]
@@ -475,8 +476,10 @@ static func ten_pixel_font() -> FontFile:
 
 
 ## The interface's text size in pixels, which is the size its pixel font is drawn for.
-static func text_size() -> int:
-	return 10 if TranslationServer.get_locale().get_slice("_", 0) in TEN_PIXEL else 8
+static func text_size(locale := "") -> int:
+	if locale == "":
+		locale = TranslationServer.get_locale()
+	return 10 if locale.get_slice("_", 0) in TEN_PIXEL else 8
 
 
 ## A copy of a pixel font drawn without smoothing, so it stays crisp at the game's low resolution.

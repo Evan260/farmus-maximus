@@ -74,17 +74,15 @@ func build() -> void:
 				var grid := GridContainer.new()
 				grid.columns = 3
 				body.add_child(grid)
-				locales.sort()
-				for loc in locales:
-					# Each language is named in its own words, so a player can find theirs whatever is showing now.
-					var b := UiKit.button(grid, NATIVE_NAMES.get(loc, TranslationServer.get_locale_name(loc)), func(): Settings.set_value("language", loc))
+				# Each language is named in its own words and its own font, so a player can find theirs whatever is showing now.
+				for loc in NATIVE_NAMES.keys().filter(func(l: String) -> bool: return l in locales):
+					var b := UiKit.button(grid, NATIVE_NAMES[loc], func(): Settings.set_value("language", loc))
 					b.toggle_mode = true
 					b.button_pressed = TranslationServer.get_locale() == loc
 					b.custom_minimum_size = Vector2(76, 0)
-					# A name the 8-pixel font cannot spell is drawn in the 10-pixel font at its own size, so it stays crisp in any language.
-					if loc.get_slice("_", 0) in UiKit.TEN_PIXEL:
-						b.add_theme_font_override("font", UiKit.ten_pixel_font())
-						b.add_theme_font_size_override("font_size", 10)
+					b.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+					b.add_theme_font_override("font", UiKit.ui_font(loc))
+					b.add_theme_font_size_override("font_size", UiKit.text_size(loc))
 			_toggle("Uncle Marcus's advice", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
 			_toggle("Tips when you point at a button", Settings.tooltips, func(v): Settings.set_value("tooltips", v))
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))

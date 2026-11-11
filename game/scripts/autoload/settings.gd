@@ -60,7 +60,7 @@ func _ready() -> void:
 			InputMap.action_add_event(action, ev)
 		_bind(action, int(keys.get(action, ACTIONS[action]["key"])))
 	_load_translations()
-	TranslationServer.set_locale(language if language != "" else _system_language())
+	TranslationServer.set_locale(language if language in TranslationServer.get_loaded_locales() else _system_language())
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--locale="):
 			TranslationServer.set_locale(arg.trim_prefix("--locale="))
