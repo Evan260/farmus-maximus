@@ -27,7 +27,7 @@ Game="*res://scripts/autoload/game_state.gd"
 Saves="*res://scripts/autoload/save_service.gd"
 Audio="*res://scripts/autoload/audio.gd"
 Windowing="*res://scripts/autoload/windowing.gd"
-Platform="*res://scripts/autoload/platform.gd"
+Awards="*res://scripts/autoload/awards.gd"
 Tips="*res://scripts/autoload/tips.gd"
 
 [display]
