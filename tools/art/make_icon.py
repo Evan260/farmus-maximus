@@ -2,7 +2,7 @@
 three games match. The corners and the rim are worked out on a 64 pixel grid and scaled up, so they step in the same
 blocks as Fishus's. The square pictures are kept in tools/art/icon_square.png and tools/art/profile_square.png (the
 Steam art reads the square one); this writes game/icon.png, game/icon.ico with every size Windows asks for, and
-marketing/profile_picture.png. Usage: python tools/art/round_icon.py"""
+marketing/profile_picture.png. Usage: python tools/art/make_icon.py"""
 from pathlib import Path
 
 import numpy as np
