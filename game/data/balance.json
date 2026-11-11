@@ -1802,22 +1802,6 @@
 						88
 					]
 				]
-			},
-			"water": {
-				"name": "Rain pool",
-				"desc": "The impluvium filled again, cool and still, catching the light.",
-				"sounds": ["water_fill"],
-				"price": 15000,
-				"requires_villa": 4,
-				"shape": [[258, 166], [376, 195], [284, 235], [172, 195]],
-				"rects": [
-					[
-						186,
-						178,
-						351,
-						233
-					]
-				]
 			}
 		}
 	},
@@ -2418,7 +2402,7 @@
 			"name": "A home again",
 			"desc": "Furnish every corner of the farmhouse",
 			"when": {
-				"furnishings": 7
+				"furnishings": 6
 			}
 		},
 		{

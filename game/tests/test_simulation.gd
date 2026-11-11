@@ -361,6 +361,11 @@ func _run() -> void:
 	clogged["storage"]["manure"] = game.storage_capacity()
 	game.from_dict(clogged)
 	_check(game.count_item("manure") == game.manure_cap(), "a save clogged with manure keeps only the cap when it loads")
+	var with_pool: Dictionary = JSON.parse_string(JSON.stringify(game.to_dict()))
+	with_pool["furnishings"] = {"fire": true, "water": true}
+	with_pool["coins"] = 100
+	game.from_dict(with_pool)
+	_check(game.coins == 15100 and game.furnishings.keys() == ["fire"], "a farm that bought the rain pool gets its price back and keeps its other furnishings")
 
 	# A batch keeps the recipe it was loaded with when the player picks another, through saves and from old saves too.
 	game.new_game()

@@ -1924,6 +1924,9 @@ func from_dict(d: Dictionary) -> void:
 	for id in d.get("furnishings", {}):
 		if Balance.get_value("interior.furnishings", {}).has(id):
 			furnishings[id] = true
+		elif id == "water":
+			# The rain pool is no longer sold, so a farm that bought one is paid back what it cost.
+			coins += 15000
 	for kind in d.get("pets", {}):
 		pets[kind] = {"name": String(d["pets"][kind].get("name", "")), "coat": String(d["pets"][kind].get("coat", "")),
 			"breed": String(d["pets"][kind].get("breed", "hound" if kind == "dog" else "tabby"))}
