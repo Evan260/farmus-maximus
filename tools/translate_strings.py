@@ -38,7 +38,8 @@ LANGUAGES = {
 # Azure takes at most 100 texts and 10,000 characters a request; staying under both leaves room for the shielding.
 MAX_TEXTS, MAX_CHARS = 50, 9000
 USD_PER_MILLION = 10.0
-PLACEHOLDER = re.compile(r"%[-+ 0#]*\d*(?:\.\d+)?[a-zA-Z%]|\{[A-Za-z0-9_]*\}")
+# Godot's own format codes, so a percent sign in a sentence such as "95% or more" is translated as words.
+PLACEHOLDER = re.compile(r"%[-0-9.]*[sdifxXcv%]|\{[A-Za-z0-9_]*\}")
 
 
 def read_env():

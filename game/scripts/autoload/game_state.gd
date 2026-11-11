@@ -433,7 +433,7 @@ func baby_story() -> Dictionary:
 		if not stats.has("baby_born"):
 			stats["baby_born"] = 1
 			if not quiet:
-				message.emit("%s in the market town has had %s!" % [story.get("who", "Julia"), story.get("child", "a baby")])
+				message.emit(TranslationServer.translate("%s in the market town has had %s!") % [story.get("who", "Julia"), TranslationServer.translate(String(story.get("child", "a baby girl")))])
 		return {"stage": "baby"}
 	return {"stage": "none"}
 

@@ -1,10 +1,10 @@
 """Collect every player-facing string into game/translations/strings.csv for translators.
 
-The interface wraps most of its text in tr("..."). Other text sits in the scripts' own tables, such as the weather
-names or the market's buildings, and Godot translates it where a label or button shows it, so every string literal
-that reads like words is collected too; a row nobody sees costs nothing. Names and descriptions come from
-game/data/balance.json. Existing translations are kept, new strings are added with the English filled in, and rows
-for text the game no longer has are dropped.
+The interface wraps most of its text in tr("...") or TranslationServer.translate("..."). Other text sits in the
+scripts' own tables, such as the weather names or the market's buildings, and Godot translates it where a label or
+button shows it, so every string literal that reads like words is collected too; a row nobody sees costs nothing.
+Names and descriptions come from game/data/balance.json. Existing translations are kept, new strings are added with
+the English filled in, and rows for text the game no longer has are dropped.
 Usage: python tools/extract_strings.py
 """
 import csv
@@ -14,20 +14,34 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "game"
 OUT = ROOT / "translations" / "strings.csv"
-DATA_FIELDS = {"name", "plural", "praise", "role", "does", "about", "text", "desc", "line", "unlocks", "quote"}
-
+# Fields of game/data/balance.json that the player reads.
+DATA_FIELDS = {"name", "plural", "praise", "role", "does", "about", "text", "desc", "line", "unlocks", "quote", "child"}
 
 LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # Lines that pass strings to the engine rather than to the player.
-ENGINE_LINE = re.compile(r"Sfx\.|get_node|res://|user://|push_|print|has_method|connect\(|add_theme|set_stylebox|set_color|"
-                         r"set_constant|set_icon|find_children|Engine\.|AudioServer|\.bus\b|path_join|InputMap|is_action|load\(|BUSES|\.name = ")
-# Names that stay as they are in every language: the default pet and farm names, the store, a locale code and the master bus.
-KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Hant", "Master"}
+ENGINE_LINE = re.compile(r"Audio\.|Sfx\.|AudioServer|get_node|res://|user://|push_|print|has_method|connect\(|add_theme|"
+                         r"set_stylebox|set_color|set_constant|set_icon|set_font|set_type_variation|find_children|Engine\.|"
+                         r"\.bus\b|path_join|InputMap|is_action|load\(|\.name = |Dev\.")
+# Names that stay as they are in every language: the default pet and farm names, the store, a locale code and buses.
+KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Dev", "Hant", "Master"}
+# Scripts whose text only the developer sees.
+DEV_SCRIPTS = {"dev.gd", "debug_tools.gd"}
 
 
 def unescape(s):
     """The string as GDScript reads it: escapes such as \\n and \\" undone, and letters such as ñ left alone."""
     return s.encode("latin-1", "backslashreplace").decode("unicode_escape")
+
+
+def reads_like_words(s):
+    """True for a string a player could read: a capitalised word or phrase, or a phrase of lower-case words such as a
+    taste, and never an engine class name such as VBoxContainer or a pixel pattern such as YKYKY."""
+    words = re.sub(r"\{[^}]*\}|%[-0-9.]*[a-z]", "", s)
+    if s in KEEP or s != s.strip() or not re.search(r"[a-z]{2,}", words) or s.startswith("+"):
+        return False
+    if re.match(r"[A-Z]", s):
+        return " " in s or not re.search(r"[A-Z]", s[1:])
+    return " " in s and not re.search(r"[_/]|\.png|\.gd", s)
 
 
 def from_scripts():
@@ -37,7 +51,7 @@ def from_scripts():
         text = f.read_text(encoding="utf-8")
         for m in pattern.finditer(text):
             found.append(unescape(m.group(1)))
-        if f.name == "debug_tools.gd":
+        if f.name in DEV_SCRIPTS:
             continue
         for line in text.splitlines():
             if line.lstrip().startswith("#") or ENGINE_LINE.search(line):
@@ -47,14 +61,6 @@ def from_scripts():
                 if reads_like_words(s):
                     found.append(s)
     return found
-
-
-def reads_like_words(s):
-    """True for a string that starts with a capital and has a lowercase word in it, and is not an engine class name
-    such as VBoxContainer or a pixel pattern such as YKYKY."""
-    if not re.match(r"[A-Z]", s) or not re.search(r"[a-z]{2,}", s) or s in KEEP:
-        return False
-    return " " in s or not re.search(r"[A-Z]", s[1:])
 
 
 def native_names():

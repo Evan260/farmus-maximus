@@ -165,7 +165,7 @@ func _ready() -> void:
 	Game.season_changed.connect(func(_s): toast(tr("%s has come to the estate") % tr(Game.calendar.season_name())))
 	Game.dog_found.connect(func(_id, text): toast(tr(text)))
 	Game.rescued.connect(func(gift):
-		_notice = {"id": "rescue %d" % Time.get_ticks_msec(), "text": tr("Here are %d sestertii to start again, my dear heir. Plant something, and mind the shovel!") % gift}
+		_notice = {"id": "rescue_%d" % Time.get_ticks_msec(), "text": tr("Here are %d sestertii to start again, my dear heir. Plant something, and mind the shovel!") % gift}
 		Sfx.play("coins"))
 	Game.planted.connect(func(_i): _notice = {})
 	Game.blessing_started.connect(func(god): Sfx.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
@@ -522,7 +522,7 @@ func _update_tip() -> void:
 		_last_step = step
 	var notice := _notice
 	if notice.is_empty() and ready and Game.short_of_seed() and Game.stored_total() > 0 and not Game.cart["away"]:
-		notice = {"id": "sell first", "text": tr("Your purse is empty, but the storehouse is not. Send the cart to market, then plant again.")}
+		notice = {"id": "sell_first", "text": tr("Your purse is empty, but the storehouse is not. Send the cart to market, then plant again.")}
 	if settled and not notice.is_empty():
 		_uncle.show_advice(String(notice["id"]), String(notice["text"]))
 		return
