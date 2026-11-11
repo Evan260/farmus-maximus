@@ -167,6 +167,14 @@ func _worst() -> float:
 	return total / maxf(1.0, counted)
 
 
+## The slowest frame, to the nearest tenth of a millisecond.
+func _slowest() -> float:
+	for bin in range(HISTOGRAM - 1, -1, -1):
+		if _histogram[bin] > 0:
+			return (bin + 0.5) / 10.0
+	return 0.0
+
+
 func _canvas_items(node: Node) -> int:
 	var count := 1 if node is CanvasItem and node.is_visible_in_tree() else 0
 	for child in node.get_children():
@@ -183,6 +191,7 @@ func _finish() -> void:
 		"fps": _frames / maxf(0.001, seconds),
 		"frame_ms": _mean("frame"),
 		"worst1_ms": _worst(),
+		"slowest_ms": _slowest(),
 		"process_max_ms": _mean("process"),
 		"scripts_ms": _mean("scripts"),
 		"draw_calls": _mean("draw_calls"),

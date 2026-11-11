@@ -127,18 +127,13 @@ func _turn_to(to: String) -> void:
 	if not is_instance_valid(_book) or not _book.is_inside_tree():
 		return
 	_turning = true
-	var book := _book
 	var direction := 1 if target > SECTIONS.find(section) else -1
-	var shots := await PageTurn.capture(self, [_shot(1 if direction > 0 else 0), _shot(0 if direction > 0 else 1)], Windowing.ui_scale)
-	# The journal may have been closed while its pages were pictured, and is then left closed.
-	if not is_instance_valid(book) or not book.is_inside_tree() or _book != book:
-		_turning = false
-		return
+	var turn := PageTurn.new()
+	var shots := turn.capture([_shot(1 if direction > 0 else 0), _shot(0 if direction > 0 else 1)], Windowing.ui_scale)
 	Audio.play("page_turn")
 	section = to
 	selected = ""
 	show_page()
-	var turn := PageTurn.new()
 	turn.direction = direction
 	turn.left_page = Rect2(STACK, 0, PAGE_W, PAGE_H)
 	turn.right_page = Rect2(STACK + PAGE_W + SPINE, 0, PAGE_W, PAGE_H)
@@ -146,11 +141,17 @@ func _turn_to(to: String) -> void:
 	turn.behind = shots[1]
 	turn.gutter = _draw_spine
 	turn.landed.connect(_landed)
-	turn.tree_exiting.connect(func(): _turning = false)
+	# A leaf that landed has already passed the turning on to the next one, so only a leaf cut short clears it.
+	turn.tree_exiting.connect(func():
+		if turn.progress < 1.0:
+			_turning = false)
 	_book.add_child(turn)
-	var backs := await PageTurn.capture(self, [_shot(0 if direction > 0 else 1)], Windowing.ui_scale)
+	# The new page is pictured a frame later, long before the leaf shows its back, so no one frame does all the work.
+	await get_tree().process_frame
 	if is_instance_valid(turn):
-		turn.back = backs[0]
+		var back := _shot(0 if direction > 0 else 1)
+		back["page"] = back["page"].duplicate()
+		turn.back = turn.capture([back], Windowing.ui_scale)[0]
 
 
 ## A section asked for while the last page was turning follows as soon as the leaf lands.
