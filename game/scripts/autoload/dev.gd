@@ -6,6 +6,7 @@ extends Node
 ## and click in interface pixels (at --hover-at and --click-at seconds); --no-save writes nothing anywhere.
 
 const TRAILER_SHOTS := "res://tools/trailer/shots.gd"
+const BENCH := "res://tools/bench.gd"
 
 var args := {}
 ## The estate scene, which sets itself here as it starts, for the demo farms and the windows opened from the command line.
@@ -34,6 +35,8 @@ func _ready() -> void:
 		get_tree().create_timer(num("click-at", 1.5)).timeout.connect(func(): _click(_at("click")))
 	if args.has("quit") and _shots.is_empty():
 		get_tree().create_timer(num("quit-at", 3.0)).timeout.connect(get_tree().quit)
+	if args.has("bench") and ResourceLoader.exists(BENCH):
+		add_child(load(BENCH).new())
 	if args.has("run-tests"):
 		get_tree().root.add_child.call_deferred(load("res://tests/run_tests.gd").new())
 	elif args.has("pacing") or args.has("completion"):
@@ -64,7 +67,7 @@ func state() -> String:
 ## True for runs that leave the player's farms, settings and window exactly as they were: demo and maxed farms, a new
 ## farm tried out, read-only checks, --no-save, and the tests and bots.
 func no_save() -> bool:
-	for flag in ["no-save", "new-farm", "readonly", "run-tests", "pacing", "completion"]:
+	for flag in ["no-save", "new-farm", "readonly", "run-tests", "pacing", "completion", "bench"]:
 		if has(flag):
 			return true
 	for arg in OS.get_cmdline_args():
