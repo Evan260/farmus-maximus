@@ -197,8 +197,8 @@ var _centre := HOME + 240.0
 
 
 func _ready() -> void:
-	# The tests and bots build their own estate, so the one the game opens on stays empty.
-	if Dev.checking():
+	# The tests and bots build their own estate, so the one the game opens on is put away.
+	if Dev.checking() and not Dev.running:
 		process_mode = Node.PROCESS_MODE_DISABLED
 		queue_free.call_deferred()
 		return

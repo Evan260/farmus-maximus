@@ -1,14 +1,16 @@
-extends SceneTree
+extends Node
 ## Plays the estate like a keen player who checks in every few seconds, and prints when each milestone arrives.
-## Run: Godot --headless --path game --script res://tests/pacing_bot.gd -- --hours=8
+## Run: Godot --headless --path game -- --pacing --hours=8
 
 var game: Node
+var root: Window
 var seen := {}
 var t := 0.0
 
 
-func _initialize() -> void:
-	call_deferred("_run")
+func _ready() -> void:
+	root = get_tree().root
+	_run.call_deferred()
 
 
 func _run() -> void:
@@ -29,7 +31,7 @@ func _run() -> void:
 	print("storage ", game.storage, " cap ", game.storage_capacity(), " sellable ", game.sellable_goods(), " cart ", game.cart, " keep ", game.reserved_amounts())
 	print("after %.1f hours: %d sestertii, villa stage %d, %d buildings working, %d helpers, journal %d%%" % [hours, game.coins, game.villa_stage, game.working_buildings(), game.helpers.size(), int(game.journal.share() * 100)])
 	_report()
-	quit()
+	get_tree().quit()
 
 
 ## Bots built on this one add their own summary here.

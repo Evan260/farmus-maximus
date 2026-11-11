@@ -1,14 +1,11 @@
-extends SceneTree
+extends "res://tests/test_case.gd"
 ## Headless checks that the farm scene builds and every plot answers clicks in its own spot.
 
-var failures := 0
+## The save checks write broken saves on purpose, which the engine reports as errors.
+const EXPECTS_ERRORS := true
 
 
-func _initialize() -> void:
-	call_deferred("_run")
-
-
-func _run() -> void:
+func test_scene() -> void:
 	var game: Node = root.get_node("Game")
 	root.get_node("Saves").enabled = false
 	var hooks: Array = [game.unlocked, game.animal_added, game.helper_hired, game.decoration_bought]
@@ -227,8 +224,6 @@ func _run() -> void:
 	main.queue_free()
 	await process_frame
 	_check(hooks.map(func(s: Signal): return s.get_connections().size()) == hooked, "the farm's handlers on the game's signals go when the scene does")
-	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
-	quit(1 if failures else 0)
 
 
 ## Riding the cart to market: one trip at a time, no strip from inside the town, and the trip called off by going indoors.
@@ -509,6 +504,4 @@ func _check_window_fit() -> void:
 
 
 func _check(ok: bool, what: String) -> void:
-	if not ok:
-		failures += 1
-		print("FAIL: " + what)
+	check(ok, what)

@@ -7,6 +7,8 @@ extends Node
 
 var args := {}
 var time := 0.0
+## Set once the tests or a bot have started, after the estate the game opened on has been put away.
+var running := false
 var _shots: Array = []
 
 

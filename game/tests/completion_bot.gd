@@ -3,7 +3,7 @@ extends "res://tests/pacing_bot.gd"
 ## decoration and pets the dog now and then, and prints when each achievement unlocks, when the journal passes each
 ## quarter, and at the end what is still missing. Sightings that only happen on screen, such as the fox or a rainbow,
 ## cannot be seen here, so they are listed as missing and estimated separately.
-## Run: Godot --headless --path game --script res://tests/completion_bot.gd -- --hours=40
+## Run: Godot --headless --path game -- --completion --hours=40
 
 
 var _last_day := -1

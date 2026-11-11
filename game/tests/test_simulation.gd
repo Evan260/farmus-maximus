@@ -1,14 +1,8 @@
-extends SceneTree
-## Headless checks of the estate rules: run with Godot --headless --script res://tests/test_simulation.gd
-
-var failures := 0
+extends "res://tests/test_case.gd"
+## Headless checks of the estate rules, run by run_tests.gd.
 
 
-func _initialize() -> void:
-	call_deferred("_run")
-
-
-func _run() -> void:
+func test_rules() -> void:
 	var game: Node = root.get_node("Game")
 	var data_file: Node = root.get_node("Balance")
 	var secs := func(path: String) -> float: return float(data_file.get_value(path, 0)) + 1.0
@@ -678,8 +672,6 @@ func _run() -> void:
 
 	_dog_coats()
 
-	print("FAILURES: %d" % failures if failures else "ALL TESTS PASSED")
-	quit(1 if failures else 0)
 
 
 ## Everything at its top level, as on the debug "maxed" farm, with every bed planted and ripe and every good kept.
@@ -772,8 +764,4 @@ func _dog_coats() -> void:
 
 
 func _check(ok: bool, what: String) -> void:
-	if not ok:
-		failures += 1
-		print("FAIL: " + what)
-	else:
-		print("ok: " + what)
+	check(ok, what)
