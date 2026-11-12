@@ -2,8 +2,6 @@ extends "res://tests/test_case.gd"
 ## Opening and closing every window, the market town and the farmhouse again and again leaves no objects behind, and so
 ## does turning the journal's pages.
 
-## The estate sizes its picture itself as the window is made, which the engine warns about.
-const EXPECTS_ERRORS := true
 const WINDOWS := ["journal", "helpers", "store", "settings", "upgrades", "companions"]
 const ROUNDS := 6
 ## Travellers, wild animals and builders come and go on their own, a few dozen objects at a time, while a window left

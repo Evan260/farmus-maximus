@@ -1,0 +1,23 @@
+extends "res://tests/test_case.gd"
+## The estate builds and resizes without the engine writing anything to the log; run_tests.gd fails a test that does.
+
+
+func test_building_and_resizing_write_no_warnings() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	var windowing: Node = root.get_node("Windowing")
+	windowing.view_changed.emit()
+	await process_frame
+	var view: Vector2 = main.get_viewport().get_visible_rect().size
+	var want := Vector2i((view / windowing.scale).ceil()) + Vector2i(1, 0)
+	check(main._viewport.size == want, "the estate's picture is one pixel wider than the window and fills its height (%s, want %s)" % [main._viewport.size, want])
+	main.queue_free()
+	await process_frame
+

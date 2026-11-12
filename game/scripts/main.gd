@@ -222,7 +222,6 @@ func _ready() -> void:
 	add_child(screen)
 	_container = SubViewportContainer.new()
 	_container.stretch = true
-	_container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	screen.add_child(_container)
 	_viewport = SubViewport.new()
 	_viewport.transparent_bg = true
@@ -961,8 +960,7 @@ func _apply_scale() -> void:
 	# so dragging the window's edge never shows a stretched or lagging frame.
 	var window := get_viewport().get_visible_rect().size
 	# One estate pixel wider than the window, so the picture still fills it while slid part of a pixel to the left.
-	_container.size = window + Vector2(Windowing.scale, 0)
-	_viewport.size = Vector2i((window / Windowing.scale).ceil()) + Vector2i(1, 0)
+	_container.size = ((window / Windowing.scale).ceil() + Vector2(1, 0)) * Windowing.scale
 	_update_view()
 
 
