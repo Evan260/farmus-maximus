@@ -363,6 +363,17 @@ func test_rules() -> void:
 	game.stats = {"planted": 1, "harvested": 1}
 	game.from_dict(JSON.parse_string(JSON.stringify(game.to_dict())))
 	_check(int(game.stats.get("cart_trips", 0)) == 0, "loading a farm that has harvested but never sent the cart counts no trip")
+	var told: Array = []
+	var listen := func(t: String) -> void: told.append(t)
+	game.message.connect(listen)
+	var locale := TranslationServer.get_locale()
+	TranslationServer.set_locale("ru")
+	game.stats.erase("baby_born")
+	game.calendar.day = 3 + int(data_file.get_value("story.baby.expecting_days", 8)) + 1
+	game.baby_story()
+	TranslationServer.set_locale(locale)
+	game.message.disconnect(listen)
+	_check(told.any(func(t: String) -> bool: return "Юлия" in t), "the birth news names the mother in the player's language (%s)" % ", ".join(told))
 
 	# A batch keeps the recipe it was loaded with when the player picks another, through saves and from old saves too.
 	game.new_game()
