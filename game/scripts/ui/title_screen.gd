@@ -73,7 +73,7 @@ func _show_menu() -> void:
 	if Saves.has_farm:
 		var go := Ui.button(_menu, tr("Continue"), _continue)
 		go.focus_mode = Control.FOCUS_ALL
-		go.grab_focus.call_deferred()
+		go.grab_focus.call_deferred(not KeyNav.active())
 		var info := Saves.slot_info(Saves.slot)
 		var about := Ui.label(_menu, FarmsPanel.describe(info))
 		about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

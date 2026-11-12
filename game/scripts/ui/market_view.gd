@@ -342,7 +342,7 @@ func _close_panel() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
-	var pad := not Input.get_connected_joypads().is_empty()
+	var pad := KeyNav.active()
 	# A window narrower than the town hides some places, so the row of them is offered to the mouse too.
 	_pad_bar.visible = pad or _places_cut_off
 	if pad:

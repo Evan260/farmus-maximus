@@ -3,7 +3,8 @@ extends Node
 ## clicking, the window and interface size, and runs that never write the player's farms or settings.
 ## --shot=PATH [--shot-at=SECONDS] saves one screenshot; --burst=PREFIX [--burst-start, --burst-gap, --burst-count]
 ## saves several as PREFIX_00.png and on; --quit closes the game after the last one; --hover=X,Y and --click=X,Y point
-## and click in interface pixels (at --hover-at and --click-at seconds); --no-save writes nothing anywhere.
+## and click in interface pixels (at --hover-at and --click-at seconds); --keys=Tab,Tab,Down presses keys a fifth of
+## a second apart from --keys-at seconds; --no-save writes nothing anywhere.
 
 const TRAILER_SHOTS := "res://tools/trailer/shots.gd"
 const BENCH := "res://tools/bench.gd"
@@ -33,6 +34,10 @@ func _ready() -> void:
 		get_tree().create_timer(num("hover-at", 1.5)).timeout.connect(func(): _point(_at("hover")))
 	if args.has("click"):
 		get_tree().create_timer(num("click-at", 1.5)).timeout.connect(func(): _click(_at("click")))
+	if args.has("keys"):
+		var names: PackedStringArray = args["keys"].split(",")
+		for k in names.size():
+			get_tree().create_timer(num("keys-at", 1.5) + k * 0.2).timeout.connect(_press.bind(OS.find_keycode_from_string(names[k])))
 	if args.has("quit") and _shots.is_empty():
 		get_tree().create_timer(num("quit-at", 3.0)).timeout.connect(get_tree().quit)
 	if args.has("bench") and ResourceLoader.exists(BENCH):
@@ -108,6 +113,15 @@ func _point(at: Vector2) -> void:
 		m.global_position = m.position
 		m.relative = Vector2(1, 0)
 		get_viewport().push_input(m)
+
+
+func _press(code: Key) -> void:
+	for pressed in [true, false]:
+		var k := InputEventKey.new()
+		k.keycode = code
+		k.physical_keycode = code
+		k.pressed = pressed
+		Input.parse_input_event(k)
 
 
 func _click(at: Vector2) -> void:

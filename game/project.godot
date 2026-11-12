@@ -29,6 +29,7 @@ Audio="*res://scripts/autoload/audio.gd"
 Windowing="*res://scripts/autoload/windowing.gd"
 Awards="*res://scripts/autoload/awards.gd"
 Tips="*res://scripts/autoload/tips.gd"
+KeyNav="*res://scripts/autoload/key_nav.gd"
 
 [display]
 

@@ -94,6 +94,7 @@ func _ready() -> void:
 	add_child(_root)
 	Windowing.view_changed.connect(_fit)
 	_fit()
+	KeyNav.wanted.connect(_on_key_nav)
 
 	_stats_panel = PanelContainer.new()
 	_stats_panel.position = Vector2(4, 4)
@@ -366,6 +367,28 @@ func _pad_bar(on: bool) -> void:
 		var current := "seed:" + Game.selected_seed if tool == "seed" else tool
 		var start: Button = _tool_buttons.get(current, _tool_buttons.values()[0])
 		start.grab_focus()
+
+
+## The keyboard reaches the newest window first, then the title, then a card waiting for its button; on the farm Tab
+## hands it the toolbar, as Start does a gamepad, while the arrow keys keep moving over the estate.
+func _on_key_nav(event: InputEvent) -> void:
+	var had := get_viewport().gui_get_focus_owner() != null
+	var target: Control = null
+	for w in _windows:
+		if w.visible:
+			target = w
+	if target == null and _title != null and _title.visible:
+		target = _title
+	if target == null and not _open_cards().is_empty():
+		target = _cards.back()
+	if target != null:
+		Ui.pad_focus(target)
+	elif visible and not Windowing.strip and not had and (event.is_action_pressed("ui_focus_next") or event.is_action_pressed("ui_focus_prev")):
+		_pad_bar(true)
+	else:
+		return
+	if not had and get_viewport().gui_get_focus_owner() != null:
+		get_viewport().set_input_as_handled()
 
 
 func close_windows() -> bool:

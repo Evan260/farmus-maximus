@@ -435,7 +435,7 @@ func _process(delta: float) -> void:
 	_far_mountains.modulate = Color(outdoor * Color.WHITE.lerp(Color(0.62, 0.6, 0.7), night), 1.0)
 	_marks.queue_redraw()
 	_refresh()
-	if not Input.get_connected_joypads().is_empty():
+	if KeyNav.active():
 		_keep_pad_focus()
 
 

@@ -109,8 +109,15 @@ static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 		box.content_margin_top = 4 if open else 2
 		box.content_margin_bottom = 3 if open else 2
 		b.add_theme_stylebox_override(state, box)
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	for c in ["font_color", "font_hover_color"]:
+	# The tab the keyboard is on is ringed in terracotta, which shows on the pale paper where cream would not.
+	var ring := StyleBoxFlat.new()
+	ring.draw_center = false
+	ring.set_border_width_all(1)
+	ring.border_color = Color(0.7, 0.32, 0.2)
+	ring.corner_radius_top_left = 2
+	ring.corner_radius_top_right = 2
+	b.add_theme_stylebox_override("focus", ring)
+	for c in ["font_color", "font_hover_color", "font_focus_color"]:
 		b.add_theme_color_override(c, UiTheme.MUTED)
 	for c in ["font_pressed_color", "font_hover_pressed_color"]:
 		b.add_theme_color_override(c, UiTheme.INK)
@@ -272,9 +279,9 @@ static func scroll(parent: Node, size: Vector2) -> VBoxContainer:
 	return c
 
 
-## A gamepad player moves between buttons with the d-pad, so they become focusable; after a rebuild the focus goes back to the button most like the one that had it.
+## A keyboard or gamepad player moves between buttons with the arrows or the d-pad, so they become focusable; after a rebuild the focus goes back to the button most like the one that had it.
 static func pad_focus(root: Control, was := {}) -> void:
-	if Input.get_connected_joypads().is_empty() or not root.is_inside_tree():
+	if not KeyNav.active() or not root.is_inside_tree():
 		return
 	var buttons := root.find_children("*", "Button", true, false)
 	var usable: Array[Button] = []

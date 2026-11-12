@@ -255,6 +255,7 @@ func test_scene() -> void:
 	_check_trial_run()
 	_check_saves(main)
 	await _check_window_fit()
+	await _check_keyboard(main)
 	# The windows rebuilt above finish placing their focus on the next frame, so the scene stays until then.
 	await process_frame
 	main.queue_free()
@@ -541,3 +542,54 @@ func _check_window_fit() -> void:
 
 func _check(ok: bool, what: String) -> void:
 	check(ok, what)
+
+
+func _key(code: Key, shift := false) -> void:
+	for pressed in [true, false]:
+		var k := InputEventKey.new()
+		k.keycode = code
+		k.physical_keycode = code
+		k.shift_pressed = shift
+		k.pressed = pressed
+		root.push_input(k)
+
+
+## Tab, the arrows and Enter work the interface's buttons, and a mouse click hands it back to the pointer.
+func _check_keyboard(main: Node) -> void:
+	var nav: Node = root.get_node("KeyNav")
+	var hud: CanvasLayer = main.hud
+	hud.close_windows()
+	root.gui_release_focus()
+	nav.keyboard = false
+	await process_frame
+	_check(not nav.active() or not Input.get_connected_joypads().is_empty(), "the buttons wait for the keyboard before taking the focus")
+	_key(KEY_TAB)
+	var focused := root.gui_get_focus_owner()
+	_check(nav.keyboard and hud._bar_armed and focused != null and focused in hud._bar_buttons(), "Tab on the farm hands the keyboard the toolbar")
+	_key(KEY_TAB)
+	_check(root.gui_get_focus_owner() != focused and root.gui_get_focus_owner() in hud._bar_buttons(), "and Tab moves along it")
+	_key(KEY_ESCAPE)
+	await process_frame
+	_check(not hud._bar_armed and root.gui_get_focus_owner() == null, "Escape hands the keyboard back to the estate")
+	hud.open_window("journal")
+	await process_frame
+	await process_frame
+	var journal: Control = hud._journal
+	_check(root.gui_get_focus_owner() != null and journal.is_ancestor_of(root.gui_get_focus_owner()), "a window opened from the keyboard starts with a button chosen")
+	var chosen: Button = root.gui_get_focus_owner()
+	var pressed := [false]
+	chosen.pressed.connect(func(): pressed[0] = true, CONNECT_ONE_SHOT)
+	_key(KEY_ENTER)
+	_check(pressed[0], "Enter presses the chosen button")
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = Vector2(-50, -50)
+	root.push_input(click)
+	click = click.duplicate()
+	click.pressed = false
+	root.push_input(click)
+	await process_frame
+	_check(not nav.keyboard and (root.gui_get_focus_owner() == null or not Input.get_connected_joypads().is_empty()), "a mouse click hands the interface back to the pointer, with no outline left on a button")
+	hud.close_windows()
+	await process_frame
