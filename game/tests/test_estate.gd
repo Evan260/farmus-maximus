@@ -112,3 +112,25 @@ func test_the_farm_list_does_not_cover_the_title_name() -> void:
 	await process_frame
 	main.queue_free()
 	await process_frame
+
+
+func test_a_reload_from_the_title_comes_back_to_the_title() -> void:
+	var game: Node = root.get_node("Game")
+	var saves: Node = root.get_node("Saves")
+	saves.enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	var done: bool = saves.title_done
+	saves.title_done = true
+	main.hud.back_to_title()
+	check(not saves.title_done, "a language changed or the farm deleted from the title rebuilds the scene onto the title again")
+	main.hud._title.queue_free()
+	main.hud._title = null
+	saves.title_done = done
+	main.queue_free()
+	await process_frame

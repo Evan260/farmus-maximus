@@ -209,6 +209,8 @@ func _hold_news() -> void:
 ## Saves the farm and lays the title screen over it again, where the farm list can switch to another farm.
 func back_to_title() -> void:
 	Saves.save_game()
+	# A language change or deleting this farm reloads the scene, which must open on the title again.
+	Saves.title_done = false
 	close_windows()
 	if _title == null:
 		_show_title()
