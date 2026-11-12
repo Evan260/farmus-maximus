@@ -164,6 +164,7 @@ func test_hiring_a_helper_is_told_in_the_players_language() -> void:
 	check(not joined in told and told.any(func(t: String) -> bool: return "Гай" in t and "2" in t),
 		"training a helper tells of their new level, not of them joining again (%s)" % ", ".join(told))
 	TranslationServer.set_locale(locale)
+	game.live_helpers = {}
 	main.queue_free()
 	await process_frame
 
