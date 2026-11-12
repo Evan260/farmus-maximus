@@ -769,11 +769,19 @@ func _build_land() -> void:
 		var deed := DeedCard.new()
 		deed.title = tr(String(z["name"]))
 		deed.price = int(z.get("deed", 0))
-		deed.state = "owned" if Game.zone_owned(id) else ("sale" if Game.zone_block(id) == "" else "later")
+		deed.state = _deed_state(id)
 		col.add_child(deed)
 		if deed.state == "sale":
 			var b := Ui.button(col, tr("Buy"), func(): Game.buy_zone(id))
 			b.disabled = Game.coins < deed.price
+
+
+func _deed_state(id: String) -> String:
+	if Game.zone_owned(id):
+		return "owned"
+	if Game.zone_in_full_game(id):
+		return "full"
+	return "sale" if Game.zone_block(id) == "" else "later"
 
 
 func _build_decorations() -> void:

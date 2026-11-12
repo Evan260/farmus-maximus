@@ -1276,7 +1276,7 @@ func _click_plot(i: int) -> void:
 	var look := Game.plot_visual(i)
 	if look == "locked":
 		if not Game.zone_owned(String(Game.plots[i]["zone"])):
-			hud.toast(tr("Buy this land first"))
+			hud.toast(tr("In the full game") if Game.zone_in_full_game(String(Game.plots[i]["zone"])) else tr("Buy this land first"))
 		else:
 			Game.try_unlock(i)
 	elif hud.tool == "dig":

@@ -38,6 +38,8 @@ signal upgrade_started(upgrade_id: String)
 ## A frame long enough to count as time away was caught up, with the same summary a closed game gets on opening.
 signal caught_up(summary: Dictionary)
 
+## Lets the tests play by the demo's limits without a demo build.
+var acts_as_demo := false
 var coins := 0
 ## Gold coins from special orders and festivals, spent on rare decorations.
 var aureus := 0
@@ -972,12 +974,14 @@ func zone_owned(zone_id: String) -> bool:
 ## Why a zone's deed cannot be bought yet, or "" when it can.
 func zone_block(zone_id: String) -> String:
 	var z := zone_info(zone_id)
-	if is_demo() and not zone_id in Data.get_value("demo.zones", []):
-		return "Available in the full game"
-	var needs := int(z.get("requires_villa", 0))
-	if villa_stage < needs:
-		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[needs - 1]["name"])))
-	return ""
+	if zone_in_full_game(zone_id):
+		return "In the full game"
+	return villa_block(int(z.get("requires_villa", 0)))
+
+
+## Whether a deed belongs to the full game, so the demo can never sell it.
+func zone_in_full_game(zone_id: String) -> bool:
+	return is_demo() and not zone_id in Data.get_value("demo.zones", [])
 
 
 func buy_zone(zone_id: String) -> bool:
@@ -998,11 +1002,25 @@ func buy_zone(zone_id: String) -> bool:
 
 
 func is_demo() -> bool:
-	return OS.has_feature("demo")
+	return OS.has_feature("demo") or acts_as_demo
 
 
 func demo_capped_villa() -> bool:
 	return is_demo() and villa_stage >= int(Data.get_value("demo.max_villa", 3))
+
+
+## Whether something that waits for a villa stage waits for one the demo never reaches.
+func in_full_game(villa_needed: int) -> bool:
+	return is_demo() and villa_needed > int(Data.get_value("demo.max_villa", 3))
+
+
+## Why something that needs a villa stage cannot be had yet, or "" once the villa has reached it.
+func villa_block(needs: int) -> String:
+	if villa_stage >= needs:
+		return ""
+	if in_full_game(needs):
+		return tr("In the full game")
+	return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[needs - 1]["name"])))
 
 
 # Buildings --------------------------------------------------------------
@@ -1106,12 +1124,11 @@ func building_action(id: String) -> Dictionary:
 ## Why a building cannot be bought or repaired yet, or "" when nothing stands in the way.
 func building_block(id: String) -> String:
 	var info := building_info(id)
+	if zone_in_full_game(String(info.get("zone", "home"))):
+		return "In the full game"
 	if not zone_owned(String(info.get("zone", "home"))):
 		return "Buy this land first"
-	var needs := int(info.get("requires_villa", 0))
-	if villa_stage < needs:
-		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[needs - 1]["name"])))
-	return ""
+	return villa_block(int(info.get("requires_villa", 0)))
 
 
 func do_building_action(id: String) -> bool:
@@ -1582,6 +1599,8 @@ func helper_info(id: String) -> Dictionary:
 ## Why a helper cannot be hired yet, or "" when they can.
 func helper_block(id: String) -> String:
 	var unlock: Dictionary = helper_info(id).get("unlock", {})
+	if unlock.has("villa") and in_full_game(int(unlock["villa"])):
+		return "In the full game"
 	if unlock.has("villa") and villa_stage < int(unlock["villa"]):
 		return "Restore the villa first"
 	if unlock.has("building") and buildings[unlock["building"]]["state"] != "working":
@@ -1717,8 +1736,10 @@ func decoration_block(id: String) -> String:
 	var d := decoration_info(id)
 	if decorations.has(id):
 		return "Owned"
-	if villa_stage < int(d.get("requires_villa", 0)):
-		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[int(d["requires_villa"]) - 1]["name"])))
+	if villa_block(int(d.get("requires_villa", 0))) != "":
+		return villa_block(int(d.get("requires_villa", 0)))
+	if zone_in_full_game(String(d.get("zone", "home"))):
+		return "In the full game"
 	if not zone_owned(String(d.get("zone", "home"))):
 		return "Buy this land first"
 	if d.has("festival") and calendar.festival().get("id", "") != d["festival"] and not journal.has("festival:" + String(d["festival"])):
@@ -1737,9 +1758,7 @@ func furnishing_block(id: String) -> String:
 	var f := furnishing_info(id)
 	if furnishings.has(id):
 		return "Already in the house"
-	if villa_stage < int(f.get("requires_villa", 2)):
-		return tr("Restore the villa first: %s") % Ui.mid(tr(String(villa_stages()[int(f.get("requires_villa", 2)) - 1]["name"])))
-	return ""
+	return villa_block(int(f.get("requires_villa", 2)))
 
 
 func buy_furnishing(id: String) -> bool:

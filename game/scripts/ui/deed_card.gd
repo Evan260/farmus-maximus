@@ -15,7 +15,7 @@ const SIZE := Vector2(104, 70)
 const ROOM := 84.0
 
 var title := ""
-## "owned", "sale" or "later".
+## "owned", "sale", "later" for land still waiting on the villa, or "full" for land only the full game sells.
 var state := "sale"
 var price := 0
 var _fade := 1.0
@@ -29,7 +29,7 @@ func _init() -> void:
 func _draw() -> void:
 	var w := SIZE.x
 	var h := SIZE.y
-	_fade = 1.0 if state != "later" else 0.5
+	_fade = 0.5 if state in ["later", "full"] else 1.0
 	var sheet := Rect2(4, 4, w - 8, h - 8)
 	_rect(Rect2(sheet.position + Vector2(1, 2), sheet.size), Color(0.2, 0.12, 0.08, 0.25))
 	_rect(sheet, PARCH_EDGE)
@@ -77,8 +77,8 @@ func _draw() -> void:
 			var x := roundf((w - _width(font, text, size) - 7) / 2.0)
 			_coin(Vector2(x + 2, h - 16))
 			draw_string(font, Vector2(x + 7, h - 13), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, INK)
-		"later":
-			var foot := _lines(font, tr("Not for sale"), size)
+		"later", "full":
+			var foot := _lines(font, tr("Full game") if state == "full" else tr("Not for sale"), size)
 			foot_lines = foot.size()
 			for k in foot_lines:
 				_centred(font, foot[k], h - 13 - (foot_lines - 1 - k) * step, size, INK * Color(1, 1, 1, _fade))

@@ -182,6 +182,8 @@ func catalog_block(entry: Dictionary) -> String:
 		return "Bought"
 	if entry.has("unlock_crop") and _game.crop_unlocked(String(entry["unlock_crop"])):
 		return "Bought"
+	if _game.in_full_game(int(entry.get("requires_villa", 0))):
+		return tr("In the full game")
 	if int(entry.get("requires_villa", 0)) > _game.villa_stage:
 		return tr("Needs the %s") % Ui.mid(tr(String(_game.villa_stages()[int(entry["requires_villa"]) - 1]["name"])))
 	if entry.has("requires_zone") and not _game.zone_owned(String(entry["requires_zone"])):
