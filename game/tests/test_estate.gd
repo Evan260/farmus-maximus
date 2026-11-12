@@ -87,3 +87,28 @@ func test_the_journal_turns_to_the_last_section_asked_for() -> void:
 	main.hud.close_windows()
 	main.queue_free()
 	await process_frame
+
+
+func test_the_farm_list_does_not_cover_the_title_name() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	main.hud.back_to_title()
+	var title: Control = main.hud._title
+	title._open_farms()
+	for i in 3:
+		await process_frame
+	var farms: Control = title._farms
+	var crossed := title.find_children("*", "Label", true, false).filter(func(l: Label) -> bool:
+		return l.is_visible_in_tree() and l.name != "Version" and not farms.is_ancestor_of(l) and l.get_global_rect().intersects(farms.get_global_rect()))
+	check(crossed.is_empty(), "nothing on the title shows through the farm list (%s)" % ", ".join(crossed.map(func(l): return l.text)))
+	title._farms.close()
+	await process_frame
+	main.queue_free()
+	await process_frame

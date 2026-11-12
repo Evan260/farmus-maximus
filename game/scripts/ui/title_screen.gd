@@ -12,6 +12,8 @@ const LOGO_SHADOW := Color(0.29, 0.18, 0.14)
 var open_window: Callable
 var _menu: VBoxContainer
 var _card: PanelContainer
+## The game's name, its line under it and the menu, which the farm list stands in place of while it is open.
+var _column: VBoxContainer
 var _farms: Node
 ## True while the menu asks for a new farm's name.
 var _naming := false
@@ -27,6 +29,7 @@ func _ready() -> void:
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_theme_constant_override("separation", 10)
 	add_child(col)
+	_column = col
 	var logo := Label.new()
 	logo.text = tr("Farmus Maximus").to_upper()
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -50,9 +53,10 @@ func _ready() -> void:
 	_farms.on_change = _show_menu
 	add_child(_farms)
 	# The farm list takes the menu's place while it is open.
-	_farms.closed.connect(func(): _card.visible = true)
+	_farms.closed.connect(func(): _column.visible = true)
 	_show_menu()
 	var version := Ui.label(self, "v" + str(ProjectSettings.get_setting("application/config/version", "")), true)
+	version.name = "Version"
 	version.modulate.a = 0.7
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -102,7 +106,7 @@ func _new_farm() -> void:
 
 
 func _open_farms() -> void:
-	_card.visible = false
+	_column.visible = false
 	_farms.open()
 
 
