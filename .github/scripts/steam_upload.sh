@@ -47,6 +47,8 @@ for platform in $platforms; do
     windows)
       unzip -q -o "$ARTIFACTS/$SLUG-$LABEL-windows.zip" -d "$WORK/unpack/windows"
       mv "$WORK/unpack/windows/$GAME_NAME" "$WORK/content/windows"
+      # The everything-unlocked launcher is for the GitHub release download only, never for players on Steam.
+      rm -f "$WORK/content/windows/"*"everything unlocked.bat"
       ;;
     linux)
       mkdir -p "$WORK/content/linux"

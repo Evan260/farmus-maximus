@@ -24,7 +24,7 @@ The tag must be `v` followed by `config/version`, or the tests job stops with "V
 | Job | Runs on | What it does |
 |---|---|---|
 | Tests | Ubuntu | Imports the project and runs `--run-tests`; fails unless it prints `ALL TESTS PASSED` |
-| Export (six at once) | Ubuntu | Exports Windows, macOS and Linux for the full game and the demo through `publish.py`'s export, with `Credits and licences.txt` and, for the full Windows game, the everything-unlocked launcher |
+| Export (six at once) | Ubuntu | Exports Windows, macOS and Linux for the full game and the demo through `publish.py`'s export, with `Credits and licences.txt` and, for the full Windows game, the everything-unlocked launcher, which the Steam upload leaves out |
 | Sign macOS (two at once) | Mac | Signs the app and its libraries with the Developer ID certificate, notarizes it with Apple, staples the ticket and checks it with Gatekeeper |
 | GitHub release | Ubuntu | Only for a tag: creates the release and attaches every build |
 | Steam upload | Ubuntu | Switched off until set up (below) |

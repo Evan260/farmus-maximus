@@ -9,6 +9,7 @@ How builds get onto Steam and to players. Once the steps below are done, every u
 - `tools/steam/wsl_setup.sh` installs Valve's Linux steamcmd and rcodesign (the tool that signs and notarizes a Mac app without a Mac) into `~/farmus-steam` inside WSL. WSL with Ubuntu is already installed on this computer.
 - `tools/steam/apple_setup.sh` makes the Apple credentials; `tools/steam/macos_entitlements.plist` gives the Mac app the two permissions the Steam overlay needs.
 - `tools/steam/steam.json` holds the Steam account name and the app and depot numbers. It is empty until the steps below give you those numbers; a depot left at 0 is skipped.
+- `Farmus Maximus - everything unlocked.bat`, the launcher that opens the maxed farm, never goes to Steam. `publish.py` leaves it out of its Steam builds, every depot in the build script excludes it, and the GitHub Steam upload deletes it from the Windows build before uploading. Local exports and the GitHub release downloads still have it.
 - GodotSteam is in `game/addons/godotsteam/` and ships with every export; `docs/Steam-setup.md` says how the game uses it and how to try it outside Steam.
 - Godot exports the Mac app unsigned (`codesign/codesign=0` in the macOS presets). `wsl_build.sh` signs and notarizes it for Steam once the Apple credentials below exist; a Mac build sent by hand is signed, notarized and stapled on the Mac, where the Developer ID's private key is kept.
 

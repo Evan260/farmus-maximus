@@ -56,7 +56,7 @@ def wsl(*args):
     return subprocess.run(["wsl.exe", "--", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
-def export(platform, folder, demo):
+def export(platform, folder, demo, launcher=True):
     preset, name = (DEMO_PRESETS if demo else PRESETS)[platform]
     folder.mkdir(parents=True)
     result = subprocess.run([str(GODOT), "--headless", "--path", str(ROOT / "game"), "--export-release", preset, str(folder / name)],
@@ -69,13 +69,14 @@ def export(platform, folder, demo):
                    capture_output=True, text=True)
     if not credits.exists():
         fail(f"could not write {CREDITS_FILE} for {platform}")
-    if platform == "windows" and not demo:
+    if platform == "windows" and not demo and launcher:
         write_launcher(folder, name)
     print(f"built {platform}: {folder / name}")
 
 
 def write_launcher(folder, exe):
-    """A launcher beside the game that opens the maxed farm, with everything built and unlocked, which saves nothing."""
+    """A launcher beside the game that opens the maxed farm, with everything built and unlocked, which saves nothing.
+    It is for local and GitHub release builds only: Steam builds leave it out, and every depot excludes it too."""
     (folder / LAUNCHER).write_bytes((
         "@echo off\r\n"
         "rem Opens the farm with everything built, bought and unlocked, to look around; nothing is saved.\r\n"
@@ -92,6 +93,7 @@ def vdf(target, note, content, output):
 \t\t\t\t"DepotPath" "."
 \t\t\t\t"recursive" "1"
 \t\t\t}}
+\t\t\t"FileExclusion" "*{LAUNCHER}"
 \t\t}}''' for platform, depot in target["depots"].items() if depot)
     return f'''"AppBuild"
 {{
@@ -132,7 +134,7 @@ def main():
     for platform, depot in target["depots"].items():
         # A dry run builds every platform, so the whole layout can be checked before Steam has given any ids.
         if depot or args.dry_run:
-            export(platform, stage / platform, args.target == "demo")
+            export(platform, stage / platform, args.target == "demo", launcher=False)
     work = f"{home}/farmus-steam/{args.target}"
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     note = f"{datetime.date.today()} {commit} {args.note}".strip().replace('"', "'")
