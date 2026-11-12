@@ -58,6 +58,8 @@ var _hover_label: Label
 var _hovered := ""
 var _panel: PanelContainer
 var _pad_bar: HBoxContainer
+## Set when the window crops a place out of the town picture.
+var _places_cut_off := false
 var _back: Button
 ## The place last opened, whose button in the pad bar takes the focus back when its window closes.
 var _visited := ""
@@ -282,8 +284,9 @@ func _drift_clouds(delta: float) -> void:
 			cloud.position.x = -cloud.texture.get_width()
 
 
-func _fit() -> void:
-	var view := get_viewport().get_visible_rect().size
+func _fit(view := Vector2.ZERO) -> void:
+	if view == Vector2.ZERO:
+		view = get_viewport().get_visible_rect().size
 	var cover := ceili(maxf(view.x / 480.0, view.y / 272.0))
 	_scene.scale = Vector2(cover, cover)
 	_scene.position = ((view - Vector2(480, 272) * cover) / 2.0).round()
@@ -292,6 +295,8 @@ func _fit() -> void:
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
 	_pad_bar.position = Vector2(4, _ui_root.size.y - 18)
+	var shown := Rect2(-_scene.position / cover, view / cover)
+	_places_cut_off = SPOTS.any(func(spot) -> bool: return not shown.encloses(Rect2(spot["rect"])))
 
 
 func enter() -> void:
@@ -337,8 +342,10 @@ func _close_panel() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
-	_pad_bar.visible = not Input.get_connected_joypads().is_empty()
-	if _pad_bar.visible:
+	var pad := not Input.get_connected_joypads().is_empty()
+	# A window narrower than the town hides some places, so the row of them is offered to the mouse too.
+	_pad_bar.visible = pad or _places_cut_off
+	if pad:
 		_keep_pad_focus()
 	_water_time += delta
 	_water.queue_redraw()

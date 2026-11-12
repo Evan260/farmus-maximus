@@ -166,3 +166,27 @@ func test_hiring_a_helper_is_told_in_the_players_language() -> void:
 	TranslationServer.set_locale(locale)
 	main.queue_free()
 	await process_frame
+
+
+func test_market_places_cut_off_by_the_window_get_buttons() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	var market: CanvasLayer = main.market
+	market.visible = true
+	for size in [Vector2(1280, 1024), Vector2(1920, 1080)]:
+		market._fit(size)
+		market._process(0.0)
+		var shown := Rect2(-market._scene.position / market._scene.scale.x, size / market._scene.scale.x)
+		var cut: bool = market.SPOTS.any(func(s) -> bool: return not shown.encloses(Rect2(s["rect"])))
+		check(market._pad_bar.visible == cut, "on a %s window the row of places shows only when the town hides one (%s)" % [size, cut])
+	market.visible = false
+	market._fit()
+	main.queue_free()
+	await process_frame
