@@ -150,6 +150,9 @@ def lay_rug(a):
     pts = cv2.perspectiveTransform(np.dstack([xs + 0.5, ys + 0.5]).astype(np.float32).reshape(-1, 1, 2), back).reshape(h, w, 2)
     u, v = pts[..., 0], pts[..., 1]
     inside = (u >= 0) & (u < 1) & (v >= 0) & (v < 1)
+    # Past the horizon the perspective wraps round, so only pixels within the rug's own corners can be on it.
+    cx, cy = zip(*RUG_CORNERS)
+    inside &= (xs >= min(cx) - 1) & (xs <= max(cx)) & (ys >= min(cy) - 1) & (ys <= max(cy))
     ends = np.cumsum([b[0] for b in RUG_BANDS])
     band = np.minimum(np.searchsorted(ends, v, side="right"), len(RUG_BANDS) - 1)
     colours = np.array([b[1] for b in RUG_BANDS], float)[band]
