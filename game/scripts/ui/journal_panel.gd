@@ -119,7 +119,10 @@ func _bookmark(parent: Node, s: String) -> void:
 ## and a PageTurn leaf carries the old page over with the new one on its back.
 func _turn_to(to: String) -> void:
 	var target := SECTIONS.find(to)
-	if target < 0 or to == section:
+	if target < 0:
+		return
+	if to == section:
+		_queued = ""
 		return
 	if _turning:
 		_queued = to
@@ -144,7 +147,8 @@ func _turn_to(to: String) -> void:
 	# A leaf that landed has already passed the turning on to the next one, so only a leaf cut short clears it.
 	turn.tree_exiting.connect(func():
 		if turn.progress < 1.0:
-			_turning = false)
+			_turning = false
+			_queued = "")
 	_book.add_child(turn)
 	# The new page is pictured a frame later, long before the leaf shows its back, so no one frame does all the work.
 	await get_tree().process_frame

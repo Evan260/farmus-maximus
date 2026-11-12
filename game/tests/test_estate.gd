@@ -56,3 +56,34 @@ func test_a_card_waits_behind_the_title() -> void:
 	check(is_instance_valid(main.hud._away) and main.hud._away.is_visible_in_tree(), "and shows again once the farm is back")
 	main.queue_free()
 	await process_frame
+
+
+func test_the_journal_turns_to_the_last_section_asked_for() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	main.hud.open_window("journal")
+	var journal: Node = main.hud._journal
+	await process_frame
+	journal._turn_to("Buildings")
+	journal._turn_to("Goods")
+	journal._turn_to("Buildings")
+	await create_timer(2.0).timeout
+	check(journal.section == "Buildings", "a section chosen again while its page turns cancels the one asked for before (%s)" % journal.section)
+	journal._turn_to("Crops")
+	journal._turn_to("Goods")
+	journal._signature = ""
+	journal.refresh()
+	await create_timer(0.2).timeout
+	journal._turn_to("Animals")
+	await create_timer(2.0).timeout
+	check(journal.section == "Animals", "a turn cut short forgets the one waiting after it (%s)" % journal.section)
+	main.hud.close_windows()
+	main.queue_free()
+	await process_frame
