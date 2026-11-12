@@ -366,16 +366,20 @@ func _place_strip() -> void:
 
 
 func _update_fps() -> void:
-	# A cozy game left running all day should barely touch the CPU or battery.
+	Engine.max_fps = fps_for(get_window().mode == Window.MODE_MINIMIZED)
+
+
+## The frame rate the game needs: a cozy game left running all day should barely touch the CPU or battery.
+func fps_for(minimised: bool) -> int:
+	# A minimised window shows nothing, so the farm only needs to keep its time.
+	if minimised:
+		return 5
 	var fps := 60
 	if strip or not _focused:
 		fps = 30
 	if Settings.low_power or (strip and focus_mode):
-		fps = 15 if not _focused or focus_mode else 30
-	# A minimised window shows nothing, so the farm only needs to keep its time.
-	if get_window().mode == Window.MODE_MINIMIZED:
-		fps = 5
-	Engine.max_fps = fps
+		fps = 15 if not _focused or (strip and focus_mode) else 30
+	return fps
 
 
 func _load() -> void:

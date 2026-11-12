@@ -58,3 +58,19 @@ func test_keys_are_named_as_this_keyboard_names_them() -> void:
 		var named := code if DisplayServer.get_name() == "headless" else DisplayServer.keyboard_get_keycode_from_physical(code)
 		check(shown != "" and shown == OS.get_keycode_string(named), "%s is named %s, as the key on this layout" % [action, shown])
 	panel.free()
+
+
+func test_focus_mode_slows_only_the_strip() -> void:
+	var windowing: Node = root.get_node("Windowing")
+	var settings: Node = root.get_node("Settings")
+	var was := [windowing.strip, windowing.focus_mode, windowing._focused, settings.low_power]
+	windowing.strip = false
+	windowing.focus_mode = true
+	windowing._focused = true
+	settings.low_power = true
+	var fps: int = windowing.fps_for(false)
+	check(fps == 30, "low power with the strip's focus mode left on runs the full window at 30 fps (%d)" % fps)
+	windowing.strip = was[0]
+	windowing.focus_mode = was[1]
+	windowing._focused = was[2]
+	settings.low_power = was[3]
