@@ -192,6 +192,10 @@ func test_scene() -> void:
 	_check(int(game.stats.get("pets", 0)) == stroked + 1, "stroking a pet inside counts like petting it outside")
 	inside._weave()
 	_check(inside._weaving > 0.0, "clicking the loom sets it weaving")
+	_check(inside.loom_sounds(0.0, inside.PASSES * inside.PASS_SECONDS).size() == inside.PASSES * 2, "every pass of the shuttle and the beater sounds once")
+	inside._step_loom(inside.PASSES * inside.PASS_SECONDS)
+	_check(inside._weaving == 0.0 and inside._hearts.any(func(h): return h.get("sparkle", false)), "a finished weave ends with a sparkle over the cloth")
+	inside._weave()
 	_check(inside._far_land.region_rect.size * inside.DETAIL == inside.DOOR.size and inside._far_land.texture.resource_path.ends_with("layer_land.png"),
 		"the doorway shows the estate's own hills, a pixel of theirs to each of the room's")
 	var view := Rect2(inside.DOOR.position / inside.DETAIL, inside.DOOR.size / inside.DETAIL)
@@ -224,6 +228,7 @@ func test_scene() -> void:
 	inside._fit()
 	game.day_time = hour
 	main.interior.leave()
+	_check(inside._weaving == 0.0, "leaving the house stops the loom, so its sounds stay inside")
 	await create_timer(1.0).timeout
 	_check(not main.interior.visible and main.hud.visible, "and back out to the farm")
 	var rain: Node2D = load("res://scripts/world/rain_fx.gd").new()

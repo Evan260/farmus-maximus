@@ -28,6 +28,8 @@ const HEDDLE_Y := 51
 const FELL_Y := 60
 const PASS_SECONDS := 0.8
 const PASSES := 5
+## Where the sparkle rises from when a weave is finished: just above the new cloth.
+const LOOM_SPARKLE := Vector2(202, 112)
 const WOOD_DARK := Color8(66, 38, 24)
 const WOOD := Color8(146, 88, 46)
 const WOOD_LIGHT := Color8(206, 150, 90)
@@ -330,6 +332,7 @@ func enter() -> void:
 
 
 func leave() -> void:
+	_stop_loom()
 	Dissolve.play(self, func() -> void:
 		visible = false
 		_ui_layer.visible = false
@@ -417,7 +420,7 @@ func _process(delta: float) -> void:
 	for pet in [_dog, _cat, _dog_shadow, _cat_shadow]:
 		pet.modulate.a = move_toward(pet.modulate.a, 1.0 if Game.is_night() else 0.0, delta)
 	if _weaving > 0.0:
-		_weaving = maxf(0.0, _weaving - delta)
+		_step_loom(delta)
 		_woven = 1.0
 	else:
 		_woven = maxf(0.0, _woven - delta * 0.5)
@@ -453,10 +456,25 @@ func _dot(item: CanvasItem, at: Vector2, size: Vector2, colour: Color) -> void:
 	item.draw_rect(Rect2((at / DETAIL).floor() * DETAIL, size * DETAIL), colour)
 
 
+## Three little stars of lavender and gold that rise from the finished cloth, twinkling as they fade.
+func _draw_sparkle(at: Vector2, age: float, a: float) -> void:
+	for k in 3:
+		var p: Vector2 = at + Vector2((k - 1) * 9, -age * 14.0 - (k % 2) * 5)
+		var arm := 2 if sin(age * 10.0 + k * 2.0) > 0.0 else 1
+		var colour := Color(1.0, 0.86, 0.45, a) if k != 1 else Color(0.86, 0.72, 1.0, a)
+		_dot(_glow, p, Vector2.ONE, colour)
+		for d in range(1, arm + 1):
+			for dir in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
+				_dot(_glow, p + dir * d * DETAIL, Vector2.ONE, Color(colour, a * (0.8 if d == 1 else 0.45)))
+
+
 func _draw_glow() -> void:
 	var night := Lighting.night_amount(Game.day_time)
 	for h in _hearts:
 		var a: float = 1.0 - h["age"] / 1.4
+		if h.get("sparkle", false):
+			_draw_sparkle(h["at"], h["age"], a)
+			continue
 		var p: Vector2 = h["at"] + Vector2(sin(h["age"] * 5.0) * 3.0, -h["age"] * 20.0)
 		for d in [Vector2(0, 0), Vector2(2, 0), Vector2(-1, 1), Vector2(0, 1), Vector2(1, 1), Vector2(2, 1), Vector2(3, 1), Vector2(0, 2), Vector2(1, 2), Vector2(2, 2), Vector2(1, 3)]:
 			_dot(_glow, p + d * DETAIL, Vector2.ONE, Color(0.92, 0.3, 0.36, a))
@@ -701,10 +719,35 @@ func _weave() -> void:
 	if _weaving > 0.0:
 		return
 	_weaving = PASSES * PASS_SECONDS
+
+
+## The loom's sounds that fall between two moments of a weave, counted in seconds from its start.
+static func loom_sounds(from: float, to: float) -> Array:
+	var out := []
 	# The shuttle hisses through, then the beater knocks the row home.
 	for k in PASSES:
-		get_tree().create_timer(PASS_SECONDS * k + 0.1).timeout.connect(func(): Audio.play("rustle", -18.0, 0.15))
-		get_tree().create_timer(PASS_SECONDS * (k + 0.85)).timeout.connect(func(): Audio.play("made", -14.0, 0.1))
+		for cue in [["rustle", PASS_SECONDS * k + 0.1], ["made", PASS_SECONDS * (k + 0.85)]]:
+			if from < cue[1] and cue[1] <= to:
+				out.append(cue[0])
+	return out
+
+
+## Weaves on by delta: the sounds come in time with the drawing, and the finished cloth earns a sparkle.
+func _step_loom(delta: float) -> void:
+	var total := PASSES * PASS_SECONDS
+	var from := total - _weaving
+	_weaving = maxf(0.0, _weaving - delta)
+	for sound in loom_sounds(from, total - _weaving):
+		Audio.play(sound, -18.0 if sound == "rustle" else -14.0, 0.15 if sound == "rustle" else 0.1)
+	if _weaving <= 0.0:
+		Audio.play("advice", -10.0, 0.0)
+		_hearts.append({"at": LOOM_SPARKLE, "age": 0.0, "sparkle": true})
+
+
+## Leaving the house stops the loom mid-row, so none of its sounds follow the player outside.
+func _stop_loom() -> void:
+	_weaving = 0.0
+	_woven = 0.0
 
 
 func _unhandled_input(event: InputEvent) -> void:
