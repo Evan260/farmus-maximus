@@ -134,3 +134,28 @@ func test_a_reload_from_the_title_comes_back_to_the_title() -> void:
 	saves.title_done = done
 	main.queue_free()
 	await process_frame
+
+
+func test_hiring_a_helper_is_told_in_the_players_language() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	if main.hud.title_open():
+		main.hud._title._continue()
+		await create_timer(0.7).timeout
+	var locale := TranslationServer.get_locale()
+	TranslationServer.set_locale("ru")
+	game.villa_stage = 2
+	game.coins = 100000
+	game.hire_helper("farmhand")
+	var told: Array = [main.hud._toast.text] + main.hud._toast_queue
+	check(told.any(func(t: String) -> bool: return "Гай" in t), "a new helper is named in the player's language (%s)" % ", ".join(told))
+	TranslationServer.set_locale(locale)
+	main.queue_free()
+	await process_frame

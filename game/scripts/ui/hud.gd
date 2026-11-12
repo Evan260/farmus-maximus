@@ -169,7 +169,7 @@ func _ready() -> void:
 		Audio.play("coins"))
 	Game.planted.connect(func(_i): _notice = {})
 	Game.blessing_started.connect(func(god): Audio.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
-	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % Game.helper_info(id).get("name", "")))
+	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % tr(String(Game.helper_info(id).get("name", "")))))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
 	if _wants_title():
 		_show_title()
