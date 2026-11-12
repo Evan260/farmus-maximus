@@ -1,6 +1,6 @@
 # Farmus Maximus
 
-A cozy, semi-idle farming game on a Roman country estate, made for Steam (Windows, Mac, Linux and Steam Deck).
+A cozy, semi-idle farming game on a Roman country estate, made for Steam (Windows, Mac, Linux and Steam Deck), in 14 languages.
 
 Grow lavender, wheat, olives and vines, restore ruined workshops to turn the harvest into flour, bread, oil, honey, cheese and wine, ride the cart to the market town to sell, and bring a crumbling farmhouse back to a grand villa. Nothing dies and nothing spoils: the estate keeps working while the game is closed, and it can run as a strip along the edge of the desktop while you do something else.
 
@@ -28,7 +28,7 @@ In development builds, F1 opens a debug panel with time speed-ups, free coins an
 | `game/` | The Godot project: scenes, GDScript, art, sound and the data files |
 | `game/data/balance.json` | Every number and name in the game: crops, goods, buildings, helpers, prices, timings, achievements |
 | `game/tests/` | Automated checks and the bots that measure pacing |
-| `design/` | Design documents, plans and research |
+| `docs/` | Design documents, plans, research, Steam setup and the release builds |
 | `tools/` | Scripts for making art and sound, collecting translatable text, and publishing to Steam |
 | `builds/` | Exported builds (not kept in git) |
 
@@ -36,13 +36,14 @@ In development builds, F1 opens a debug panel with time speed-ups, free coins an
 
 | Document | What it covers |
 |---|---|
-| [Game design](design/Game-design.md) | The whole game, from the estate to the market town |
-| [Asset list](design/Asset-list.md) | Every picture the game needs |
-| [Sound list](design/Sound-list.md) | Every sound the game plays, by file name, with the sources and licences of the recordings |
-| [Business plan](design/Business-plan.md) | Who the game is for, where it sells, costs and the plan to launch |
-| [Website plan](design/Website-plan.md) | The game's website |
-| [Steam setup](design/Steam-setup.md) | Connecting the game to Steam: achievements, cloud saves and the demo |
-| [Steam publishing](design/Steam-publishing.md) | Uploading builds to Steam and giving testers access |
+| [Game design](docs/Game-design.md) | The whole game, from the estate to the market town |
+| [Asset list](docs/Asset-list.md) | Every picture the game needs |
+| [Sound list](docs/Sound-list.md) | Every sound the game plays, by file name, with the sources and licences of the recordings |
+| [Business plan](docs/Business-plan.md) | Who the game is for, where it sells, costs and the plan to launch |
+| [Website plan](docs/Website-plan.md) | The game's website |
+| [Steam setup](docs/Steam-setup.md) | Connecting the game to Steam: achievements, cloud saves and the demo |
+| [Steam publishing](docs/Steam-publishing.md) | Uploading builds to Steam and giving testers access |
+| [Release builds](docs/Release-builds.md) | Building every platform on GitHub from a version tag |
 
 ## Checking changes
 
@@ -75,12 +76,14 @@ Write the credits file beside it, since the licences of Godot and the stork reco
 GODOT --headless --path game --script res://tools/write_credits.gd -- --out="../builds/windows/Credits and licences.txt"
 ```
 
-Zip both with `tools/playtest/How to play test.txt` to send to a tester. Steam builds go up with `python tools/steam/publish.py playtest`; see [Steam publishing](design/Steam-publishing.md) for the one-time setup.
+Zip both with `tools/playtest/How to play test.txt` to send to a tester. Steam builds go up with `python tools/steam/publish.py playtest`; see [Steam publishing](docs/Steam-publishing.md) for the one-time setup.
+
+Pushing a version tag such as `v1.0.0` makes GitHub test the game, build it for Windows, Mac and Linux (and the demo), sign and notarize the Mac app and attach every build to a release; see [Release builds](docs/Release-builds.md).
 
 ## Art and sound
 
 The art is pixel art, generated with PixelLab (`tools/art/pixellab.py`, every paid call logged in `tools/art/ledger.csv`) and drawn or finished with the Python scripts in `tools/art/`. Each script says at the top what it makes and how to run it again.
 
-Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; `Credits and licences.txt`, shipped beside the game, names them all, as listed in the [sound list](design/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music. Only the "Salve!" greetings are still missing.
+Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; `Credits and licences.txt`, shipped beside the game, names them all, as listed in the [sound list](docs/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music. Only the "Salve!" greetings are still missing.
 
 The font is Silkscreen, under the SIL Open Font License (`game/assets/fonts/OFL.txt`).
