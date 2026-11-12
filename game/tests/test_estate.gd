@@ -31,3 +31,28 @@ func test_screen_changes_write_no_errors_when_headless() -> void:
 	check(changed[0], "the screen still changes when there is no picture of it to dissolve")
 	settings.reduced_motion = motion
 	await process_frame
+
+
+func test_a_card_waits_behind_the_title() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	if main.hud.title_open():
+		main.hud._title._continue()
+		await create_timer(0.7).timeout
+	main.hud._show_away({"seconds": 7200.0, "harvested": 3})
+	var card: Control = main.hud._away
+	main.hud.back_to_title()
+	await process_frame
+	check(not card.is_visible_in_tree(), "the summary of time away does not cover the title")
+	main.hud._title._continue()
+	await create_timer(0.7).timeout
+	check(is_instance_valid(main.hud._away) and main.hud._away.is_visible_in_tree(), "and shows again once the farm is back")
+	main.queue_free()
+	await process_frame

@@ -249,6 +249,8 @@ func _process(delta: float) -> void:
 	_zone_bar.visible = not in_strip and not titled
 	_compact.visible = in_strip
 	# The title screen waits behind the strip, which offers only the way back to it.
+	for card in _open_cards():
+		card.visible = not titled
 	if titled:
 		_title.visible = not in_strip
 		if not _any_window():
