@@ -190,9 +190,10 @@ func test_scene() -> void:
 	_check(inside._far_land.region_rect.size * inside.DETAIL == inside.DOOR.size and inside._far_land.texture.resource_path.ends_with("layer_land.png"),
 		"the doorway shows the estate's own hills, a pixel of theirs to each of the room's")
 	_check(inside._base.texture_repeat != CanvasItem.TEXTURE_REPEAT_MIRROR, "the room never mirrors its picture past its edges")
-	_check(inside.room_scale(Vector2(1918, 1030)) == 4 and inside.room_scale(Vector2(1920, 1080)) == 4 and inside.room_scale(Vector2(2560, 1440)) == 6,
-		"on a screen near 16:9 the room fills the window, cropping a little, rather than leaving a border")
-	_check(inside.room_scale(Vector2(2560, 1080)) == 4 and inside.room_scale(Vector2(3440, 1440)) == 5,
+	for size in [Vector2(1918, 1030), Vector2(1597, 927), Vector2(1600, 900), Vector2(1280, 720), Vector2(2560, 1440)]:
+		var k: float = inside.room_scale(size)
+		_check(480 * k >= size.x - 0.01 and 270 * k >= size.y - 0.01, "on a %s window the room fills the screen with no border" % size)
+	_check(is_equal_approx(inside.room_scale(Vector2(2560, 1080)), 4.0) and is_equal_approx(inside.room_scale(Vector2(3440, 1440)), 1440.0 / 270.0),
 		"on a wide screen the whole room shows, its sides fading into shadow, rather than cropping too much")
 	game.day_time = hour
 	main.interior.leave()

@@ -109,6 +109,11 @@ func _ready() -> void:
 	add_child(_viewport)
 	_display = Sprite2D.new()
 	_display.centered = false
+	# The room is enlarged by any amount to fill the window, its pixels kept sharp blocks by the smoothing shader.
+	_display.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var smooth := ShaderMaterial.new()
+	smooth.shader = preload("res://assets/shaders/smooth_pixels.gdshader")
+	_display.material = smooth
 	_display.texture = _viewport.get_texture()
 	add_child(_display)
 	# The estate's own sky, with its clouds, stars, moon and northern lights, shows through the doorway behind the room.
@@ -277,13 +282,12 @@ func _fit() -> void:
 	_panel.position = Vector2(_ui_root.size.x - 240, 30)
 
 
-## Window pixels to the painting's pixel: the whole number that fills the window when that crops at most an eighth
-## off each side and an eighth of the height, as a screen near 16:9 needs, or else the largest that shows it all.
-static func room_scale(view: Vector2) -> int:
-	var fits := maxi(1, int(minf(view.x / 480.0, view.y / 270.0)))
-	var covers := int(ceilf(maxf(view.x / 480.0, view.y / 270.0)))
+## Window pixels to the painting's pixel: enough to fill the window when that crops at most an eighth off each side
+## and an eighth of the height, as a screen near 16:9 needs, or else just enough to show it all.
+static func room_scale(view: Vector2) -> float:
+	var covers := maxf(view.x / 480.0, view.y / 270.0)
 	var crop := Vector2.ONE - view / (Vector2(480, 270) * covers)
-	return covers if crop.x <= 0.25 and crop.y <= 0.125 else fits
+	return covers if crop.x <= 0.25 and crop.y <= 0.125 else minf(view.x / 480.0, view.y / 270.0)
 
 
 ## Where the window shows more than the painting, the walls fade a pixel at a time into shadow.
