@@ -9,6 +9,8 @@ How builds get onto Steam and to players. Once the steps below are done, every u
 - `tools/steam/wsl_setup.sh` installs Valve's Linux steamcmd and rcodesign (the tool that signs and notarizes a Mac app without a Mac) into `~/farmus-steam` inside WSL. WSL with Ubuntu is already installed on this computer.
 - `tools/steam/apple_setup.sh` makes the Apple credentials; `tools/steam/macos_entitlements.plist` gives the Mac app the two permissions the Steam overlay needs.
 - `tools/steam/steam.json` holds the Steam account name and the app and depot numbers. It is empty until the steps below give you those numbers; a depot left at 0 is skipped.
+- GodotSteam is in `game/addons/godotsteam/` and ships with every export; `docs/Steam-setup.md` says how the game uses it and how to try it outside Steam.
+- Godot exports the Mac app unsigned (`codesign/codesign=0` in the macOS presets). `wsl_build.sh` signs and notarizes it for Steam once the Apple credentials below exist; a Mac build sent by hand is signed, notarized and stapled on the Mac, where the Developer ID's private key is kept.
 
 ## One-time setup on this computer
 
@@ -94,7 +96,7 @@ python tools/steam/publish.py playtest --note "Faster cart trips"
 
 The script builds the game for every platform with a depot, signs and notarizes the Mac app (Apple's check usually takes a few minutes), uploads it and makes it live on the `testing` branch. Testers get it the next time Steam updates, usually within minutes when Steam is open. The note and the git commit appear next to the build in Steamworks, under SteamPipe, Builds.
 
-`--dry-run` builds every platform, signs the Mac app if the Apple credentials exist, and lays everything out in `~/farmus-steam` inside WSL without notarizing or uploading, to check that everything is in order.
+`--dry-run` builds every platform, signs the Mac app if the Apple credentials exist, and lays everything out in `~/farmus-steam/<target>/content` inside WSL without notarizing or uploading, to check that everything is in order. It needs neither the ids in `steam.json` nor steamcmd, so it works before Steamworks is set up. Godot's exports are kept in `builds/steam/<target>/` on Windows too.
 
 ## The default branch and release
 

@@ -50,10 +50,9 @@ search, so they lead with the estate, the desktop strip, a workshop window and t
 
 TRAILER (Trailers tab)
 
-The trailer is rendered to marketing/recordings/videos/steam_trailer/steam_trailer.avi (kept out of git because of its size) by
-python tools/trailer/make_trailer.py. Steam wants an .mp4; once ffmpeg is installed (winget install Gyan.FFmpeg),
-Claude can add the conversion. Before uploading, confirm with the composer of the harp music (Mythago Music) that it
-may be used in a trailer.
+Upload marketing/recordings/videos/steam_trailer/steam_trailer.mp4 (kept out of git because of its size). It is
+rendered by python tools/trailer/make_trailer.py, which writes the .avi and then the .mp4 copy Steam wants beside it.
+Before uploading, confirm with the composer of the harp music (Mythago Music) that it may be used in a trailer.
 
 
 STILL TO DECIDE BEFORE SUBMITTING
@@ -61,4 +60,4 @@ STILL TO DECIDE BEFORE SUBMITTING
 - Developer and publisher name (your own name or a studio name).
 - Release date: "Coming soon", or a season and year such as "Spring 2027".
 - Price, which Steamworks asks for separately and which Valve reviews.
-- Steam Cloud, achievements and the demo are set up as described in design/Steam-setup.md.
+- Steam Cloud, achievements and the demo are set up as described in docs/Steam-setup.md.

@@ -89,7 +89,7 @@ In Steamworks, the demo is an app of its own, linked to the main game:
 1. On the main game's Steamworks page, under All Associated Packages, DLC, Demos and Tools, create a demo. Steam gives it its own App ID.
 2. Set it up like the main game (steps 2 to 6 of the Steamworks setup in `Steam-publishing.md`): three depots, a `testing` branch, App Bundles Are Notarized, and these launch options:
    - `Farmus Maximus Demo.exe`, Windows
-   - `Farmus Maximus Demo.app`, macOS
+   - `Farmus Maximus.app`, macOS (Godot names the Mac app after the project, so the demo's app keeps the full game's name)
    - `Farmus Maximus Demo.x86_64`, Linux + SteamOS
 3. Put its App ID and depots into `targets.demo` in `tools/steam/steam.json`.
 4. Upload it with `python tools/steam/publish.py demo`. As with the main game, the build goes live on `testing`, and you set it live on the default branch in Steamworks when the demo is ready to release.
