@@ -14,3 +14,6 @@
 
 # Windows batch files need Windows line endings
 *.bat text eol=crlf
+
+# The trimmed Windows engine the Windows presets export with
+tools/engine/bin/*.exe filter=lfs diff=lfs merge=lfs -text

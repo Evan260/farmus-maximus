@@ -17,6 +17,7 @@ once in the game's Properties, Betas; builds for the default branch are set live
 import argparse
 import datetime
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -24,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = Path(__file__).with_name("steam.json")
-GODOT = Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe"
+GODOT = os.environ.get("GODOT", str(Path.home() / "AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe"))
 # The Godot export preset and the file it writes, for each platform a depot can hold.
 PRESETS = {
     "windows": ("Windows", "Farmus Maximus.exe"),

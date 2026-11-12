@@ -10,7 +10,7 @@ Needs: the Godot source checked out at the editor's version (by default in C:/Us
 Rebuild whenever Godot is updated, with the source checked out at the new version.
 
 Usage: python tools/engine/build_template.py [path to the godot source]
-Writes tools/engine/bin/farmus.windows.template_release.x86_64.exe (kept out of git).
+Writes tools/engine/bin/farmus.windows.template_release.x86_64.exe, kept in Git LFS; commit it after a rebuild.
 """
 import os
 import shutil
