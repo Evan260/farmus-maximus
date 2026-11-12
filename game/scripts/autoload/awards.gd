@@ -5,10 +5,14 @@ var _steam: Object = null
 
 
 func _ready() -> void:
-	# GodotSteam adds a "Steam" singleton; without it (an itch build, or the editor) achievements stay in the save only.
 	if Engine.has_singleton("Steam"):
-		_steam = Engine.get_singleton("Steam")
-		_steam.call("steamInit")
+		var steam: Object = Engine.get_singleton("Steam")
+		var started: Dictionary = steam.call("steamInitEx")
+		# Without the Steam client running the game plays on, and achievements stay in the save until a later start.
+		if int(started.get("status", -1)) == 0:
+			_steam = steam
+		else:
+			print_verbose("Steam unavailable: ", started.get("verbal", ""))
 	Game.achievement_unlocked.connect(_on_achievement)
 	Game.cart_returned.connect(func(_c): alert())
 	Game.storage_full.connect(alert)

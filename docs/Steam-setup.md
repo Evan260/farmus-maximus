@@ -5,8 +5,8 @@ What has to happen on Steam's side before launch. The game already does its part
 ## 1. Connect the game to Steam
 
 1. Create the app in Steamworks and note its App ID.
-2. Add GodotSteam (the GDExtension build for Godot 4.7) to `game/addons/`. The game looks for its `Steam` object and uses it when it is there (`game/scripts/autoload/platform.gd`); without it, nothing breaks.
-3. While testing outside Steam, put a file named `steam_appid.txt` holding the App ID next to the game's executable.
+2. GodotSteam is already in the game: the GDExtension build 4.24 (Steamworks SDK 1.65) from GodotSteam's releases on codeberg.org/godotsteam/godotsteam, in `game/addons/godotsteam/`, with only the 64-bit Windows, macOS and Linux libraries. Every export preset ships it: Godot puts `libgodotsteam` and the Steam API library beside the game, or inside the Mac app's `Frameworks` folder. `game/scripts/autoload/awards.gd` starts Steam with `steamInitEx` and sends achievements only when that succeeds. Without the Steam client running, the game starts and plays normally and keeps achievements in the save. To update GodotSteam, download the newer `godotsteam-<version>-gdextension-plugin-4.4.zip` and replace the files in those three folders, keeping `godotsteam.gdextension` to the three platforms.
+3. A game started by Steam knows its App ID. To try Steam outside it, start the Steam client and put a file named `steam_appid.txt` in `game/` (when running from the project) or next to the exported game, holding only the App ID. Until Steamworks gives the game its own App ID, use `480`, Valve's test game Spacewar, which every Steam account can use. `steam_appid.txt` is git-ignored and is never exported, so it never reaches players.
 
 ## 2. Achievements
 

@@ -26,3 +26,6 @@ tools/engine/bin/
 recordings/
 marketing/desktop.png
 game/override.cfg
+
+# Steam App ID for local testing outside Steam (480 is Valve's Spacewar); docs/Steam-setup.md
+steam_appid.txt

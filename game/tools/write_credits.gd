@@ -1,7 +1,8 @@
 extends SceneTree
 ## Writes "Credits and licences.txt", which ships beside the game: who made it, the music, every recorded sound with its
-## licence, the fonts, and the Godot engine's licence with the full licences of the libraries built into it. The MIT
-## licence of Godot and the CC BY licence of the stork recording both ask for their notice to go out with the game.
+## licence, the fonts, GodotSteam and the Steamworks SDK, and the Godot engine's licence with the full licences of the
+## libraries built into it. The MIT licences of Godot and GodotSteam and the CC BY licence of the stork recording ask
+## for their notice to go out with the game.
 ##   Godot --headless --path game --script res://tools/write_credits.gd -- --out=PATH
 
 const CREDITS := "res://data/credits.json"
@@ -18,7 +19,7 @@ func _init() -> void:
 		return
 	var credits: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CREDITS))
 	var text := PackedStringArray(["FARMUS MAXIMUS", ""])
-	for part in [["made_by", "Made by"], ["music", "Music"], ["sounds", "Sounds"], ["font", "Fonts"]]:
+	for part in [["made_by", "Made by"], ["music", "Music"], ["sounds", "Sounds"], ["font", "Fonts"], ["libraries", "Libraries"]]:
 		var lines: Array = credits.get(part[0], [])
 		if lines.is_empty():
 			continue
