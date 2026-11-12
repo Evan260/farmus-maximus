@@ -12,6 +12,8 @@ const STRIP_ROWS := 166
 ## painted sky behind it reaches.
 const STRIP_MIN_VIEW := 200
 const STRIP_MAX_VIEW := 1440
+## The smallest the full window may be dragged, in screen pixels; narrower than about 560 the top bar runs into itself.
+const MIN_WINDOW := Vector2i(640, 400)
 
 var strip := false
 var transparent := true
@@ -300,6 +302,7 @@ func _apply() -> void:
 		if win.mode != Window.MODE_WINDOWED:
 			_mode_before_strip = win.mode
 			win.mode = Window.MODE_WINDOWED
+		win.min_size = Vector2i.ZERO
 		win.borderless = true
 		win.always_on_top = true
 		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
@@ -309,6 +312,7 @@ func _apply() -> void:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 		win.always_on_top = false
 		win.borderless = false
+		win.min_size = min_window_size()
 		get_viewport().transparent_bg = false
 		# A maximized or fullscreen window belongs to Windows, which would keep its frame but draw the game at the new size.
 		if win.mode == Window.MODE_WINDOWED:
@@ -326,6 +330,14 @@ func _apply() -> void:
 	_update_fps()
 	_apply_volume()
 	view_changed.emit()
+
+
+## The full window's smallest size, or a smaller one asked for with --window= so checks can still try tiny windows.
+func min_window_size() -> Vector2i:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--window="):
+			return MIN_WINDOW.min(Vector2i(int(arg.get_slice("=", 1).get_slice("x", 0)), int(arg.get_slice("x", 1))))
+	return MIN_WINDOW
 
 
 func _apply_volume() -> void:

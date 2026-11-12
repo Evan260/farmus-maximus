@@ -74,3 +74,17 @@ func test_focus_mode_slows_only_the_strip() -> void:
 	windowing.focus_mode = was[1]
 	windowing._focused = was[2]
 	settings.low_power = was[3]
+
+
+func test_the_full_window_has_a_smallest_size() -> void:
+	var windowing: Node = root.get_node("Windowing")
+	var win: Window = root.get_window()
+	var was: bool = windowing.strip
+	windowing.strip = false
+	windowing._apply()
+	check(win.min_size == windowing.min_window_size() and windowing.min_window_size() == Vector2i(640, 400), "the full window cannot be dragged smaller than 640 x 400 (%s)" % win.min_size)
+	windowing.strip = true
+	windowing._apply()
+	check(win.min_size == Vector2i.ZERO, "the strip keeps its own sizes, shorter than the full window's smallest")
+	windowing.strip = was
+	windowing._apply()
