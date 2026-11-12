@@ -47,3 +47,14 @@ func test_old_settings_files_become_one() -> void:
 	settings.folder = "user://"
 	settings.persist = persist
 	check(not settings.large_text and settings.keys.is_empty(), "the tests go back to the game's own settings")
+
+
+func test_keys_are_named_as_this_keyboard_names_them() -> void:
+	var settings: Node = root.get_node("Settings")
+	var panel: Node = load("res://scripts/ui/settings_panel.gd").new()
+	for action in settings.ACTIONS:
+		var code: int = settings.key_for(action)
+		var shown: String = panel._key_name(action)
+		var named := code if DisplayServer.get_name() == "headless" else DisplayServer.keyboard_get_keycode_from_physical(code)
+		check(shown != "" and shown == OS.get_keycode_string(named), "%s is named %s, as the key on this layout" % [action, shown])
+	panel.free()

@@ -110,7 +110,9 @@ func _percent(v: float) -> String:
 
 
 func _key_name(action: String) -> String:
-	return OS.get_keycode_string(Settings.key_for(action))
+	# Keys are bound by where they sit on the keyboard, so the name shown is what that key says on this layout.
+	var code := Settings.key_for(action)
+	return OS.get_keycode_string(code if DisplayServer.get_name() == "headless" else DisplayServer.keyboard_get_keycode_from_physical(code))
 
 
 func _input(event: InputEvent) -> void:
