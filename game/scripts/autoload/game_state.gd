@@ -1941,8 +1941,7 @@ func from_dict(d: Dictionary) -> void:
 		stats[key] = int(d["stats"][key])
 	# Saves from before the tutorial counted fewer things, so a farm with harvests behind it skips the first lessons.
 	if int(stats.get("harvested", 0)) > 0:
-		for key in ["planted", "cart_trips"]:
-			stats[key] = maxi(int(stats.get(key, 0)), 1)
+		stats["planted"] = maxi(int(stats.get("planted", 0)), 1)
 		var dug := plots.filter(func(p): return p["unlocked"] and p["zone"] == "home").size()
 		if dug > int(Data.get_value("start.unlocked_plots", 4)):
 			stats["plots_unlocked"] = maxi(int(stats.get("plots_unlocked", 0)), 1)

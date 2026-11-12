@@ -360,6 +360,9 @@ func test_rules() -> void:
 	with_pool["coins"] = 100
 	game.from_dict(with_pool)
 	_check(game.coins == 15100 and game.furnishings.keys() == ["fire"], "a farm that bought the rain pool gets its price back and keeps its other furnishings")
+	game.stats = {"planted": 1, "harvested": 1}
+	game.from_dict(JSON.parse_string(JSON.stringify(game.to_dict())))
+	_check(int(game.stats.get("cart_trips", 0)) == 0, "loading a farm that has harvested but never sent the cart counts no trip")
 
 	# A batch keeps the recipe it was loaded with when the player picks another, through saves and from old saves too.
 	game.new_game()
