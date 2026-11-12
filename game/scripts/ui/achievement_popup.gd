@@ -1,7 +1,8 @@
 extends Control
 ## Earned achievements slide in from the right edge on a small parchment card with a laurel wreath, one after another,
 ## and slide away again after a few seconds; clicking a card sends it away early. The card stands in the sky just below
-## the buttons in the top-right corner, where it never covers the cart, the fields or Uncle Marcus.
+## the buttons in the top-right corner, where it never covers the cart, the fields or Uncle Marcus. A card earned while a
+## window is open waits until the windows close, so it never lands over one.
 
 const LAUREL := preload("res://assets/sprites/icons32/laurel.png")
 const MARGIN := 6.0
@@ -9,7 +10,7 @@ const HOLD := 5.0
 
 ## The interface element the card stands below; without one it sits at the top edge.
 var below: Control
-## Supplied by the HUD: true while a window is open, when the card lets clicks through to the window's buttons under it.
+## Supplied by the HUD: true while a window is open, when no card slides in and one showing lets clicks through to it.
 var window_open: Callable
 ## While true, cards wait in the queue and a card on its way stops where it is, such as while the title screen is up.
 var hold := false:
@@ -39,10 +40,11 @@ func add(a: Dictionary) -> void:
 
 
 func _next() -> void:
-	if _queue.is_empty() or hold or _card != null:
+	if _queue.is_empty() or hold or _card != null or _window_up():
 		return
 	var a: Dictionary = _queue.pop_front()
 	move_to_front()
+	Audio.play("flourish", -6.0)
 	_card = PanelContainer.new()
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	_card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -116,8 +118,13 @@ func _process(_delta: float) -> void:
 	# The buttons above can change size with the interface size setting, so the card keeps to just below them.
 	if _card:
 		_card.position.y = _top()
-		var over_window: bool = window_open.is_valid() and window_open.call()
-		_card.mouse_filter = Control.MOUSE_FILTER_IGNORE if over_window else Control.MOUSE_FILTER_STOP
+		_card.mouse_filter = Control.MOUSE_FILTER_IGNORE if _window_up() else Control.MOUSE_FILTER_STOP
+	elif not _queue.is_empty() and not hold:
+		_next()
+
+
+func _window_up() -> bool:
+	return window_open.is_valid() and window_open.call()
 
 
 ## The stretch of screen the card showing slides along, from where it lands to the right edge, or an empty rect.

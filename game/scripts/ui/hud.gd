@@ -152,7 +152,7 @@ func _ready() -> void:
 	_root.add_child(_uncle)
 	_achievements = AchievementPopup.new()
 	_achievements.below = _buttons
-	_achievements.window_open = window_open
+	_achievements.window_open = func(): return _any_window() or not _open_cards().is_empty()
 	_root.add_child(_achievements)
 	visibility_changed.connect(_hold_news)
 	Settings.changed.connect(_apply_text_size)
@@ -617,7 +617,6 @@ func _on_achievement(a: Dictionary) -> void:
 		_triumph()
 		return
 	_achievements.add(a)
-	Audio.play("flourish", -6.0)
 
 
 ## Earning every achievement is celebrated like a Roman triumph: a fanfare, rose petals thrown over the whole view, and
