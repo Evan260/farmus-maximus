@@ -204,6 +204,19 @@ func test_scene() -> void:
 		_check(480 * k >= size.x - 0.01 and 270 * k >= size.y - 0.01, "on a %s window the room fills the screen with no border" % size)
 	_check(is_equal_approx(inside.room_scale(Vector2(2560, 1080)), 4.0) and is_equal_approx(inside.room_scale(Vector2(3440, 1440)), 1440.0 / 270.0),
 		"on a wide screen the whole room shows, its sides fading into shadow, rather than cropping too much")
+	for size in [Vector2(2200, 1080), Vector2(2560, 1080), Vector2(1280, 1024), Vector2(1597, 927), Vector2(3440, 1440)]:
+		inside._fit(size)
+		var canvas := Rect2(-inside._origin, Vector2(inside._viewport.size) * inside.DETAIL)
+		var dark: Array = inside._edge_rects()
+		var open := 0
+		for y in range(int(canvas.position.y), int(canvas.end.y)):
+			for x in range(int(canvas.position.x), int(canvas.end.x)):
+				var p := Vector2(x, y) + Vector2(0.5, 0.5)
+				if not Rect2(0, 0, 480, 270).has_point(p) and not dark.any(func(r: Rect2) -> bool: return r.has_point(p)):
+					open += 1
+		_check(open == 0 and dark.all(func(r: Rect2) -> bool: return r.size.x >= 0.0 and r.size.y >= 0.0),
+			"on a %s window the shadow covers all of the room's view past the painting (%d pixels open)" % [size, open])
+	inside._fit()
 	game.day_time = hour
 	main.interior.leave()
 	await create_timer(1.0).timeout

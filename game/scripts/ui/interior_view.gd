@@ -256,8 +256,9 @@ func _build_ui() -> void:
 
 ## Each pixel of the half-detail canvas is shown at twice the estate's pixel size; a window of another shape shows
 ## more of the room's walls, floor and ceiling, which its pictures carry on past the painting.
-func _fit() -> void:
-	var view := get_viewport().get_visible_rect().size
+func _fit(view := Vector2.ZERO) -> void:
+	if view == Vector2.ZERO:
+		view = get_viewport().get_visible_rect().size
 	var shown := room_scale(view) * DETAIL
 	var canvas := (view / shown).ceil()
 	_viewport.size = Vector2i(canvas)
@@ -292,7 +293,7 @@ static func room_scale(view: Vector2) -> float:
 
 ## Where the window shows more than the painting, the walls fade a pixel at a time into shadow.
 func _draw_edges() -> void:
-	var shown := Rect2(-_origin, Vector2(480, 270) + Vector2(_origin.x * 2.0, _origin.y))
+	var shown := Rect2(-_origin, Vector2(_viewport.size) * DETAIL)
 	var art := Rect2(0, 0, 480, 270)
 	if art.encloses(shown):
 		return
@@ -305,9 +306,17 @@ func _draw_edges() -> void:
 			_edges.draw_rect(Rect2(art.end.x - inset - DETAIL, shown.position.y, DETAIL, shown.size.y), Color(DARK, a))
 		if shown.position.y < art.position.y:
 			_edges.draw_rect(Rect2(shown.position.x, art.position.y + inset, shown.size.x, DETAIL), Color(DARK, a))
-	_edges.draw_rect(Rect2(shown.position.x, shown.position.y, art.position.x - shown.position.x, shown.size.y), DARK)
-	_edges.draw_rect(Rect2(art.end.x, shown.position.y, shown.end.x - art.end.x, shown.size.y), DARK)
-	_edges.draw_rect(Rect2(shown.position.x, shown.position.y, shown.size.x, art.position.y - shown.position.y), DARK)
+	for r in _edge_rects():
+		_edges.draw_rect(r, DARK)
+
+
+## The solid shadow beside and above the painting, in the painting's pixels.
+func _edge_rects() -> Array:
+	var shown := Rect2(-_origin, Vector2(_viewport.size) * DETAIL)
+	var art := Rect2(0, 0, 480, 270)
+	return [Rect2(shown.position.x, shown.position.y, maxf(0.0, art.position.x - shown.position.x), shown.size.y),
+		Rect2(art.end.x, shown.position.y, maxf(0.0, shown.end.x - art.end.x), shown.size.y),
+		Rect2(shown.position.x, shown.position.y, shown.size.x, maxf(0.0, art.position.y - shown.position.y))]
 
 
 func enter() -> void:
