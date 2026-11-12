@@ -156,8 +156,6 @@ def lay_rug(a):
     ends = np.cumsum([b[0] for b in RUG_BANDS])
     band = np.minimum(np.searchsorted(ends, v, side="right"), len(RUG_BANDS) - 1)
     colours = np.array([b[1] for b in RUG_BANDS], float)[band]
-    # A dotted cream pattern runs along the middle stripe.
-    colours[(band == 7) & (xs % 3 == 0)] = CREAM
     edge = (u < 0.035) | (u > 0.965)
     colours[edge] = BINDING
     colours *= (0.9 + 0.1 * v)[..., None]
@@ -195,8 +193,9 @@ def lay_rug(a):
     return a
 
 
-# The doorway's opening, where the estate's own sky and far hills show through; the game draws them.
-DOOR = (366, 20, 430, 132)
+# The doorway's opening, where the estate's own sky and far hills show through; the game draws them. Its foot follows
+# the stone sill, which slopes down to the right.
+DOOR = [(366, 20), (430, 20), (430, 140), (366, 133)]
 # The wooden beam across the top of the doorway's stone frame, which the finished room does without.
 BEAM = (332, 2, 454, 22)
 BEAM_WORDS = ("the top of a pale cut limestone door frame: a lintel of cream stone blocks over the doorway joining the "
@@ -302,8 +301,7 @@ def soften_outlines(img):
 def cut_door(img, ox=0, oy=0):
     """The picture with the doorway's opening made see-through, so the game's own sky and far hills show there."""
     a = np.array(img.convert("RGBA"))
-    x0, y0, x1, y1 = DOOR
-    a[oy + y0:oy + y1, ox + x0:ox + x1, 3] = 0
+    a[shapes(polys=[[(x + ox, y + oy) for x, y in DOOR]], size=(a.shape[1], a.shape[0])), 3] = 0
     return Image.fromarray(a)
 
 

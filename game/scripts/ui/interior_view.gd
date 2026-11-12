@@ -12,8 +12,8 @@ const SkyView := preload("res://scripts/world/sky_view.gd")
 const FLAME := preload("res://assets/shaders/flame.gdshader")
 ## The doorway's opening in the painting, and the pixel of the estate's far scenery at its top left corner: the
 ## estate's own mountains, hills and sky show through it, a pixel of theirs to each of the room's.
-const DOOR := Rect2(366, 20, 64, 112)
-const VIEW_FROM := Vector2(400, 118)
+const DOOR := Rect2(366, 20, 64, 120)
+const VIEW_FROM := Vector2(400, 114)
 const FAR := "res://assets/backgrounds/estate/"
 ## Where the window shows more than the painting, its walls fade into this shadow over FADE pixels.
 const DARK := Color(0.09, 0.05, 0.04)
