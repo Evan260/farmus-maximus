@@ -42,7 +42,6 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `market_bell` | Arriving in the market town | Yes |
 | `page_turn` | Opening the journal | Yes |
 | `shrine_bell` | A blessing at the lararium | Yes |
-| `water_fill` | Filling the rain pool in the farmhouse | Yes |
 | `fire_light` | Lighting the hearth or the lamps in the farmhouse | Yes |
 | `clay` | Amphorae set on the farmhouse shelves | Yes |
 
@@ -92,7 +91,6 @@ Every recording below is also named in `Credits and licences.txt`, which ships b
 | `day` | [Rural Umbria, birds and flies](https://freesound.org/people/MicheleFalleri/sounds/578431/) by MicheleFalleri | CC0 |
 | `night` | [Summer night meadow, crickets and owl](https://freesound.org/people/raoul_slayer/sounds/203598/) by raoul_slayer | CC0 |
 | `rain` | [Soft rain in the countryside](https://freesound.org/people/EduFigueres/sounds/688896/) by EduFigueres | CC0 |
-| `water_fill` | [Water, pour above a puddle](https://freesound.org/people/Vrymaa/sounds/802711/) by Vrymaa | CC0 |
 | `fire_light` | [Lighting a fire](https://freesound.org/people/Villen/sounds/149831/) by Villen | CC0 |
 | `clay` | [Amphora, hitting jar and wooden lid](https://freesound.org/people/Vrymaa/sounds/770042/) by Vrymaa | CC0 |
 | `click`, `tab`, `nope`, `coins` | [Interface Sounds](https://kenney.nl/assets/interface-sounds), [RPG Audio](https://kenney.nl/assets/rpg-audio) by Kenney | CC0 |

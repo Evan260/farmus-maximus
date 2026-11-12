@@ -87,7 +87,6 @@ creature goat horse "a small white and brown farm goat with short horns, a littl
 creature cat cat "a slim tabby farm cat with natural proportions, orange and cream stripes, standing calmly" 48x48 walk "walking calmly" sleep "curling up and falling asleep"
 creature fox dog "a slender red fox with a bushy white-tipped tail, natural proportions, standing calmly" 48x48 walk "trotting lightly"
 pf "a plump brown farm hen standing, side view facing right, natural proportions, no ground" 24x24 "$CREATURE" $S/animals/chicken/stand.png 2
-pf "a plump brown farm hen pecking at the ground with its head down, side view facing right, natural proportions, no ground" 24x24 "$CREATURE" $S/animals/chicken/peck.png 2
 pf "a small wild brown rabbit sitting upright with long ears, side view facing right, no ground" 24x24 "$CREATURE" $S/animals/rabbit/sit.png 2
 pf "a small wild brown rabbit mid hop with legs stretched, side view facing right, no ground" 24x24 "$CREATURE" $S/animals/rabbit/hop.png 2
 pf "a hoopoe bird with an orange crest, black and white striped wings, standing on the ground, side view facing right, no ground" 24x24 "$CREATURE" $S/animals/hoopoe/stand.png 2
