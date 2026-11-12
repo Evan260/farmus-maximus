@@ -183,6 +183,11 @@ func test_scene() -> void:
 	game.day_time = 23.0
 	inside._dress_room()
 	_check(inside._pet_at(inside._dog.position + Vector2(0, -8)) == inside._dog, "the sleeping dog can be clicked inside at night")
+	var locale := TranslationServer.get_locale()
+	TranslationServer.set_locale("ja")
+	var tip: String = inside._pet_tip(inside._dog)
+	TranslationServer.set_locale(locale)
+	_check("：" in tip and not ": " in tip, "a sleeping pet's tip follows the language's own punctuation (%s)" % tip)
 	inside._stroke(inside._dog)
 	_check(int(game.stats.get("pets", 0)) == stroked + 1, "stroking a pet inside counts like petting it outside")
 	inside._weave()

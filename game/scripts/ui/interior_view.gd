@@ -612,9 +612,7 @@ func _on_picture_input(event: InputEvent) -> void:
 		_hovered = spot
 		var text := ""
 		if pet != null:
-			var kind := "dog" if pet == _dog else "cat"
-			var name := String(Game.pets.get(kind, {}).get("name", ""))
-			text = (name if name != "" else tr("The dog" if kind == "dog" else "The cat")) + ": " + tr("asleep")
+			text = _pet_tip(pet)
 		elif loom:
 			text = tr("The loom: click to weave")
 		elif spot != "":
@@ -633,6 +631,13 @@ func _on_picture_input(event: InputEvent) -> void:
 			_open(spot)
 		elif _panel.visible:
 			_close_panel()
+
+
+## The tip over a sleeping pet, with its name.
+func _pet_tip(pet: AnimatedSprite2D) -> String:
+	var kind := "dog" if pet == _dog else "cat"
+	var name := String(Game.pets.get(kind, {}).get("name", ""))
+	return tr("%s: asleep") % (name if name != "" else tr("The dog" if kind == "dog" else "The cat"))
 
 
 ## A sleeping pet stirs at a stroke: it gives a happy sound and a heart floats up from it.
