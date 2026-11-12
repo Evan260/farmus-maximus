@@ -156,6 +156,13 @@ func test_hiring_a_helper_is_told_in_the_players_language() -> void:
 	game.hire_helper("farmhand")
 	var told: Array = [main.hud._toast.text] + main.hud._toast_queue
 	check(told.any(func(t: String) -> bool: return "Гай" in t), "a new helper is named in the player's language (%s)" % ", ".join(told))
+	main.hud._toast_queue.clear()
+	main.hud._toast.text = ""
+	game.hire_helper("farmhand")
+	told = [main.hud._toast.text] + main.hud._toast_queue
+	var joined := tr("%s has joined the household") % tr("Gaius")
+	check(not joined in told and told.any(func(t: String) -> bool: return "Гай" in t and "2" in t),
+		"training a helper tells of their new level, not of them joining again (%s)" % ", ".join(told))
 	TranslationServer.set_locale(locale)
 	main.queue_free()
 	await process_frame

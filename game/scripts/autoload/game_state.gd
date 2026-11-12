@@ -27,6 +27,7 @@ signal order_added
 signal dog_found(find_id: String, text: String)
 signal blessing_started(god: String)
 signal helper_hired(helper_id: String)
+signal helper_trained(helper_id: String, level: int)
 signal decoration_bought(decoration_id: String)
 signal furnishing_bought(furnishing_id: String)
 signal animal_added(kind: String)
@@ -1610,7 +1611,10 @@ func hire_helper(id: String) -> bool:
 	helpers[id] = int(helpers.get(id, 0)) + 1
 	helper_timers[id] = 0.0
 	discover("helper:" + id)
-	helper_hired.emit(id)
+	if helpers[id] == 1:
+		helper_hired.emit(id)
+	else:
+		helper_trained.emit(id, helpers[id])
 	return true
 
 
