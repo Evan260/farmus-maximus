@@ -189,6 +189,15 @@ func test_scene() -> void:
 	_check(inside._weaving > 0.0, "clicking the loom sets it weaving")
 	_check(inside._far_land.region_rect.size * inside.DETAIL == inside.DOOR.size and inside._far_land.texture.resource_path.ends_with("layer_land.png"),
 		"the doorway shows the estate's own hills, a pixel of theirs to each of the room's")
+	var view := Rect2(inside.DOOR.position / inside.DETAIL, inside.DOOR.size / inside.DETAIL)
+	var bare := 0
+	for picture in ["empty.png", "painted.png", "ruin.png"]:
+		var img: Image = load(inside.DIR + picture).get_image()
+		for y in range(int(view.position.y) - 2, int(view.end.y) + 2):
+			for x in range(int(view.position.x) - 4, int(view.end.x) + 4):
+				if img.get_pixel(x, y).a < 0.5 and not view.has_point(Vector2(x, y) + Vector2(0.5, 0.5)):
+					bare += 1
+	_check(bare == 0, "the far hills fill every see-through pixel of the doorway (%d left bare)" % bare)
 	_check(inside._base.texture_repeat != CanvasItem.TEXTURE_REPEAT_MIRROR, "the room never mirrors its picture past its edges")
 	for size in [Vector2(1918, 1030), Vector2(1597, 927), Vector2(1600, 900), Vector2(1280, 720), Vector2(2560, 1440)]:
 		var k: float = inside.room_scale(size)
