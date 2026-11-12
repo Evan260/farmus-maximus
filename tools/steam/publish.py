@@ -10,7 +10,7 @@ Usage:
 The Steam account, app and depot ids are in tools/steam/steam.json; a depot left at 0 is skipped. Godot exports every
 platform here on Windows, then tools/steam/wsl_build.sh takes over inside WSL: a Mac app copied through Windows loses
 its file permissions and will not open, so the builds are laid out, the Mac app signed and notarized, and the upload
-made with Valve's Linux steamcmd there. design/Steam-publishing.md has the one-time setup.
+made with Valve's Linux steamcmd there. docs/Steam-publishing.md has the one-time setup.
 Steam only lets a script make a build live on a branch other than the default one, so testers choose that branch
 once in the game's Properties, Betas; builds for the default branch are set live on the Steamworks site.
 """
@@ -115,18 +115,22 @@ def main():
     args = parser.parse_args()
     config = json.loads(CONFIG.read_text())
     target = config["targets"][args.target]
-    if not target["app_id"] or not any(target["depots"].values()):
-        fail(f"set the {args.target} app id and depot ids in {CONFIG} first (see design/Steam-publishing.md)")
-    if not config["account"] and not args.dry_run:
-        fail(f"set the Steam account that uploads builds in {CONFIG} first")
+    if not args.dry_run:
+        if not target["app_id"] or not any(target["depots"].values()):
+            fail(f"set the {args.target} app id and depot ids in {CONFIG} first (see docs/Steam-publishing.md)")
+        if not config["account"]:
+            fail(f"set the Steam account that uploads builds in {CONFIG} first")
     home = wsl("sh", "-c", "echo $HOME").stdout.strip()
-    if not home or wsl("test", "-x", f"{home}/farmus-steam/steamcmd/steamcmd.sh").returncode != 0:
-        fail("WSL is not set up for uploads yet; run tools/steam/wsl_setup.sh once (see design/Steam-publishing.md)")
+    if not home:
+        fail("WSL did not answer; check that Ubuntu is installed (wsl --list)")
+    if not args.dry_run and wsl("test", "-x", f"{home}/farmus-steam/steamcmd/steamcmd.sh").returncode != 0:
+        fail("WSL is not set up for uploads yet; run tools/steam/wsl_setup.sh once (see docs/Steam-publishing.md)")
     stage = ROOT / "builds" / "steam" / args.target
     if stage.exists():
         shutil.rmtree(stage)
     for platform, depot in target["depots"].items():
-        if depot:
+        # A dry run builds every platform, so the whole layout can be checked before Steam has given any ids.
+        if depot or args.dry_run:
             export(platform, stage / platform, args.target == "demo")
     work = f"{home}/farmus-steam/{args.target}"
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
@@ -143,7 +147,7 @@ def main():
         return
     if "Successfully finished AppID" not in result.stdout:
         fail("the upload did not finish; if steamcmd asked for a password or a Steam Guard code, log in by hand once "
-             "(see design/Steam-publishing.md) and run this again")
+             "(see docs/Steam-publishing.md) and run this again")
     print(f"uploaded and live on the '{target['branch']}' branch of app {target['app_id']}")
 
 

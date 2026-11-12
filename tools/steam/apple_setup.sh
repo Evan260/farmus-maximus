@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Makes the Apple credentials the Mac build is signed and notarized with, inside WSL. Run each step from Windows with
 #   wsl bash tools/steam/apple_setup.sh <step> ...
-# Steps, in order (design/Steam-publishing.md walks through the Apple website parts):
+# Steps, in order (docs/Steam-publishing.md walks through the Apple website parts):
 #   csr <folder>                          a private key and a certificate request; the request is copied to <folder>
 #   p12 <developer_id.cer>                turns the certificate Apple issues for that request into the signing file
 #   api-key <issuer id> <key id> <.p8>    stores the App Store Connect key that notarization logs in with

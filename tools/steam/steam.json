@@ -1,4 +1,5 @@
 {
+  "_todo": "Evan fills these in: the uploading Steam account and every 0 below are placeholders until Steamworks gives the Playtest, the game and the demo their App IDs and depot IDs (docs/Steam-publishing.md, step 8).",
   "account": "",
   "targets": {
     "playtest": {
