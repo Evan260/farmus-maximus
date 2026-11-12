@@ -60,7 +60,9 @@ func tick() -> void:
 			"cart_capacity":
 				about.text = tr("Carries %d goods instead of %d.") % [next, now]
 			"cart_speed":
-				var where: String = [tr("Paves the estate's road in %s."), tr("Lays kerbstones and milestones along the road in %s."), tr("Lays a gravel footpath beside the road in %s.")][mini(level, 2)]
-				about.text = (where % build_time) + " " + tr("The trader's trips take %d s instead of %d s.") % [next, now]
+				var works: String = [tr("Paves the estate's road in %s. The trader's trips take %d s instead of %d s."),
+					tr("Lays kerbstones and milestones along the road in %s. The trader's trips take %d s instead of %d s."),
+					tr("Lays a gravel footpath beside the road in %s. The trader's trips take %d s instead of %d s.")][mini(level, 2)]
+				about.text = works % [build_time, next, now]
 			"channels":
 				about.text = tr("Built in %s. Waters the home farm, so it grows faster.") % build_time

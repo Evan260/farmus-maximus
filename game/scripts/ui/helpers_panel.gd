@@ -35,7 +35,7 @@ func build() -> void:
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var level := int(Game.helpers.get(id, 0))
 		var levels: Array = info.get("costs", [0])
-		var title := "%s, %s" % [info.get("name", id), Ui.mid(tr(String(info.get("role", ""))))]
+		var title := tr("%s the %s") % [info.get("name", id), Ui.mid(tr(String(info.get("role", ""))))]
 		if level > 0 and levels.size() > 1:
 			title += "  " + tr("(level %d)") % level
 		Ui.label(col, title).add_theme_color_override("font_color", UiTheme.HEADING)
@@ -50,7 +50,7 @@ func build() -> void:
 			Ui.label(col, tr(block)).add_theme_color_override("font_color", UiTheme.MUTED)
 		else:
 			var verb := tr("Train") if level > 0 else tr("Hire")
-			_buttons[id] = Ui.button(col, "%s: %s" % [verb, Ui.cost_text({"coins": cost})], func(): Game.hire_helper(id))
+			_buttons[id] = Ui.button(col, tr("%s: %s") % [verb, Ui.cost_text({"coins": cost})], func(): Game.hire_helper(id))
 	var pets := Ui.column(list)
 	Ui.section(pets, tr("The animals of the house"))
 	Ui.para(pets, tr("%s the dog and %s the cat keep the farm company.") % [Game.pet_name("dog"), Game.pet_name("cat")], 240)

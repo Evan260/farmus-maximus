@@ -556,7 +556,7 @@ func _on_discovered(id: String) -> void:
 func _on_festival(id: String) -> void:
 	for f in Data.get_value("calendar.festivals", []):
 		if f["id"] == id:
-			toast("%s! %s" % [tr(String(f["name"])), tr(String(f.get("about", "")))])
+			toast(tr("%s! %s") % [tr(String(f["name"])), tr(String(f.get("about", "")))])
 
 
 func _build_zone_bar() -> void:

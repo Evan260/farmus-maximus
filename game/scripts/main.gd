@@ -704,7 +704,7 @@ func _spawn_helper(id: String) -> void:
 	w.door_y = door.y
 	var info := Game.helper_info(id)
 	w.react_folder = "greet"
-	w.display_name = "%s, %s" % [tr(String(info.get("name", ""))), Ui.mid(tr(String(info.get("role", ""))))]
+	w.display_name = tr("%s the %s") % [tr(String(info.get("name", ""))), Ui.mid(tr(String(info.get("role", ""))))]
 	w.voice = "salve_woman" if id in WOMEN else "salve_man"
 	w.sayings = id
 	var harvests := info.has("zones") or info.has("crops")

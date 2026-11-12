@@ -80,7 +80,8 @@ func build() -> void:
 			var act := Game.building_action(id)
 			if not act.is_empty():
 				Ui.section(body, tr("Upgrade to level %d") % (int(b["level"]) + 2))
-				Ui.para(body, _upgrade_text(levels[int(b["level"])]) + " " + tr("Builders work on it for %s, and it makes nothing meanwhile.") % Ui.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH)
+				Ui.para(body, upgrade_text(levels[int(b["level"])]), WIDTH)
+				Ui.para(body, tr("Builders work on it for %s, and it makes nothing meanwhile.") % Ui.duration(Game.building_upgrade_seconds(id) / Game.build_speed), WIDTH).add_theme_color_override("font_color", UiTheme.MUTED)
 				_next_step(act["cost"], tr("Upgrade"))
 
 
@@ -95,15 +96,27 @@ func _next_step(cost: Dictionary, verb: String) -> HBoxContainer:
 	return row
 
 
-func _upgrade_text(next: Dictionary) -> String:
-	var parts := [tr("Works %s times as fast") % str(next.get("speed", 1))]
-	if int(next.get("batch", 1)) > 1:
-		parts.append(tr("makes %d at a time") % int(next["batch"]))
-	if next.has("queue"):
-		parts.append(tr("holds %d batches") % int(next["queue"]))
-	if int(next.get("quality", 0)) > 0:
-		parts.append(tr("makes better goods"))
-	return ", ".join(parts) + "."
+## What the next level of a workshop brings, as one whole sentence in every language.
+static func upgrade_text(next: Dictionary) -> String:
+	var speed := str(next.get("speed", 1))
+	var batch := int(next.get("batch", 1))
+	var queue := int(next.get("queue", 0))
+	var better := int(next.get("quality", 0)) > 0
+	if batch > 1 and queue > 0:
+		if better:
+			return TranslationServer.translate("Works %s times as fast, makes %d at a time, holds %d batches and makes better goods.") % [speed, batch, queue]
+		return TranslationServer.translate("Works %s times as fast, makes %d at a time and holds %d batches.") % [speed, batch, queue]
+	if batch > 1:
+		if better:
+			return TranslationServer.translate("Works %s times as fast, makes %d at a time and makes better goods.") % [speed, batch]
+		return TranslationServer.translate("Works %s times as fast and makes %d at a time.") % [speed, batch]
+	if queue > 0:
+		if better:
+			return TranslationServer.translate("Works %s times as fast, holds %d batches and makes better goods.") % [speed, queue]
+		return TranslationServer.translate("Works %s times as fast and holds %d batches.") % [speed, queue]
+	if better:
+		return TranslationServer.translate("Works %s times as fast and makes better goods.") % speed
+	return TranslationServer.translate("Works %s times as fast.") % speed
 
 
 func tick() -> void:

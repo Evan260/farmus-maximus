@@ -426,7 +426,7 @@ func _on_picture_input(event: InputEvent) -> void:
 		if spot != "":
 			for s in SPOTS:
 				if s["id"] == spot:
-					_hover_label.text = "%s: %s" % [tr(String(s["name"])), tr(String(s["hint"]))]
+					_hover_label.text = tr("%s: %s") % [tr(String(s["name"])), tr(String(s["hint"]))]
 			_hover_label.position = (event.position + Vector2(8, 10)).min(_ui_root.size - _hover_label.get_minimum_size() - Vector2(2, 2))
 		_ui_root.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if spot != "" else Control.CURSOR_ARROW
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -674,17 +674,23 @@ func _build_orders() -> void:
 			Ui.divider(_list)
 		var o: Dictionary = Game.market.orders[i]
 		var box := Ui.column(_list)
-		Ui.para(box, "%s (%s): \"%s\"" % [tr(String(o["who"])), Ui.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
+		Ui.para(box, tr("%s (%s): \"%s\"") % [tr(String(o["who"])), Ui.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
 		var r := Ui.row(box)
 		Ui.icon(r, String(o["item"]))
-		var reward := tr("Pays %d sestertii") % int(o["coins"])
-		if int(o["aureus"]) > 0:
-			reward += " " + tr("and a gold aureus")
-		if String(o.get("seed", "")) != "":
-			reward += " " + tr("and a rare seed")
-		Ui.label(r, "%s  (%s: %d)" % [reward, tr("you have"), Game.count_item(String(o["item"]))])
+		Ui.label(r, _reward_text(int(o["coins"]), int(o["aureus"]) > 0, String(o.get("seed", "")) != "", Game.count_item(String(o["item"]))))
 		var b := Ui.button(r, tr("Deliver"), func(): _deliver(o))
 		b.disabled = not Game.market.can_deliver(i)
+
+
+## What a request pays and how many of the goods the farm has, as one whole sentence in every language.
+static func _reward_text(coins: int, aureus: bool, seed: bool, have: int) -> String:
+	if aureus and seed:
+		return TranslationServer.translate("Pays %d sestertii, a gold aureus and a rare seed (you have %d)") % [coins, have]
+	if aureus:
+		return TranslationServer.translate("Pays %d sestertii and a gold aureus (you have %d)") % [coins, have]
+	if seed:
+		return TranslationServer.translate("Pays %d sestertii and a rare seed (you have %d)") % [coins, have]
+	return TranslationServer.translate("Pays %d sestertii (you have %d)") % [coins, have]
 
 
 ## Delivers that very order: the ones after it move up the board as soon as one is delivered.
@@ -699,7 +705,7 @@ func _deliver(order: Dictionary) -> void:
 func _build_prices() -> void:
 	var festival: Dictionary = Game.calendar.festival()
 	if not festival.is_empty():
-		Ui.para(_list, "%s: %s" % [tr(String(festival["name"])), tr(String(festival.get("about", "")))], 280)
+		Ui.para(_list, tr("%s: %s") % [tr(String(festival["name"])), tr(String(festival.get("about", "")))], 280)
 	var fav := []
 	for item in Game.market.favourites:
 		fav.append(Ui.mid(tr(String(Data.get_value("items.%s.name" % item, item)))))

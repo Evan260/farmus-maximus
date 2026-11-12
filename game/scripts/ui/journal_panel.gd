@@ -389,8 +389,8 @@ func _describe(id: String) -> String:
 		"crop":
 			var c := Game.crop_info(key)
 			var zone := tr(" and the ").join(Game.crop_zones(key).map(func(z): return Ui.mid(tr(String(Game.zone_info(z).get("name", ""))))))
-			var text := tr("Grows on the %s. Ready after %s") % [zone, Ui.duration(float(c.get("grow_seconds", 60)))]
-			text += (tr(", then again every %s.") % Ui.duration(float(c["regrow_seconds"]))) if c.get("perennial", false) else tr(", then needs replanting.")
+			var grow := Ui.duration(float(c.get("grow_seconds", 60)))
+			var text := tr("Grows on the %s. Ready after %s, then again every %s.") % [zone, grow, Ui.duration(float(c["regrow_seconds"]))] if c.get("perennial", false) 				else tr("Grows on the %s. Ready after %s, then needs replanting.") % [zone, grow]
 			return text + " " + tr("Each harvest gives %d %s.") % [int(c.get("yield", 1)), Ui.item_words(String(c.get("item", key)), int(c.get("yield", 1)))]
 		"item":
 			var lines := [tr("Worth about %d sestertii at market.") % int(Game.base_price(key))]

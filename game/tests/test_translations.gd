@@ -163,3 +163,27 @@ func test_fonts_have_every_letter() -> void:
 			if c != " " and not _draws(UiTheme.ui_font(loc), c.unicode_at(0)) and not str(missing.get(loc, "")).contains(c):
 				missing[loc] = str(missing.get(loc, "")) + c
 	check(missing.is_empty(), "every language's font draws all its letters (missing %s)" % str(missing))
+
+
+func test_composed_sentences_are_whole_in_every_language() -> void:
+	var data: Node = root.get_node("Data")
+	var panel := load("res://scripts/ui/building_panel.gd")
+	var market := load("res://scripts/ui/market_view.gd")
+	var locale := TranslationServer.get_locale()
+	var levels := []
+	for id in data.get_value("buildings", {}):
+		levels.append_array(data.get_value("buildings.%s.levels" % id, []))
+	var english := {}
+	for level in levels:
+		english[panel.upgrade_text(level)] = true
+	var rewards_now := func() -> Array: return [[false, false], [true, false], [false, true], [true, true]].map(func(c): return market._reward_text(40, c[0], c[1], 2))
+	var rewards: Array = rewards_now.call()
+	for lang in ["fr", "ja", "zh_CN"]:
+		TranslationServer.set_locale(lang)
+		var untranslated := levels.filter(func(level): return english.has(panel.upgrade_text(level)))
+		check(untranslated.is_empty(), "every workshop upgrade reads as one translated sentence in %s" % lang)
+		var translated: Array = rewards_now.call()
+		for k in rewards.size():
+			var text: String = translated[k]
+			check(text != rewards[k] and "40" in text and "2" in text, "a market request's reward reads as one translated sentence in %s (%s)" % [lang, text])
+	TranslationServer.set_locale(locale)
