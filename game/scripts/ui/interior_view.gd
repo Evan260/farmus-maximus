@@ -13,12 +13,9 @@ const FLAME := preload("res://assets/shaders/flame.gdshader")
 ## The doorway's opening in the painting, and the pixel of the estate's far scenery at its top left corner: the
 ## estate's own mountains, hills and sky show through it, a pixel of theirs to each of the room's.
 const DOOR := Rect2(366, 20, 64, 112)
-const VIEW_FROM := Vector2(400, 124)
+const VIEW_FROM := Vector2(400, 118)
 const FAR := "res://assets/backgrounds/estate/"
-## How far the room's pictures carry on past the painting on each side and above it, in the painting's pixels.
-const SIDE := 84.0
-const ABOVE := 90.0
-## Past the room's pictures, on a window wider or taller still, the walls fade into this shadow over FADE pixels.
+## Where the window shows more than the painting, its walls fade into this shadow over FADE pixels.
 const DARK := Color(0.09, 0.05, 0.04)
 const FADE := 24.0
 ## The loom, and where its working parts are on the room's half-detail grid: the warp threads run from WARP_LEFT to
@@ -131,7 +128,6 @@ func _ready() -> void:
 	_base = Sprite2D.new()
 	_base.centered = false
 	_base.scale = Vector2(DETAIL, DETAIL)
-	_base.position = -Vector2(SIDE, ABOVE)
 	_scene.add_child(_base)
 	for id in Data.get_value("interior.furnishings", {}):
 		if not _spots.has(id) or not ResourceLoader.exists(DIR + id + ".png"):
@@ -153,12 +149,12 @@ func _ready() -> void:
 	_loom.draw.connect(_draw_loom)
 	_scene.add_child(_loom)
 	# A soft shadow keeps each pet from melting into the rug or the cushions it lies on.
-	_dog_shadow = _shadow(Vector2(102, 244), 80, 14)
+	_dog_shadow = _shadow(Vector2(211, 239), 80, 14)
 	_dog = AnimatedSprite2D.new()
 	_dog.centered = false
 	_dog.scale = Vector2(DETAIL, DETAIL)
 	_scene.add_child(_dog)
-	_cat_shadow = _shadow(Vector2(280, 115), 40, 9)
+	_cat_shadow = _shadow(Vector2(264, 115), 40, 9)
 	_cat = AnimatedSprite2D.new()
 	_cat.centered = false
 	_cat.scale = Vector2(DETAIL, DETAIL)
@@ -257,13 +253,15 @@ func _build_ui() -> void:
 ## more of the room's walls, floor and ceiling, which its pictures carry on past the painting.
 func _fit() -> void:
 	var view := get_viewport().get_visible_rect().size
-	var shown := Windowing.scale * DETAIL
+	var shown := room_scale(view) * DETAIL
 	var canvas := (view / shown).ceil()
 	_viewport.size = Vector2i(canvas)
-	# Spare width is shared between the sides; spare height all goes above, since the painting's bottom edge cuts
-	# through the plants and the rug and must stay on the bottom of the screen.
-	var extra := (canvas * DETAIL - Vector2(480, 270)).max(Vector2.ZERO)
-	_origin = Vector2(floorf(extra.x / 2.0 / DETAIL) * DETAIL, extra.y)
+	# Spare or cropped width is shared between the sides; spare height all goes above, since the painting's bottom edge
+	# cuts through the plants and must stay on the bottom of the screen.
+	var extra := canvas * DETAIL - Vector2(480, 270)
+	# A cropped height loses two parts from the ceiling to one from the floor, so the shelves and the rug both stay.
+	var top := extra.y if extra.y >= 0.0 else roundf(extra.y * 2.0 / 3.0 / DETAIL) * DETAIL
+	_origin = Vector2(floorf(extra.x / 2.0 / DETAIL) * DETAIL, top)
 	var place := Transform2D(0.0, Vector2.ONE / DETAIL, 0.0, _origin / DETAIL)
 	_viewport.canvas_transform = place
 	for l in [_sky_layer, _glow_layer]:
@@ -279,10 +277,19 @@ func _fit() -> void:
 	_panel.position = Vector2(_ui_root.size.x - 240, 30)
 
 
-## Where the window shows more than the room's pictures hold, the walls fade a pixel at a time into shadow.
+## Window pixels to the painting's pixel: the whole number that fills the window when that crops at most an eighth
+## off each side and an eighth of the height, as a screen near 16:9 needs, or else the largest that shows it all.
+static func room_scale(view: Vector2) -> int:
+	var fits := maxi(1, int(minf(view.x / 480.0, view.y / 270.0)))
+	var covers := int(ceilf(maxf(view.x / 480.0, view.y / 270.0)))
+	var crop := Vector2.ONE - view / (Vector2(480, 270) * covers)
+	return covers if crop.x <= 0.25 and crop.y <= 0.125 else fits
+
+
+## Where the window shows more than the painting, the walls fade a pixel at a time into shadow.
 func _draw_edges() -> void:
 	var shown := Rect2(-_origin, Vector2(480, 270) + Vector2(_origin.x * 2.0, _origin.y))
-	var art := Rect2(-SIDE, -ABOVE, 480 + SIDE * 2.0, 270 + ABOVE)
+	var art := Rect2(0, 0, 480, 270)
 	if art.encloses(shown):
 		return
 	var steps := int(FADE / DETAIL)
@@ -357,7 +364,7 @@ func _dress_room() -> void:
 		_dog_offsets[anim] = Frames.anchor(f.get_frame_texture(anim, 0))
 	_dog.sprite_frames = f
 	_dog_play("sleep")
-	_dog.position = Vector2(102, 246)
+	_dog.position = Vector2(211, 241)
 	var cat: Dictionary = Game.pets.get("cat", {})
 	var cat_dir := Coats.breed_dir("cat", String(cat.get("breed", "")))
 	var cf := SpriteFrames.new()
@@ -370,7 +377,7 @@ func _dress_room() -> void:
 		_cat.animation = "sleep"
 		_cat.frame = count - 1
 		_cat.offset = Frames.anchor(cf.get_frame_texture("sleep", count - 1))
-	_cat.position = Vector2(280, 118)
+	_cat.position = Vector2(264, 118)
 	_fit()
 
 

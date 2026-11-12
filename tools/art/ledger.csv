@@ -360,3 +360,6 @@ time,kind,name,cost_usd,cost_generations,usd_left
 2026-11-11T11:33:06,inpaint,tools\art\sources\interior\steps\plants_wide.png,0.0793,0,8.8800
 2026-11-11T11:35:45,inpaint,tools\art\sources\interior\steps\without_beam.png,0.0271,0,8.8529
 2026-11-11T21:59:47,inpaint,tools\art\sources\interior\steps\wide.png,0.1177,0,3.4988
+2026-11-11T23:15:43,inpaint,tools\art\sources\interior\steps\floor_crop_done.png,0.0839,0,3.3696
+2026-11-11T23:17:30,inpaint,tools\art\sources\interior\steps\floor_crop_done.png,0.0844,0,3.2852
+2026-11-11T23:19:01,inpaint,tools\art\sources\interior\steps\floor_crop_done.png,0.0867,0,3.1985
