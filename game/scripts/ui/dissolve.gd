@@ -6,7 +6,8 @@ const SHADER := preload("res://assets/shaders/dissolve.gdshader")
 
 ## Calls change to swap the screens, then dissolves a picture of how things looked before it away.
 static func play(host: Node, change: Callable, seconds := 0.6) -> void:
-	if Settings.reduced_motion:
+	# A headless run draws nothing, so it has no picture of the old screen to dissolve.
+	if Settings.reduced_motion or DisplayServer.get_name() == "headless":
 		change.call()
 		return
 	var shot := ImageTexture.create_from_image(host.get_viewport().get_texture().get_image())

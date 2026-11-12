@@ -21,3 +21,13 @@ func test_building_and_resizing_write_no_warnings() -> void:
 	main.queue_free()
 	await process_frame
 
+
+func test_screen_changes_write_no_errors_when_headless() -> void:
+	var settings: Node = root.get_node("Settings")
+	var motion: bool = settings.reduced_motion
+	settings.reduced_motion = false
+	var changed := [false]
+	Dissolve.play(root, func(): changed[0] = true)
+	check(changed[0], "the screen still changes when there is no picture of it to dissolve")
+	settings.reduced_motion = motion
+	await process_frame
