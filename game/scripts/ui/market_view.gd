@@ -674,7 +674,7 @@ func _build_orders() -> void:
 			Ui.divider(_list)
 		var o: Dictionary = Game.market.orders[i]
 		var box := Ui.column(_list)
-		Ui.para(box, "%s (%s): \"%s\"" % [o["who"], Ui.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
+		Ui.para(box, "%s (%s): \"%s\"" % [tr(String(o["who"])), Ui.mid(tr(String(o["role"]))), tr(String(o["text"]))], 280)
 		var r := Ui.row(box)
 		Ui.icon(r, String(o["item"]))
 		var reward := tr("Pays %d sestertii") % int(o["coins"])

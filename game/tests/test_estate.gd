@@ -190,3 +190,26 @@ func test_market_places_cut_off_by_the_window_get_buttons() -> void:
 	market._fit()
 	main.queue_free()
 	await process_frame
+
+
+func test_market_requests_name_the_townsfolk_in_the_players_language() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	var locale := TranslationServer.get_locale()
+	TranslationServer.set_locale("ru")
+	game.market.orders = [{"who": "Septimus", "role": "baker", "item": "lavender", "amount": 2, "coins": 10, "aureus": 0, "seed": "", "text": "2"}]
+	var market: CanvasLayer = main.market
+	Ui.clear(market._list)
+	market._build_orders()
+	var said: Array = market._list.find_children("*", "Label", true, false).map(func(l: Label) -> String: return l.text)
+	TranslationServer.set_locale(locale)
+	check(said.any(func(t: String) -> bool: return "Септимий" in t), "a request names who asks in the player's language (%s)" % " | ".join(said))
+	main.queue_free()
+	await process_frame
