@@ -55,9 +55,13 @@ rendered by python tools/trailer/make_trailer.py, which writes the .avi and then
 Before uploading, confirm with the composer of the harp music (Mythago Music) that it may be used in a trailer.
 
 
+DEVELOPER AND PUBLISHER (Basic Info)
+
+Slow Villa Games, in both the Developer and the Publisher fields.
+
+
 STILL TO DECIDE BEFORE SUBMITTING
 
-- Developer and publisher name (your own name or a studio name).
 - Release date: "Coming soon", or a season and year such as "Spring 2027".
 - Price, which Steamworks asks for separately and which Valve reviews.
 - Steam Cloud, achievements and the demo are set up as described in docs/Steam-setup.md.
