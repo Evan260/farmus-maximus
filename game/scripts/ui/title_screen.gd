@@ -7,6 +7,8 @@ signal closed
 const FarmsPanel := preload("res://scripts/ui/farms_panel.gd")
 const LOGO := Color(0.99, 0.95, 0.86)
 const LOGO_SHADOW := Color(0.29, 0.18, 0.14)
+## The gold of the logo's laurel, for the word Demo under the name.
+const DEMO := Color(0.98, 0.83, 0.43)
 
 ## Supplied by the HUD: opens one of its windows, such as the settings, over the title.
 var open_window: Callable
@@ -42,6 +44,20 @@ func _ready() -> void:
 	logo.add_theme_constant_override("outline_size", 8)
 	logo.add_theme_color_override("font_outline_color", LOGO_SHADOW)
 	col.add_child(logo)
+	if Game.is_demo():
+		var demo := Label.new()
+		demo.name = "DemoLabel"
+		demo.text = tr("Demo").to_upper()
+		demo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		demo.add_theme_font_override("font", UiTheme.FONT)
+		demo.add_theme_font_size_override("font_size", 24)
+		demo.add_theme_color_override("font_color", DEMO)
+		demo.add_theme_color_override("font_shadow_color", LOGO_SHADOW)
+		demo.add_theme_constant_override("shadow_offset_x", 0)
+		demo.add_theme_constant_override("shadow_offset_y", 2)
+		demo.add_theme_constant_override("outline_size", 6)
+		demo.add_theme_color_override("font_outline_color", LOGO_SHADOW)
+		col.add_child(demo)
 	var tagline := Ui.label(col, tr("A Roman farm, slowly brought back to life"), true)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card = PanelContainer.new()
@@ -86,6 +102,7 @@ func _show_menu() -> void:
 	if Saves.any_farm():
 		Ui.button(_menu, tr("Farms"), _open_farms)
 	Ui.button(_menu, tr("Settings"), func(): open_window.call("settings"))
+	Ui.wishlist_button(_menu)
 	# Quitting here does what closing the window does: the farm is saved and the window remembers its monitor.
 	Ui.button(_menu, tr("Quit"), func(): get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST); get_tree().quit())
 

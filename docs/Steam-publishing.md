@@ -42,7 +42,7 @@ These steps need you, because they involve your Steam account, payment and tax d
 8. **Fill in the numbers.** Put the account name and the numbers into `tools/steam/steam.json`:
    - `account`: the Steam account that uploads builds. Valve recommends a separate Steam account that has only the permission to upload builds, so your own account is never used by a script.
    - `targets.playtest`: the Playtest's App ID and its depots (`windows`, and `macos` and `linux` if it has them).
-   - `targets.game`: the main game's App ID and its three depots.
+   - `targets.game`: the main game's App ID and its three depots. Put the same App ID in `demo.full_game_app_id` in `game/data/balance.json`: the demo's "Wishlist on Steam" buttons open that store page, and stay hidden while it is 0. The tests fail if the two differ.
 9. **Log in to steamcmd once.** In PowerShell, run:
 
    ```

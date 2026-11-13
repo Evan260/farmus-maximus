@@ -39,6 +39,15 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
+## The demo's button to the full game's store page, or null outside the demo and while the game has no app id yet.
+static func wishlist_button(parent: Node) -> Button:
+	if not Game.is_demo() or Awards.full_game_app_id() == 0:
+		return null
+	var b := button(parent, TranslationServer.translate("Wishlist on Steam"), func(): Awards.open_store())
+	b.name = "WishlistButton"
+	return b
+
+
 ## Gives a control a tip shown when the pointer rests on it, drawn by the Tips autoload at the interface's scale.
 static func tip_on(c: Control, text: String) -> Control:
 	c.set_meta("tip", text)

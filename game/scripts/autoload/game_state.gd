@@ -120,6 +120,7 @@ var _upgrade_data: Dictionary = Data.get_value("upgrades", {})
 
 
 func _ready() -> void:
+	acts_as_demo = Dev.has("as-demo")
 	new_game()
 	# The seconds spent building a new scene are not time away.
 	get_tree().scene_changed.connect(func() -> void: _last_wall = 0.0)

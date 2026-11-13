@@ -42,6 +42,20 @@ func _unlock_on_steam(id: String) -> void:
 		_steam.call("storeStats")
 
 
+## The full game's Steam app id, which the demo's wishlist buttons open; 0, which hides them, until Steamworks gives it.
+func full_game_app_id() -> int:
+	return int(Dev.get_arg("app-id", str(Data.get_value("demo.full_game_app_id", 0))))
+
+
+## The full game's store page: in the Steam client when Steam is running, otherwise on the Steam website.
+func store_url() -> String:
+	return ("steam://store/%d" if _steam else "https://store.steampowered.com/app/%d/") % full_game_app_id()
+
+
+func open_store() -> void:
+	OS.shell_open(store_url())
+
+
 ## Flashes the taskbar button when something happens while the player is in another window.
 func alert() -> void:
 	if Settings.notifications and not get_window().has_focus():

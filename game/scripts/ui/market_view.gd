@@ -760,7 +760,10 @@ func _owned_text(entry: Dictionary) -> String:
 ## The temple's land registry: a deed for every part of the estate, sealed for the land that is already the family's.
 func _build_land() -> void:
 	var owned := Game.zones().filter(func(z): return Game.zone_owned(String(z["id"]))).size()
-	Ui.label(_list, tr("Your land: %d of %d") % [owned, Game.zones().size()])
+	var head := Ui.row(_list)
+	Ui.label(head, tr("Your land: %d of %d") % [owned, Game.zones().size()]).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if Game.zones().any(func(z): return _deed_state(String(z["id"])) == "full"):
+		Ui.wishlist_button(head)
 	# Three deeds to a row, with a shorter last row centred under the others.
 	var grid := HFlowContainer.new()
 	grid.alignment = FlowContainer.ALIGNMENT_CENTER

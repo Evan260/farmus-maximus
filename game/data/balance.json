@@ -2555,6 +2555,7 @@
 		]
 	},
 	"demo": {
+		"full_game_app_id": 0,
 		"max_villa": 3,
 		"zones": [
 			"grove",

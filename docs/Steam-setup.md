@@ -92,4 +92,5 @@ In Steamworks, the demo is an app of its own, linked to the main game:
    - `Farmus Maximus.app`, macOS (Godot names the Mac app after the project, so the demo's app keeps the full game's name)
    - `Farmus Maximus Demo.x86_64`, Linux + SteamOS
 3. Put its App ID and depots into `targets.demo` in `tools/steam/steam.json`.
+   The demo's title screen says "Demo" under the name and has a "Wishlist on Steam" button, as do the farmhouse window once the villa reaches the demo's last stage and the temple's land deeds. Each opens the full game's store page, in the Steam client when Steam is running and on the Steam website otherwise. They appear once the full game's App ID is in `demo.full_game_app_id` in `game/data/balance.json`.
 4. Upload it with `python tools/steam/publish.py demo`. As with the main game, the build goes live on `testing`, and you set it live on the default branch in Steamworks when the demo is ready to release.

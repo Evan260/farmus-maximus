@@ -263,6 +263,8 @@ func _build_villa() -> void:
 	if Game.villa_build["active"]:
 		_bar = Ui.progress(body)
 		return
+	if Game.demo_capped_villa():
+		Ui.wishlist_button(body)
 	if Game.villa_stage >= stages.size() or Game.demo_capped_villa():
 		return
 	var next: Dictionary = stages[Game.villa_stage]
