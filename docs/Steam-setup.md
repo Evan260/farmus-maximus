@@ -63,7 +63,20 @@ Each achievement also needs two 64 by 64 icons in Steamworks: one for when it is
 | `homely` | A home again | Furnish every corner of the farmhouse |
 | `triumph` | Triumph | Earn every other achievement. Rome honours you with a triumph and a golden laurel wreath for the villa door |
 
-## 3. Steam Cloud
+## 3. Rich presence
+
+Steam friends see what the player is doing, for example "Farmus Maximus: Villa rustica, day 42", "In the market town", "Inside the farmhouse" or "In the menu". `awards.gd` looks every two seconds and tells Steam only the keys that changed, and only when Steam is running: `steam_display` is one of the tokens `#Estate`, `#Town`, `#Inside` or `#Title`, and `#Estate` fills in `stage` (the villa's stage, 1 to 7) and `day` (the farm's day, as the top bar shows it).
+
+Steam needs the words for those tokens in every language:
+
+1. Run `python tools/steam/make_rich_presence.py`. It writes `tools/steam/rich_presence.vdf`, with the four statuses in all 14 languages under Steam's language names and the villa's stage names taken from the game's own translations. Run it again whenever a villa stage is renamed or a status changes.
+2. In Steamworks, open the game's App Admin page, then Community, Rich Presence.
+3. Upload `rich_presence.vdf`. Steamworks shows every token it read for each language, which is a quick check that the file is in order.
+4. Do the same on the demo's Steamworks page, so demo players show up the same way, and on the Playtest's if testers should.
+
+To see it working, run the game through Steam and look at the player in a friend's Friends list, or at the player's own profile.
+
+## 4. Steam Cloud
 
 Use Auto-Cloud; the game needs no code for it. Each farm slot is saved as `farm_1.json`, `farm_2.json` and `farm_3.json`, each with up to three rolling backups (`farm_1.json.bak1` and so on), and `farms.json` remembers which farm was played last. Add two root paths per platform, one for the saves and one for their backups:
 
@@ -80,7 +93,7 @@ Use Auto-Cloud; the game needs no code for it. Each farm slot is saved as `farm_
 
 `settings.cfg` holds the per-computer settings (key bindings, volume, where the strip sits), so it stays out of the cloud, as do the older `prefs.json`, `settings.json` and `window.json` it was made from.
 
-## 4. Demo
+## 5. Demo
 
 The demo is the same project exported with the `demo` export presets in `game/export_presets.cfg`. It stops at the villa rustica and the first two zones. Its save sits in the same folder as the full game's, so progress carries over on the same computer.
 

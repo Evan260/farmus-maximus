@@ -53,3 +53,48 @@ func test_the_wishlist_app_id_matches_the_steam_settings() -> void:
 	if steam is Dictionary:
 		var game_id := int(steam["targets"]["game"]["app_id"])
 		check(game_id == int(Data.get_value("demo.full_game_app_id", -1)), "demo.full_game_app_id in balance.json is the game's app id in steam.json")
+
+
+func test_rich_presence_tells_steam_only_what_changed() -> void:
+	Game.new_game()
+	Game.villa_stage = 3
+	Game.calendar.day = 41
+	var awards: Node = root.get_node("Awards")
+	check(awards.presence() == {"stage": "3", "day": "42", "steam_display": "#Estate"}, "on the estate friends see the villa's stage and the day")
+	awards.update_presence()
+	check(awards._presence.is_empty(), "nothing is sent while Steam is not running")
+	var steam := FakeSteam.new()
+	awards._steam = steam
+	awards.update_presence()
+	awards.update_presence()
+	check(steam.sent.size() == 3, "each key is sent once while it stays the same")
+	Game.calendar.day = 42
+	awards.update_presence()
+	check(steam.sent.size() == 4 and steam.sent[3] == ["day", "43"], "a new day sends only the day")
+	awards._steam = null
+	awards._presence = {}
+	Game.new_game()
+
+
+## Every status the game shows is in the rich presence file Steamworks is given, in all fourteen languages.
+func test_the_rich_presence_file_has_every_token() -> void:
+	var path := ProjectSettings.globalize_path("res://").path_join("../tools/steam/rich_presence.vdf")
+	var text := FileAccess.get_file_as_string(path)
+	for language in ["english", "french", "german", "spanish", "italian", "brazilian", "polish", "turkish", "russian",
+			"ukrainian", "japanese", "koreana", "schinese", "tchinese"]:
+		var start := text.find("\"%s\"" % language)
+		check(start >= 0, "rich_presence.vdf has %s" % language)
+		var end := text.find("\n\t}", start)
+		var block := text.substr(start, end - start)
+		for token in ["#Estate", "#Town", "#Inside", "#Title"]:
+			check(block.contains("\"%s\"" % token), "%s has %s" % [language, token])
+		for n in Game.villa_stages().size():
+			check(block.contains("\"#Villa_%d\"" % (n + 1)), "%s names villa stage %d" % [language, n + 1])
+
+
+class FakeSteam:
+	var sent: Array = []
+
+	func setRichPresence(key: String, value: String) -> bool:
+		sent.append([key, value])
+		return true

@@ -1,0 +1,258 @@
+"lang"
+{
+	"english"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, day %day%"
+			"#Town"	"In the market town"
+			"#Inside"	"Inside the farmhouse"
+			"#Title"	"In the menu"
+			"#Villa_1"	"Ruined farmhouse"
+			"#Villa_2"	"Restored farmhouse"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Villa with portico"
+			"#Villa_5"	"Villa with peristyle garden"
+			"#Villa_6"	"Bathhouse wing"
+			"#Villa_7"	"Grand estate"
+		}
+	}
+	"french"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, jour %day%"
+			"#Town"	"Dans la ville du marché"
+			"#Inside"	"Dans la ferme"
+			"#Title"	"Dans le menu"
+			"#Villa_1"	"Ferme en ruine"
+			"#Villa_2"	"Ferme restaurée"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Villa à portique"
+			"#Villa_5"	"Villa à péristyle"
+			"#Villa_6"	"Aile des thermes"
+			"#Villa_7"	"Grand domaine"
+		}
+	}
+	"german"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, Tag %day%"
+			"#Town"	"In der Marktstadt"
+			"#Inside"	"Im Bauernhaus"
+			"#Title"	"Im Hauptmenü"
+			"#Villa_1"	"Verfallenes Bauernhaus"
+			"#Villa_2"	"Restauriertes Bauernhaus"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Villa mit Portikus"
+			"#Villa_5"	"Villa mit Peristylgarten"
+			"#Villa_6"	"Badehausflügel"
+			"#Villa_7"	"Prächtiges Anwesen"
+		}
+	}
+	"spanish"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, día %day%"
+			"#Town"	"En el mercado del pueblo"
+			"#Inside"	"Dentro de la casa de campo"
+			"#Title"	"En el menú"
+			"#Villa_1"	"Casa de campo en ruinas"
+			"#Villa_2"	"Casa de campo restaurada"
+			"#Villa_3"	"Villa rústica"
+			"#Villa_4"	"Villa con pórtico"
+			"#Villa_5"	"Villa con jardín de peristilo"
+			"#Villa_6"	"Ala de baños"
+			"#Villa_7"	"Gran finca"
+		}
+	}
+	"latam"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, día %day%"
+			"#Town"	"En el mercado del pueblo"
+			"#Inside"	"Dentro de la casa de campo"
+			"#Title"	"En el menú"
+			"#Villa_1"	"Casa de campo en ruinas"
+			"#Villa_2"	"Casa de campo restaurada"
+			"#Villa_3"	"Villa rústica"
+			"#Villa_4"	"Villa con pórtico"
+			"#Villa_5"	"Villa con jardín de peristilo"
+			"#Villa_6"	"Ala de baños"
+			"#Villa_7"	"Gran finca"
+		}
+	}
+	"italian"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, giorno %day%"
+			"#Town"	"Nella città di mercato"
+			"#Inside"	"Nella casa colonica"
+			"#Title"	"Nel menu"
+			"#Villa_1"	"Casa colonica in rovina"
+			"#Villa_2"	"Casa colonica restaurata"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Villa con portico"
+			"#Villa_5"	"Villa con giardino a peristilio"
+			"#Villa_6"	"Ala delle terme"
+			"#Villa_7"	"Grande tenuta"
+		}
+	}
+	"brazilian"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, dia %day%"
+			"#Town"	"Na cidade do mercado"
+			"#Inside"	"Dentro da casa da fazenda"
+			"#Title"	"No menu"
+			"#Villa_1"	"Casa da fazenda em ruínas"
+			"#Villa_2"	"Casa da fazenda restaurada"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Villa com pórtico"
+			"#Villa_5"	"Villa com jardim de peristilo"
+			"#Villa_6"	"Ala das termas"
+			"#Villa_7"	"Grande propriedade"
+		}
+	}
+	"polish"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, dzień %day%"
+			"#Town"	"W miasteczku targowym"
+			"#Inside"	"W domu"
+			"#Title"	"W menu"
+			"#Villa_1"	"Zrujnowany dom"
+			"#Villa_2"	"Odnowiony dom"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Willa z portykiem"
+			"#Villa_5"	"Willa z ogrodem perystylowym"
+			"#Villa_6"	"Skrzydło łaźni"
+			"#Villa_7"	"Wielka posiadłość"
+		}
+	}
+	"turkish"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, %day%. gün"
+			"#Town"	"Pazar kasabasında"
+			"#Inside"	"Çiftlik evinde"
+			"#Title"	"Menüde"
+			"#Villa_1"	"Harap çiftlik evi"
+			"#Villa_2"	"Restore edilmiş çiftlik evi"
+			"#Villa_3"	"Villa rustica"
+			"#Villa_4"	"Revaklı villa"
+			"#Villa_5"	"Peristil bahçeli villa"
+			"#Villa_6"	"Hamam kanadı"
+			"#Villa_7"	"Büyük malikane"
+		}
+	}
+	"russian"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, день %day%"
+			"#Town"	"В рыночном городке"
+			"#Inside"	"В фермерском доме"
+			"#Title"	"В меню"
+			"#Villa_1"	"Разрушенный фермерский дом"
+			"#Villa_2"	"Восстановленный фермерский дом"
+			"#Villa_3"	"Вилла рустика"
+			"#Villa_4"	"Вилла с портиком"
+			"#Villa_5"	"Вилла с садом-перистилем"
+			"#Villa_6"	"Банное крыло"
+			"#Villa_7"	"Большое поместье"
+		}
+	}
+	"ukrainian"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, день %day%"
+			"#Town"	"У ринковому містечку"
+			"#Inside"	"У фермерському будинку"
+			"#Title"	"У меню"
+			"#Villa_1"	"Зруйнований фермерський будинок"
+			"#Villa_2"	"Відновлений фермерський будинок"
+			"#Villa_3"	"Вілла рустика"
+			"#Villa_4"	"Вілла з портиком"
+			"#Villa_5"	"Вілла із садом-перистилем"
+			"#Villa_6"	"Крило з лазнею"
+			"#Villa_7"	"Великий маєток"
+		}
+	}
+	"japanese"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}、%day%日目"
+			"#Town"	"市場の町にいます"
+			"#Inside"	"農家の中"
+			"#Title"	"メニュー画面"
+			"#Villa_1"	"荒れ果てた農家"
+			"#Villa_2"	"修復した農家"
+			"#Villa_3"	"ヴィラ・ルスティカ"
+			"#Villa_4"	"柱廊のあるヴィラ"
+			"#Villa_5"	"列柱庭園のあるヴィラ"
+			"#Villa_6"	"浴場棟"
+			"#Villa_7"	"大邸宅"
+		}
+	}
+	"koreana"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}, %day%일차"
+			"#Town"	"시장 마을에서"
+			"#Inside"	"농가 안에서"
+			"#Title"	"메뉴 화면"
+			"#Villa_1"	"폐허가 된 농가"
+			"#Villa_2"	"복원된 농가"
+			"#Villa_3"	"빌라 루스티카"
+			"#Villa_4"	"주랑 저택"
+			"#Villa_5"	"열주 정원 저택"
+			"#Villa_6"	"목욕탕 별채"
+			"#Villa_7"	"대저택"
+		}
+	}
+	"schinese"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}，第%day%天"
+			"#Town"	"在集镇"
+			"#Inside"	"在农舍里"
+			"#Title"	"在菜单中"
+			"#Villa_1"	"破败的农舍"
+			"#Villa_2"	"修复的农舍"
+			"#Villa_3"	"乡村别墅"
+			"#Villa_4"	"柱廊别墅"
+			"#Villa_5"	"列柱花园别墅"
+			"#Villa_6"	"浴场翼楼"
+			"#Villa_7"	"宏伟庄园"
+		}
+	}
+	"tchinese"
+	{
+		"tokens"
+		{
+			"#Estate"	"{#Villa_%stage%}，第%day%天"
+			"#Town"	"在市集小鎮"
+			"#Inside"	"在農舍裡"
+			"#Title"	"在選單中"
+			"#Villa_1"	"荒廢的農舍"
+			"#Villa_2"	"修復後的農舍"
+			"#Villa_3"	"鄉村別墅"
+			"#Villa_4"	"柱廊別墅"
+			"#Villa_5"	"列柱中庭別墅"
+			"#Villa_6"	"浴場側翼"
+			"#Villa_7"	"宏偉莊園"
+		}
+	}
+}

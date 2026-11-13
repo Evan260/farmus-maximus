@@ -1,7 +1,14 @@
 extends Node
-## The link to the store and the desktop: Steam achievements when the game runs through Steam, and taskbar alerts.
+## The link to the store and the desktop: Steam achievements and rich presence when the game runs through Steam, the
+## demo's store page, and taskbar alerts.
+
+## How often, in seconds, the rich presence is looked at; Steam is only told when it has changed.
+const PRESENCE_EVERY := 2.0
 
 var _steam: Object = null
+## The rich presence keys last sent to Steam.
+var _presence := {}
+var _presence_wait := 0.0
 
 
 func _ready() -> void:
@@ -20,9 +27,38 @@ func _ready() -> void:
 	sync_achievements.call_deferred()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _steam:
 		_steam.call("run_callbacks")
+		_presence_wait -= delta
+		if _presence_wait <= 0.0:
+			_presence_wait = PRESENCE_EVERY
+			update_presence()
+
+
+## What a Steam friend sees the player doing, as tokens of tools/steam/rich_presence.vdf and the values they fill in.
+func presence() -> Dictionary:
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.title_open():
+		return {"steam_display": "#Title"}
+	if is_instance_valid(Dev.m) and Dev.m.market.visible:
+		return {"steam_display": "#Town"}
+	if is_instance_valid(Dev.m) and Dev.m.interior.visible:
+		return {"steam_display": "#Inside"}
+	# The values come before steam_display, which Steam shows as soon as it is set.
+	return {"stage": str(clampi(Game.villa_stage, 1, Game.villa_stages().size())), "day": str(Game.calendar.day + 1),
+		"steam_display": "#Estate"}
+
+
+## Sends Steam only the rich presence keys that changed since the last time.
+func update_presence() -> void:
+	if not _steam:
+		return
+	var now := presence()
+	for key in now:
+		if _presence.get(key) != now[key]:
+			_steam.call("setRichPresence", key, now[key])
+	_presence = now
 
 
 ## Sends every achievement in the save to Steam, so ones earned offline or before Steam was available still count.
