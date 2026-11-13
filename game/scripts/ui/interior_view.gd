@@ -87,6 +87,8 @@ var _ui_root: Control
 var _outside: Button
 var _furnish: Button
 var _purse: Label
+## The buttons and the purse along the top, which the furnishing window moves below when they reach under it.
+var _top_row: HBoxContainer
 var _comfort: Label
 var _hover_label: Label
 var _panel: PanelContainer
@@ -229,6 +231,7 @@ func _build_ui() -> void:
 	_ui_layer.add_child(_ui_root)
 	var top := Ui.row(_ui_root)
 	top.position = Vector2(4, 4)
+	_top_row = top
 	_outside = Ui.button(top, tr("Back outside"), leave)
 	_furnish = Ui.button(top, tr("Furnish"), func(): _open(""))
 	for b in [_outside, _furnish]:
@@ -282,7 +285,13 @@ func _fit(view := Vector2.ZERO) -> void:
 	_sky.position = DOOR.position - VIEW_FROM * DETAIL
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
-	_panel.position = Vector2(_ui_root.size.x - 240, 30)
+	_place_panel()
+
+
+func _place_panel() -> void:
+	var top_end := _top_row.position + _top_row.get_combined_minimum_size()
+	var left := _ui_root.size.x - 240
+	_panel.position = Vector2(left, 30 if top_end.x + 4 <= left else top_end.y + 4)
 
 
 ## Window pixels to the painting's pixel: enough to fill the window when that crops at most an eighth off each side
@@ -779,6 +788,7 @@ func _refresh() -> void:
 	_purse.text = tr("Sestertii %d") % Game.coins
 	var bonus := roundi((Game.comfort_factor() - 1.0) * 100.0)
 	_comfort.text = tr("Comfort %d: helpers work %d%% faster") % [Game.furnishings.size(), bonus] if bonus > 0 else tr("An empty house: nothing to make it a home yet")
+	_place_panel()
 	if not _panel.visible:
 		return
 	var sig := "%s|%d|%s|%d" % [_selected, Game.coins, JSON.stringify(Game.furnishings), Game.villa_stage]

@@ -38,7 +38,12 @@ func build() -> void:
 			mark.custom_minimum_size = Vector2(56, 0)
 			continue
 		var note := tr("for building, takes no room") if kind == "material" else tr("for the fields")
-		Ui.label(r, note).add_theme_color_override("font_color", UiTheme.MUTED)
+		# A long name and note in some languages share the line, the note wrapping onto a second line.
+		var noted := Ui.label(r, note)
+		noted.add_theme_color_override("font_color", UiTheme.MUTED)
+		noted.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		noted.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		noted.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if keys.is_empty():
 		Ui.label(list, tr("Empty"))
 	var cost := Game.upgrade_cost("storage")

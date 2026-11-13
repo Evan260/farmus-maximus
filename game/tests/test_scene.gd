@@ -73,7 +73,7 @@ func test_scene() -> void:
 		var r: Rect2 = s.world_rect()
 		# The ground strip's top edge wanders between rows 229 and 235.
 		_check(r.end.y > 236, "the %s sign stands in the ground" % s.zone_id)
-	await _check_steady_size(main.hud._settings, func(w, t): w.tab = t; w.show_page(), ["Sound", "Display", "Play", "Keys"])
+	await _check_steady_size(main.hud._settings, func(w, t): w.tab = t; w.show_page(), ["Sound", "Display", "Gameplay", "Keys"])
 	var pages := ["Crops", "Goods", "Buildings", "Helpers", "Animals", "Finds", "Sightings", "Festivals", "Milestones", "Achievements",
 		"item:olive_oil", "crop:lavender", "achievement:first_harvest"]
 	await _check_steady_size(main.hud._journal, _show_journal_page, pages)

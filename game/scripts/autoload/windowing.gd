@@ -93,11 +93,19 @@ func _rescale() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scale="):
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
+	ui_scale = ui_scale_for(size, Settings.ui_scale_step)
+
+
+## The interface's scale in a full window of this size at the player's interface size step.
+static func ui_scale_for(size: Vector2i, step: int) -> int:
 	# The money panel and the zone buttons need about 560 interface pixels side by side, and the windows about 225 down.
 	var most := maxi(1, mini(size.x / 560, size.y / 225))
 	# One step under what fits the window itself, rather than the estate's scale, so a tall narrow window stays readable.
 	var fit := maxi(1, mini(size.x / 400, size.y / BASE.y))
-	ui_scale = clampi(fit - 1 + Settings.ui_scale_step, 1, maxi(1, most))
+	# Under three scenes tall, as at 1280x720 and on the Steam Deck, that step leaves text too small to read comfortably.
+	if size.y < BASE.y * 3:
+		fit += 1
+	return clampi(fit - 1 + step, 1, most)
 
 
 func _notification(what: int) -> void:
