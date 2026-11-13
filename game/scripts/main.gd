@@ -28,6 +28,7 @@ const Scenery := preload("res://scripts/estate/scenery.gd")
 const RoadWorks := preload("res://scripts/estate/road_works.gd")
 const CartRig := preload("res://scripts/estate/cart_rig.gd")
 const VillaView := preload("res://scripts/estate/villa_view.gd")
+const BootCover := preload("res://scripts/ui/boot_cover.gd")
 const SWAY := preload("res://assets/shaders/sway.gdshader")
 const BG := "res://assets/backgrounds/estate/"
 const PEOPLE := "res://assets/sprites/people/"
@@ -376,6 +377,9 @@ func _ready() -> void:
 	market.visibility_changed.connect(_cover)
 	interior.visibility_changed.connect(_cover)
 	hud.house_requested.connect(go_inside)
+	# A player's launch fades in from the boot splash; checks with flags start on the scene itself unless --boot asks.
+	if (Dev.args.is_empty() or Dev.has("boot")) and not Windowing.strip:
+		add_child(BootCover.new())
 
 	Game.planted.connect(func(i): Audio.play("plant"); _view(i).bounce())
 	Game.dug_up.connect(func(i): Audio.play("plant", -4.0); _dust(_view(i).position + Vector2(15, -2), 10))

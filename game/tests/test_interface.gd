@@ -98,3 +98,18 @@ class FakeSteam:
 	func setRichPresence(key: String, value: String) -> bool:
 		sent.append([key, value])
 		return true
+
+
+## The boot splash is the logo at a whole-number scale, unfiltered at its own size, and the game's first frames repeat it.
+func test_the_boot_splash_is_the_crisp_logo() -> void:
+	var image: Texture2D = load(String(ProjectSettings.get_setting("application/boot_splash/image")))
+	var logo: Texture2D = load("res://tools/trailer/logo.png")
+	check(image != null and image.get_width() % logo.get_width() == 0 and image.get_height() / logo.get_height() == image.get_width() / logo.get_width(),
+		"the boot splash is the logo enlarged by a whole number")
+	check(not ProjectSettings.get_setting("application/boot_splash/use_filter"), "and is drawn without smoothing")
+	check(int(ProjectSettings.get_setting("application/boot_splash/stretch_mode")) == 0, "at its own size")
+	var cover: CanvasLayer = load("res://scripts/ui/boot_cover.gd").new()
+	root.add_child(cover)
+	var rect: ColorRect = cover.get_child(0)
+	check(rect.color == ProjectSettings.get_setting("application/boot_splash/bg_color"), "the first frame is the splash's colour")
+	cover.free()
