@@ -1,8 +1,9 @@
 """Re-encode the game's music at a sensible size.
 
 Music packs often ship at very high bitrates (the harp tracks came at about 345 kbps). Calm acoustic music sounds the
-same at about 130 kbps Vorbis, at well under half the size, which matters because the music is most of the game's
-download. Only tracks above the target are touched, so running it again does nothing to tracks already shrunk.
+same at Vorbis quality 2 (nominally 96 kbps, about 80 kbps on these sparse tracks), at about a quarter of the size, which
+matters because the music is most of the game's download. Encode from the pack's original files, never from an already
+shrunk track. Only tracks above the threshold are touched, so running it again does nothing to tracks already shrunk.
 
 Usage: python tools/audio/shrink_music.py
 Then reimport the project in Godot so the game uses the new files.
@@ -13,9 +14,9 @@ from pathlib import Path
 import soundfile as sf
 
 MUSIC = Path(__file__).resolve().parents[2] / "game" / "assets" / "audio" / "music"
-# libsndfile's Vorbis setting: 0.5 is about quality 5, roughly 130 kbps for stereo music.
-COMPRESSION = 0.5
-SHRINK_ABOVE_KBPS = 180
+# libsndfile's Vorbis setting is one minus the quality, so 0.8 is quality 2, nominally 96 kbps for stereo music.
+COMPRESSION = 0.8
+SHRINK_ABOVE_KBPS = 110
 
 
 def main():
