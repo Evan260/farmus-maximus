@@ -164,7 +164,7 @@ Short, honest answers.
 - The night version of the farm: dark indigo sky, stars, fireflies drifting over the lavender, warm light in the villa windows, an owl on a cypress.
 - Once in a while, a shooting star crosses the sky.
 - Links: Press kit, Contact, Privacy policy, Steam page.
-- A small "Made by Slow Villa Games" line.
+- A small "Made by Slow Sunday Games" line.
 
 ---
 
@@ -173,7 +173,7 @@ Short, honest answers.
 | Page | Contents |
 |---|---|
 | **Devlog** | All development posts, newest first. Each post: text, screenshots, clips. |
-| **Press kit** | Fact sheet (developer and publisher Slow Villa Games, release date, platforms, price, website), short and long description, feature list, logo downloads (light, dark, transparent), key art, a screenshots zip, the trailer, contact email. Journalists and streamers expect this. |
+| **Press kit** | Fact sheet (developer and publisher Slow Sunday Games, release date, platforms, price, website), short and long description, feature list, logo downloads (light, dark, transparent), key art, a screenshots zip, the trailer, contact email. Journalists and streamers expect this. |
 | **Privacy policy** | Required once you collect emails. Covers the email list, analytics and cookies. |
 | **Links page** (`/links`) | A simple page for social media bios: Wishlist, Discord, TikTok, YouTube, newsletter. |
 

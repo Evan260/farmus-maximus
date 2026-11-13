@@ -57,7 +57,7 @@ Before uploading, confirm with the composer of the harp music (Mythago Music) th
 
 DEVELOPER AND PUBLISHER (Basic Info)
 
-Slow Villa Games, in both the Developer and the Publisher fields.
+Slow Sunday Games, in both the Developer and the Publisher fields.
 
 
 STILL TO DECIDE BEFORE SUBMITTING
