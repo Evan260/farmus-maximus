@@ -48,6 +48,10 @@ window/stretch/scale_mode="integer"
 window/per_pixel_transparency/allowed=true
 window/size/transparent=true
 
+[internationalization]
+
+locale/include_text_server_data=true
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
