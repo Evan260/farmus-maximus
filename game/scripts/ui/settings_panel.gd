@@ -99,6 +99,12 @@ func build() -> void:
 				Ui.label(r, tr(String(Settings.ACTIONS[action]["name"]))).custom_minimum_size = Vector2(130, 0)
 				var text := tr("Press a key...") if _waiting_for == action else _key_name(action)
 				Ui.button(r, text, func(): _waiting_for = action; refresh()).custom_minimum_size = Vector2(80, 0)
+				var pad := int(Settings.ACTIONS[action]["pad"])
+				# The right stick scrolls the estate, which has no button of its own.
+				if action in ["pan_left", "pan_right"]:
+					pad = JOY_BUTTON_RIGHT_STICK
+				if pad >= 0:
+					Ui.pad_glyph(r, pad as JoyButton)
 
 
 func _toggle(text: String, on: bool, action: Callable) -> void:

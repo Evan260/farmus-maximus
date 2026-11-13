@@ -116,7 +116,9 @@ func _ready() -> void:
 	_top_button(_buttons, "Upgrades", load("res://assets/sprites/icons/ui/upgrades.png"), func(): _open(_upgrades))
 	_top_button(_buttons, "Storehouse", load("res://assets/sprites/icons/ui/storehouse.png"), func(): _open(_store))
 	_top_button(_buttons, "Helpers", load("res://assets/sprites/icons/ui/helpers.png"), func(): _open(_helpers))
-	_top_button(_buttons, "Journal", load("res://assets/sprites/icons/ui/journal.png"), func(): _open(_journal))
+	var journal := _top_button(_buttons, "Journal", load("res://assets/sprites/icons/ui/journal.png"), func(): _open(_journal))
+	# The gamepad's journal button is pictured in the corner of the journal's own button, outside its frame.
+	Ui.pad_glyph(journal, JOY_BUTTON_Y).position = Vector2(-8, 11)
 	_top_button(_buttons, "Settings", load("res://assets/sprites/icons/ui/settings.png"), func(): _open(_settings))
 	var house: Texture2D = load("res://assets/sprites/icons/ui/title.png")
 	var home := _top_button(_buttons, "Save and go back to the title", house, back_to_title)
@@ -346,7 +348,7 @@ func _open_cards() -> Array:
 func _bar_buttons() -> Array:
 	var all: Array = [_sleep_button]
 	for row in [_tool_row, _buttons, _zone_bar]:
-		all.append_array(row.get_children())
+		all.append_array(row.get_children().filter(func(c): return c is Button))
 	all.append_array(_uncle.find_children("*", "Button", true, false))
 	return all
 
@@ -585,11 +587,13 @@ func _on_festival(id: String) -> void:
 func _build_zone_bar() -> void:
 	_zone_bar = HBoxContainer.new()
 	_root.add_child(_zone_bar)
+	Ui.pad_glyph(_zone_bar, JOY_BUTTON_LEFT_SHOULDER)
 	for z in Game.zones():
 		var id: String = z["id"]
 		var b := Ui.button(_zone_bar, tr(SHORT_ZONES.get(id, id)), func(): zone_chosen.emit(id))
 		b.toggle_mode = true
 		_zone_buttons[id] = b
+	Ui.pad_glyph(_zone_bar, JOY_BUTTON_RIGHT_SHOULDER)
 	_zone_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_zone_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_zone_bar.offset_top = 4

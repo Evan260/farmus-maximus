@@ -48,6 +48,20 @@ static func wishlist_button(parent: Node) -> Button:
 	return b
 
 
+## A gamepad button's picture beside a key hint, shown only while the gamepad is the input in use.
+static func pad_glyph(parent: Node, button: JoyButton) -> TextureRect:
+	var t := TextureRect.new()
+	t.name = "PadGlyph"
+	t.texture = KeyNav.pad_picture(button)
+	t.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	t.visible = KeyNav.using_pad()
+	KeyNav.pad_changed.connect(t.set_visible)
+	parent.add_child(t)
+	return t
+
+
 ## Gives a control a tip shown when the pointer rests on it, drawn by the Tips autoload at the interface's scale.
 static func tip_on(c: Control, text: String) -> Control:
 	c.set_meta("tip", text)

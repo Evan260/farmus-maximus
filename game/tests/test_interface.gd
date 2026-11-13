@@ -92,6 +92,61 @@ func test_the_rich_presence_file_has_every_token() -> void:
 			check(block.contains("\"#Villa_%d\"" % (n + 1)), "%s names villa stage %d" % [language, n + 1])
 
 
+
+func test_a_gamepad_presses_and_backs_out_of_buttons() -> void:
+	var a := InputEventJoypadButton.new()
+	a.button_index = JOY_BUTTON_A
+	a.pressed = true
+	check(a.is_action_pressed("ui_accept"), "A presses the chosen button")
+	var b := InputEventJoypadButton.new()
+	b.button_index = JOY_BUTTON_B
+	b.pressed = true
+	check(b.is_action_pressed("ui_cancel"), "and B backs out")
+
+
+func test_the_gamepad_scrolls_the_open_list() -> void:
+	var holder := Control.new()
+	holder.size = Vector2(300, 200)
+	root.add_child(holder)
+	var list := Ui.scroll(holder, Vector2(200, 80))
+	var first := Ui.button(list, "First", func(): pass)
+	first.focus_mode = Control.FOCUS_ALL
+	for k in 30:
+		Ui.label(list, "Line %d" % k)
+	await process_frame
+	await process_frame
+	first.grab_focus()
+	var scroll: ScrollContainer = list.get_parent().get_parent()
+	check(KeyNav.open_list() == scroll, "the list around the chosen button is the one the gamepad scrolls")
+	var rb := InputEventJoypadButton.new()
+	rb.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	rb.pressed = true
+	KeyNav._input(rb)
+	check(scroll.scroll_vertical > 40, "a shoulder button scrolls it a page")
+	var glyph := Ui.pad_glyph(holder, JOY_BUTTON_Y)
+	KeyNav._set_pad(false)
+	check(not glyph.visible, "button pictures hide while the keyboard or mouse is in use")
+	KeyNav._set_pad(true)
+	check(glyph.visible, "and show once the gamepad is used")
+	KeyNav._set_pad(KeyNav.pad_connected())
+	first.release_focus()
+	holder.free()
+
+
+func test_the_shoulder_buttons_turn_the_journal() -> void:
+	Game.new_game()
+	var journal: Control = load("res://scripts/ui/journal_panel.gd").new()
+	root.add_child(journal)
+	journal.open()
+	await process_frame
+	var rb := InputEventJoypadButton.new()
+	rb.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	rb.pressed = true
+	journal._input(rb)
+	check(journal.section == "Goods", "the right shoulder turns to the next section")
+	journal.free()
+
+
 class FakeSteam:
 	var sent: Array = []
 

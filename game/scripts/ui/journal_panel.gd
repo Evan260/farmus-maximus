@@ -40,6 +40,17 @@ func _init() -> void:
 	cover.set_content_margin_all(7)
 	add_theme_stylebox_override("panel", cover)
 	_title.add_theme_color_override("font_color", UiTheme.CREAM)
+	set_meta("turns_pages", true)
+
+
+## The shoulder buttons, or Q and E, turn to the section before or after.
+func _input(event: InputEvent) -> void:
+	if not visible or not (event.is_action_pressed("prev_zone") or event.is_action_pressed("next_zone")):
+		return
+	var at := SECTIONS.find(_queued if _queued != "" else section)
+	var to := clampi(at + (-1 if event.is_action_pressed("prev_zone") else 1), 0, SECTIONS.size() - 1)
+	_turn_to(SECTIONS[to])
+	get_viewport().set_input_as_handled()
 
 
 func signature() -> String:
