@@ -74,7 +74,7 @@ const TRANSFORM := [
 	{"shot": "stages", "from": 7.142, "beats": 2, "caption": "Day 60", "caption_at": 0.0},
 	{"shot": "stages", "from": 8.856, "beats": 2, "caption": "Day 90", "caption_at": 0.0},
 	{"shot": "stages", "from": 10.57, "beats": 4, "caption": "Day 120", "caption_at": 0.0},
-	{"end": "endcard", "from": 1.0, "beats": 5},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## Yes, you can pet the dog, and then everything else.
 const PETS := [
@@ -84,7 +84,7 @@ const PETS := [
 	{"shot": "goat", "from": 1.6, "beats": 3, "caption": "and the goats", "caption_at": 0.0},
 	{"shot": "stork", "from": 1.6, "beats": 3, "caption": "and the stork?", "caption_at": 0.0},
 	{"shot": "hoopoe", "from": 2.0, "beats": 4, "caption": "and... whatever\nthis is", "caption_at": 0.0},
-	{"end": "endcard", "from": 1.0, "beats": 5},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## No music, only the farm: rain, the oven's fire, the harvest and the night.
 const ASMR := [
@@ -93,7 +93,7 @@ const ASMR := [
 	{"shot": "plant", "from": 1.6, "beats": 5, "amb": "day"},
 	{"shot": "pasture", "from": 1.5, "beats": 4},
 	{"shot": "night", "from": 1.5, "beats": 6, "amb": "night"},
-	{"end": "endcard", "from": 1.0, "beats": 5},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## The farm along the bottom of a desktop, then close up on what it gets up to while its owner works.
 const DESKTOP := [
@@ -102,7 +102,7 @@ const DESKTOP := [
 	{"shot": "bakery", "from": 1.5, "beats": 3, "caption": "it bakes\nwhile I work", "caption_at": 0.0, "amb": "night"},
 	{"shot": "pet", "from": 1.6, "beats": 4, "zoom": 2.0, "centre": Vector2(540, 1440), "caption": "the dog does\nno work at all", "caption_at": 0.0, "amb": "day"},
 	{"desk": "desk", "from": 6.2, "beats": 4, "caption": "my boss has\nnot noticed yet", "caption_at": 0.0},
-	{"end": "endcard", "from": 1.0, "beats": 5},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## The helpers, each followed at work under the funniest part of their own line in the game.
 const STAFF := [
@@ -111,7 +111,7 @@ const STAFF := [
 	{"shot": "staff_beekeeper", "from": 1.5, "beats": 5, "zoom": 2.0, "centre": Vector2(540, 1440), "caption": "Aulus, beekeeper\n\"talk softly\nto the bees\"", "caption_at": 0.0},
 	{"shot": "staff_presser", "from": 1.5, "beats": 5, "zoom": 2.0, "centre": Vector2(540, 1440), "caption": "Titus, presser\n\"my feet have\nnever been\nso purple\"", "caption_at": 0.0},
 	{"shot": "staff_stablehand", "from": 1.5, "beats": 5, "zoom": 2.0, "centre": Vector2(540, 1440), "caption": "Julia, stable hand\n\"the goats ate\nmy hat\"", "caption_at": 0.0},
-	{"end": "endcard", "from": 1.0, "beats": 5},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## One unbroken day: the recording runs an hour of game time to the beat, from 5 in the morning round to 5 the next.
 const ONE_DAY := [
@@ -121,7 +121,7 @@ const ONE_DAY := [
 	{"shot": "full_day", "from": 10.284, "beats": 4, "caption": "golden hour", "caption_at": 0.0, "mute": true},
 	{"shot": "full_day", "from": 13.712, "beats": 4, "caption": "lamps on", "caption_at": 0.0, "amb": "night", "mute": true},
 	{"shot": "full_day", "from": 17.14, "beats": 4, "caption": "goodnight", "caption_at": 0.0, "mute": true},
-	{"end": "endcard", "from": 1.0, "beats": 5},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## How each cut is laid out: its frame, how many screen pixels make one overlay pixel, its caption size, where its text
 ## and logo sit in overlay pixels, where in the music it starts, and optionally no music and louder ambience.
