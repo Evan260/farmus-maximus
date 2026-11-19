@@ -470,8 +470,7 @@ func _notification(what: int) -> void:
 		_go_back()
 
 
-## A phone's back gesture closes what is open, then leaves the market or the farmhouse, then goes from the farm to the
-## title, and on the title puts the game away as the home button would.
+## A phone's back gesture steps back one place at a time, and on the title puts the game away as the home button would.
 func _go_back() -> void:
 	match Touch.back_step(hud.go_back() or hud.dismiss_achievement(), market.visible or interior.visible, hud.title_open()):
 		"leave":

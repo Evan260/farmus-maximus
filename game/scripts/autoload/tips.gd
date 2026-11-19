@@ -8,8 +8,7 @@ const WRAP := 170.0
 ## How long a tip shown by a held finger stays after the finger lifts.
 const SHOW_FOR := 4.0
 
-## True once a finger has rested in one place long enough to ask what is there, until the next touch; the estate, the
-## market and the farmhouse then show what is under it rather than acting on it.
+## True from a finger resting still long enough to ask what is under it until the next touch, so the lift does not act.
 var long_press := false
 
 var _root: Control
@@ -113,8 +112,7 @@ func _process_touch(delta: float) -> void:
 		_panel.visible = false
 
 
-## A button whose tip a held finger asked for is let go without being pressed when the finger lifts; disabling a
-## button for a moment is the one way to make it forget a press already under way.
+## A button whose tip was asked for forgets its press, as disabling it for a moment makes it do.
 func _cancel_press(c: Control) -> void:
 	var n: Node = c
 	for i in 4:

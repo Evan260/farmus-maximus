@@ -10,14 +10,12 @@ static func is_hold(seconds: float, moved: float, slop: float) -> bool:
 	return seconds >= HOLD_SECONDS and moved <= slop
 
 
-## Whether a lifted finger acts on what it touched: a tap does, while a finger that slid away or rested long enough to
-## show what was there does not.
+## Whether a lifted finger acts on what it touched, which a finger that slid away or was held to read it does not.
 static func is_tap(moved: float, slop: float, held: bool) -> bool:
 	return moved <= slop and not held
 
 
-## What the phone's back gesture does, in order: "close" what is open over the screen, "leave" the market or the
-## farmhouse, "title" to go from the farm back to the title, and on the title "background" to put the game away.
+## What the back gesture does: "close" what is open, "leave" the town or house, go to the "title", or "background".
 static func back_step(something_open: bool, away_from_farm: bool, on_title: bool) -> String:
 	if something_open:
 		return "close"

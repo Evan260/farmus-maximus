@@ -146,8 +146,7 @@ static func _knob() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-## The room inside a button round its text, across and up and down; on a phone, enough to make a line of text a
-## fingertip tall.
+## The room inside a button round its text, across and down; on a phone, enough to make it a fingertip tall.
 static func button_pad() -> Vector2i:
 	if not Windowing.phone:
 		return Vector2i(3, 3)

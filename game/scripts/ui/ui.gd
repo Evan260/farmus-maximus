@@ -39,8 +39,7 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
-## The demo's button to the full game's store page, or null outside the demo, while the game has no app id yet, and
-## on a phone, where there is no Steam.
+## The demo's button to the full game's store page, or null outside the demo, before there is an app id and on phones.
 static func wishlist_button(parent: Node) -> Button:
 	if not Game.is_demo() or Awards.full_game_app_id() == 0 or Windowing.phone:
 		return null
@@ -71,8 +70,7 @@ static func tip_on(c: Control, text: String) -> Control:
 	return c
 
 
-## Where the name of what is under the pointer goes: beside the pointer, or on a phone above the finger, which hides
-## what is under it.
+## Where the name of what is pointed at goes: beside the pointer, or above a phone's finger, which hides what is below it.
 static func hover_spot(at: Vector2, size: Vector2, room: Vector2) -> Vector2:
 	if Windowing.phone:
 		return Vector2(clampf(at.x - size.x / 2.0, 2, room.x - size.x - 2), maxf(2, at.y - size.y - 14)).round()
