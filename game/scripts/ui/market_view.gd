@@ -382,12 +382,16 @@ func _keep_pad_focus() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("close_panel"):
-		# Escape closes an open window first, then leaves the town.
-		if _panel.visible:
-			_close_panel()
-		else:
-			leave()
+		go_back()
 		get_viewport().set_input_as_handled()
+
+
+## Escape, B or a phone's back gesture closes an open window first, then leaves the town.
+func go_back() -> void:
+	if _panel.visible:
+		_close_panel()
+	else:
+		leave()
 
 
 ## Turns a point on the interface into the painting's pixels, to find which place in the town is under it.

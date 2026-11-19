@@ -789,7 +789,7 @@ func _build_debug() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	# A window opened over the title screen, such as the settings, closes with Escape or B like any other.
-	if event.is_action_pressed("close_panel") and _go_back():
+	if event.is_action_pressed("close_panel") and go_back():
 		get_viewport().set_input_as_handled()
 		return
 	if modal_open():
@@ -815,7 +815,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Escape or B closes what is open, the newest first: a window, then a step of the title's menu, then a card waiting
 ## for its button, then the gamepad's turn on the interface's buttons. True if there was something to close.
-func _go_back() -> bool:
+func go_back() -> bool:
 	if close_windows():
 		return true
 	if _title and _title.go_back():

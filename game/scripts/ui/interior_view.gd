@@ -788,12 +788,16 @@ func _stop_loom() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("close_panel"):
-		# Escape closes the furnishing window first, then goes back outside.
-		if _panel.visible:
-			_close_panel()
-		else:
-			leave()
+		go_back()
 		get_viewport().set_input_as_handled()
+
+
+## Escape, B or a phone's back gesture closes the furnishing window first, then goes back outside.
+func go_back() -> void:
+	if _panel.visible:
+		_close_panel()
+	else:
+		leave()
 
 
 ## Opens the furnishing window on one furnishing, or on the whole list when id is empty.

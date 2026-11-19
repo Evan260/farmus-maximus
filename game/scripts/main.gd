@@ -459,6 +459,25 @@ func _ride_to_market() -> void:
 	go_to_town()
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and Windowing.phone:
+		_go_back()
+
+
+## A phone's back gesture closes what is open, then leaves the market or the farmhouse, then goes from the farm to the
+## title, and on the title puts the game away as the home button would.
+func _go_back() -> void:
+	match Touch.back_step(hud.go_back(), market.visible or interior.visible, hud.title_open()):
+		"leave":
+			(market if market.visible else interior).go_back()
+		"title":
+			hud.back_to_title()
+		"background":
+			Saves.save_game()
+			if Engine.has_singleton("AndroidRuntime"):
+				Engine.get_singleton("AndroidRuntime").getActivity().moveTaskToBack(true)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# The strip shows only the estate, so it waits until the player has left the market or the farmhouse.
 	if event.is_action_pressed("toggle_strip") and (market.visible or interior.visible):
