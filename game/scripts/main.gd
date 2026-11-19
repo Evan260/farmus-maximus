@@ -188,6 +188,10 @@ var _strip_bars: Array[Rect2] = []
 var _pad_point := Vector2.INF
 ## True once the hover has been cleared for a pointer resting on the interface, so it is cleared only once.
 var _hover_cleared := false
+## When the last back gesture was answered, in milliseconds since the game started.
+var _back_at := -1000
+## Set once a finger held on the estate has been told what is under it.
+var _hold_named := false
 var _drag_from := Vector2.ZERO
 var _drag_start_cam := 0.0
 var _dragging := false
@@ -517,6 +521,10 @@ func go_to_town() -> void:
 
 
 func _process(delta: float) -> void:
+	# A finger held still on the estate names what is under it, as a pointer resting there does.
+	if Windowing.phone and _pressed and not _dragging and Tips.long_press and not _hold_named:
+		_hold_named = true
+		_update_hover(world.get_global_mouse_position())
 	# A window takes the pointer's movement before the estate sees it, so the estate's hover text and highlight are
 	# cleared here once the pointer moves onto any part of the interface.
 	# The estate itself is drawn in a container that also counts as under the pointer, so it is left out.
@@ -1085,6 +1093,7 @@ func _world_input(event: InputEvent) -> void:
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE]:
 			if event.pressed:
 				_pressed = true
+				_hold_named = false
 				_dragging = event.button_index == MOUSE_BUTTON_MIDDLE
 				_drag_from = event.position
 				_drag_start_cam = cam_x

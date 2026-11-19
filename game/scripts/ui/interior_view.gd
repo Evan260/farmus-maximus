@@ -98,6 +98,9 @@ var _scroll: Node
 var _hovered := ""
 ## Where a finger touched the room, in interface pixels.
 var _touch_from := Vector2.ZERO
+var _touching := false
+## Set once a held finger has been told what is under it.
+var _hold_named := false
 var _selected := ""
 var _signature := ""
 var _t := 0.0
@@ -412,6 +415,12 @@ func _dress_room() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	# A finger held still names what is under it, as a pointer resting there does.
+	if _touching and Tips.long_press and not _hold_named:
+		_hold_named = true
+		var at := InputEventMouseMotion.new()
+		at.position = _touch_from
+		_on_picture_input(at)
 	# Builders can finish the farmhouse while the player is inside; a dog up from a stroke lies down first.
 	if _room_picture() != _room and not _dog_awake:
 		_dress_room()
@@ -678,6 +687,8 @@ func _tap(at: Vector2) -> void:
 
 ## On a phone the house answers when the finger lifts, so a finger held on something can first read what it is.
 func _touch(event: InputEventMouseButton) -> void:
+	_touching = event.pressed
+	_hold_named = false
 	if event.pressed:
 		_touch_from = event.position
 		return

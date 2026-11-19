@@ -59,6 +59,9 @@ var _hover_label: Label
 var _hovered := ""
 ## Where a finger touched the town, in interface pixels.
 var _touch_from := Vector2.ZERO
+var _touching := false
+## Set once a held finger has been told what is under it.
+var _hold_named := false
 var _panel: PanelContainer
 var _pad_bar: HBoxContainer
 ## Set when the window crops a place out of the town picture.
@@ -348,6 +351,12 @@ func _close_panel() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	# A finger held still names what is under it, as a pointer resting there does.
+	if _touching and Tips.long_press and not _hold_named:
+		_hold_named = true
+		var at := InputEventMouseMotion.new()
+		at.position = _touch_from
+		_on_picture_input(at)
 	var pad := KeyNav.active()
 	# A window narrower than the town hides some places, so the row of them is offered to the mouse too.
 	_pad_bar.visible = pad or _places_cut_off
@@ -459,6 +468,8 @@ func _tap(at: Vector2) -> void:
 
 ## On a phone a place opens when the finger lifts, so a finger held on it can first read its name.
 func _touch(event: InputEventMouseButton) -> void:
+	_touching = event.pressed
+	_hold_named = false
 	if event.pressed:
 		_touch_from = event.position
 		return
