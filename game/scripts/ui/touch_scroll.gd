@@ -38,12 +38,22 @@ func _input(event: InputEvent) -> void:
 			away.pressed = false
 			away.position = Vector2(-10000, -10000)
 			Input.parse_input_event(away)
+			_let_go(_from)
 		if _dragging:
 			scroll.scroll_vertical = _start - roundi(moved / _scale())
 	elif event is InputEventMouseButton and not event.pressed and _swallow_release and event.position.x > -1000:
 		# The release the system makes up for the lifted finger would otherwise press the button now under it.
 		_swallow_release = false
 		get_viewport().set_input_as_handled()
+
+
+## The button a drag began on forgets its press, as disabling it for a moment makes it do.
+func _let_go(at: Vector2) -> void:
+	for b in scroll.find_children("*", "BaseButton", true, false):
+		var xform: Transform2D = b.get_global_transform_with_canvas()
+		if not b.disabled and Rect2(xform.origin, b.size * xform.get_scale()).has_point(at):
+			b.disabled = true
+			b.disabled = false
 
 
 func _scale() -> float:
