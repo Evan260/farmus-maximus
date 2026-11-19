@@ -843,6 +843,8 @@ func _refresh() -> void:
 	if ruined():
 		_title.text = tr("A ruin")
 		Ui.para(_list, tr("Wind and rain come in through the roof. Restore the farmhouse to make it a home, then furnish it room by room."), 210)
+		if Windowing.phone:
+			_size_panel.call_deferred()
 		return
 	_title.text = tr(String(Game.furnishing_info(_selected).get("name", ""))) if _selected != "" else tr("Furnish the house")
 	var ids: Array = [_selected] if _selected != "" else Data.get_value("interior.furnishings", {}).keys()
