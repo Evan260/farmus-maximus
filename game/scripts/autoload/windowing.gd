@@ -42,7 +42,9 @@ var scale := 1
 ## Screen pixels per interface pixel, which the player can set larger or smaller than the estate's.
 var ui_scale := 1
 ## On a phone or tablet the game always fills the screen, with no strip, window or full-screen toggle.
-var phone := OS.has_feature("mobile")
+var phone := OS.has_feature("mobile") or "--phone" in OS.get_cmdline_user_args()
+## True for `--phone` on a computer, which shows the phone's interface in a window and saves no window settings.
+var phone_preview := phone and not OS.has_feature("mobile")
 ## How far the interface's corner panels sit in from each edge, in interface pixels, clear of a phone's rounded corners
 ## and camera; zero on a computer.
 var safe_top_left := Vector2.ZERO
@@ -67,6 +69,9 @@ func _ready() -> void:
 	# A test run at a set window size is always the full window, whatever the player last left it as.
 	elif Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
 		strip = false
+	# The preview feels a click as a touch, so lists scroll by dragging as they do on a phone.
+	if phone_preview:
+		Input.emulate_touch_from_mouse = true
 	get_window().size_changed.connect(_on_resized)
 	Settings.changed.connect(_on_resized)
 	Settings.changed.connect(_apply_volume)
@@ -104,7 +109,7 @@ func _rescale() -> void:
 	ui_scale = ui_scale_for(size, Settings.ui_scale_step)
 	if phone:
 		ui_scale = phone_ui_scale(size, Settings.ui_scale_step)
-		var insets := phone_insets(size, DisplayServer.get_display_safe_area(), ui_scale)
+		var insets := phone_insets(size, _safe_area(size), ui_scale)
 		safe_top_left = insets[0]
 		safe_bottom_right = insets[1]
 
@@ -126,6 +131,40 @@ static func ui_scale_for(size: Vector2i, step: int) -> int:
 static func phone_ui_scale(size: Vector2i, step: int) -> int:
 	var most := maxi(1, mini(size.x / 560, size.y / 225))
 	return clampi(most + mini(step, 0), 1, most)
+
+
+## The part of the screen clear of the camera, in screen pixels; the preview takes it from `--phone-insets=L,T,R,B`.
+func _safe_area(size: Vector2i) -> Rect2i:
+	if not phone_preview:
+		return DisplayServer.get_display_safe_area()
+	var cut := [0, 0, 0, 0]
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--phone-insets="):
+			var parts := arg.trim_prefix("--phone-insets=").split(",")
+			for i in mini(4, parts.size()):
+				cut[i] = int(parts[i])
+	return Rect2i(cut[0], cut[1], size.x - cut[0] - cut[2], size.y - cut[1] - cut[3])
+
+
+## The screen's pixels per inch; the preview counts the window as a Pixel 9a's screen at the same interface scale.
+func phone_dpi() -> float:
+	if phone_preview:
+		return 105.0 * ui_scale
+	return float(DisplayServer.screen_get_dpi())
+
+
+## How many interface pixels a fingertip needs across, about 7 mm, so a button that size is easy to tap; 0 on a computer.
+func touch_px() -> int:
+	return touch_px_for(phone_dpi(), ui_scale) if phone else 0
+
+
+static func touch_px_for(dpi: float, ui: int, mm := 7.0) -> int:
+	return ceili(mm / 25.4 * dpi / maxi(1, ui))
+
+
+## How far a finger may wander, in screen pixels, while it still counts as resting in one place: about 2 mm.
+func touch_slop() -> float:
+	return 2.0 / 25.4 * phone_dpi()
 
 
 ## The interface's insets from the top-left and the bottom-right, in interface pixels: the screen's safe area, which
@@ -150,7 +189,7 @@ func _notification(what: int) -> void:
 		# The window opens next time on the monitor it was closed on.
 		NOTIFICATION_WM_CLOSE_REQUEST:
 			_save()
-			if Settings.fullscreen != is_fullscreen():
+			if not phone and Settings.fullscreen != is_fullscreen():
 				Settings.set_value("fullscreen", is_fullscreen())
 
 
@@ -349,7 +388,7 @@ func _apply() -> void:
 		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
 		get_viewport().transparent_bg = transparent
 		_place_strip()
-	elif not phone:
+	elif not phone or phone_preview:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 		win.always_on_top = false
 		win.borderless = false
@@ -456,5 +495,7 @@ func _load() -> void:
 
 
 func _save() -> void:
+	if phone_preview:
+		return
 	Settings.store("window", {"strip": strip, "transparent": transparent, "strip_scale": strip_scale, "strip_width": strip_width,
 		"offset_x": offset_x, "offset_y": offset_y, "dock": dock, "focus_mode": focus_mode, "follow": follow, "screen": get_window().current_screen})
