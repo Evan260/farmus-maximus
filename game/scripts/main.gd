@@ -613,7 +613,8 @@ func _update_life(delta: float) -> void:
 	_dog_dig_check -= delta
 	if _dog_dig_check <= 0.0:
 		_dog_dig_check = 5.0
-		if Game.dog_timer <= 0.0 and Lighting.night_amount(Game.day_time) < 0.5:
+		# A sleeping dog digs nothing up; its find waits until it is up and about.
+		if Game.dog_timer <= 0.0 and Lighting.night_amount(Game.day_time) < 0.5 and not dog.is_asleep():
 			_dust(dog.position + Vector2(8, -2), 8)
 			Audio.play("plant", -6.0)
 			Game.dog_dig()
