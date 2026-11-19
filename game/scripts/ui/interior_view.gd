@@ -849,6 +849,11 @@ func _size_panel() -> void:
 	var need := _list.get_combined_minimum_size().y + 2
 	_scroll.custom_minimum_size.y = minf(need, 170.0) if _selected != "" else 170.0
 	_panel.reset_size()
+	# A phone's larger buttons can make the window reach the bottom of the screen, so it scrolls a shorter list there.
+	var over := _panel.position.y + _panel.size.y - (_ui_root.size.y - Windowing.safe_bottom_right.y - 2)
+	if Windowing.phone and over > 0:
+		_scroll.custom_minimum_size.y -= over
+		_panel.reset_size()
 
 
 func _furnishing_card(id: String, named: bool) -> void:

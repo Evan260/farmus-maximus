@@ -140,6 +140,10 @@ static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 		box.content_margin_right = 7
 		box.content_margin_top = 4 if open else 2
 		box.content_margin_bottom = 3 if open else 2
+		# On a phone the closed tabs grow to a fingertip's height, and the open one stands as much taller as before.
+		var grow := maxi(0, UiTheme.button_pad().y - 3)
+		box.content_margin_top += grow
+		box.content_margin_bottom += grow
 		b.add_theme_stylebox_override(state, box)
 	# The tab the keyboard is on is ringed in terracotta, which shows on the pale paper where cream would not.
 	var ring := StyleBoxFlat.new()
@@ -162,7 +166,7 @@ static func tab_button(parent: Node, text: String, action: Callable) -> Button:
 ## A small square close button with a drawn cross, for the top-right corner of a window.
 static func close_button(parent: Node, action: Callable) -> Button:
 	var b := button(parent, "", action)
-	b.custom_minimum_size = Vector2(13, 13)
+	b.custom_minimum_size = Vector2.ONE * maxi(13, Windowing.touch_px())
 	b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	var cross := Control.new()
 	cross.mouse_filter = Control.MOUSE_FILTER_IGNORE

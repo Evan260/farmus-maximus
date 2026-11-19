@@ -44,7 +44,7 @@ func build() -> void:
 				slider.max_value = 1.0
 				slider.step = 0.05
 				slider.value = Audio.volumes[bus[0]]
-				slider.custom_minimum_size = Vector2(120, 8)
+				slider.custom_minimum_size = Vector2(120, maxi(8, Windowing.touch_px()))
 				slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				r.add_child(slider)
 				var amount := Ui.label(r, _percent(slider.value))

@@ -31,10 +31,10 @@ func build() -> void:
 	pair.alignment = BoxContainer.ALIGNMENT_CENTER
 	for kind in ["dog", "cat"]:
 		var col := Ui.column(pair)
-		col.custom_minimum_size = Vector2(COLUMN, 0)
+		col.custom_minimum_size = Vector2(_column(), 0)
 		Ui.section(col, tr("Your dog") if kind == "dog" else tr("Your cat"))
 		var pic := TextureRect.new()
-		pic.custom_minimum_size = Vector2(COLUMN, 52)
+		pic.custom_minimum_size = Vector2(_column(), 52)
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		col.add_child(pic)
 		_pictures[kind] = pic
@@ -44,7 +44,7 @@ func build() -> void:
 		name.text = String(_choice[kind]["name"])
 		name.max_length = 14
 		name.placeholder_text = tr("Name")
-		name.custom_minimum_size = Vector2(COLUMN, 0)
+		name.custom_minimum_size = Vector2(_column(), 0)
 		name.text_changed.connect(func(t): _choice[kind]["name"] = t.strip_edges())
 		col.add_child(name)
 		_names[kind] = name
@@ -52,16 +52,23 @@ func build() -> void:
 	Ui.button(body, tr("That's them"), _done)
 
 
+## A phone's arrows are a fingertip wide, and the column widens by as much so the breed's name still fits between them.
+func _column() -> int:
+	return COLUMN + 2 * maxi(0, Windowing.touch_px() - 13)
+
+
 ## A row with arrows either side of a label, for stepping through a list of choices.
 func _chooser(parent: Node, step: Callable) -> Label:
 	var r := Ui.row(parent)
-	Ui.button(r, "<", func(): step.call(-1))
+	var back := Ui.button(r, "<", func(): step.call(-1))
 	var label := Ui.label(r)
 	# The label takes the room between the arrows, so both rows are the same width and their arrows line up.
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.clip_text = true
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	Ui.button(r, ">", func(): step.call(1))
+	var on := Ui.button(r, ">", func(): step.call(1))
+	for arrow in [back, on]:
+		arrow.custom_minimum_size.x = Windowing.touch_px()
 	return label
 
 

@@ -28,11 +28,12 @@ static func build() -> Theme:
 	t.set_constant("separation", "VBoxContainer", 2)
 	t.set_constant("separation", "HBoxContainer", 2)
 	t.set_stylebox("panel", "PanelContainer", _textured(PANEL_TEX, 6, Color.WHITE, 5))
-	t.set_stylebox("normal", "Button", _textured(BUTTON_TEX, 4, Color.WHITE, 3))
-	t.set_stylebox("hover", "Button", _textured(BUTTON_TEX, 4, Color(1.12, 1.08, 1.05), 3))
-	t.set_stylebox("pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.72, 0.6, 0.55), 3))
-	t.set_stylebox("hover_pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.78, 0.66, 0.6), 3))
-	t.set_stylebox("disabled", "Button", _textured(BUTTON_TEX, 4, Color(0.5, 0.44, 0.42), 3))
+	var pad := button_pad()
+	t.set_stylebox("normal", "Button", _textured(BUTTON_TEX, 4, Color.WHITE, pad.x, pad.y))
+	t.set_stylebox("hover", "Button", _textured(BUTTON_TEX, 4, Color(1.12, 1.08, 1.05), pad.x, pad.y))
+	t.set_stylebox("pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.72, 0.6, 0.55), pad.x, pad.y))
+	t.set_stylebox("hover_pressed", "Button", _textured(BUTTON_TEX, 4, Color(0.78, 0.66, 0.6), pad.x, pad.y))
+	t.set_stylebox("disabled", "Button", _textured(BUTTON_TEX, 4, Color(0.5, 0.44, 0.42), pad.x, pad.y))
 	var focus := StyleBoxFlat.new()
 	focus.draw_center = false
 	focus.set_border_width_all(1)
@@ -59,7 +60,7 @@ static func build() -> Theme:
 	t.set_icon("grabber_highlight", "HSlider", knob)
 	t.set_icon("grabber_disabled", "HSlider", knob)
 	t.set_constant("center_grabber", "HSlider", 0)
-	var field := _flat(Color(0.99, 0.96, 0.88), 3, 2)
+	var field := _flat(Color(0.99, 0.96, 0.88), 3, maxi(2, pad.y))
 	field.border_color = Color(0.55, 0.36, 0.25)
 	field.set_border_width_all(1)
 	t.set_stylebox("normal", "LineEdit", field)
@@ -145,14 +146,23 @@ static func _knob() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
+## The room inside a button round its text, across and up and down; on a phone, enough to make a line of text a
+## fingertip tall.
+static func button_pad() -> Vector2i:
+	if not Windowing.phone:
+		return Vector2i(3, 3)
+	var line := ui_font().get_height(text_size())
+	return Vector2i(5, maxi(3, ceili((Windowing.touch_px() - line) / 2.0) - 1))
+
+
 ## A stretchable panel or button skin cut from one small image: the corners stay sharp, the middle stretches.
-static func _textured(tex: Texture2D, border: int, tint: Color, pad: int) -> StyleBoxTexture:
+static func _textured(tex: Texture2D, border: int, tint: Color, pad: int, pad_y := -1) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
 	s.texture = tex
 	# The generated images have transparent margins, so the skin is cut from the visible part only.
 	s.region_rect = Hit.used_rect(tex)
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		s.set_texture_margin(side, border)
-		s.set_content_margin(side, pad + 1)
+		s.set_content_margin(side, (pad_y if pad_y >= 0 and side in [SIDE_TOP, SIDE_BOTTOM] else pad) + 1)
 	s.modulate_color = tint
 	return s

@@ -840,7 +840,11 @@ func _start_sleep() -> void:
 
 func _update_sleep(delta: float) -> void:
 	var night := Game.day_time >= SLEEP_FROM or Game.day_time < WAKE_AT - 1.5
+	var was := _sleep_button.visible
 	_sleep_button.visible = night and _slept < 0.0
+	# The farm's panel shrinks again once the sleep button goes, so on a phone it never hides more of the farm than it needs.
+	if Windowing.phone and was and not _sleep_button.visible:
+		_stats_panel.reset_size()
 	if _slept < 0.0:
 		return
 	_slept += delta
@@ -871,7 +875,7 @@ func _top_button(parent: Node, label: String, picture: Texture2D, action: Callab
 	var b := Ui.button(parent, "", action)
 	b.name = label.replace(" ", "") + "Button"
 	Ui.tip_on(b, label)
-	b.custom_minimum_size = Vector2(20, 20)
+	b.custom_minimum_size = Vector2.ONE * maxi(20, Windowing.touch_px())
 	b.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var image := TextureRect.new()
 	image.name = "Picture"
@@ -889,7 +893,8 @@ func _top_button(parent: Node, label: String, picture: Texture2D, action: Callab
 
 
 func _update_toolbar() -> void:
-	_toolbar.visible = _title == null
+	# A phone's screen is too short for a window and the toolbar both, and a window covers the field the tools work on.
+	_toolbar.visible = _title == null and not (Windowing.phone and _any_window())
 	var sig := JSON.stringify(Game.crops_unlocked)
 	if sig != _tool_signature:
 		_tool_signature = sig
@@ -917,7 +922,7 @@ func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
 	b.icon = icon
 	b.toggle_mode = true
 	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(18, 18)
+	b.custom_minimum_size = Vector2.ONE * maxi(18, Windowing.touch_px())
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		var box := StyleBoxFlat.new()

@@ -89,7 +89,7 @@ func _process(delta: float) -> void:
 		return
 	_hold -= delta
 	_purse = Vector2i(Game.coins, Game.aureus)
-	if fixed_size == Vector2.ZERO:
+	if fixed_size == Vector2.ZERO or Windowing.phone:
 		_fit_to_screen()
 	_refresh_timer -= delta
 	if _refresh_timer <= 0.0:
@@ -115,7 +115,7 @@ func refresh() -> void:
 		b.gui_input.connect(_held_click.bind(b))
 	tick()
 	_widen_paragraphs(self)
-	if fixed_size == Vector2.ZERO:
+	if fixed_size == Vector2.ZERO or Windowing.phone:
 		_fit_to_screen()
 	if scrolled.is_empty():
 		for s in _scrolls():
@@ -159,12 +159,22 @@ func _widen_paragraphs(node: Node) -> void:
 
 
 ## Sizes the page to its contents, but no taller than the screen allows; a taller page scrolls, with room kept for
-## the scroll bar.
+## the scroll bar. On a phone a window of a fixed size is made shorter when the screen is.
 func _fit_to_screen() -> void:
 	var page := body.get_combined_minimum_size()
 	var chrome := _col.get_combined_minimum_size().y - _scroll.get_combined_minimum_size().y + 12.0
 	var screen := get_parent_area_size()
-	var room := maxf(40.0, screen.y - SCREEN_MARGIN - TOOLBAR_ROOM - chrome)
+	# A phone hides the toolbar while a window is open, so the window only keeps clear of the screen's corners.
+	var above := maxf(SCREEN_MARGIN, Windowing.safe_top_left.y + 2) if Windowing.phone else SCREEN_MARGIN
+	var below := Windowing.safe_bottom_right.y + 2 if Windowing.phone else TOOLBAR_ROOM
+	var room := maxf(40.0, screen.y - above - below - chrome)
+	if fixed_size != Vector2.ZERO:
+		var fixed := Vector2(fixed_size.x, minf(fixed_size.y, room))
+		if _scroll.custom_minimum_size != fixed:
+			_scroll.custom_minimum_size = fixed
+			reset_size()
+		_place(screen, above, below)
+		return
 	var scrolls := page.y > room
 	# A page that fits has no scroll bar, since the bar's width would change where its sentences wrap, and so its height.
 	var mode := ScrollContainer.SCROLL_MODE_AUTO if scrolls else ScrollContainer.SCROLL_MODE_DISABLED
@@ -177,9 +187,13 @@ func _fit_to_screen() -> void:
 	if _scroll.custom_minimum_size != want:
 		_scroll.custom_minimum_size = want
 		reset_size()
-	# Centred in the space between the top of the screen and the toolbar, so a tall window clears both.
-	var spot := Vector2(roundf((screen.x - size.x) / 2.0), roundf(SCREEN_MARGIN + (screen.y - SCREEN_MARGIN - TOOLBAR_ROOM - size.y) / 2.0))
-	spot.y = maxf(SCREEN_MARGIN, spot.y)
+	_place(screen, above, below)
+
+
+## Centred in the space between the top of the screen and the toolbar, so a tall window clears both.
+func _place(screen: Vector2, above: float, below: float) -> void:
+	var spot := Vector2(roundf((screen.x - size.x) / 2.0), roundf(above + (screen.y - above - below - size.y) / 2.0))
+	spot.y = maxf(above, spot.y)
 	if position != spot:
 		position = spot
 

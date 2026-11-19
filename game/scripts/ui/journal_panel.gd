@@ -106,7 +106,8 @@ func _bookmark(parent: Node, s: String) -> void:
 	b.text = tr(s)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.focus_mode = Control.FOCUS_ALL
-	b.custom_minimum_size = Vector2(66, 0)
+	# On a phone the tabs share out the page's height, as close to a fingertip's as all of them fit.
+	b.custom_minimum_size = Vector2(66, mini(Windowing.touch_px(), (PAGE_H - 5) / SECTIONS.size() - 1))
 	for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		var box := StyleBoxFlat.new()
 		box.bg_color = PAPER if open else (TAB.lightened(0.1) if state.begins_with("hover") else TAB)

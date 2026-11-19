@@ -72,6 +72,9 @@ func _ready() -> void:
 	# The preview feels a click as a touch, so lists scroll by dragging as they do on a phone.
 	if phone_preview:
 		Input.emulate_touch_from_mouse = true
+	# A phone's buttons are sized for a fingertip from the interface's scale, which the interface needs as it is built.
+	if phone:
+		_rescale()
 	get_window().size_changed.connect(_on_resized)
 	Settings.changed.connect(_on_resized)
 	Settings.changed.connect(_apply_volume)
@@ -184,6 +187,10 @@ func _notification(what: int) -> void:
 			_apply_volume()
 		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
 			_focused = false
+			_update_fps()
+			_apply_volume()
+		NOTIFICATION_APPLICATION_RESUMED:
+			_focused = true
 			_update_fps()
 			_apply_volume()
 		# The window opens next time on the monitor it was closed on.

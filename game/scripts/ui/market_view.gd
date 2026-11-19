@@ -299,7 +299,8 @@ func _fit(view := Vector2.ZERO) -> void:
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
 	_top_row.position = Vector2(4, 4) + Windowing.safe_top_left
-	_pad_bar.position = Vector2(4 + Windowing.safe_top_left.x, _ui_root.size.y - 18 - Windowing.safe_bottom_right.y)
+	var bar := _pad_bar.get_combined_minimum_size().y if Windowing.phone else 18.0
+	_pad_bar.position = Vector2(4 + Windowing.safe_top_left.x, _ui_root.size.y - bar - Windowing.safe_bottom_right.y)
 	var shown := Rect2(-_scene.position / cover, view / cover)
 	_places_cut_off = SPOTS.any(func(spot) -> bool: return not shown.encloses(Rect2(spot["rect"])))
 
