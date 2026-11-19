@@ -54,6 +54,7 @@ var _props: Node2D
 var _list: VBoxContainer
 var _title: Label
 var _purse: Label
+var _top_row: HBoxContainer
 var _hover_label: Label
 var _hovered := ""
 var _panel: PanelContainer
@@ -171,6 +172,7 @@ func _ready() -> void:
 	_ui_root.gui_input.connect(_on_picture_input)
 	_ui_layer.add_child(_ui_root)
 	var top := Ui.row(_ui_root)
+	_top_row = top
 	top.position = Vector2(4, 4)
 	_back = Ui.button(top, tr("Back to the estate"), leave)
 	var purse_box := PanelContainer.new()
@@ -294,7 +296,8 @@ func _fit(view := Vector2.ZERO) -> void:
 	_sky.position = _scene.position
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
-	_pad_bar.position = Vector2(4, _ui_root.size.y - 18)
+	_top_row.position = Vector2(4, 4) + Windowing.safe_top_left
+	_pad_bar.position = Vector2(4 + Windowing.safe_top_left.x, _ui_root.size.y - 18 - Windowing.safe_bottom_right.y)
 	var shown := Rect2(-_scene.position / cover, view / cover)
 	_places_cut_off = SPOTS.any(func(spot) -> bool: return not shown.encloses(Rect2(spot["rect"])))
 

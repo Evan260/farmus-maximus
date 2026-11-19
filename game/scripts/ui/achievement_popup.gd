@@ -90,7 +90,7 @@ func _next() -> void:
 		if event is InputEventMouseButton and event.pressed and card == _card:
 			_leave())
 	_tween = create_tween()
-	_tween.tween_method(func(x: float): card.position.x = roundf(x), size.x, size.x - w - MARGIN, 0.5) \
+	_tween.tween_method(func(x: float): card.position.x = roundf(x), size.x, size.x - w - MARGIN - Windowing.safe_bottom_right.x, 0.5) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# The wreath springs open once the card has landed.
 	_tween.tween_property(wreath, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -131,7 +131,7 @@ func _window_up() -> bool:
 func card_rect() -> Rect2:
 	if _card == null or not _card.is_visible_in_tree():
 		return Rect2()
-	var left := size.x - _card.size.x - MARGIN
+	var left := size.x - _card.size.x - MARGIN - Windowing.safe_bottom_right.x
 	return Rect2(global_position + Vector2(left, _card.position.y), Vector2(size.x - left, _card.size.y))
 
 

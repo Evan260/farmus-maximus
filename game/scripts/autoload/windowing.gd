@@ -41,6 +41,12 @@ var strip_dragging := false
 var scale := 1
 ## Screen pixels per interface pixel, which the player can set larger or smaller than the estate's.
 var ui_scale := 1
+## On a phone or tablet the game always fills the screen, with no strip, window or full-screen toggle.
+var phone := OS.has_feature("mobile")
+## How far the interface's corner panels sit in from each edge, in interface pixels, clear of a phone's rounded corners
+## and camera; zero on a computer.
+var safe_top_left := Vector2.ZERO
+var safe_bottom_right := Vector2.ZERO
 var _dragging := false
 var _drag_from := Vector2i.ZERO
 var _drag_start_x := 0
@@ -53,7 +59,9 @@ var _mode_before_fullscreen := Window.MODE_WINDOWED
 
 func _ready() -> void:
 	_load()
-	if "--strip" in OS.get_cmdline_user_args():
+	if phone:
+		strip = false
+	elif "--strip" in OS.get_cmdline_user_args():
 		strip = true
 		transparent = not "--solid" in OS.get_cmdline_user_args()
 	# A test run at a set window size is always the full window, whatever the player last left it as.
@@ -94,6 +102,11 @@ func _rescale() -> void:
 		if arg.begins_with("--scale="):
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
 	ui_scale = ui_scale_for(size, Settings.ui_scale_step)
+	if phone:
+		ui_scale = phone_ui_scale(size, Settings.ui_scale_step)
+		var insets := phone_insets(size, DisplayServer.get_display_safe_area(), ui_scale)
+		safe_top_left = insets[0]
+		safe_bottom_right = insets[1]
 
 
 ## The interface's scale in a full window of this size at the player's interface size step.
@@ -106,6 +119,22 @@ static func ui_scale_for(size: Vector2i, step: int) -> int:
 	if size.y < BASE.y * 3:
 		fit += 1
 	return clampi(fit - 1 + step, 1, most)
+
+
+## A phone is held close but its screen is small, so the interface is drawn as large as its layout still fits; the
+## player's size setting can only make it smaller.
+static func phone_ui_scale(size: Vector2i, step: int) -> int:
+	var most := maxi(1, mini(size.x / 560, size.y / 225))
+	return clampi(most + mini(step, 0), 1, most)
+
+
+## The interface's insets from the top-left and the bottom-right, in interface pixels: the screen's safe area, which
+## leaves out the camera, and at least enough to clear rounded corners, which the safe area does not cover.
+static func phone_insets(size: Vector2i, safe: Rect2i, ui: int) -> Array[Vector2]:
+	var corner := ceili(mini(size.x, size.y) * 0.035)
+	var tl := Vector2(maxi(safe.position.x, corner), maxi(safe.position.y, corner))
+	var br := Vector2(maxi(size.x - safe.end.x, corner), maxi(size.y - safe.end.y, corner))
+	return [(tl / ui).ceil(), (br / ui).ceil()]
 
 
 func _notification(what: int) -> void:
@@ -154,6 +183,8 @@ func _input(event: InputEvent) -> void:
 
 ## Full screen belongs to the full window: the strip is always a plain window, so F11 there goes back to the full window.
 func toggle_fullscreen() -> void:
+	if phone:
+		return
 	if strip:
 		toggle_strip()
 		return
@@ -172,7 +203,7 @@ func is_fullscreen() -> bool:
 
 
 func _restore_fullscreen() -> void:
-	if not Settings.fullscreen or Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
+	if phone or not Settings.fullscreen or Array(OS.get_cmdline_user_args()).any(func(arg): return String(arg).begins_with("--window=")):
 		return
 	if strip:
 		_mode_before_strip = Window.MODE_FULLSCREEN
@@ -182,6 +213,8 @@ func _restore_fullscreen() -> void:
 
 
 func toggle_strip() -> void:
+	if phone:
+		return
 	strip = not strip
 	_apply()
 	_save()
@@ -316,7 +349,7 @@ func _apply() -> void:
 		# The window is created transparent-capable (see project settings), because OpenGL cannot add an alpha channel later; here only the drawing changes.
 		get_viewport().transparent_bg = transparent
 		_place_strip()
-	else:
+	elif not phone:
 		DisplayServer.window_set_mouse_passthrough(PackedVector2Array())
 		win.always_on_top = false
 		win.borderless = false

@@ -168,3 +168,17 @@ func test_the_boot_splash_is_the_crisp_logo() -> void:
 	var rect: ColorRect = cover.get_child(0)
 	check(rect.color == ProjectSettings.get_setting("application/boot_splash/bg_color"), "the first frame is the splash's colour")
 	cover.free()
+
+
+func test_phones_draw_the_interface_as_large_as_it_fits() -> void:
+	var w: GDScript = load("res://scripts/autoload/windowing.gd")
+	check(w.phone_ui_scale(Vector2i(2424, 1080), 0) == 4, "a Pixel 9a draws the interface at four times, not three")
+	check(w.phone_ui_scale(Vector2i(2424, 1080), 2) == 4, "Larger can't push it past what fits")
+	check(w.phone_ui_scale(Vector2i(2424, 1080), -1) == 3, "Smaller still makes it smaller")
+
+
+func test_phone_corner_panels_clear_the_camera_and_rounded_corners() -> void:
+	var w: GDScript = load("res://scripts/autoload/windowing.gd")
+	var insets: Array = w.phone_insets(Vector2i(2424, 1080), Rect2i(136, 0, 2288, 1080), 4)
+	check(insets[0] == Vector2(34, 10), "the left clears the camera cutout and the top clears the corner: %s" % insets[0])
+	check(insets[1] == Vector2(10, 10), "the right and bottom clear the rounded corners: %s" % insets[1])

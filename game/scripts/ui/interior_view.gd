@@ -285,12 +285,13 @@ func _fit(view := Vector2.ZERO) -> void:
 	_sky.position = DOOR.position - VIEW_FROM * DETAIL
 	_ui_layer.scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_ui_root.size = (view / Windowing.ui_scale).floor()
+	_top_row.position = Vector2(4, 4) + Windowing.safe_top_left
 	_place_panel()
 
 
 func _place_panel() -> void:
 	var top_end := _top_row.position + _top_row.get_combined_minimum_size()
-	var left := _ui_root.size.x - 240
+	var left := _ui_root.size.x - 240 - Windowing.safe_bottom_right.x
 	_panel.position = Vector2(left, 30 if top_end.x + 4 <= left else top_end.y + 4)
 
 

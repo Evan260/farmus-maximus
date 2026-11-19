@@ -156,6 +156,7 @@ func _ready() -> void:
 	_achievements.below = _buttons
 	_achievements.window_open = func(): return _any_window() or not _open_cards().is_empty()
 	_root.add_child(_achievements)
+	_fit()
 	visibility_changed.connect(_hold_news)
 	Settings.changed.connect(_apply_text_size)
 	_apply_text_size()
@@ -300,6 +301,13 @@ func _fit() -> void:
 	scale = Vector2(Windowing.ui_scale, Windowing.ui_scale)
 	_root.position = Vector2.ZERO
 	_root.size = (get_viewport().get_visible_rect().size / Windowing.ui_scale).floor()
+	# On a phone the corner panels move in, clear of the rounded corners and the camera.
+	if _buttons:
+		_stats_panel.position = Vector2(4, 4) + Windowing.safe_top_left
+		_buttons.offset_top = 4 + Windowing.safe_top_left.y
+		_buttons.offset_right = -4 - Windowing.safe_bottom_right.x
+	if _zone_bar:
+		_zone_bar.offset_top = 4 + Windowing.safe_top_left.y
 	if _debug_layer:
 		_debug_layer.scale = scale
 
@@ -481,6 +489,13 @@ func _show_toast(text: String) -> void:
 	# A long message wraps within the screen, a little in from its edges.
 	_toast.position = Vector2(8, roundf(view.y * 0.2))
 	_toast.size = Vector2(view.x - 16, 0)
+	# Over an open window the message sits just above it, or below it when there is no room, never across its heading.
+	for w in _windows:
+		if w.visible:
+			var above: float = w.position.y - _toast.get_minimum_size().y - 3
+			var clear := _zone_bar.position.y + _zone_bar.size.y + 2
+			_toast.position.y = roundf(above if above >= clear else w.position.y + w.size.y + 3)
+			break
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.6)
@@ -890,7 +905,7 @@ func _update_toolbar() -> void:
 	var current := "seed:" + Game.selected_seed if tool == "seed" else tool
 	for id in _tool_buttons:
 		_tool_buttons[id].button_pressed = id == current
-	_toolbar.position = Vector2(roundf((_root.size.x - _toolbar.size.x) / 2.0), _root.size.y - _toolbar.size.y - 2)
+	_toolbar.position = Vector2(roundf((_root.size.x - _toolbar.size.x) / 2.0), _root.size.y - _toolbar.size.y - 2 - Windowing.safe_bottom_right.y)
 
 
 func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
