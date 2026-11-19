@@ -182,3 +182,25 @@ func test_phone_corner_panels_clear_the_camera_and_rounded_corners() -> void:
 	var insets: Array = w.phone_insets(Vector2i(2424, 1080), Rect2i(136, 0, 2288, 1080), 4)
 	check(insets[0] == Vector2(34, 10), "the left clears the camera cutout and the top clears the corner: %s" % insets[0])
 	check(insets[1] == Vector2(10, 10), "the right and bottom clear the rounded corners: %s" % insets[1])
+
+
+func test_a_fingertip_target_is_about_seven_millimetres() -> void:
+	var w: GDScript = load("res://scripts/autoload/windowing.gd")
+	check(w.touch_px_for(420.0, 4) == 29, "a Pixel 9a's fingertip is 29 interface pixels at four times: %d" % w.touch_px_for(420.0, 4))
+	check(w.touch_px_for(420.0, 3) > w.touch_px_for(420.0, 4), "a smaller interface needs more of its pixels for the same finger")
+
+
+func test_a_finger_held_still_asks_rather_than_taps() -> void:
+	check(not Touch.is_hold(0.2, 0.0, 30.0), "a quick touch is a tap")
+	check(Touch.is_hold(0.5, 10.0, 30.0), "a finger resting in place for half a second is held")
+	check(not Touch.is_hold(0.5, 60.0, 30.0), "a finger that slid away is not held")
+	check(Touch.is_tap(5.0, 30.0, false), "a short touch that stayed put taps")
+	check(not Touch.is_tap(5.0, 30.0, true), "lifting a held finger does not tap as well")
+	check(not Touch.is_tap(60.0, 30.0, false), "a finger slid away does not tap")
+
+
+func test_the_back_gesture_closes_the_newest_thing_first() -> void:
+	check(Touch.back_step(true, true, false) == "close", "an open window closes before anything else")
+	check(Touch.back_step(false, true, false) == "leave", "then the market or the farmhouse is left")
+	check(Touch.back_step(false, false, false) == "title", "then the farm goes back to the title")
+	check(Touch.back_step(false, false, true) == "background", "and on the title the game is put away")

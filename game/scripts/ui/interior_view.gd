@@ -96,6 +96,8 @@ var _title: Label
 var _list: VBoxContainer
 var _scroll: Node
 var _hovered := ""
+## Where a finger touched the room, in interface pixels.
+var _touch_from := Vector2.ZERO
 var _selected := ""
 var _signature := ""
 var _t := 0.0
@@ -631,6 +633,12 @@ func _spot_at(point: Vector2) -> String:
 func _on_picture_input(event: InputEvent) -> void:
 	if not event is InputEventMouse:
 		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if Windowing.phone:
+			_touch(event)
+		elif event.pressed:
+			_tap(event.position)
+		return
 	var point := _picture_point(event.position)
 	# The pets lie in front of the furnishings, so they take the pointer first, then the loom, then a furnishing.
 	var pet := _pet_at(point)
@@ -648,17 +656,35 @@ func _on_picture_input(event: InputEvent) -> void:
 			text = title if Game.furnishings.has(spot) else tr("%s: click to furnish") % title
 		_hover_label.visible = text != ""
 		_hover_label.text = text
-		_hover_label.position = (event.position + Vector2(8, 10)).min(_ui_root.size - _hover_label.get_minimum_size() - Vector2(2, 2))
+		_hover_label.position = Ui.hover_spot(event.position, _hover_label.get_minimum_size(), _ui_root.size)
 		_ui_root.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if text != "" else Control.CURSOR_ARROW
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if pet != null:
-			_stroke(pet)
-		elif loom:
-			_weave()
-		elif spot != "":
-			_open(spot)
-		elif _panel.visible:
-			_close_panel()
+
+
+## A click strokes a pet, works the loom or opens a furnishing.
+func _tap(at: Vector2) -> void:
+	var point := _picture_point(at)
+	var pet := _pet_at(point)
+	var loom := pet == null and not ruined() and LOOM.has_point(point) and _spot_at(point) == ""
+	var spot := "" if pet != null or loom else _spot_at(point)
+	if pet != null:
+		_stroke(pet)
+	elif loom:
+		_weave()
+	elif spot != "":
+		_open(spot)
+	elif _panel.visible:
+		_close_panel()
+
+
+## On a phone the house answers when the finger lifts, so a finger held on something can first read what it is.
+func _touch(event: InputEventMouseButton) -> void:
+	if event.pressed:
+		_touch_from = event.position
+		return
+	if Touch.is_tap(event.position.distance_to(_touch_from) * Windowing.ui_scale, Windowing.touch_slop(), Tips.long_press and _hover_label.visible):
+		_tap(event.position)
+		_hover_label.visible = false
+		_hovered = ""
 
 
 ## The tip over a sleeping pet, with its name.

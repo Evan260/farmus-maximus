@@ -57,6 +57,8 @@ var _purse: Label
 var _top_row: HBoxContainer
 var _hover_label: Label
 var _hovered := ""
+## Where a finger touched the town, in interface pixels.
+var _touch_from := Vector2.ZERO
 var _panel: PanelContainer
 var _pad_bar: HBoxContainer
 ## Set when the window crops a place out of the town picture.
@@ -404,21 +406,20 @@ func _folk_at(ui_point: Vector2) -> Node2D:
 
 
 func _on_picture_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if Windowing.phone:
+			_touch(event)
+		elif event.pressed:
+			_tap(event.position)
+		return
 	var person := _folk_at(event.position) if event is InputEventMouse else null
 	if person and event is InputEventMouseMotion:
 		_hovered = ""
 		_props.queue_redraw()
 		_hover_label.visible = true
 		_hover_label.text = person.display_name
-		_hover_label.position = (event.position + Vector2(8, 10)).min(_ui_root.size - _hover_label.get_minimum_size() - Vector2(2, 2))
+		_hover_label.position = Ui.hover_spot(event.position, _hover_label.get_minimum_size(), _ui_root.size)
 		_ui_root.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		return
-	if person and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		person.greet()
-		var head := func() -> Vector2:
-			var at: Vector2 = person.position if is_instance_valid(person) else Vector2.INF
-			return ((at + Vector2(0, -46)) * _scene.scale.x + _scene.position) / Windowing.ui_scale
-		Ui.speech(_ui_root, head.call(), person.saying(), head)
 		return
 	if event is InputEventMouseMotion:
 		var spot := _spot_at(event.position)
@@ -430,14 +431,37 @@ func _on_picture_input(event: InputEvent) -> void:
 			for s in SPOTS:
 				if s["id"] == spot:
 					_hover_label.text = tr("%s: %s") % [tr(String(s["name"])), tr(String(s["hint"]))]
-			_hover_label.position = (event.position + Vector2(8, 10)).min(_ui_root.size - _hover_label.get_minimum_size() - Vector2(2, 2))
+			_hover_label.position = Ui.hover_spot(event.position, _hover_label.get_minimum_size(), _ui_root.size)
 		_ui_root.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if spot != "" else Control.CURSOR_ARROW
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var spot := _spot_at(event.position)
-		if spot != "":
-			_open(spot)
-		elif _panel.visible:
-			_close_panel()
+
+
+## A click on a townsperson greets them, and one on a place opens it.
+func _tap(at: Vector2) -> void:
+	var person := _folk_at(at)
+	if person:
+		person.greet()
+		var head := func() -> Vector2:
+			var spot: Vector2 = person.position if is_instance_valid(person) else Vector2.INF
+			return ((spot + Vector2(0, -46)) * _scene.scale.x + _scene.position) / Windowing.ui_scale
+		Ui.speech(_ui_root, head.call(), person.saying(), head)
+		return
+	var spot := _spot_at(at)
+	if spot != "":
+		_open(spot)
+	elif _panel.visible:
+		_close_panel()
+
+
+## On a phone a place opens when the finger lifts, so a finger held on it can first read its name.
+func _touch(event: InputEventMouseButton) -> void:
+	if event.pressed:
+		_touch_from = event.position
+		return
+	if Touch.is_tap(event.position.distance_to(_touch_from) * Windowing.ui_scale, Windowing.touch_slop(), Tips.long_press and _hover_label.visible):
+		_tap(event.position)
+		_hover_label.visible = false
+		_hovered = ""
+		_props.queue_redraw()
 
 
 ## The notice board and the price slate stand in the square, and the place under the pointer is outlined.

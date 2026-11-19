@@ -1072,10 +1072,16 @@ func _world_input(event: InputEvent) -> void:
 			else:
 				# A press that did not move far is a click; one that moved was a drag across the estate.
 				if _pressed and not _dragging and event.button_index == MOUSE_BUTTON_LEFT:
-					if hud.close_windows():
+					# A finger held still on something shows what it is, which a pointer shows by resting there.
+					if Windowing.phone and Tips.long_press and hud.info_showing():
+						pass
+					elif hud.close_windows():
 						Audio.play("click", -10.0)
 					else:
 						_click(world.get_global_mouse_position())
+					# A lifted finger points at nothing, so what it tapped stops being outlined.
+					if Windowing.phone and not Tips.long_press:
+						_update_hover(Vector2(-INF, -INF))
 				_pressed = false
 				_dragging = false
 	elif event is InputEventPanGesture:
@@ -1083,7 +1089,7 @@ func _world_input(event: InputEvent) -> void:
 		_pan_by((event.delta.x + event.delta.y) * 6.0)
 	elif event is InputEventMouseMotion:
 		if _pressed:
-			if not _dragging and event.position.distance_to(_drag_from) > 4.0:
+			if not _dragging and event.position.distance_to(_drag_from) > _drag_slop():
 				_dragging = true
 			if _dragging:
 				cam_x = _drag_start_cam - (event.position.x - _drag_from.x)
@@ -1091,6 +1097,11 @@ func _world_input(event: InputEvent) -> void:
 				return
 		_pad_point = Vector2.INF
 		_update_hover(world.get_global_mouse_position())
+
+
+## How far, in estate pixels, a press moves before it becomes a drag; a fingertip wanders further than a mouse.
+func _drag_slop() -> float:
+	return Windowing.touch_slop() / Windowing.scale if Windowing.phone else 4.0
 
 
 ## A farm animal under the pointer that answers a click: a hen or goat in the pasture, the stork on its nest, or the

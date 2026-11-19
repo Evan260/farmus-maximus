@@ -457,6 +457,10 @@ func set_info(text: String) -> void:
 	_place_info()
 
 
+func info_showing() -> bool:
+	return _info.visible
+
+
 ## The hover text sits just above the pointer, so it never hides the plants along the bottom of the field.
 func _place_info() -> void:
 	if not _info.visible:

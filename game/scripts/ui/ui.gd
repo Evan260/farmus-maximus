@@ -70,6 +70,14 @@ static func tip_on(c: Control, text: String) -> Control:
 	return c
 
 
+## Where the name of what is under the pointer goes: beside the pointer, or on a phone above the finger, which hides
+## what is under it.
+static func hover_spot(at: Vector2, size: Vector2, room: Vector2) -> Vector2:
+	if Windowing.phone:
+		return Vector2(clampf(at.x - size.x / 2.0, 2, room.x - size.x - 2), maxf(2, at.y - size.y - 14)).round()
+	return (at + Vector2(8, 10)).min(room - size - Vector2(2, 2))
+
+
 ## A framed panel of slightly darker parchment, for one item in a list, so each item reads as its own block.
 static func card(parent: Node) -> VBoxContainer:
 	var frame := PanelContainer.new()
