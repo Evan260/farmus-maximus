@@ -194,6 +194,11 @@ func _fit_to_screen() -> void:
 func _place(screen: Vector2, above: float, below: float) -> void:
 	var spot := Vector2(roundf((screen.x - size.x) / 2.0), roundf(above + (screen.y - above - below - size.y) / 2.0))
 	spot.y = maxf(above, spot.y)
+	# While a phone's keyboard is up, the window rises until the field being typed in shows above it.
+	var field := Ui.typing_in(self) if Windowing.phone else null
+	if field != null:
+		var rect := field.get_global_rect()
+		spot.y = maxf(minf(spot.y, roundf(Ui.keyboard_top() - (rect.end.y - global_position.y) - 4)), 2 - (rect.position.y - global_position.y))
 	if position != spot:
 		position = spot
 

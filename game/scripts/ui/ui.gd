@@ -79,6 +79,20 @@ static func hover_spot(at: Vector2, size: Vector2, room: Vector2) -> Vector2:
 	return (at + Vector2(8, 10)).min(room - size - Vector2(2, 2))
 
 
+## The top of a phone's on-screen keyboard in interface pixels, or INF while it is hidden or on a computer.
+static func keyboard_top() -> float:
+	var tall := DisplayServer.virtual_keyboard_get_height() if Windowing.phone else 0
+	if tall <= 0:
+		return INF
+	return float(DisplayServer.window_get_size().y - tall) / Windowing.ui_scale
+
+
+## The text field of `root` that is being typed in, or null.
+static func typing_in(root: Control) -> LineEdit:
+	var focus := root.get_viewport().gui_get_focus_owner() if root.is_inside_tree() else null
+	return focus as LineEdit if focus is LineEdit and root.is_ancestor_of(focus) else null
+
+
 ## A framed panel of slightly darker parchment, for one item in a list, so each item reads as its own block.
 static func card(parent: Node) -> VBoxContainer:
 	var frame := PanelContainer.new()

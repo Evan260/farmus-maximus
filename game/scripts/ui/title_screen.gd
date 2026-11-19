@@ -82,6 +82,22 @@ func _ready() -> void:
 	Ui.fade_in(self, 0.8)
 
 
+func _process(_delta: float) -> void:
+	if Windowing.phone:
+		_clear_keyboard()
+
+
+## While a phone's keyboard is up, the menu rises until the farm's name being typed shows above it.
+func _clear_keyboard() -> void:
+	var y := roundf((size.y - _column.size.y) / 2.0)
+	var field := Ui.typing_in(_column)
+	if field != null:
+		var rect := field.get_global_rect()
+		y = maxf(minf(y, roundf(Ui.keyboard_top() - (rect.end.y - _column.global_position.y) - 4)), 2 - (rect.position.y - _column.global_position.y))
+	if _column.position.y != y:
+		_column.position.y = y
+
+
 func _show_menu() -> void:
 	_naming = false
 	Ui.clear(_menu)
