@@ -39,9 +39,10 @@ static func button(parent: Node, text: String, action: Callable) -> Button:
 	return b
 
 
-## The demo's button to the full game's store page, or null outside the demo and while the game has no app id yet.
+## The demo's button to the full game's store page, or null outside the demo, while the game has no app id yet, and
+## on a phone, where there is no Steam.
 static func wishlist_button(parent: Node) -> Button:
-	if not Game.is_demo() or Awards.full_game_app_id() == 0:
+	if not Game.is_demo() or Awards.full_game_app_id() == 0 or Windowing.phone:
 		return null
 	var b := button(parent, TranslationServer.translate("Wishlist on Steam"), func(): Awards.open_store())
 	b.name = "WishlistButton"

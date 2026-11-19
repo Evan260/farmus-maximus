@@ -77,8 +77,8 @@ func _ready() -> void:
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	version.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	version.offset_right = -4
-	version.offset_bottom = -3
+	version.offset_right = -4 - Windowing.safe_bottom_right.x
+	version.offset_bottom = -3 - Windowing.safe_bottom_right.y
 	Ui.fade_in(self, 0.8)
 
 
@@ -103,6 +103,9 @@ func _show_menu() -> void:
 		Ui.button(_menu, tr("Farms"), _open_farms)
 	Ui.button(_menu, tr("Settings"), func(): open_window.call("settings"))
 	Ui.wishlist_button(_menu)
+	# Phone apps are put away rather than quit, so a phone has no Quit button.
+	if Windowing.phone:
+		return
 	# Quitting here does what closing the window does: the farm is saved and the window remembers its monitor.
 	Ui.button(_menu, tr("Quit"), func(): get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST); get_tree().quit())
 
