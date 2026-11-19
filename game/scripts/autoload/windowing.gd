@@ -182,7 +182,7 @@ func _notification(what: int) -> void:
 			_focused = true
 			_update_fps()
 			_apply_volume()
-		NOTIFICATION_APPLICATION_FOCUS_OUT:
+		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
 			_focused = false
 			_update_fps()
 			_apply_volume()
@@ -428,7 +428,8 @@ func _apply_volume() -> void:
 	if behind and Settings.background_sound == "quieter":
 		db -= 12.0
 	AudioServer.set_bus_volume_db(0, db)
-	AudioServer.set_bus_mute(0, (behind and Settings.background_sound == "muted") or float(Audio.volumes["Master"]) <= 0.001)
+	# A phone game put in the background is silent, as phone apps are.
+	AudioServer.set_bus_mute(0, (behind and (phone or Settings.background_sound == "muted")) or float(Audio.volumes["Master"]) <= 0.001)
 
 
 func _place_strip() -> void:
