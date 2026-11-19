@@ -464,14 +464,16 @@ func _ride_to_market() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST and Windowing.phone:
+	# Android reports each back gesture twice, so a second report straight after the first is ignored.
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and Windowing.phone and Time.get_ticks_msec() - _back_at > 300:
+		_back_at = Time.get_ticks_msec()
 		_go_back()
 
 
 ## A phone's back gesture closes what is open, then leaves the market or the farmhouse, then goes from the farm to the
 ## title, and on the title puts the game away as the home button would.
 func _go_back() -> void:
-	match Touch.back_step(hud.go_back(), market.visible or interior.visible, hud.title_open()):
+	match Touch.back_step(hud.go_back() or hud.dismiss_achievement(), market.visible or interior.visible, hud.title_open()):
 		"leave":
 			(market if market.visible else interior).go_back()
 		"title":

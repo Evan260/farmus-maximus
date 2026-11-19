@@ -100,6 +100,14 @@ func _next() -> void:
 		_tween.pause()
 
 
+## Sends the card showing on its way, as a click on it does; true if there was one.
+func dismiss() -> bool:
+	if _card == null:
+		return false
+	_leave()
+	return true
+
+
 func _leave() -> void:
 	if _tween:
 		_tween.kill()

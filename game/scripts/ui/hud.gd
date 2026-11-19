@@ -831,6 +831,11 @@ func go_back() -> bool:
 
 
 
+## A phone's back gesture also sends an achievement's card on its way.
+func dismiss_achievement() -> bool:
+	return _achievements.dismiss()
+
+
 ## Sleeping runs the night by in a few seconds instead of skipping it, so the sky and the light can be seen changing.
 func _start_sleep() -> void:
 	_slept = 0.0
