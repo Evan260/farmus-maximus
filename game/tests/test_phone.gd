@@ -1,0 +1,311 @@
+extends "res://tests/test_case.gd"
+## Notifications and achievements on a phone: what the farm tells the player while the game is put away, and the link
+## to the phone's own services, which does nothing until the native plugin is in the build.
+
+const NOTICES := "res://scripts/game/phone_notices.gd"
+
+
+func _farm() -> Node:
+	var game: Node = root.get_node("Game")
+	game.new_game()
+	game.day_time = 8.0
+	game.calendar.wet_left = 9999.0
+	return game
+
+
+func _plan(game: Node) -> Dictionary:
+	var by_id := {}
+	var notices: GDScript = load(NOTICES) if ResourceLoader.exists(NOTICES) else null
+	if notices == null:
+		return by_id
+	for n in notices.plan(game):
+		by_id[n["id"]] = n
+	return by_id
+
+
+func _phone() -> Node:
+	return root.get_node_or_null("PhoneServices")
+
+
+func _step() -> float:
+	return float(Data.get_value("notifications.step_seconds", 60))
+
+
+func test_the_cart_on_the_road_is_announced_when_it_comes_home() -> void:
+	var game := _farm()
+	game.cart = {"away": true, "time_left": 15.0, "items": 10, "value": 120, "load": ["lavender"]}
+	var plan := _plan(game)
+	check(plan.has("cart") and is_equal_approx(float(plan["cart"]["seconds"]), 15.0), "the cart's return is planned for when it gets home")
+	check(plan.has("cart") and String(plan["cart"]["text"]).contains("120"), "and says what it brings")
+	check(plan.has("cart") and plan["cart"]["title"] == tr("The cart is home"), "under a title of its own")
+	game.cart = game._empty_cart()
+	check(not _plan(game).has("cart"), "a cart standing in the yard is not announced")
+	game.new_game()
+
+
+func test_builders_finishing_are_announced() -> void:
+	var game := _farm()
+	game.villa_build = {"active": true, "time_left": 300.0}
+	game.projects["storage"] = 120.0
+	game.buildings["mill"]["state"] = "repairing"
+	game.buildings["mill"]["time_left"] = 200.0
+	var plan := _plan(game)
+	for job in [["build_villa", 300.0], ["build_storage", 120.0], ["build_mill", 200.0]]:
+		var at: float = float(plan[job[0]]["seconds"]) if plan.has(job[0]) else -1.0
+		check(at >= job[1] and at <= job[1] + _step(), "%s is announced when the builders finish (%.0f s)" % [job[0], at])
+	check(plan.has("build_villa") and plan["build_villa"]["title"] == tr(String(game.villa_stages()[1]["name"])), "the farmhouse's notice names the stage being built")
+	check(plan.has("build_mill") and plan["build_mill"]["title"] == tr("Mill") and plan["build_mill"]["text"] == tr("The work is finished"), "and a building's names the building")
+	game = _farm()
+	game.day_time = 23.0
+	check(game.is_night(), "11 at night is dark")
+	game.villa_build = {"active": true, "time_left": 60.0}
+	var dawn: float = game.seconds_until_day()
+	plan = _plan(game)
+	var at: float = float(plan["build_villa"]["seconds"]) if plan.has("build_villa") else -1.0
+	check(at >= dawn + 60.0 - _step(), "builders resting at night finish after the night (%.0f s, dawn in %.0f s)" % [at, dawn])
+	game.new_game()
+
+
+func test_a_storehouse_filling_up_is_announced() -> void:
+	var game := _farm()
+	game.villa_stage = 2
+	game.helpers["farmhand"] = 1
+	for i in game.plots.size():
+		var p: Dictionary = game.plots[i]
+		if p["unlocked"] and p["zone"] == "home":
+			p["crop"] = "lavender"
+			p["growth"] = game.time_to_ready(p)
+	game.add_item("bread", game.holding_capacity() - 8, true)
+	var plan := _plan(game)
+	var at: float = float(plan["full"]["seconds"]) if plan.has("full") else -1.0
+	check(at > 0.0 and at <= 600.0, "the farmhand filling the storehouse and cart is announced (%.0f s)" % at)
+	check(plan.has("full") and plan["full"]["text"] == tr("The storehouse and the cart are full: send the cart to market"), "and says to send the cart")
+	game.add_item("bread", 8, true)
+	check(not _plan(game).has("full"), "a farm left already full is not announced again")
+	game.new_game()
+	game.day_time = 8.0
+	check(not _plan(game).has("full"), "nor is a farm with nothing filling it")
+	game.new_game()
+
+
+func test_a_slowly_filling_storehouse_is_reckoned_from_its_pace() -> void:
+	var game := _farm()
+	game.villa_stage = 2
+	game.helpers["farmhand"] = 1
+	game.levels["storage"] = 4
+	for i in game.plots.size():
+		var p: Dictionary = game.plots[i]
+		if p["unlocked"] and p["zone"] == "home":
+			p["crop"] = "lavender"
+			p["growth"] = game.time_to_ready(p)
+	var notices: GDScript = load(NOTICES) if ResourceLoader.exists(NOTICES) else null
+	if notices == null:
+		check(false, "the notices can be planned")
+		return
+	var most := float(Data.get_value("offline.max_hours", 12)) * 3600.0
+	var at: float = notices.fills_in(game, most)
+	# The same farm played out step by step, as the catch-up plays it.
+	game.quiet = true
+	var played := 0.0
+	while played < most and not notices.full(game):
+		game.advance(float(Data.get_value("offline.step_seconds", 5)))
+		played += float(Data.get_value("offline.step_seconds", 5))
+	game.quiet = false
+	check(played > float(Data.get_value("notifications.sample_seconds", 1200)), "this farm takes longer to fill than the part played out (%.0f s)" % played)
+	check(absf(at - played) <= played * 0.25, "and the reckoning lands near when it fills (%.0f s reckoned, %.0f s played)" % [at, played])
+	game.new_game()
+
+
+func test_nothing_is_planned_past_the_offline_limit() -> void:
+	var game := _farm()
+	var most := float(Data.get_value("offline.max_hours", 12)) * 3600.0
+	game.cart = {"away": true, "time_left": most + 100.0, "items": 10, "value": 120, "load": ["lavender"]}
+	game.villa_build = {"active": true, "time_left": most}
+	game.projects["channels"] = 90.0
+	var plan := _plan(game)
+	check(not plan.has("cart") and not plan.has("build_villa"), "what happens after the farm stops counting time away is not announced")
+	check(plan.has("build_channels"), "while what happens before it is")
+	check(plan.values().all(func(n): return float(n["seconds"]) <= most), "nothing is planned past %d hours" % int(most / 3600.0))
+	game.new_game()
+
+
+func test_planning_leaves_the_farm_as_it_was() -> void:
+	var game := _farm()
+	game.villa_stage = 2
+	game.helpers["farmhand"] = 1
+	game.projects["storage"] = 120.0
+	game.villa_build = {"active": true, "time_left": 300.0}
+	game.cart = {"away": true, "time_left": 15.0, "items": 10, "value": 120, "load": ["lavender"]}
+	for i in game.plots.size():
+		if game.plots[i]["unlocked"]:
+			game.plots[i]["crop"] = "lavender"
+	var before := JSON.stringify(game.to_dict())
+	var coins: int = game.coins
+	_plan(game)
+	check(JSON.stringify(game.to_dict()) == before and game.coins == coins, "working out the notices plays a copy of the farm, never the farm itself")
+	game.new_game()
+
+
+func test_each_kind_can_be_turned_off() -> void:
+	var game := _farm()
+	game.cart = {"away": true, "time_left": 15.0, "items": 10, "value": 120, "load": ["lavender"]}
+	game.projects["storage"] = 120.0
+	var settings: Node = root.get_node("Settings")
+	check("notify_cart" in settings.PLAY and "notify_full" in settings.PLAY and "notify_builders" in settings.PLAY, "the choices are kept with the other settings")
+	settings.notify_cart = false
+	check(not _plan(game).has("cart") and _plan(game).has("build_storage"), "turning off the cart's notice leaves the builders'")
+	settings.notify_cart = true
+	settings.notify_builders = false
+	check(_plan(game).has("cart") and not _plan(game).has("build_storage"), "and the other way round")
+	settings.notify_builders = true
+	settings.offline_progress = false
+	check(_plan(game).is_empty(), "with progress while closed off the farm waits, so nothing is announced")
+	settings.offline_progress = true
+	game.new_game()
+
+
+func test_the_phone_link_does_nothing_without_the_plugin() -> void:
+	var phone := _phone()
+	check(phone != null, "PhoneServices is an autoload")
+	if phone == null:
+		return
+	check(not Engine.has_singleton("SlowSundayPhone") and not phone.available(), "there is no native plugin in this build")
+	check(not phone.notifications_allowed(), "so notifications count as not allowed")
+	phone.schedule("cart", 10.0, "The cart is home", "Back")
+	phone.cancel_all()
+	phone.request_notifications()
+	phone.open_notification_settings()
+	phone.unlock_achievement("CgkI")
+	phone.sign_in()
+	phone.put_away()
+	phone.came_back()
+	check(not phone.asked(), "and every call does nothing at all")
+
+
+func test_putting_the_game_away_schedules_what_the_farm_will_need() -> void:
+	var phone := _phone()
+	if phone == null:
+		check(false, "PhoneServices is an autoload")
+		return
+	var game := _farm()
+	game.cart = {"away": true, "time_left": 15.0, "items": 10, "value": 120, "load": ["lavender"]}
+	var fake := FakePhone.new()
+	phone._phone = fake
+	phone._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	var scheduled: Array = fake.calls.filter(func(c): return c[0] == "scheduleNotification")
+	check(not fake.calls.is_empty() and fake.calls[0] == ["cancelAllNotifications"], "putting the game away first clears what was planned before")
+	check(scheduled.size() == 1 and scheduled[0][1] == "cart" and scheduled[0][2] == 15 and scheduled[0][3] == tr("The cart is home"), "then plans the cart's return: %s" % str(scheduled))
+	phone._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED)
+	check(fake.calls.filter(func(c): return c[0] == "scheduleNotification").size() == 1, "losing the focus and then pausing plans only once")
+	fake.calls.clear()
+	phone._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED)
+	check(fake.calls == [["cancelAllNotifications"]], "coming back clears them")
+	fake.allowed = true
+	check(phone.notifications_allowed(), "the phone says whether notifications are allowed")
+	phone.request_notifications()
+	check(fake.calls.has(["requestNotificationPermission"]) and phone.asked(), "asking once is remembered, so next time the button opens the phone's settings")
+	root.get_node("Settings").cfg.erase_section("phone")
+	phone._phone = null
+	game.new_game()
+
+
+func test_every_achievement_has_a_google_play_entry() -> void:
+	var ids: Array = Data.get_value("achievements", []).map(func(a): return String(a["id"]))
+	var play: Dictionary = Data.get_value("play_games.achievements", {})
+	check(not play.is_empty() and ids.all(func(id): return play.has(id)), "every achievement has an entry for its Google Play id in balance.json")
+	check(play.keys().all(func(id): return id in ids), "and nothing else does")
+	check(play.values().all(func(v): return v is String), "each id is text, blank until the Play Console gives it")
+
+
+func test_an_achievement_reaches_google_play_once_it_has_an_id() -> void:
+	var phone := _phone()
+	var data: Node = root.get_node("Data")
+	var play: Dictionary = data.data.get("play_games", {}).get("achievements", {})
+	if phone == null or not play.has("first_harvest") or not Awards.has_method("send_to_play_games"):
+		check(false, "Awards sends achievements to Google Play through PhoneServices")
+		return
+	var fake := FakePhone.new()
+	phone._phone = fake
+	var was: String = play["first_harvest"]
+	play["first_harvest"] = ""
+	data._found = {}
+	Awards.send_to_play_games("first_harvest")
+	check(fake.calls.is_empty(), "an achievement without a Google Play id yet is skipped")
+	play["first_harvest"] = "CgkIexample"
+	data._found = {}
+	Awards.send_to_play_games("first_harvest")
+	check(fake.calls == [["unlockAchievement", "CgkIexample"]], "one with an id is unlocked by that id")
+	play["first_harvest"] = was
+	data._found = {}
+	phone._phone = null
+
+
+func test_phones_get_a_notifications_tab() -> void:
+	var settings: Node = root.get_node("Settings")
+	var was := [Windowing.phone, Windowing.phone_preview]
+	Windowing.phone = false
+	var panel: Control = load("res://scripts/ui/settings_panel.gd").new()
+	root.add_child(panel)
+	panel.open()
+	await process_frame
+	check(not _buttons(panel).any(func(b: Button) -> bool: return b.text == tr("Notifications")), "a computer has no notifications tab")
+	panel.free()
+	Windowing.phone = true
+	Windowing.phone_preview = true
+	panel = load("res://scripts/ui/settings_panel.gd").new()
+	root.add_child(panel)
+	panel.tab = "Notifications"
+	panel.open()
+	await process_frame
+	check(_buttons(panel).any(func(b: Button) -> bool: return b.text == tr("Notifications")), "a phone has one")
+	var toggle := _setting(panel, "The cart is home")
+	check(toggle != null and toggle.text == tr("On"), "with a switch for the cart's return")
+	check(_setting(panel, "The storehouse is full") != null and _setting(panel, "The builders have finished") != null, "and for the storehouse and the builders")
+	if toggle:
+		toggle.pressed.emit()
+		check(not settings.notify_cart, "which turns its notices off")
+		settings.notify_cart = true
+	check(_buttons(panel).any(func(b: Button) -> bool: return b.text == tr("Allow")), "a phone not allowing notifications offers to ask for them")
+	panel.free()
+	Windowing.phone = was[0]
+	Windowing.phone_preview = was[1]
+
+
+func _buttons(panel: Control) -> Array:
+	return panel.find_children("*", "Button", true, false)
+
+
+## The button beside a setting's label.
+func _setting(panel: Control, text: String) -> Button:
+	for l in panel.find_children("*", "Label", true, false):
+		if l.text == tr(text):
+			for b in l.get_parent().get_children():
+				if b is Button:
+					return b
+	return null
+
+
+class FakePhone:
+	var calls: Array = []
+	var allowed := false
+
+	func scheduleNotification(id: String, seconds: int, title: String, text: String) -> void:
+		calls.append(["scheduleNotification", id, seconds, title, text])
+
+	func cancelAllNotifications() -> void:
+		calls.append(["cancelAllNotifications"])
+
+	func areNotificationsAllowed() -> bool:
+		return allowed
+
+	func requestNotificationPermission() -> void:
+		calls.append(["requestNotificationPermission"])
+
+	func openNotificationSettings() -> void:
+		calls.append(["openNotificationSettings"])
+
+	func unlockAchievement(id: String) -> void:
+		calls.append(["unlockAchievement", id])
+
+	func signIn() -> void:
+		calls.append(["signIn"])

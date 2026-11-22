@@ -1,6 +1,6 @@
 extends Node
-## The link to the store and the desktop: Steam achievements and rich presence when the game runs through Steam, the
-## demo's store page, and taskbar alerts.
+## The link to the store and the desktop: Steam achievements and rich presence when the game runs through Steam, Google
+## Play Games achievements on a phone, the demo's store page, and taskbar alerts.
 
 ## How often, in seconds, the rich presence is looked at; Steam is only told when it has changed.
 const PRESENCE_EVERY := 2.0
@@ -61,21 +61,29 @@ func update_presence() -> void:
 	_presence = now
 
 
-## Sends every achievement in the save to Steam, so ones earned offline or before Steam was available still count.
+## Sends every achievement in the save to Steam and Google Play, so ones earned offline or before either was available still count.
 func sync_achievements() -> void:
 	for id in Game.journal.achievements:
-		_unlock_on_steam(String(id))
+		_unlock(String(id))
 
 
 func _on_achievement(a: Dictionary) -> void:
-	_unlock_on_steam(String(a["id"]))
+	_unlock(String(a["id"]))
 
 
-func _unlock_on_steam(id: String) -> void:
-	# The demo and maxed farms, tests and other trial runs grant achievements freely, so none of theirs reach Steam.
-	if _steam and not Dev.no_save():
+func _unlock(id: String) -> void:
+	# The demo and maxed farms, tests and other trial runs grant achievements freely, so none of theirs reach a store.
+	if Dev.no_save():
+		return
+	if _steam:
 		_steam.call("setAchievement", id)
 		_steam.call("storeStats")
+	send_to_play_games(id)
+
+
+## Unlocks an achievement on Google Play Games, once the Play Console has given it an id in balance.json.
+func send_to_play_games(id: String) -> void:
+	PhoneServices.unlock_achievement(String(Data.get_value("play_games.achievements." + id, "")))
 
 
 ## The full game's Steam app id, which the demo's wishlist buttons open; 0, which hides them, until Steamworks gives it.

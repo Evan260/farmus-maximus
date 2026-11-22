@@ -1,5 +1,6 @@
 extends "res://scripts/ui/window_panel.gd"
-## Settings: sound, the window and desktop strip, how the game plays, accessibility and key bindings.
+## Settings: sound, the window and desktop strip, how the game plays, accessibility, key bindings and, on a phone,
+## notifications.
 
 ## Each language's name in that language, for the language list.
 const NATIVE_NAMES := {"en": "English", "fr": "Français", "de": "Deutsch", "es": "Español", "it": "Italiano", "pt_BR": "Português (BR)",
@@ -23,13 +24,20 @@ func open() -> void:
 func signature() -> String:
 	return "%s|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [tab, _waiting_for, Windowing.strip, Windowing.transparent, Windowing.strip_scale,
 		Windowing.dock, str(Windowing.focus_mode) + str(Windowing.follow), Settings.offline_progress, str(Settings.notifications) + str(Windowing.is_fullscreen()), Settings.large_text, Settings.reduced_motion,
-		Settings.strong_cues, str(Settings.low_power) + str(Settings.tooltips), Settings.background_sound + str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language]
+		Settings.strong_cues, str(Settings.low_power) + str(Settings.tooltips), Settings.background_sound + str(Settings.show_tutorial) + str(Settings.show_title) + str(Settings.ui_scale_step) + str(Settings.day_minutes), JSON.stringify(Settings.keys) + Settings.language] + _notices_signature()
+
+
+## What the notifications page shows; the phone is only asked about its permission while that page is open.
+func _notices_signature() -> String:
+	if tab != "Notifications":
+		return ""
+	return "%s%s%s%s%s" % [Settings.notify_cart, Settings.notify_full, Settings.notify_builders, PhoneServices.notifications_allowed(), PhoneServices.asked()]
 
 
 func build() -> void:
 	var tabs := Ui.tab_row(top)
-	# A phone has no keyboard to bind keys on.
-	for t in ["Sound", "Display", "Gameplay"] + ([] if Windowing.phone else ["Keys"]):
+	# A phone has no keyboard to bind keys on, and only a phone is sent notifications while the game is put away.
+	for t in ["Sound", "Display", "Gameplay"] + (["Notifications"] if Windowing.phone else ["Keys"]):
 		Ui.tab_button(tabs, tr(t), func(): tab = t; show_page()).button_pressed = t == tab
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 7)
@@ -103,6 +111,21 @@ func build() -> void:
 				_toggle("Flash the taskbar when something needs you", Settings.notifications, func(v): Settings.set_value("notifications", v))
 			_toggle("Open on the title screen", Settings.show_title, func(v): Settings.set_value("show_title", v))
 			_toggle("Clear marker on ready plants", Settings.strong_cues, func(v): Settings.set_value("strong_cues", v))
+		"Notifications":
+			if not PhoneServices.notifications_allowed():
+				var off := tr("Your phone has notifications turned off for this game")
+				# A phone that has said no once only changes its mind in its own settings.
+				if PhoneServices.asked():
+					Ui.setting(body, off, tr("Phone settings"), func(): PhoneServices.open_notification_settings())
+				else:
+					Ui.setting(body, off, tr("Allow"), func(): PhoneServices.request_notifications(); refresh())
+			_toggle("The cart is home", Settings.notify_cart, func(v): Settings.set_value("notify_cart", v))
+			_toggle("The storehouse is full", Settings.notify_full, func(v): Settings.set_value("notify_full", v))
+			_toggle("The builders have finished", Settings.notify_builders, func(v): Settings.set_value("notify_builders", v))
+			var about := tr("While the game is put away, your phone can tell you when the farm needs you.")
+			if not Settings.offline_progress:
+				about = tr("Progress while the game is closed is off, so the farm waits for you and there is nothing to tell.")
+			Ui.para(body, about, 230).add_theme_color_override("font_color", UiTheme.MUTED)
 		"Keys":
 			for action in Settings.ACTIONS:
 				var r := Ui.row(body)

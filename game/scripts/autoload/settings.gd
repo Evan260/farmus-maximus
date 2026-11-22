@@ -5,7 +5,8 @@ signal changed
 
 const FILE := "settings.cfg"
 ## The settings kept in each section of settings.cfg; the volumes and the strip's own are kept there by Audio and Windowing.
-const PLAY := ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "show_title", "show_tutorial", "tooltips", "language", "day_minutes"]
+const PLAY := ["offline_progress", "notifications", "large_text", "reduced_motion", "strong_cues", "show_title", "show_tutorial", "tooltips",
+	"language", "day_minutes", "notify_cart", "notify_full", "notify_builders"]
 const DISPLAY := ["ui_scale_step", "fullscreen", "low_power"]
 const SOUND := ["background_sound"]
 ## Every rebindable action with its default key, and the gamepad button that also does it.
@@ -24,6 +25,10 @@ const ACTIONS := {
 
 var offline_progress := true
 var notifications := true
+## Which moments a phone is told about while the game is put away: the cart home, the farm full, the builders done.
+var notify_cart := true
+var notify_full := true
+var notify_builders := true
 var large_text := false
 var reduced_motion := false
 ## The tips shown when the pointer rests on a button.

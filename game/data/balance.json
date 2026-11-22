@@ -539,6 +539,12 @@
 		"long_frame_seconds": 10,
 		"min_seconds_for_summary": 30
 	},
+	"notifications": {
+		"step_seconds": 60,
+		"sample_seconds": 1200,
+		"full_room": 3,
+		"full_share": 0.05
+	},
 	"save": {
 		"interval_seconds": 60
 	},
@@ -2553,6 +2559,56 @@
 			"Salve! Your lavender sold out early yesterday.",
 			"The baker's bread is good, but yours is better."
 		]
+	},
+	"play_games": {
+		"achievements": {
+			"first_harvest": "",
+			"harvest_100": "",
+			"harvest_1000": "",
+			"harvest_10000": "",
+			"earn_1000": "",
+			"earn_10000": "",
+			"earn_100000": "",
+			"cart_10": "",
+			"cart_100": "",
+			"market_visit": "",
+			"sell_100": "",
+			"order_1": "",
+			"order_25": "",
+			"aureus": "",
+			"villa_2": "",
+			"villa_3": "",
+			"villa_4": "",
+			"villa_5": "",
+			"villa_6": "",
+			"villa_7": "",
+			"first_deed": "",
+			"all_zones": "",
+			"first_building": "",
+			"all_buildings": "",
+			"first_helper": "",
+			"all_helpers": "",
+			"fine": "",
+			"excellent": "",
+			"lavender_oil": "",
+			"bath_oil": "",
+			"cheese": "",
+			"excellent_wine": "",
+			"white_lavender": "",
+			"truffle": "",
+			"pets_50": "",
+			"rainbow": "",
+			"shooting_star": "",
+			"fox": "",
+			"cat_and_dog": "",
+			"blessing": "",
+			"all_festivals": "",
+			"decorations_5": "",
+			"journal_half": "",
+			"journal_full": "",
+			"homely": "",
+			"triumph": ""
+		}
 	},
 	"demo": {
 		"full_game_app_id": 0,
