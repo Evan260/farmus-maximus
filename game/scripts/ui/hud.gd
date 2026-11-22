@@ -890,17 +890,9 @@ func _build_toolbar() -> void:
 	_tool_row = Ui.row(_toolbar)
 	_tool_row.add_theme_constant_override("separation", 1)
 	if Windowing.phone:
-		_tool_corner = Button.new()
-		_tool_corner.name = "ToolsButton"
-		_tool_corner.focus_mode = Control.FOCUS_NONE
-		_tool_corner.custom_minimum_size = Vector2.ONE * maxi(18, Windowing.touch_px())
-		_tool_corner.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_tool_corner.pressed.connect(func():
-			Audio.play("tab", -6.0)
+		_tool_corner = _top_button(_root, "Tools", null, func():
 			_tools_open = not _tools_open
 			_update_toolbar())
-		Ui.tip_on(_tool_corner, "Tools")
-		_root.add_child(_tool_corner)
 
 
 ## Small picture buttons for the estate's main windows, matching the illustrated controls in Fishus Maximus.
@@ -955,9 +947,9 @@ func _update_toolbar() -> void:
 	_tool_corner.visible = shown
 	var held: Button = _tool_buttons.get(current)
 	if held != null:
-		_tool_corner.icon = held.icon
-		for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
-			_tool_corner.add_theme_color_override(state, held.get_theme_color(state))
+		var picture: TextureRect = _tool_corner.get_node("Picture")
+		picture.texture = held.icon
+		picture.modulate = held.get_theme_color("icon_normal_color")
 	_tool_corner.position = Vector2(4 + Windowing.safe_top_left.x, bottom - _tool_corner.size.y)
 	_toolbar.position = Vector2(_tool_corner.get_rect().end.x + 2, bottom - _toolbar.size.y)
 

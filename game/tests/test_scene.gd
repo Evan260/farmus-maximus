@@ -285,13 +285,15 @@ func test_a_phones_tools_fold_into_a_corner_button() -> void:
 	if corner != null:
 		var room: Vector2 = hud._root.size
 		_check(corner.position.x < room.x / 4.0 and corner.get_rect().end.y >= room.y - corner.size.y - 16.0, "the button sits in the bottom-left corner: %s" % corner.get_rect())
+		var journal_button: Button = hud.find_child("JournalButton", true, false)
+		_check(corner.size.x == corner.size.y and corner.size == journal_button.size, "it is square, the size of the buttons down the side: %s, %s" % [corner.size, journal_button.size])
 		corner.pressed.emit()
 		await process_frame
 		_check(hud._toolbar.visible and hud._toolbar.position.x >= corner.get_rect().end.x, "tapping it opens the tools beside it")
 		hud.select_tool("dig")
 		await process_frame
 		_check(not hud._toolbar.visible and hud.tool == "dig", "choosing a tool folds them away again")
-		_check(corner.icon == hud._tool_buttons["dig"].icon, "and the corner button shows the tool in hand")
+		_check(corner.get_node("Picture").texture == hud._tool_buttons["dig"].icon, "and the corner button shows the tool in hand")
 		corner.pressed.emit()
 		await process_frame
 		_check(hud.go_back() and not hud._toolbar.visible, "the back gesture folds the open tools away")
