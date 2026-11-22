@@ -777,5 +777,20 @@ func _dog_coats() -> void:
 			_check(looks.size() == coats.size(), "each of the %s's coats looks different" % breed)
 
 
+func test_a_catch_up_says_when_it_reached_its_limit() -> void:
+	var game: Node = root.get_node("Game")
+	var data_file: Node = root.get_node("Data")
+	var most := float(data_file.get_value("offline.max_hours", 12)) * 3600.0
+	game.new_game()
+	var short: Dictionary = game.simulate_offline(3600.0)
+	check(not short.get("capped", false) and float(short["seconds"]) == 3600.0, "an hour away is counted in full")
+	game.new_game()
+	var long: Dictionary = game.simulate_offline(most * 3.0)
+	check(long.get("capped", false) and float(long["seconds"]) == most, "three times the limit away counts only the limit, and says so")
+	var hud: GDScript = load("res://scripts/ui/hud.gd")
+	check(hud.away_time(most, true) == TranslationServer.translate("%d hours, the most that counts") % int(most / 3600.0), "the welcome back names the limit when it was reached (%s)" % hud.away_time(most, true))
+	check(hud.away_time(5400.0, false) == TranslationServer.translate("%.1f hours") % 1.5 and hud.away_time(600.0, false) == TranslationServer.translate("%d minutes") % 10, "and the time away otherwise")
+
+
 func _check(ok: bool, what: String) -> void:
 	check(ok, what)

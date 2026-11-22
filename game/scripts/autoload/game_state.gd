@@ -910,13 +910,14 @@ func _rescue_if_stranded() -> void:
 ## Catches up on time the game was closed, in small steps so every rule applies in order. The farm runs as usual, but
 ## only a share of what it earns is kept, so coming back is a welcome bonus rather than a way to skip the game.
 func simulate_offline(seconds: float) -> Dictionary:
-	var remaining := minf(seconds, float(Data.get_value("offline.max_hours", 12)) * 3600.0)
+	var most := float(Data.get_value("offline.max_hours", 12)) * 3600.0
+	var remaining := minf(seconds, most)
 	var step := float(Data.get_value("offline.step_seconds", 5))
 	var start_coins := coins
 	# A cart already on the road was loaded and sold in play, so it pays in full when it comes home.
 	var on_road: bool = cart["away"]
 	var paid_in_full := 0
-	var summary := {"seconds": remaining, "harvested": 0, "earned": 0, "made": 0}
+	var summary := {"seconds": remaining, "capped": seconds > most, "harvested": 0, "earned": 0, "made": 0}
 	quiet = true
 	_stored = -1
 	_stored = stored_total()

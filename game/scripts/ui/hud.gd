@@ -708,6 +708,7 @@ func _show_away(news: Dictionary) -> void:
 	var summary := _away_summary.merged(news, true)
 	for key in ["seconds", "harvested", "made", "earned"]:
 		summary[key] = _away_summary.get(key, 0) + news.get(key, 0)
+	summary["capped"] = _away_summary.get("capped", false) or news.get("capped", false)
 	_away_summary = summary
 	if _title != null:
 		return
@@ -717,8 +718,7 @@ func _show_away(news: Dictionary) -> void:
 	_away = p
 	_root.add_child(p)
 	var col := Ui.column(p)
-	var hours := float(summary.get("seconds", 0)) / 3600.0
-	var lines := [tr("While you were away"), "(%s)" % ((tr("%.1f hours") % hours) if hours >= 1.0 else (tr("%d minutes") % int(hours * 60)))]
+	var lines := [tr("While you were away"), "(%s)" % away_time(float(summary.get("seconds", 0)), summary.get("capped", false))]
 	if int(summary.get("harvested", 0)) > 0:
 		lines.append(tr("Harvested  %d") % int(summary["harvested"]))
 	if int(summary.get("made", 0)) > 0:
@@ -735,6 +735,14 @@ func _show_away(news: Dictionary) -> void:
 		p.queue_free()
 		_away_summary = {})
 	_centre_card(p)
+
+
+## How long the player was away, naming the limit once it was reached so nobody wonders whether it was longer.
+static func away_time(seconds: float, capped: bool) -> String:
+	var hours := seconds / 3600.0
+	if capped:
+		return TranslationServer.translate("%d hours, the most that counts") % roundi(hours)
+	return TranslationServer.translate("%.1f hours") % hours if hours >= 1.0 else TranslationServer.translate("%d minutes") % int(hours * 60)
 
 
 ## A card that waits for its one button, centred on whatever the view is, so it fits the desktop strip as well as the

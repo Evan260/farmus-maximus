@@ -3,6 +3,7 @@ keys,en,fr,de,es,it,pt_BR,pl,tr,ru,uk,ja,ko,zh_CN,zh_TW
  or , or , ou , oder , o el , o , ou no , lub , veya , или , або ,か, 또는 ,或,或
 %.1f hours,%.1f hours,%.1f heures,%.1f Stunden,%.1f horas,%.1f ore,%.1f horas,%.1f godz.,%.1f saat,%.1f ч,%.1f год,%.1f時間,%.1f시간,%.1f 小时,%.1f 小時
 %d batch slots,%d batch slots,%d places,%d Plätze,%d huecos,%d posti,%d vagas,miejsca: %d,%d yer,мест: %d,місць: %d,%d枠,%d칸,%d个栏位,%d個欄位
+"%d hours, the most that counts","%d hours, the most that counts","%d heures, le maximum pris en compte","%d Stunden, mehr wird nicht gezählt","%d horas, el máximo que cuenta","%d ore, il massimo che conta","%d horas, o máximo que conta","%d godzin, więcej się nie liczy","%d saat, en fazla bu kadarı sayılır","%d часов, больше не засчитывается","%d годин, більше не зараховується",%d時間、これが上限,"%d시간, 이게 최대치",%d 小时，最多只算这么久,%d 小時，最多只算這麼久
 %d kept,%d kept,%d gardés,%d behalten,%d guardados,%d tenuti,%d guardados,%d zachowane,%d saklanıyor,%d оставлено,%d залишено,%d個保管,%d개 보관,保留%d,保留%d
 %d minutes,%d minutes,%d minutes,%d Minuten,%d minutos,%d minuti,%d minutos,%d min,%d dakika,%d мин,%d хв,%d分,%d분,%d 分钟,%d 分鐘
 %d of %d casks in use,%d of %d casks in use,Fûts utilisés : %d sur %d,%d von %d Fässern belegt,Barricas en uso: %d de %d,%d di %d botti in uso,%d de %d barris em uso,Zajęte beczki: %d z %d,%d/%d fıçı kullanımda,Занято бочек: %d из %d,Зайнято бочок: %d з %d,使用中の樽：%d / %d,사용 중인 술통 %d / %d,已用酒桶：%d/%d,使用中：%d／%d 桶
