@@ -263,6 +263,44 @@ func test_scene() -> void:
 	_check(hooks.map(func(s: Signal): return s.get_connections().size()) == hooked, "the farm's handlers on the game's signals go when the scene does")
 
 
+func test_a_phones_tools_fold_into_a_corner_button() -> void:
+	var game: Node = root.get_node("Game")
+	var windowing: Node = root.get_node("Windowing")
+	root.get_node("Saves").enabled = false
+	var was := [windowing.phone, windowing.phone_preview]
+	windowing.phone = true
+	windowing.phone_preview = true
+	game.new_game()
+	game.pets_chosen = true
+	game.day_time = 8.0
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	await process_frame
+	await process_frame
+	var hud: CanvasLayer = main.hud
+	hud.close_windows()
+	await process_frame
+	var corner: Button = hud.find_child("ToolsButton", true, false)
+	_check(corner != null and corner.visible and not hud._toolbar.visible, "a phone shows one tool button in the corner, with the toolbar folded away")
+	if corner != null:
+		var room: Vector2 = hud._root.size
+		_check(corner.position.x < room.x / 4.0 and corner.get_rect().end.y >= room.y - corner.size.y - 16.0, "the button sits in the bottom-left corner: %s" % corner.get_rect())
+		corner.pressed.emit()
+		await process_frame
+		_check(hud._toolbar.visible and hud._toolbar.position.x >= corner.get_rect().end.x, "tapping it opens the tools beside it")
+		hud.select_tool("dig")
+		await process_frame
+		_check(not hud._toolbar.visible and hud.tool == "dig", "choosing a tool folds them away again")
+		_check(corner.icon == hud._tool_buttons["dig"].icon, "and the corner button shows the tool in hand")
+		corner.pressed.emit()
+		await process_frame
+		_check(hud.go_back() and not hud._toolbar.visible, "the back gesture folds the open tools away")
+	main.queue_free()
+	await process_frame
+	windowing.phone = was[0]
+	windowing.phone_preview = was[1]
+
+
 ## Riding the cart to market: one trip at a time, no strip from inside the town, and the trip called off by going indoors.
 func _check_ride(main: Node2D) -> void:
 	var settings: Node = root.get_node("Settings")

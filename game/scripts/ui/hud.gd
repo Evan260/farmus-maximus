@@ -40,6 +40,9 @@ var _toolbar: PanelContainer
 var _title: Control
 var _tool_row: HBoxContainer
 var _tool_buttons := {}
+## On a phone the tools fold into one button in the bottom-left corner, so the toolbar never covers the plots and the cart.
+var _tool_corner: Button
+var _tools_open := false
 var _tool_signature := ""
 var _sleep_button: Button
 ## Seconds since the farmer went to sleep, or below zero while awake.
@@ -371,6 +374,7 @@ func _pad_bar(on: bool) -> void:
 	if not on and _bar_focused():
 		get_viewport().gui_release_focus()
 	_bar_armed = on
+	_update_toolbar()
 	for b in _bar_buttons():
 		b.focus_mode = Control.FOCUS_ALL if on else Control.FOCUS_NONE
 	if on:
@@ -835,6 +839,10 @@ func go_back() -> bool:
 	if _bar_armed:
 		_pad_bar(false)
 		return true
+	if _tools_open:
+		_tools_open = false
+		_update_toolbar()
+		return true
 	return false
 
 
@@ -881,6 +889,18 @@ func _build_toolbar() -> void:
 	_root.add_child(_toolbar)
 	_tool_row = Ui.row(_toolbar)
 	_tool_row.add_theme_constant_override("separation", 1)
+	if Windowing.phone:
+		_tool_corner = Button.new()
+		_tool_corner.name = "ToolsButton"
+		_tool_corner.focus_mode = Control.FOCUS_NONE
+		_tool_corner.custom_minimum_size = Vector2.ONE * maxi(18, Windowing.touch_px())
+		_tool_corner.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_tool_corner.pressed.connect(func():
+			Audio.play("tab", -6.0)
+			_tools_open = not _tools_open
+			_update_toolbar())
+		Ui.tip_on(_tool_corner, "Tools")
+		_root.add_child(_tool_corner)
 
 
 ## Small picture buttons for the estate's main windows, matching the illustrated controls in Fishus Maximus.
@@ -907,7 +927,8 @@ func _top_button(parent: Node, label: String, picture: Texture2D, action: Callab
 
 func _update_toolbar() -> void:
 	# A phone's screen is too short for a window and the toolbar both, and a window covers the field the tools work on.
-	_toolbar.visible = _title == null and not (Windowing.phone and _any_window())
+	var shown := _title == null and not (Windowing.phone and _any_window())
+	_toolbar.visible = shown and (_tool_corner == null or _tools_open or _bar_armed)
 	var sig := JSON.stringify(Game.crops_unlocked)
 	if sig != _tool_signature:
 		_tool_signature = sig
@@ -927,7 +948,18 @@ func _update_toolbar() -> void:
 	var current := "seed:" + Game.selected_seed if tool == "seed" else tool
 	for id in _tool_buttons:
 		_tool_buttons[id].button_pressed = id == current
-	_toolbar.position = Vector2(roundf((_root.size.x - _toolbar.size.x) / 2.0), _root.size.y - _toolbar.size.y - 2 - Windowing.safe_bottom_right.y)
+	var bottom := _root.size.y - 2 - Windowing.safe_bottom_right.y
+	if _tool_corner == null:
+		_toolbar.position = Vector2(roundf((_root.size.x - _toolbar.size.x) / 2.0), bottom - _toolbar.size.y)
+		return
+	_tool_corner.visible = shown
+	var held: Button = _tool_buttons.get(current)
+	if held != null:
+		_tool_corner.icon = held.icon
+		for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
+			_tool_corner.add_theme_color_override(state, held.get_theme_color(state))
+	_tool_corner.position = Vector2(4 + Windowing.safe_top_left.x, bottom - _tool_corner.size.y)
+	_toolbar.position = Vector2(_tool_corner.get_rect().end.x + 2, bottom - _toolbar.size.y)
 
 
 func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
@@ -968,9 +1000,12 @@ func select_tool(id: String) -> void:
 		Game.selected_seed = id.get_slice(":", 1)
 	else:
 		tool = id
+	_tools_open = false
 	_update_toolbar()
 
 
 ## The row just above the toolbar, where messages about the pointer and tips are shown.
 func _above_toolbar() -> float:
+	if _tool_corner != null and _tool_corner.visible:
+		return _tool_corner.position.y
 	return _toolbar.position.y if _toolbar and _toolbar.visible else _root.size.y
