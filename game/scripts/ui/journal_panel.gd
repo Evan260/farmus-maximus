@@ -61,13 +61,26 @@ func build() -> void:
 	set_title(tr("Farmer's journal"))
 	var spread := Ui.row(body)
 	spread.add_theme_constant_override("separation", 0)
-	var marks := Ui.column(spread)
+	var holder: Control = spread
+	var tab_list: ScrollContainer = null
+	if Windowing.phone:
+		# A phone's tabs are a fingertip tall, more than the page's height holds, so they scroll beside the book.
+		tab_list = ScrollContainer.new()
+		tab_list.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		tab_list.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+		tab_list.custom_minimum_size = Vector2(66, PAGE_H + STACK)
+		spread.add_child(tab_list)
+		Ui.touch_scroll(tab_list)
+		holder = tab_list
+	var marks := Ui.column(holder)
 	marks.add_theme_constant_override("separation", 1)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 5)
 	marks.add_child(gap)
 	for s in SECTIONS:
-		_bookmark(marks, s)
+		var tab := _bookmark(marks, s)
+		if tab_list != null and s == section:
+			tab_list.ensure_control_visible.call_deferred(tab)
 	var space := Control.new()
 	space.custom_minimum_size = Vector2(5, 0)
 	spread.add_child(space)
@@ -100,14 +113,13 @@ func build() -> void:
 
 
 ## A divider tab beside the book; the open section's tab is paper coloured.
-func _bookmark(parent: Node, s: String) -> void:
+func _bookmark(parent: Node, s: String) -> Button:
 	var open := s == section
 	var b := Button.new()
 	b.text = tr(s)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.focus_mode = Control.FOCUS_ALL
-	# On a phone the tabs share out the page's height, as close to a fingertip's as all of them fit.
-	b.custom_minimum_size = Vector2(66, mini(Windowing.touch_px(), (PAGE_H - 5) / SECTIONS.size() - 1))
+	b.custom_minimum_size = Vector2(66, Windowing.touch_px())
 	for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		var box := StyleBoxFlat.new()
 		box.bg_color = PAPER if open else (TAB.lightened(0.1) if state.begins_with("hover") else TAB)
@@ -125,6 +137,7 @@ func _bookmark(parent: Node, s: String) -> void:
 		b.add_theme_color_override(c, UiTheme.INK if open else UiTheme.INK.lightened(0.15))
 	b.pressed.connect(func(): _turn_to(s))
 	parent.add_child(b)
+	return b
 
 
 ## Turns the leaf to another section: the pages as they are now are pictured, the new section is laid out underneath,
