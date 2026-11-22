@@ -52,10 +52,11 @@ static func build() -> Theme:
 	t.set_stylebox("grabber_highlight", "VScrollBar", _flat(Color(0.8, 0.46, 0.3), 2))
 	t.set_stylebox("grabber_pressed", "VScrollBar", _flat(Color(0.6, 0.3, 0.2), 2))
 	# Sliders: the knob is a small pixel block that travels the whole track, end to end.
-	t.set_stylebox("slider", "HSlider", _flat(Color(0.29, 0.18, 0.14, 0.35), 0, 2))
-	t.set_stylebox("grabber_area", "HSlider", _flat(Color(0.7, 0.38, 0.25), 0, 2))
-	t.set_stylebox("grabber_area_highlight", "HSlider", _flat(Color(0.8, 0.46, 0.3), 0, 2))
-	var knob := _knob()
+	var finger := Windowing.touch_px()
+	t.set_stylebox("slider", "HSlider", _flat(Color(0.29, 0.18, 0.14, 0.35), 0, track_half(finger)))
+	t.set_stylebox("grabber_area", "HSlider", _flat(Color(0.7, 0.38, 0.25), 0, track_half(finger)))
+	t.set_stylebox("grabber_area_highlight", "HSlider", _flat(Color(0.8, 0.46, 0.3), 0, track_half(finger)))
+	var knob := _knob(knob_size(finger))
 	t.set_icon("grabber", "HSlider", knob)
 	t.set_icon("grabber_highlight", "HSlider", knob)
 	t.set_icon("grabber_disabled", "HSlider", knob)
@@ -134,15 +135,28 @@ static func _flat(c: Color, width: int, height := 0) -> StyleBoxFlat:
 	return s
 
 
-static func _knob() -> ImageTexture:
-	var img := Image.create(5, 9, false, Image.FORMAT_RGBA8)
+## A slider knob's width and height: a small block for a mouse, and on a phone most of a fingertip tall, so a thumb can find and hold it.
+static func knob_size(finger: int) -> Vector2i:
+	if finger <= 0:
+		return Vector2i(5, 9)
+	return Vector2i(maxi(9, finger * 2 / 5), maxi(9, finger * 7 / 10))
+
+
+## Half the thickness of a slider's track, thicker on a phone to match its larger knob.
+static func track_half(finger: int) -> int:
+	return 2 if finger <= 0 else maxi(3, finger / 9)
+
+
+static func _knob(size: Vector2i) -> ImageTexture:
+	var img := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
 	img.fill(CREAM)
-	for y in 9:
-		img.set_pixel(0, y, Color(0.36, 0.2, 0.15))
-		img.set_pixel(4, y, Color(0.36, 0.2, 0.15))
-	for x in 5:
-		img.set_pixel(x, 0, Color(0.36, 0.2, 0.15))
-		img.set_pixel(x, 8, Color(0.36, 0.2, 0.15))
+	var edge := Color(0.36, 0.2, 0.15)
+	for y in size.y:
+		img.set_pixel(0, y, edge)
+		img.set_pixel(size.x - 1, y, edge)
+	for x in size.x:
+		img.set_pixel(x, 0, edge)
+		img.set_pixel(x, size.y - 1, edge)
 	return ImageTexture.create_from_image(img)
 
 
