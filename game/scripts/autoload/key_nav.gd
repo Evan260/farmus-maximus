@@ -81,6 +81,8 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		keyboard = false
 		_set_pad(false)
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		# A button that loses the focus while held forgets its press, so the focus goes only once the click is over.
 		_drop_button_focus.call_deferred()
 	elif event is InputEventKey and event.pressed:
 		_set_pad(false)

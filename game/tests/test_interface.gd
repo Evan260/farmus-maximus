@@ -147,6 +147,34 @@ func test_the_shoulder_buttons_turn_the_journal() -> void:
 	journal.free()
 
 
+func test_a_phones_journal_tabs_are_a_fingertip_tall_and_scroll() -> void:
+	Game.new_game()
+	var was := [Windowing.phone, Windowing.phone_preview]
+	Windowing.phone = true
+	Windowing.phone_preview = true
+	var journal: Control = load("res://scripts/ui/journal_panel.gd").new()
+	root.add_child(journal)
+	journal.open()
+	await process_frame
+	await process_frame
+	var tabs: Array = journal.find_children("*", "Button", true, false).filter(func(b: Button) -> bool: return b.text in journal.SECTIONS.map(func(s): return tr(s)))
+	var finger := Windowing.touch_px()
+	check(tabs.size() == journal.SECTIONS.size() and tabs.all(func(b: Button) -> bool: return b.size.y >= finger), "every section's tab is a fingertip tall on a phone (%d tabs, fingertip %d)" % [tabs.size(), finger])
+	var list: Node = tabs[0].get_parent().get_parent() if tabs.size() > 0 else null
+	check(list is ScrollContainer and list.size.y <= journal.PAGE_H + journal.STACK + 1, "and they scroll beside the book rather than making it taller")
+	journal.free()
+	Windowing.phone = was[0]
+	Windowing.phone_preview = was[1]
+
+
+func test_a_phones_sliders_have_a_knob_a_finger_can_hold() -> void:
+	var theme: GDScript = load("res://scripts/ui/ui_theme.gd")
+	check(theme.knob_size(0) == Vector2i(5, 9), "a computer keeps the small knob")
+	var k: Vector2i = theme.knob_size(29)
+	check(k.y >= 18 and k.x >= 9, "a phone's knob is most of a fingertip tall and wide enough to see: %s" % k)
+	check(theme.track_half(29) > theme.track_half(0), "and its track is thicker")
+
+
 class FakeSteam:
 	var sent: Array = []
 
@@ -168,6 +196,34 @@ func test_the_boot_splash_is_the_crisp_logo() -> void:
 	var rect: ColorRect = cover.get_child(0)
 	check(rect.color == ProjectSettings.get_setting("application/boot_splash/bg_color"), "the first frame is the splash's colour")
 	cover.free()
+
+
+func test_a_click_held_for_a_moment_still_presses_a_button_that_takes_focus() -> void:
+	var b := Button.new()
+	b.text = "Go"
+	b.focus_mode = Control.FOCUS_ALL
+	b.position = Vector2(10, 10)
+	b.size = Vector2(60, 20)
+	root.add_child(b)
+	var hits := [0]
+	b.pressed.connect(func(): hits[0] += 1)
+	await process_frame
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = b.get_global_rect().get_center()
+	down.global_position = down.position
+	root.push_input(down)
+	# A finger rests a few frames before it lifts, as a real tap does.
+	for i in 4:
+		await process_frame
+	var up: InputEventMouseButton = down.duplicate()
+	up.pressed = false
+	root.push_input(up)
+	await process_frame
+	check(hits[0] == 1, "a click held over a few frames still presses a button that takes the focus (%d presses)" % hits[0])
+	check(root.gui_get_focus_owner() != b, "and the button lets the focus go once the click is over")
+	b.free()
 
 
 func test_phones_draw_the_interface_as_large_as_it_fits() -> void:
