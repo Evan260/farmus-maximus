@@ -50,6 +50,10 @@ window/stretch/scale_mode="integer"
 window/per_pixel_transparency/allowed=true
 window/size/transparent=true
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/slowsunday_phone/plugin.cfg")
+
 [internationalization]
 
 locale/include_text_server_data=true

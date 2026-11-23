@@ -51,22 +51,22 @@ func came_back() -> void:
 ## Shows a notification in so many seconds; one already waiting with the same id is replaced.
 func schedule(id: String, seconds: float, title: String, text: String) -> void:
 	if _phone:
-		_phone.call("scheduleNotification", id, ceili(seconds), title, text)
+		_phone.call("schedule", id, ceili(seconds), title, text)
 
 
 func cancel_all() -> void:
 	if _phone:
-		_phone.call("cancelAllNotifications")
+		_phone.call("cancel_all")
 
 
 func notifications_allowed() -> bool:
-	return _phone != null and bool(_phone.call("areNotificationsAllowed"))
+	return _phone != null and bool(_phone.call("notifications_allowed"))
 
 
 ## Asks the phone's own question about notifications; a phone told no stops asking, so the game remembers it asked.
 func request_notifications() -> void:
 	if _phone:
-		_phone.call("requestNotificationPermission")
+		_phone.call("request_notifications")
 		Settings.store("phone", {"asked": true})
 
 
@@ -76,15 +76,15 @@ func asked() -> bool:
 
 func open_notification_settings() -> void:
 	if _phone:
-		_phone.call("openNotificationSettings")
+		_phone.call("open_notification_settings")
 
 
 ## Unlocks an achievement on Google Play Games by its Play Console id.
 func unlock_achievement(play_id: String) -> void:
 	if _phone and play_id != "":
-		_phone.call("unlockAchievement", play_id)
+		_phone.call("unlock_achievement", play_id)
 
 
 func sign_in() -> void:
 	if _phone:
-		_phone.call("signIn")
+		_phone.call("sign_in")

@@ -10,20 +10,20 @@ A Godot 4 Android plugin (version 2: an `.aar` whose `GodotPlugin` subclass retu
 
 | Method | What it does |
 |---|---|
-| `scheduleNotification(id: String, seconds: Int, title: String, text: String)` | Shows a notification in `seconds` seconds, even if the phone has closed the game meanwhile. One already waiting with the same `id` is replaced. Tapping it opens the game. |
-| `cancelAllNotifications()` | Removes every notification the game has scheduled or shown. |
-| `areNotificationsAllowed(): Boolean` | Whether the phone lets the game post notifications (`NotificationManagerCompat.areNotificationsEnabled()`). |
-| `requestNotificationPermission()` | Asks for `POST_NOTIFICATIONS` on Android 13 and later. Older phones allow notifications without asking. |
-| `openNotificationSettings()` | Opens the phone's notification settings for the game (`Settings.ACTION_APP_NOTIFICATION_SETTINGS`). |
-| `unlockAchievement(id: String)` | Unlocks a Play Games achievement by its Play Console id. One asked for before sign-in has finished is kept and sent once it has. |
-| `signIn()` | Signs the player in to Play Games if they are not already. The game calls it once at every start, so it must not ask a player again who has turned it down. |
+| `schedule(id: String, seconds: Int, title: String, text: String)` | Shows a notification in `seconds` seconds, even if the phone has closed the game meanwhile. One already waiting with the same `id` is replaced. Tapping it opens the game. |
+| `cancel_all()` | Removes every notification the game has scheduled or shown. |
+| `notifications_allowed(): Boolean` | Whether the phone lets the game post notifications (`NotificationManagerCompat.areNotificationsEnabled()`). |
+| `request_notifications()` | Asks for `POST_NOTIFICATIONS` on Android 13 and later. Older phones allow notifications without asking. |
+| `open_notification_settings()` | Opens the phone's notification settings for the game (`Settings.ACTION_APP_NOTIFICATION_SETTINGS`). |
+| `unlock_achievement(id: String)` | Unlocks a Play Games achievement by its Play Console id. One asked for before sign-in has finished is kept and sent once it has. |
+| `sign_in()` | Signs the player in to Play Games if they are not already. The game calls it once at every start, so it must not ask a player again who has turned it down. |
 
 Building it:
 
 - The plugin's manifest declares `android.permission.POST_NOTIFICATIONS`, one notification channel for the farm, and `com.google.android.gms.games.APP_ID` holding the game's Play Games project id.
 - WorkManager's `enqueueUniqueWork(id, REPLACE, ...)` with an initial delay keeps a notification through the game closing and the phone restarting. The time does not need to be exact.
 - Android shows a notification's small icon as a white silhouette, so it needs its own one-colour drawable.
-- Play Games Services v2: `PlayGamesSdk.initialize()` at start, `PlayGames.getGamesSignInClient()` for `isAuthenticated()` and `signIn()`, and `PlayGames.getAchievementsClient().unlock()`.
+- Play Games Services v2: `PlayGamesSdk.initialize()` at start, `PlayGames.getGamesSignInClient()` for `isAuthenticated()` and `sign_in()`, and `PlayGames.getAchievementsClient().unlock()`.
 - An Android plugin needs the Gradle build: Project > Install Android Build Template, then Use Gradle Build in the Android preset, which downloads Gradle and Google's libraries on the first export.
 
 ## When the farm sends notifications

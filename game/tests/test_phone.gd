@@ -192,18 +192,18 @@ func test_putting_the_game_away_schedules_what_the_farm_will_need() -> void:
 	var fake := FakePhone.new()
 	phone._phone = fake
 	phone._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	var scheduled: Array = fake.calls.filter(func(c): return c[0] == "scheduleNotification")
-	check(not fake.calls.is_empty() and fake.calls[0] == ["cancelAllNotifications"], "putting the game away first clears what was planned before")
+	var scheduled: Array = fake.calls.filter(func(c): return c[0] == "schedule")
+	check(not fake.calls.is_empty() and fake.calls[0] == ["cancel_all"], "putting the game away first clears what was planned before")
 	check(scheduled.size() == 1 and scheduled[0][1] == "cart" and scheduled[0][2] == 15 and scheduled[0][3] == tr("The cart is home"), "then plans the cart's return: %s" % str(scheduled))
 	phone._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED)
-	check(fake.calls.filter(func(c): return c[0] == "scheduleNotification").size() == 1, "losing the focus and then pausing plans only once")
+	check(fake.calls.filter(func(c): return c[0] == "schedule").size() == 1, "losing the focus and then pausing plans only once")
 	fake.calls.clear()
 	phone._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED)
-	check(fake.calls == [["cancelAllNotifications"]], "coming back clears them")
+	check(fake.calls == [["cancel_all"]], "coming back clears them")
 	fake.allowed = true
 	check(phone.notifications_allowed(), "the phone says whether notifications are allowed")
 	phone.request_notifications()
-	check(fake.calls.has(["requestNotificationPermission"]) and phone.asked(), "asking once is remembered, so next time the button opens the phone's settings")
+	check(fake.calls.has(["request_notifications"]) and phone.asked(), "asking once is remembered, so next time the button opens the phone's settings")
 	root.get_node("Settings").cfg.erase_section("phone")
 	phone._phone = null
 	game.new_game()
@@ -234,7 +234,7 @@ func test_an_achievement_reaches_google_play_once_it_has_an_id() -> void:
 	play["first_harvest"] = "CgkIexample"
 	data._found = {}
 	Awards.send_to_play_games("first_harvest")
-	check(fake.calls == [["unlockAchievement", "CgkIexample"]], "one with an id is unlocked by that id")
+	check(fake.calls == [["unlock_achievement", "CgkIexample"]], "one with an id is unlocked by that id")
 	play["first_harvest"] = was
 	data._found = {}
 	phone._phone = null
@@ -289,23 +289,23 @@ class FakePhone:
 	var calls: Array = []
 	var allowed := false
 
-	func scheduleNotification(id: String, seconds: int, title: String, text: String) -> void:
-		calls.append(["scheduleNotification", id, seconds, title, text])
+	func schedule(id: String, seconds: int, title: String, text: String) -> void:
+		calls.append(["schedule", id, seconds, title, text])
 
-	func cancelAllNotifications() -> void:
-		calls.append(["cancelAllNotifications"])
+	func cancel_all() -> void:
+		calls.append(["cancel_all"])
 
-	func areNotificationsAllowed() -> bool:
+	func notifications_allowed() -> bool:
 		return allowed
 
-	func requestNotificationPermission() -> void:
-		calls.append(["requestNotificationPermission"])
+	func request_notifications() -> void:
+		calls.append(["request_notifications"])
 
-	func openNotificationSettings() -> void:
-		calls.append(["openNotificationSettings"])
+	func open_notification_settings() -> void:
+		calls.append(["open_notification_settings"])
 
-	func unlockAchievement(id: String) -> void:
-		calls.append(["unlockAchievement", id])
+	func unlock_achievement(id: String) -> void:
+		calls.append(["unlock_achievement", id])
 
-	func signIn() -> void:
-		calls.append(["signIn"])
+	func sign_in() -> void:
+		calls.append(["sign_in"])
