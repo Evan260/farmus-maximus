@@ -54,20 +54,19 @@ eight qualify.
 
 TABLET SCREENSHOTS
 
-tablet_7_inch_screenshots/    1920x1200 landscape (16:10), 24-bit PNG
-tablet_10_inch_screenshots/   2560x1600 landscape (16:10), 24-bit PNG
+tablet_7_inch_screenshots/    1920x1080 landscape (16:9), 24-bit PNG
+tablet_10_inch_screenshots/   2560x1440 landscape (16:9), 24-bit PNG
 
 Each folder holds the same four scenes, taken at that window size with the phone interface, so the layout is the one a
 tablet of that shape gets:
 
 01_estate_golden_hour.png
-02_market_town.png             On a 16:10 screen the market's place buttons show along the bottom.
+02_market_town.png             The market with its place buttons along the bottom.
 03_farmhouse_by_night.png
 04_northern_lights.png
 
 Meets: up to 8 screenshots for each tablet size, JPEG or 24-bit PNG without alpha, each side 320 to 3,840 px, the long
-side at most 2.3 times the short one. Google's large-screen guidance asks for at least 4 tablet screenshots at 16:9 to
-be featured on tablets; if Play Console asks for 16:9 there, upload the 1920x1080 phone screenshots in these slots.
+side at most 2.3 times the short one. They are 16:9, as Google's large-screen guidance asks for a game to be featured on tablets.
 
 
 NOT MADE HERE
