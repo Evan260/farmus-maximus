@@ -10,6 +10,7 @@ const NAME := "SlowSundayPhone"
 const DEPENDENCIES := [
 	"androidx.core:core:1.13.1",
 	"com.google.android.gms:play-services-games-v2:22.1.0",
+	"com.android.billingclient:billing:9.1.0",
 ]
 const APP_ID := "slowsunday_phone/play_games_app_id"
 const ICON := "slowsunday_phone/notification_icon"

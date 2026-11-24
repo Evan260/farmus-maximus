@@ -179,6 +179,7 @@ func _ready() -> void:
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % tr(String(Game.helper_info(id).get("name", "")))))
 	Game.helper_trained.connect(func(id, level): toast(tr("%s is now level %d") % [tr(String(Game.helper_info(id).get("name", ""))), level]))
 	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
+	FullGame.finished.connect(_on_store_result)
 	if _wants_title():
 		_show_title()
 	else:
@@ -260,7 +261,7 @@ func _process(delta: float) -> void:
 	_compact.visible = in_strip
 	# The title screen waits behind the strip, which offers only the way back to it.
 	for card in _open_cards():
-		card.visible = not titled
+		card.visible = not titled or card.has_meta("over_title")
 	if titled:
 		_title.visible = not in_strip
 		if not _any_window():
@@ -474,9 +475,9 @@ func _place_info() -> void:
 	_info.position = (at + Vector2(8, -size.y - 6)).clamp(Vector2(2, 2), _root.size - size - Vector2(2, 2)).round()
 
 
-func toast(text: String) -> void:
+func toast(text: String, over_title := false) -> void:
 	# Messages from the farm loading behind the title screen are not news to the player yet.
-	if _title != null:
+	if _title != null and not over_title:
 		return
 	# Messages that arrive together wait their turn; a long wait keeps the newest four, a repeated one moving to the back.
 	if not visible or (_toast_tween and _toast_tween.is_running() and _toast.text != text):
@@ -738,6 +739,36 @@ func _show_away(news: Dictionary) -> void:
 	Ui.button(col, tr("Lovely"), func():
 		p.queue_free()
 		_away_summary = {})
+	_centre_card(p)
+
+
+## What the store said about the full game, which can come while the title is up, since it is bought from there too.
+func _on_store_result(result: String) -> void:
+	match result:
+		"purchased":
+			_thank_for_full_game()
+		"restored":
+			toast(tr("The full game is unlocked again. Welcome back!"), true)
+		"pending":
+			toast(tr("Your purchase is waiting for its payment. The whole estate opens as soon as it goes through."), true)
+		"error":
+			toast(tr("The purchase did not go through. Please try again later."), true)
+		"unavailable":
+			toast(tr("The store cannot be reached right now. Please try again later."), true)
+		"not_found":
+			toast(tr("No purchase of the full game was found for this account."), true)
+
+
+## A card over everything, the title too, since the purchase opens the whole estate at once with the farm as it was.
+func _thank_for_full_game() -> void:
+	var p := PanelContainer.new()
+	p.set_meta("over_title", true)
+	_root.add_child(p)
+	var col := Ui.column(p)
+	Ui.label(col, tr("Thank you for buying the full game!")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	Ui.para(col, tr("The whole estate is open to you now, and your farm carries on just as you left it."), 200)
+	Ui.button(col, tr("Lovely"), p.queue_free)
+	Audio.play("flourish")
 	_centre_card(p)
 
 

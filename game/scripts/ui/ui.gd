@@ -48,6 +48,23 @@ static func wishlist_button(parent: Node) -> Button:
 	return b
 
 
+## A phone's button that buys the full game, with the store's price once it has said it, or null where nothing is for sale.
+static func unlock_button(parent: Node) -> Button:
+	if not FullGame.locked():
+		return null
+	var text := TranslationServer.translate("Unlock the full game")
+	if FullGame.price() != "":
+		text = TranslationServer.translate("Unlock the full game: %s") % FullGame.price()
+	var b := button(parent, text, func(): FullGame.buy())
+	b.name = "UnlockButton"
+	return b
+
+
+## Where the demo stops the player: the unlock on a phone that sells the full game, the wishlist button otherwise.
+static func full_game_button(parent: Node) -> Button:
+	return unlock_button(parent) if FullGame.sold_here() else wishlist_button(parent)
+
+
 ## A gamepad button's picture beside a key hint, shown only while the gamepad is the input in use.
 static func pad_glyph(parent: Node, button: JoyButton) -> TextureRect:
 	var t := TextureRect.new()

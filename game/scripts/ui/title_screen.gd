@@ -19,6 +19,7 @@ var _column: VBoxContainer
 var _farms: Node
 ## True while the menu asks for a new farm's name.
 var _naming := false
+var _demo: Label
 
 
 func _ready() -> void:
@@ -44,9 +45,12 @@ func _ready() -> void:
 	logo.add_theme_constant_override("outline_size", 8)
 	logo.add_theme_color_override("font_outline_color", LOGO_SHADOW)
 	col.add_child(logo)
-	if Game.is_demo():
+	# A phone that buys the full game on the title stops being the demo there and then.
+	if Game.is_demo() or FullGame.sold_here():
 		var demo := Label.new()
 		demo.name = "DemoLabel"
+		demo.visible = Game.is_demo()
+		_demo = demo
 		demo.text = tr("Demo").to_upper()
 		demo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		demo.add_theme_font_override("font", UiTheme.FONT)
@@ -71,6 +75,7 @@ func _ready() -> void:
 	# The farm list takes the menu's place while it is open.
 	_farms.closed.connect(func(): _column.visible = true)
 	_show_menu()
+	FullGame.changed.connect(_on_store_changed)
 	var version := Ui.label(self, "v" + str(ProjectSettings.get_setting("application/config/version", "")), true)
 	version.name = "Version"
 	version.modulate.a = 0.7
@@ -117,13 +122,28 @@ func _show_menu() -> void:
 		Ui.tip_on(fresh, "You already keep three farms. Delete one to start another.")
 	if Saves.any_farm():
 		Ui.button(_menu, tr("Farms"), _open_farms)
-	Ui.button(_menu, tr("Settings"), func(): open_window.call("settings"))
-	Ui.wishlist_button(_menu)
+	# A phone's short screen has no room for one more line, so there the unlock sits beside Settings.
+	var last: Container = _menu
+	if Windowing.phone and FullGame.locked():
+		last = Ui.row(_menu)
+	Ui.button(last, tr("Settings"), func(): open_window.call("settings")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var unlock := Ui.full_game_button(last)
+	if unlock:
+		unlock.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# Phone apps are put away rather than quit, so a phone has no Quit button.
 	if Windowing.phone:
 		return
 	# Quitting here does what closing the window does: the farm is saved and the window remembers its monitor.
 	Ui.button(_menu, tr("Quit"), func(): get_tree().root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST); get_tree().quit())
+
+
+## The store's price arrived or the full game was bought, which changes the unlock button and the word Demo.
+func _on_store_changed() -> void:
+	if _demo:
+		_demo.visible = Game.is_demo()
+	# Deferred, so the menu built this frame first takes the focus it asked for before it is replaced.
+	if not _naming:
+		_show_menu.call_deferred()
 
 
 func _continue() -> void:

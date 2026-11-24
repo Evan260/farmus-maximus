@@ -1003,8 +1003,9 @@ func buy_zone(zone_id: String) -> bool:
 	return true
 
 
+## The demo build, or a phone that has not bought the full game, which plays by the same limits.
 func is_demo() -> bool:
-	return OS.has_feature("demo") or acts_as_demo
+	return OS.has_feature("demo") or acts_as_demo or FullGame.locked()
 
 
 func demo_capped_villa() -> bool:

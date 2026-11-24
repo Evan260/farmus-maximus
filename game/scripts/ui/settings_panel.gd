@@ -111,6 +111,9 @@ func build() -> void:
 				_toggle("Flash the taskbar when something needs you", Settings.notifications, func(v): Settings.set_value("notifications", v))
 			_toggle("Open on the title screen", Settings.show_title, func(v): Settings.set_value("show_title", v))
 			_toggle("Clear marker on ready plants", Settings.strong_cues, func(v): Settings.set_value("strong_cues", v))
+			# A new phone, or the game installed again, learns of the purchase from the store.
+			if FullGame.locked():
+				Ui.setting(body, tr("Already bought the full game?"), tr("Restore purchase"), func(): FullGame.restore())
 		"Notifications":
 			if not PhoneServices.notifications_allowed():
 				var off := tr("Your phone has notifications turned off for this game")

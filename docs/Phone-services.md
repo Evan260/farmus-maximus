@@ -46,3 +46,14 @@ Nothing is scheduled past `offline.max_hours` (12 hours), after which the farm s
 4. The Play Console gives each achievement an id such as `CgkI...`. Put each in `play_games.achievements` in `game/data/balance.json`, beside the game's own id. Blank ids are skipped, so they can be filled in as they come, and a test checks that every achievement has an entry.
 
 Achievements earned before then are sent the next time the game starts, as they are on Steam.
+
+## The full game on Google Play
+
+The phone version is free to download and plays like the Steam demo: the home farm and the olive grove, and the villa up to its third stage. One purchase, the one-time product `full_game` at about \$6.99 CAD, opens the whole estate in place, with the farm kept. There are no ads and nothing else to buy.
+
+- `game/scripts/autoload/full_game.gd` (`FullGame`) asks the plugin's Google Play Billing: whether `full_game` is owned, its price as Play shows it to the player, the purchase and Restore purchase. It keeps the answer in `user://store.cfg`, so a phone without a connection stays unlocked after one good answer, and asks Play again at every start and every return to the game. A refund drops the purchase from Play's list and locks the demo's limits again; the farm itself is never touched.
+- While it is not owned, `Game.is_demo()` is true, so the demo's limits apply, and the places where the Steam demo offers Wishlist on Steam (the title menu, the farmhouse window at the demo's last stage, the temple's deeds) offer Unlock the full game with the price instead. Settings > Gameplay offers Restore purchase.
+- A purchase opens everything at once and shows a thank-you card. A purchase waiting for a cash payment stays locked, with a message, until Play reports it paid. A phone or emulator without the Play Store plays the free part and says the store cannot be reached when the unlock is pressed.
+- The Android export is always the full game; the unlock is only ever a check at run time. `--store --phone` tries the whole thing on a computer with a pretend store, and `--store=owned` with the purchase already made.
+
+The Play Console setup (payments profile, the `full_game` product, licence testers) and the upload key are in the SlowSunday Android Plugin's README. The bundle for Google Play comes from the `Android release` preset; raise its `version/code` by one before every upload.

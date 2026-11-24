@@ -29,6 +29,7 @@ boot_splash/use_filter=false
 Dev="*res://scripts/autoload/dev.gd"
 Data="*res://scripts/autoload/data.gd"
 Settings="*res://scripts/autoload/settings.gd"
+FullGame="*res://scripts/autoload/full_game.gd"
 Game="*res://scripts/autoload/game_state.gd"
 Saves="*res://scripts/autoload/save_service.gd"
 Audio="*res://scripts/autoload/audio.gd"

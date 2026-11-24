@@ -59,6 +59,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	grow_horizontal = Control.GROW_DIRECTION_BOTH
 	grow_vertical = Control.GROW_DIRECTION_BOTH
+	# Buying the full game changes what many windows offer, so each is rebuilt at its next look.
+	FullGame.changed.connect(func(): _signature = "-")
 
 
 func set_title(text: String) -> void:

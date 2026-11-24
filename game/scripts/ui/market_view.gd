@@ -662,6 +662,7 @@ func _refresh() -> void:
 	var sig := "%s|%s|%s|%d|%d|%s|%s|%s|%s" % [tab, JSON.stringify(Game.storage), JSON.stringify(Game.market.orders), Game.coins, Game.aureus,
 		JSON.stringify(Game.zones_owned), JSON.stringify(Game.decorations), JSON.stringify(Game.market.sold_today), Game.villa_stage]
 	sig += JSON.stringify(Game.buildings["barn"]["animals"]) if Game.buildings.has("barn") else ""
+	sig += str(Game.is_demo()) + FullGame.price()
 	if sig == _signature:
 		return
 	_signature = sig
@@ -806,7 +807,7 @@ func _build_land() -> void:
 	var head := Ui.row(_list)
 	Ui.label(head, tr("Your land: %d of %d") % [owned, Game.zones().size()]).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if Game.zones().any(func(z): return _deed_state(String(z["id"])) == "full"):
-		Ui.wishlist_button(head)
+		Ui.full_game_button(head)
 	# Three deeds to a row, with a shorter last row centred under the others.
 	var grid := HFlowContainer.new()
 	grid.alignment = FlowContainer.ALIGNMENT_CENTER
