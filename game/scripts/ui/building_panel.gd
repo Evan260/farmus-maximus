@@ -298,7 +298,11 @@ func _tick_villa() -> void:
 	elif Game.villa_stage >= stages.size():
 		_status.text = tr("Fully restored. The grand estate is complete.")
 	elif Game.demo_capped_villa():
-		_status.text = tr("The rest of the villa's story is in the full game. Thank you for playing the demo!")
+		# A phone selling the full game must not call itself a demo, so it keeps the limit without the word.
+		if FullGame.sold_here():
+			_status.text = tr("The rest of the villa's story is in the full game.")
+		else:
+			_status.text = tr("The rest of the villa's story is in the full game. Thank you for playing the demo!")
 	else:
 		_status.text = tr("Your home. Each improvement changes how the villa looks and opens up more of the estate.")
 	_tick_action(Game.villa_next_price(), "")
