@@ -68,3 +68,8 @@ textures/vram_compression/import_etc2_astc=true
 2d/snap/snap_2d_transforms_to_pixel=false
 2d/snap/snap_2d_vertices_to_pixel=false
 
+[slowsunday]
+
+package_name="com.slowsunday.farmusmaximus"
+review_code_sha256="f5a96530bf6a0a4156f75f1de228ae8743ed0c037cd19d12140a1ad8db83db79"
+

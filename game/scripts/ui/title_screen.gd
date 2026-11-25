@@ -19,6 +19,8 @@ var _column: VBoxContainer
 var _farms: Node
 ## True while the menu asks for a new farm's name.
 var _naming := false
+## True while the menu asks for Google Play's reviewer code.
+var _reviewing := false
 var _demo: Label
 
 
@@ -85,6 +87,12 @@ func _ready() -> void:
 	version.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	version.offset_right = -4 - Windowing.safe_bottom_right.x
 	version.offset_bottom = -3 - Windowing.safe_bottom_right.y
+	# The version takes a fingertip's taps, reaching up and left from where it is drawn.
+	version.custom_minimum_size = Vector2.ONE * Windowing.touch_px()
+	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	version.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	version.mouse_filter = Control.MOUSE_FILTER_STOP
+	version.gui_input.connect(_on_version_input)
 	Ui.fade_in(self, 0.8)
 
 
@@ -106,6 +114,7 @@ func _clear_keyboard() -> void:
 
 func _show_menu() -> void:
 	_naming = false
+	_reviewing = false
 	Ui.clear(_menu)
 	_menu.custom_minimum_size = Vector2(150, 0)
 	if Saves.has_farm:
@@ -143,7 +152,7 @@ func _on_store_changed() -> void:
 	if _demo:
 		_demo.visible = Game.is_demo() and not FullGame.sold_here()
 	# Deferred, so the menu built this frame first takes the focus it asked for before it is replaced.
-	if not _naming:
+	if not _naming and not _reviewing:
 		_show_menu.call_deferred()
 
 
@@ -190,12 +199,50 @@ func _name_farm(n: int) -> void:
 	Ui.button(_menu, tr("Back"), _show_menu)
 
 
-## Escape or B steps back from the farm list or the naming of a farm to the menu; true if there was a step to take.
+## Five quick taps on the version open the box for Google Play's reviewer code while the full game is locked.
+func _on_version_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if FullGame.review_tap(Time.get_ticks_msec() / 1000.0):
+			_review_code()
+
+
+## The box for the code that opens the full game for Google Play's reviewers, in English since only they see it.
+func _review_code() -> void:
+	_farms.close()
+	Ui.clear(_menu)
+	_reviewing = true
+	_menu.custom_minimum_size = Vector2(190, 0)
+	var box := Ui.column(_menu)
+	box.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	Ui.label(box, "Reviewer code")
+	# The message and OK sit above and beside the field, which a phone's keyboard stops just below.
+	var wrong := Ui.label(box, "That code isn't right.")
+	wrong.add_theme_color_override("font_color", UiTheme.RED)
+	wrong.visible = false
+	var r := Ui.row(box)
+	var field := LineEdit.new()
+	field.name = "ReviewCode"
+	field.placeholder_text = "XXXX-XXXX-XXXX"
+	field.max_length = 20
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r.add_child(field)
+	var enter := func():
+		if FullGame.redeem(field.text):
+			_show_menu()
+		else:
+			wrong.visible = true
+	field.text_submitted.connect(func(_t): enter.call())
+	Ui.button(r, "OK", enter)
+	Ui.button(box, "Cancel", _show_menu)
+	field.grab_focus.call_deferred()
+
+
+## Escape or B steps back from the farm list, a farm's naming or the reviewer's code to the menu; true if there was a step.
 func go_back() -> bool:
 	if _farms.visible:
 		_farms.close()
 		return true
-	if _naming:
+	if _naming or _reviewing:
 		_show_menu()
 		return true
 	return false

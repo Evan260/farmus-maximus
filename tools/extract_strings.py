@@ -22,8 +22,9 @@ LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 ENGINE_LINE = re.compile(r"Audio\.|AudioServer|get_node|res://|user://|push_|print|has_method|connect\(|add_theme|"
                          r"set_stylebox|set_color|set_constant|set_icon|set_font|set_type_variation|find_children|Engine\.|"
                          r"\.bus\b|path_join|InputMap|is_action|load\(|\.name = |Dev\.")
-# Names that stay as they are in every language: the default pet and farm names, the store, a locale code and buses.
-KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Dev", "Hant", "Master"}
+# Names that stay as they are in every language: the default pet and farm names, the store, a locale code and buses,
+# and the words of the title's box for Google Play's reviewer code, which only the reviewers see.
+KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Dev", "Hant", "Master", "Reviewer code", "That code isn't right."}
 # Scripts whose text only the developer sees.
 DEV_SCRIPTS = {"dev.gd"}
 
