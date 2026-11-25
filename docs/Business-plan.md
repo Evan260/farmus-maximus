@@ -1,5 +1,7 @@
 # Farmus Maximus: Business Plan
 
+Prices are in CAD.
+
 ## The game
 
 A cozy, semi-idle Roman farming game. Grow lavender fields, sell your harvest and restore a ruined farmhouse into a grand villa. Play actively or let it run along the bottom of your screen.
