@@ -2,7 +2,7 @@
 
 *A play on the Circus Maximus, ancient Rome's grandest stage, given to a humble farm.*
 
-The complete design of the game, kept high level. Art details are in `Asset-list.md`.
+The complete design of the game, kept high level. How the art is made is in `CLAUDE.md`, and every sound is in `Sound-list.md`.
 
 ## Pitch
 
@@ -306,6 +306,8 @@ Coins ──▶ land deeds, ruins, repairs, upgrades, helpers, seeds, animals, d
 ---
 
 ## 14. Platforms and performance
+
+The game is for Steam (Windows, Mac, Linux and Steam Deck) and phones (Google Play, with the App Store being prepared). On phones it is a free download that plays like the Steam demo, and one purchase unlocks the full game with the farm kept; there is no desktop strip, and the game runs full screen. How the phone version works is in `Phone-services.md`.
 
 The desktop strip has only been tested on Windows so far. Before launch it must pass on each of these:
 

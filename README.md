@@ -1,6 +1,6 @@
 # Farmus Maximus
 
-A cozy, semi-idle farming game on a Roman country estate, made for Steam (Windows, Mac, Linux and Steam Deck), in 14 languages.
+A cozy, semi-idle farming game on a Roman country estate, made for Steam (Windows, Mac, Linux and Steam Deck) and phones (Google Play now, the App Store being prepared), in 14 languages. On phones it is a free download that plays like the Steam demo, with one purchase that unlocks the full game.
 
 Grow lavender, wheat, olives and vines, restore ruined workshops to turn the harvest into flour, bread, oil, honey, cheese and wine, ride the cart to the market town to sell, and bring a crumbling farmhouse back to a grand villa. Nothing dies and nothing spoils: the estate keeps working while the game is closed, and it can run as a strip along the edge of the desktop while you do something else.
 
@@ -28,7 +28,7 @@ In development builds, F1 opens a debug panel with time speed-ups, free coins an
 | `game/` | The Godot project: scenes, GDScript, art, sound and the data files |
 | `game/data/balance.json` | Every number and name in the game: crops, goods, buildings, helpers, prices, timings, achievements |
 | `game/tests/` | Automated checks and the bots that measure pacing |
-| `docs/` | Design documents, plans, research, Steam setup and the release builds |
+| `docs/` | Design documents, plans, research, Steam and phone setup, and the release builds |
 | `tools/` | Scripts for making art and sound, collecting translatable text, and publishing to Steam |
 | `builds/` | Exported builds (not kept in git) |
 
@@ -37,13 +37,13 @@ In development builds, F1 opens a debug panel with time speed-ups, free coins an
 | Document | What it covers |
 |---|---|
 | [Game design](docs/Game-design.md) | The whole game, from the estate to the market town |
-| [Asset list](docs/Asset-list.md) | Every picture the game needs |
 | [Sound list](docs/Sound-list.md) | Every sound the game plays, by file name, with the sources and licences of the recordings |
 | [Business plan](docs/Business-plan.md) | Who the game is for, where it sells, costs and the plan to launch |
-| [Website plan](docs/Website-plan.md) | The game's website |
+| [Phone services](docs/Phone-services.md) | Phone notifications, Google Play Games achievements and the full-game unlock |
 | [Steam setup](docs/Steam-setup.md) | Connecting the game to Steam: achievements, cloud saves and the demo |
 | [Steam publishing](docs/Steam-publishing.md) | Uploading builds to Steam and giving testers access |
 | [Release builds](docs/Release-builds.md) | Building every platform on GitHub from a version tag |
+| [Cozy idle game feature comparison](docs/Cozy%20idle%20game%20feature%20comparison/Cozy%20idle%20game%20feature%20comparison.md) | What five cozy idle games share and where they fall short |
 
 ## Checking changes
 

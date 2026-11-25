@@ -8,9 +8,9 @@ A cozy, semi-idle Roman farming game. Grow lavender fields, sell your harvest an
 
 ## Where it sells
 
-- **Steam first**, for Windows, Mac and Linux, with Steam Deck support.
-- **Phones second:** Android and iOS, a few months after the Steam launch (see below).
-- **Price:** \$10 to \$15.
+- **Steam,** for Windows, Mac and Linux, with Steam Deck support.
+- **Phones:** the phone version is already built and goes to Google Play now, with the App Store being prepared. It is a free download that plays like the Steam demo, and one purchase unlocks the full game (see Phones below).
+- **Steam price:** \$10 to \$15.
 - **No own website or payment system.** The Steam page is the home of the game.
 
 ## Who it is for
@@ -19,14 +19,14 @@ Players of cozy, idle and desktop games (Cast n Chill, Rusty's Retirement, Stard
 
 ## Plan
 
-1. **Prototype** the home farm (1 to 2 weeks).
-2. **Put up the Steam page** with real screenshots and a trailer.
-3. **Post short clips** on TikTok, YouTube Shorts and Reddit, all linking to Steam.
-4. **Checkpoint** (see below).
-5. **Polish** the game.
-6. **Free demo** for Steam Next Fest.
-7. **Launch** on Steam.
-8. **Phone version** on Google Play and the App Store.
+The home farm prototype is done, and so is the phone version (see Phones below). Next:
+
+1. **Put up the Steam page** with real screenshots and a trailer.
+2. **Post short clips** on TikTok and YouTube Shorts, all linking to Steam.
+3. **Checkpoint** (see below).
+4. **Polish** the game.
+5. **Free demo** for Steam Next Fest.
+6. **Launch** on Steam.
 
 ## Checkpoint
 
@@ -70,9 +70,9 @@ After the Steam page and 3 months of clips:
 
 | Item | Cost |
 |---|---|
-| Steam fee | \$100 |
-| Google Play fee | \$25, once |
-| Apple Developer account | \$99 a year (already paid, also covers the Mac build) |
+| Steam Direct fee | About \$140 CAD (US\$100) |
+| Google Play fee | About \$35 CAD (US\$25), once |
+| Apple Developer Program | About \$140 CAD (US\$99) a year (already paid, also covers the Mac build) |
 | PixelLab (art) | Monthly plan for a few months |
 | Music | License or commission |
 | Pixel editor | \$0 to \$20 |
@@ -91,19 +91,11 @@ After the Steam page and 3 months of clips:
 
 ## Phones (Android and iOS)
 
-The game engine (Godot) builds for both, and a semi-idle game with offline progress suits phones well: players check in a few times a day.
+A semi-idle game with offline progress suits phones well: players check in a few times a day. How the phone version works is in `Phone-services.md`.
 
-- **When:** after the Steam launch, so the phone version gets the finished, reviewed game and the Steam launch keeps all the attention.
-- **Price:** free to download with the home farm and the olive grove (the same limit as the Steam demo), then **one purchase of about \$5 to \$7** unlocks the whole estate. No ads and no random rewards, which keeps the game cozy and matches the Steam version.
-- **Store cut:** both stores keep 15% under their small business programs (the first \$1 million a year), so about **\$4 to \$5 per unlock** reaches us before taxes.
-- **Work needed:**
-  - Touch controls: tapping and dragging already work; digging up a plant needs a long press instead of a right-click.
-  - Larger text and buttons for small screens (the interface size setting is the starting point).
-  - Saving whenever the app is put away, since phones close apps without warning.
-  - Phone notifications for "the cart is back" and "the storehouse is full".
-  - Achievements and cloud saves through Google Play Games and Apple Game Center instead of Steam.
-  - The desktop strip does not exist on phones; the game simply runs full screen.
-- **Note:** building for iOS needs a Mac with Xcode.
+- **Plan:** the phone version is built, with touch controls, a phone layout, notifications, Play Games achievements and the Google Play unlock. It goes to Google Play now. The App Store version is being prepared; it needs the same services from an Apple plugin, and a Mac with Xcode to build it. The desktop strip does not exist on phones; the game runs full screen.
+- **Price:** free to download with the home farm and the olive grove (the same limit as the Steam demo), then **one purchase of \$4.99 CAD** unlocks the whole estate. No ads and no random rewards, which keeps the game cozy and matches the Steam version.
+- **Store cut:** both stores keep 15% under their small business programs (the first US\$1 million a year), so about **\$4.24 per unlock** reaches us before tax.
 - **Risk:** the phone stores are crowded and mostly free-to-play games with ads, so a paid unlock depends on the same clips and wishlist audience that sells the Steam version.
 
 ## Only if it sells very well
