@@ -266,6 +266,39 @@ func test_phones_get_a_notifications_tab() -> void:
 		check(not settings.notify_cart, "which turns its notices off")
 		settings.notify_cart = true
 	check(_buttons(panel).any(func(b: Button) -> bool: return b.text == tr("Allow")), "a phone not allowing notifications offers to ask for them")
+	# A pressed button rebuilds its window a frame later, which must happen before the window is freed.
+	await process_frame
+	panel.free()
+	Windowing.phone = was[0]
+	Windowing.phone_preview = was[1]
+
+
+func test_phones_link_the_privacy_policy_in_the_settings() -> void:
+	var was := [Windowing.phone, Windowing.phone_preview]
+	Windowing.phone = false
+	Windowing.phone_preview = false
+	var panel: Control = load("res://scripts/ui/settings_panel.gd").new()
+	root.add_child(panel)
+	panel.tab = "Gameplay"
+	panel.open()
+	await process_frame
+	check(_setting(panel, "Privacy policy") == null, "a computer's settings look as they always have, with no privacy policy")
+	panel.free()
+	Windowing.phone = true
+	Windowing.phone_preview = true
+	panel = load("res://scripts/ui/settings_panel.gd").new()
+	root.add_child(panel)
+	panel.tab = "Gameplay"
+	panel.open()
+	await process_frame
+	var opened := []
+	panel.open_url = func(url: String) -> void: opened.append(url)
+	var link := _setting(panel, "Privacy policy")
+	check(link != null and link.text == tr("Open"), "a phone's gameplay settings link the privacy policy, as the stores ask")
+	if link:
+		link.pressed.emit()
+	check(opened == ["https://evan260.github.io/slowsunday/privacy.html"], "which opens the policy's page (%s)" % [opened])
+	await process_frame
 	panel.free()
 	Windowing.phone = was[0]
 	Windowing.phone_preview = was[1]

@@ -8,6 +8,8 @@ const NATIVE_NAMES := {"en": "English", "fr": "Français", "de": "Deutsch", "es"
 
 var tab := "Sound"
 var _waiting_for := ""
+## Opens a web page; the tests replace it so no browser starts.
+var open_url := func(url: String) -> void: OS.shell_open(url)
 
 
 func _init() -> void:
@@ -114,6 +116,9 @@ func build() -> void:
 			# A new phone, or the game installed again, learns of the purchase from the store.
 			if FullGame.locked():
 				Ui.setting(body, tr("Already bought the full game?"), tr("Restore purchase"), func(): FullGame.restore())
+			# Google Play and the App Store ask for the privacy policy to be reachable from inside the game.
+			if Windowing.phone:
+				Ui.setting(body, tr("Privacy policy"), tr("Open"), func(): open_url.call(String(Data.get_value("privacy_policy", ""))))
 		"Notifications":
 			if not PhoneServices.notifications_allowed():
 				var off := tr("Your phone has notifications turned off for this game")
