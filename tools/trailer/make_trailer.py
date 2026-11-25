@@ -1,5 +1,6 @@
-"""Make the Steam trailer and the vertical shorts for YouTube Shorts, Reels and TikTok: record each scripted shot in
-movie mode, then cut them together with the captions, the end card and the music, all in Godot.
+"""Make the Steam trailer, the Google Play listing's video and the vertical shorts for YouTube Shorts, Reels and TikTok:
+record each scripted shot in movie mode, then cut them together with the captions, the end card and the music, all in
+Godot.
 
 Usage:
   python tools/trailer/make_trailer.py              records any shot not yet recorded, then renders the trailer
@@ -7,8 +8,9 @@ Usage:
   python tools/trailer/make_trailer.py render       renders from the shots already recorded
   python tools/trailer/make_trailer.py render 70    renders a preview from 70 seconds in, into recordings/work/
   Add --cut=NAME to any of these for one of the shorts: ruin_to_life, day_1_vs_day_120, pet_the_dog, cozy_sounds,
-  on_my_desktop, meet_the_staff or one_day.
-  The shorts share their shots, recorded close up at 1080x1920.
+  on_my_desktop, meet_the_staff or one_day, or for play_store, the video for the Google Play listing.
+  The shorts share their shots, recorded close up at 1080x1920. The play_store cut is recorded at 1920x1080 with the
+  phone's interface (--phone), taps shown as a fingertip, and shows nothing a phone does not have.
 
 Finished videos go to their own folders in marketing/recordings/videos/, named in NAMES below, each with an .mp4 copy for
 the sites that take no .avi, beside its title, description and thumbnail; the shot frames they are cut from are kept in
@@ -36,6 +38,7 @@ NAMES = {
     "on_my_desktop": "short_on_my_desktop/short_on_my_desktop.avi",
     "meet_the_staff": "short_meet_the_staff/short_meet_the_staff.avi",
     "one_day": "short_one_day/short_one_day.avi",
+    "play_store": "play_store_trailer/play_store_trailer.avi",
 }
 
 FPS = 30
@@ -48,6 +51,7 @@ HUD_OFF = ["--no-hud"]
 # so pets and helpers have walked into place before the part that is used. A --villa= stage comes after --maxed, which
 # builds the villa to the top. Shots are recorded without ambience, which the edit plays unbroken under the cuts.
 SHOTS = {
+    "estate": (7, ["--maxed", "--zone=home", "--hour=17.6", "--coins=48250"]),
     "ruin": (7, ["--villa=1", "--zone=home", "--hour=8.5", *HUD_OFF]),
     "plant": (7, ["--villa=2", "--zone=home", "--hour=9.5", "--coins=240"]),
     "cart": (6, ["--villa=3", "--cart=2", "--zone=home", "--hour=10", "--coins=1840"]),
@@ -56,6 +60,7 @@ SHOTS = {
     "helper": (6, ["--maxed", "--villa=4", "--zone=home", "--hour=9", *HUD_OFF]),
     "bakery": (6, ["--estate", "--zone=yard", "--hour=19.3", *HUD_OFF]),
     "restore": (7, ["--villa=1", "--zone=home", "--hour=9", *HUD_OFF]),
+    "rebuild": (11, ["--villa=1", "--zone=home", "--hour=8.5", *HUD_OFF]),
     "villa": (7, ["--villa=3", "--zone=home", "--hour=11", *HUD_OFF]),
     "grand": (7, ["--maxed", "--villa=6", "--zone=home", "--hour=16", *HUD_OFF]),
     "bakery_ui": (8, ["--estate", "--zone=yard", "--hour=10", "--coins=2400", "--aureus=0"]),
@@ -96,6 +101,8 @@ CUT_SHOTS = {
     "on_my_desktop": ["desk", "helper", "bakery", "pet", "endcard"],
     "meet_the_staff": ["staff_farmhand", "staff_beekeeper", "staff_presser", "staff_stablehand", "endcard"],
     "one_day": ["full_day", "endcard"],
+    "play_store": ["estate", "rebuild", "plant", "market_ui", "bakery_ui", "vineyard", "timelapse", "inside",
+                   "night", "endcard"],
 }
 # Each format's frame, the estate's pixel scale in it, and where its shots are kept: the shorts' narrow frame shows the
 # estate close up.
@@ -105,7 +112,11 @@ FORMATS = {
     "trailer": {"shots": WORK / "trailer_shots", "size": (1920, 1080), "scale": 4, "strip_size": (1920, 332), "strip_scale": 2},
     # The shorts show the desktop's middle enlarged to fill the tall frame, so their strip is drawn larger to match it.
     "short": {"shots": WORK / "short_shots", "size": (1080, 1920), "scale": 6, "strip_size": (1080, 498), "strip_scale": 3},
+    # The Google Play video shows the game as a phone gives it, so its shots carry the phone's interface and its taps.
+    "phone": {"shots": WORK / "phone_shots", "size": (1920, 1080), "scale": 4, "flags": ["--phone"]},
 }
+# The cuts with a format of their own; every other cut is a short.
+CUT_FORMATS = {"trailer": "trailer", "play_store": "phone"}
 
 
 def godot(args, size):
@@ -138,7 +149,8 @@ def record(name, fmt):
     size = fmt["strip_size"] if strip else fmt["size"]
     shape = [f"--scale={fmt['strip_scale']}", f"--strip-width={size[0]}"] if strip else window(fmt)
     godot(["--write-movie", str(folder / "f.png"), "--fixed-fps", str(FPS), "--quit-after", str(seconds * FPS),
-           "--", "--demo", "--no-music", "--no-ambience", *shape, f"--trailer-shot={name}", *flags, "--quiet-start"], size)
+           "--", "--demo", "--no-music", "--no-ambience", *shape, *fmt.get("flags", []), f"--trailer-shot={name}",
+           *flags, "--quiet-start"], size)
 
 
 def render(fmt, cut, start=0.0):
@@ -146,7 +158,9 @@ def render(fmt, cut, start=0.0):
     out = WORK / "preview.avi" if start else VIDEOS / NAMES[cut]
     out.parent.mkdir(parents=True, exist_ok=True)
     # The edit quits when it ends; the frame limit only stops a run whose script failed to load from going on forever.
-    desk = desktop_frame(fmt["size"], WORK / f"desktop_{fmt['size'][0]}x{fmt['size'][1]}.png")
+    desk = None
+    if "strip_size" in fmt:
+        desk = desktop_frame(fmt["size"], WORK / f"desktop_{fmt['size'][0]}x{fmt['size'][1]}.png")
     desk_args = [f"--desktop={desk[0]}", f"--taskbar={desk[1]}"] if desk else []
     godot(["--write-movie", str(out), "--fixed-fps", str(FPS), "--quit-after", str(200 * FPS), "res://tools/trailer/edit.tscn",
            "--", "--readonly", *window(fmt), f"--shots={fmt['shots']}", f"--cut={cut}", f"--from={start}", *desk_args],
@@ -207,7 +221,7 @@ def main():
             if cut not in NAMES:
                 sys.exit(f"no cut named {cut}; the cuts are {', '.join(NAMES)}")
     args = [a for a in args if not a.startswith("--cut=")]
-    fmt = FORMATS["trailer" if cut == "trailer" else "short"]
+    fmt = FORMATS[CUT_FORMATS.get(cut, "short")]
     names = CUT_SHOTS[cut]
     if args[:1] == ["shots"]:
         for name in args[1:] or names:

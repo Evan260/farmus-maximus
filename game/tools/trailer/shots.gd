@@ -19,6 +19,10 @@ var _narrow := false
 var _ring: Sprite2D
 ## The helper the camera stays with, if any.
 var _followed: Node2D
+## A phone has no mouse pointer, so with the phone's interface each tap shows as a fingertip on the glass instead.
+var _touch := Windowing.phone
+## The ring spreading from a tap on a phone, one picture for each whole pixel it grows.
+var _ripples: Array[Texture2D] = []
 
 
 func _ready() -> void:
@@ -26,16 +30,23 @@ func _ready() -> void:
 	layer.layer = 100
 	add_child(layer)
 	_pointer = Sprite2D.new()
-	_pointer.texture = _arrow()
-	_pointer.centered = false
+	_pointer.texture = _fingertip() if _touch else _arrow()
+	_pointer.centered = _touch
 	_pointer.scale = Vector2.ONE * Windowing.scale
 	_pointer.visible = false
+	if _touch:
+		_pointer.modulate.a = 0.0
 	layer.add_child(_pointer)
 	_ring = Sprite2D.new()
 	_ring.texture = _ring_texture()
 	_ring.scale = Vector2.ONE * Windowing.scale
 	_ring.modulate.a = 0.0
 	layer.add_child(_ring)
+	for radius in range(6, 12):
+		_ripples.append(_ripple_texture(radius))
+	# The edit's sound levels are balanced for effects recorded at a quarter of full volume.
+	Audio.volumes["Effects"] = 0.25
+	Audio._apply("Effects")
 	# The real mouse plays no part: wherever it rests on the desktop would otherwise light up what it is over. The
 	# estate's hover is pinned off the map, so a click's own hover check finds nothing under it either.
 	get_tree().root.set_disable_input(true)
@@ -43,6 +54,8 @@ func _ready() -> void:
 	# The estate's own setup runs first, then the shot takes over.
 	await get_tree().process_frame
 	await get_tree().process_frame
+	# The mouse can reach the window in the first frames, before input is shut off, so what it lit up is put out.
+	m._update_hover(m._pad_point)
 	_narrow = m._view_size().x < 300
 	# The Triumph's wreath and the enlarged storehouse belong on the finished estate, not on the young farm.
 	_young = Game.villa_stage < Game.villa_stages().size()
@@ -78,6 +91,18 @@ func _process(_delta: float) -> void:
 
 # Shots -------------------------------------------------------------------
 
+## The finished estate at golden hour with its interface, and the dog on the path in front of the farmhouse is petted.
+func _shot_estate() -> void:
+	_look_at(Estate.VILLA_BASE.x)
+	m.dog.position.x = Estate.VILLA_BASE.x - 28.0
+	m.dog.sprite.flip_h = false
+	m.dog._state = "sit"
+	m.dog._timer = 60.0
+	m.dog.sprite.play("sit")
+	await _wait(2.4)
+	await _click_on(m.dog.position + Vector2(0, -12), true, m.dog.pet)
+
+
 ## The farm as Uncle Marcus left it: the ruined farmhouse behind bare beds.
 func _shot_ruin() -> void:
 	for i in Game.plots.size():
@@ -98,10 +123,18 @@ func _shot_plant() -> void:
 	await _wait(1.6)
 	_pointer.visible = true
 	_pointer.position = Vector2(_screen(Vector2(m.cam_x + m._view_size().x / 2.0 + 10, 200)))
-	m.hud.select_tool("harvest")
+	# Picking a tool clicks, which would be heard with no tap seen for it, so the basket already in hand is kept.
+	if m.hud.tool != "harvest":
+		m.hud.select_tool("harvest")
 	for v in _beds_in_view(func(i): return Game.plot_visual(i) == "bloom").slice(0, 3):
 		await _click_plot(v)
-	m.hud.select_tool("seed:lavender")
+	# A phone keeps its tools folded into the corner button, so the seed is picked from the row that button opens.
+	if _touch:
+		await _press(m.hud._tool_corner)
+		await _wait(0.3)
+		await _press(m.hud._tool_buttons["seed:lavender"])
+	else:
+		m.hud.select_tool("seed:lavender")
 	for v in _beds_in_view(func(i): return Game.plot_visual(i) == "empty").slice(0, 2):
 		await _click_plot(v)
 
@@ -164,12 +197,19 @@ func _shot_bakery() -> void:
 
 
 ## The first restoration: scaffold goes up round the ruin, among bare beds, and comes down on the restored farmhouse.
-func _shot_restore() -> void:
+func _shot_restore(after := 1.0, building := 2.4) -> void:
 	for i in Game.plots.size():
 		if Game.plots[i]["zone"] == "home":
 			Game.plots[i]["crop"] = ""
 			Game.plots[i]["growth"] = 0.0
-	_shot_villa()
+	_shot_villa(after, building)
+
+
+## The ruin held under the Google Play video's first two captions, then restored, so the story needs no cut or card.
+func _shot_rebuild() -> void:
+	_shot_restore(6.2, 1.8)
+	_look_at(Estate.VILLA_BASE.x - 16.0)
+	_pan(16.0, 6.0)
 
 
 ## The last stage: the scaffold comes down on the grand estate.
@@ -177,8 +217,8 @@ func _shot_grand() -> void:
 	_shot_villa()
 
 
-## The villa grows: the scaffold goes up, and comes down on the next stage.
-func _shot_villa() -> void:
+## The villa grows: the scaffold rises after `after` seconds and comes down on the next stage `building` seconds on.
+func _shot_villa(after := 1.0, building := 2.4) -> void:
 	_look_at(Estate.VILLA_BASE.x)
 	# The demo farm builds five times faster than the game; here the scaffold has time to rise before the reveal.
 	Game.build_speed = 1.0
@@ -186,9 +226,9 @@ func _shot_villa() -> void:
 	# brought in for it.
 	for item in ["stone", "timber", "tiles", "bread"]:
 		Game.add_item(item, 30, true)
-	await _wait(1.0)
+	await _wait(after)
 	Game.upgrade_villa()
-	Game.build_speed = float(Game.villa_build["time_left"]) / 2.4
+	Game.build_speed = float(Game.villa_build["time_left"]) / building
 
 
 func _shot_pasture() -> void:
@@ -309,11 +349,15 @@ func _shot_bakery_ui() -> void:
 	Game.add_item("flour", 16, true)
 	_look_at(_building_x("bakery") + WINDOW_CLEARANCE)
 	await _wait(1.6)
+	# The trader sets the cart off as the shot starts, and its message would fade out across the window about to open.
+	if m.hud._toast_tween:
+		m.hud._toast_tween.kill()
+	m.hud._toast.modulate.a = 0.0
 	await _click_on(_building_centre("bakery"), false)
 	await _wait(0.7)
 	await _press(m.hud._building._load)
 	# A batch takes a minute; here it is all but baked once the oven is lit, so the bread comes out in view.
-	await _wait(1.2)
+	await _wait(0.8)
 	b["progress"] = float(Game.current_recipe("bakery").get("seconds", 60)) - 0.9
 
 
@@ -467,7 +511,8 @@ func _click_on(at: Vector2, drift := true, answer := Callable()) -> void:
 		answer.call()
 	else:
 		m._click(at)
-	if drift:
+	# A finger lifts away rather than drifting off.
+	if drift and not _touch:
 		await _wait(0.15)
 		_move_to(at + Vector2(-26, 12))
 
@@ -516,6 +561,11 @@ func _move_to(world: Vector2) -> void:
 
 
 func _move_screen(to: Vector2) -> void:
+	# A finger is off the glass between taps, so it is not seen travelling.
+	if _touch:
+		_pointer.position = to
+		await _wait(0.25)
+		return
 	var t := create_tween()
 	t.tween_property(_pointer, "position", to, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await t.finished
@@ -523,6 +573,10 @@ func _move_screen(to: Vector2) -> void:
 
 ## The pointer dips a pixel and a small ring spreads from its tip, so a click reads on screen.
 func _tap() -> void:
+	if _touch:
+		_touch_down()
+		await _wait(0.08)
+		return
 	_pointer.position.y += Windowing.scale
 	_ring.position = _pointer.position
 	_ring.scale = Vector2.ONE * Windowing.scale * 0.5
@@ -532,6 +586,51 @@ func _tap() -> void:
 	t.tween_property(_ring, "modulate:a", 0.0, 0.3)
 	await _wait(0.08)
 	_pointer.position.y -= Windowing.scale
+
+
+## The fingertip shows where the screen is touched and a ring spreads from it a whole pixel at a time, then both fade.
+func _touch_down() -> void:
+	_pointer.visible = true
+	_pointer.modulate.a = 1.0
+	_ring.position = _pointer.position
+	_ring.scale = Vector2.ONE * Windowing.scale
+	var spread := create_tween()
+	for k in _ripples.size():
+		spread.tween_callback(func() -> void:
+			_ring.texture = _ripples[k]
+			_ring.modulate.a = 1.0 - float(k) / _ripples.size())
+		spread.tween_interval(0.05)
+	spread.tween_callback(func() -> void: _ring.modulate.a = 0.0)
+	create_tween().tween_property(_pointer, "modulate:a", 0.0, 0.2).set_delay(0.15)
+
+
+## A fingertip pressed on the glass: a pale disc ringed in cream and then ink, so it shows on light and dark alike.
+static func _fingertip() -> Texture2D:
+	var img := Image.create(11, 11, false, Image.FORMAT_RGBA8)
+	for y in 11:
+		for x in 11:
+			var d := Vector2(x - 5, y - 5).length()
+			if d < 3.5:
+				img.set_pixel(x, y, Color(0.99, 0.95, 0.86, 0.45))
+			elif d < 4.5:
+				img.set_pixel(x, y, Color(0.99, 0.95, 0.86, 0.95))
+			elif d < 5.5:
+				img.set_pixel(x, y, Color(0.29, 0.18, 0.14, 0.6))
+	return ImageTexture.create_from_image(img)
+
+
+static func _ripple_texture(radius: int) -> Texture2D:
+	var side := radius * 2 + 3
+	var img := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	var middle := float(radius + 1)
+	for y in side:
+		for x in side:
+			var d := Vector2(x - middle, y - middle).length()
+			if absf(d - radius) < 0.5:
+				img.set_pixel(x, y, Color(0.99, 0.95, 0.86, 0.9))
+			elif absf(d - radius - 1.0) < 0.5:
+				img.set_pixel(x, y, Color(0.29, 0.18, 0.14, 0.45))
+	return ImageTexture.create_from_image(img)
 
 
 ## The familiar arrow pointer, drawn in the interface's ink and parchment.

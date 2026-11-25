@@ -174,8 +174,10 @@ func _apply(bus: String) -> void:
 
 
 func _load_settings() -> void:
-	for bus in volumes:
-		volumes[bus] = float(Settings.cfg.get_value("sound", bus.to_lower(), volumes[bus]))
+	# A recording keeps the game's own mix rather than the player's volumes, so every video comes out equally loud.
+	if Engine.get_write_movie_path() == "":
+		for bus in volumes:
+			volumes[bus] = float(Settings.cfg.get_value("sound", bus.to_lower(), volumes[bus]))
 	for bus in BUSES:
 		_apply(bus)
 

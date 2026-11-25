@@ -1,6 +1,6 @@
 extends Node
-## The edits of the trailer and of the short vertical cut for phones: each plays its recorded shots in order with their
-## own sound under the music, with black caption cards, captions over shots and the end card with the logo.
+## The edits of the trailer, the Google Play video and the short vertical cuts: each plays its recorded shots in order
+## with their own sound under the music, with black caption cards, captions over shots and the end card with the logo.
 ## tools/trailer/make_trailer.py renders one in movie mode, so this runs exactly once per frame.
 
 const FPS := 30.0
@@ -45,6 +45,21 @@ const TRAILER := [
 	{"shot": "inside", "from": 1.5, "beats": 3, "amb": "night"},
 	{"shot": "night", "from": 1.5, "beats": 6},
 	{"end": "endcard", "from": 1.0, "beats": 7},
+]
+## The Google Play listing's video, with the phone's interface; its 48 beats start 48 into the music and end with it.
+const PLAY_STORE := [
+	{"shot": "estate", "from": 1.2, "beats": 5, "amb": "day"},
+	{"shot": "rebuild", "from": 1.0, "beats": 3, "caption": "Uncle Marcus has left you\nhis farm.", "caption_at": 0.3},
+	{"shot": "rebuild", "from": 3.571, "beats": 3, "caption": "It has seen better days.", "caption_at": 0.1},
+	{"shot": "rebuild", "from": 6.142, "beats": 5, "caption": "Make it the finest estate\nin the hills.", "caption_at": 0.1},
+	{"shot": "plant", "from": 1.5, "beats": 5},
+	{"shot": "market_ui", "from": 0.9, "beats": 3},
+	{"shot": "bakery_ui", "from": 1.7, "beats": 5},
+	{"shot": "vineyard", "from": 1.5, "beats": 3},
+	{"shot": "timelapse", "from": 1.5, "beats": 4, "caption": "Your helpers work while you rest.", "mute": true},
+	{"shot": "inside", "from": 1.5, "beats": 3, "amb": "night"},
+	{"shot": "night", "from": 1.5, "beats": 3},
+	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## The short cut for phones: no cards, a caption from the first frame, and quicker cuts.
 const SHORT := [
@@ -124,9 +139,10 @@ const ONE_DAY := [
 	{"end": "endcard", "from": 1.0, "beats": 6},
 ]
 ## How each cut is laid out: its frame, how many screen pixels make one overlay pixel, its caption size, where its text
-## and logo sit in overlay pixels, where in the music it starts, and optionally no music and louder ambience.
+## and logo sit in overlay pixels, where the music starts, and optionally no music, louder ambience or the scroll's line.
 const CUTS := {
 	"trailer": {"edit": TRAILER, "size": Vector2i(1920, 1080), "pixel": 4, "caption_size": 16, "caption_y": 20, "logo_y": 30, "scroll_y": 134, "music_from": 0.0},
+	"play_store": {"edit": PLAY_STORE, "size": Vector2i(1920, 1080), "pixel": 4, "caption_size": 16, "caption_y": 20, "logo_y": 30, "scroll_y": 134, "music_from": 41.1, "line": "Restore a Roman farm"},
 	"ruin_to_life": {"edit": SHORT, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
 	"day_1_vs_day_120": {"edit": TRANSFORM, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 41.1},
 	"pet_the_dog": {"edit": PETS, "size": Vector2i(1080, 1920), "pixel": 3, "caption_size": 24, "caption_y": 100, "logo_y": 150, "scroll_y": 262, "music_from": 0.0},
@@ -157,7 +173,7 @@ var _card_text: Label
 var _caption: Label
 var _logo: TextureRect
 var _scroll: TextureRect
-var _wishlist: Label
+var _line: Label
 var _music: AudioStreamPlayer
 var _sound: AudioStreamPlayer
 var _current := -1
@@ -267,9 +283,9 @@ func _build() -> void:
 	_scroll.texture = load("res://tools/trailer/scroll.png")
 	_scroll.position = Vector2(roundf((area.x - _scroll.texture.get_width()) / 2.0), float(_cut["scroll_y"]))
 	_overlay.add_child(_scroll)
-	_wishlist = _label(_scroll.position + Vector2(0, SCROLL_TEXT_TOP), _scroll.texture.get_width(), SCROLL_TEXT_HEIGHT)
-	_wishlist.text = "Wishlist now on Steam"
-	_wishlist.add_theme_color_override("font_color", INK)
+	_line = _label(_scroll.position + Vector2(0, SCROLL_TEXT_TOP), _scroll.texture.get_width(), SCROLL_TEXT_HEIGHT)
+	_line.text = String(_cut.get("line", "Wishlist now on Steam"))
+	_line.add_theme_color_override("font_color", INK)
 
 
 func _label(at: Vector2, width: float, height: float, size := 16) -> Label:
@@ -334,7 +350,7 @@ func _draw_segment(seg: Dictionary, local: float, length: float) -> void:
 	_caption.visible = seg.has("caption")
 	_logo.visible = is_end
 	_scroll.visible = is_end
-	_wishlist.visible = is_end
+	_line.visible = is_end
 	if is_card:
 		_card_text.text = String(seg["card"])
 		# The line fades in and out on the black, so cards never jump.
@@ -378,6 +394,6 @@ func _draw_segment(seg: Dictionary, local: float, length: float) -> void:
 		_logo.position.y = float(_cut["logo_y"]) + roundf(4.0 * (1.0 - _logo.modulate.a))
 		var s := clampf((local - 1.6) / 0.6, 0.0, 1.0)
 		_scroll.modulate.a = s
-		_wishlist.modulate.a = s
+		_line.modulate.a = s
 	# Sound from each shot fades in and out quickly at its cuts, so cuts never click.
 	_sound.volume_db = SOUND_DB + linear_to_db(clampf(minf(local / 0.08, (length - local) / 0.08), 0.0001, 1.0))
