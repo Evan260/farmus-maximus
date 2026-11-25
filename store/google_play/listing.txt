@@ -1,0 +1,49 @@
+FARMUS MAXIMUS: GOOGLE PLAY LISTING TEXT
+
+For Play Console > Store presence > Main store listing > App details. Each count is the number of
+characters Play counts for that field, line breaks included, against the field's limit. The text avoids
+"demo" and "trial", so it can be reused for the App Store.
+
+
+APP NAME (25 of 30 characters)
+
+Farmus Maximus: Cozy Farm
+
+
+SHORT DESCRIPTION (78 of 80 characters)
+
+Restore a ruined Roman farm into a grand estate. A cozy idle game with no ads.
+
+
+FULL DESCRIPTION (3,044 of 4,000 characters)
+
+Your uncle has left you his farm. It has seen better days.
+
+Farmus Maximus is a cozy, semi-idle farming game on a Roman country estate in the hills. Plant fields of lavender and wheat, bring ruined workshops back to life, and restore the old farmhouse stage by stage into the grandest villa in the valley. Play for a minute or for an evening: the farm keeps growing either way.
+
+Free to start, one purchase for the whole game
+Download Farmus Maximus for free and farm the home fields and the olive grove while you restore the farmhouse through its first three stages. When you are ready, one purchase unlocks the whole estate: the workshop yard, the vineyard slope, the pasture and the villa's last four stages. Your farm carries straight on. No ads, ever, and nothing else for sale.
+
+From ruin to grand estate
+The farmhouse starts as a crumbling ruin. Restore it through seven stages, from a simple farmhouse to a villa with a portico, a peristyle garden, a bathhouse wing and finally a grand estate. Every step changes what you see.
+
+Grow, make and sell
+• Grow four kinds of lavender, including a rare white one, along with wheat, olives, herbs and grapes.
+• Restore ten workshops and a household shrine: dry lavender, grind flour at the mill, bake bread, keep bees, press olive oil and wine, age wine in the cellar, make perfumed oils, and keep hens and goats for the dairy.
+• Goods come in three qualities, and the finest fetch the best prices.
+• Send your cart to the market town, fill orders from the regulars on the notice board, and time your sales around the festivals of Floralia, Vinalia, Cerealia and Saturnalia.
+
+Helpers keep it running
+Hire seven helpers, each with a name and something to say: a farmhand, a miller, a beekeeper, a presser, a perfumer, a stable hand and a trader. Watch them pick the harvest, carry flour to the bakery and load the cart, and walk home through their own front doors at nightfall. Put the game away and the estate carries on for up to twelve hours. If you like, it can remind you when the cart is home, the storehouse is full or the builders have finished.
+
+Made for touch
+Tap to plant, build and send the cart, and drag through the journal and the market's lists with a finger. Every button is sized for a fingertip and kept clear of your phone's camera and rounded corners, on phones and tablets alike.
+
+Little joys
+• A dog and a cat to choose, name and pet, in several breeds. The dog sometimes digs up old coins, truffles or a rare seed.
+• Furnish the farmhouse and spend evenings by the fire.
+• Make offerings at the household shrine for the blessings of Ceres, Bacchus, Minerva, Pomona, Mercury and the Lares.
+• Seasons, rain and mist, fireflies over the lavender at night, the stork on the roof, a rare hoopoe, a passing fox, and on a few lucky nights the northern lights.
+• A journal of everything you discover, 46 achievements, three farms to keep, and play in 14 languages.
+
+Nothing dies, nothing spoils and there are no timers to dread. Just a quiet corner of Rome to bring back to life.
