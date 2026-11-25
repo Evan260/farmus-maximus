@@ -57,13 +57,18 @@ TABLET SCREENSHOTS
 tablet_7_inch_screenshots/    1920x1080 landscape (16:9), 24-bit PNG
 tablet_10_inch_screenshots/   2560x1440 landscape (16:9), 24-bit PNG
 
-Each folder holds the same four scenes, taken at that window size with the phone interface, so the layout is the one a
-tablet of that shape gets:
+Each folder holds the phone's eight scenes in the same order, taken at that window size with the phone interface, so
+the layout is the one a tablet of that shape gets. The 7-inch pictures have the phone's size and layout. In the journal
+a farmhand can walk along the path under the open window; take it again if only his legs show.
 
 01_estate_golden_hour.png
-02_market_town.png             The market with its place buttons along the bottom.
-03_farmhouse_by_night.png
-04_northern_lights.png
+02_grape_harvest.png
+03_market_town.png               The market with its place buttons along the bottom.
+04_farmhouse_by_night.png
+05_northern_lights.png
+06_rainbow_over_the_pasture.png
+07_bakery_window.png
+08_journal.png
 
 Meets: up to 8 screenshots for each tablet size, JPEG or 24-bit PNG without alpha, each side 320 to 3,840 px, the long
 side at most 2.3 times the short one. They are 16:9, as Google's large-screen guidance asks for a game to be featured on tablets.

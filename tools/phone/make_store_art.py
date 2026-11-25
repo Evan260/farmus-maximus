@@ -43,14 +43,13 @@ SCENES = {
 }
 # An iPad's 4:3 screen crops the sides of the estate, so there the trailer's villa shot frames the farmhouse.
 ON_VILLA = ["--trailer-shot=profile"]
+PLAY_SCENES = ["estate_golden_hour", "grape_harvest", "market_town", "farmhouse_by_night", "northern_lights",
+               "rainbow_over_the_pasture", "bakery_window", "journal"]
 # folder: (window size, scenes in upload order, extra flags per scene).
 SETS = {
-    PLAY / "phone_screenshots": ((1920, 1080), ["estate_golden_hour", "grape_harvest", "market_town", "farmhouse_by_night",
-                                                "northern_lights", "rainbow_over_the_pasture", "bakery_window", "journal"], {}),
-    PLAY / "tablet_7_inch_screenshots": ((1920, 1080), ["estate_golden_hour", "market_town", "farmhouse_by_night",
-                                                        "northern_lights"], {}),
-    PLAY / "tablet_10_inch_screenshots": ((2560, 1440), ["estate_golden_hour", "market_town", "farmhouse_by_night",
-                                                         "northern_lights"], {}),
+    PLAY / "phone_screenshots": ((1920, 1080), PLAY_SCENES, {}),
+    PLAY / "tablet_7_inch_screenshots": ((1920, 1080), PLAY_SCENES, {}),
+    PLAY / "tablet_10_inch_screenshots": ((2560, 1440), PLAY_SCENES, {}),
     # On the iPhone's wide screen the journal covers the money panel's words, so the rainbow takes its place.
     APPLE / "iphone_6.9_inch_screenshots": ((2868, 1320), ["estate_golden_hour", "grape_harvest", "market_town",
                                                            "farmhouse_by_night", "northern_lights",
