@@ -49,8 +49,8 @@ var walk_folder := "walk"
 var react_folder := ""
 ## Shown when the pointer is over them, such as "Gaius, farmhand"; empty for creatures that are not named.
 var display_name := ""
-## The sound of their greeting when clicked, such as "salve_woman"; silent if the game has no such sound.
-var voice := ""
+## Whether this person is a woman, which adds the women's sayings to what they say when clicked.
+var woman := false
 ## Which of the sayings in the data this person draws on when clicked, such as "miller" or "shepherd".
 var sayings := ""
 var home_x := NAN
@@ -309,20 +309,18 @@ func contains(point: Vector2) -> bool:
 	return sprite != null and visible and modulate.a > 0.5 and Hit.frame_has_pixel(self, sprite, point)
 
 
-## A person answers a click with their greeting, the rustle of their clothes and, if there is one, their voice.
+## A person answers a click with their greeting and the rustle of their clothes.
 func greet() -> void:
 	if react():
 		Audio.play("rustle", -10.0, 0.1)
-		if voice != "":
-			Audio.play(voice, -4.0, 0.05)
 
 
 ## Something this person says when clicked: one of their own lines, or a common Latin exclamation of the day.
 func saying() -> String:
 	var all: Dictionary = Data.get_value("sayings", {})
 	var pool: Array = all.get(sayings, []).duplicate()
-	pool += all.get("woman" if voice == "salve_woman" else "any", [])
-	if voice == "salve_woman":
+	pool += all.get("woman" if woman else "any", [])
+	if woman:
 		pool += all.get("any", []).slice(0, 4)
 	return tr(String(pool[randi() % pool.size()])) if not pool.is_empty() else ""
 

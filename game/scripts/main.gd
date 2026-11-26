@@ -47,7 +47,7 @@ const PARALLAX := {"sky": 0.04, "mountains": 0.08, "land": 0.15}
 const CART_HOME_X := HOME + 505.0
 ## The lowest row the view shows: the road to town runs along the bottom, below the fields.
 const BOTTOM := 286.0
-## The helpers who are women, so their greeting uses a woman's voice.
+## The helpers who are women, so they draw on the women's sayings too.
 const WOMEN := ["miller", "perfumer", "stablehand"]
 const RIG_BASE := 282
 ## How much longer and taller each cart is than the first, as tools/art/make_cart_levels.py draws them.
@@ -664,7 +664,6 @@ func _update_life(delta: float) -> void:
 			w.speed = 16.0
 			w.react_folder = "greet"
 			w.display_name = tr("A shepherd") if who == "shepherd" else tr("A traveller")
-			w.voice = "salve_man"
 			w.sayings = who
 			world.add_child(w)
 			_passers.append(w)
@@ -738,7 +737,7 @@ func _spawn_helper(id: String) -> void:
 	var info := Game.helper_info(id)
 	w.react_folder = "greet"
 	w.display_name = tr("%s the %s") % [tr(String(info.get("name", ""))), Ui.mid(tr(String(info.get("role", ""))))]
-	w.voice = "salve_woman" if id in WOMEN else "salve_man"
+	w.woman = id in WOMEN
 	w.sayings = id
 	var harvests := info.has("zones") or info.has("crops")
 	var runs_workshops := Game.buildings.keys().any(func(b): return Game.building_info(b).get("helper", "") == id)
@@ -1611,7 +1610,6 @@ func _on_animal_added(kind: String) -> void:
 ## A new helper arrives with a greeting.
 func _on_helper_arrived(id: String) -> void:
 	Audio.play("rustle", -6.0)
-	Audio.play("salve_woman" if id in WOMEN else "salve_man", -4.0)
 
 
 ## A new decoration is knocked into place.

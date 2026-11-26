@@ -25,8 +25,6 @@ Several takes of one sound can sit side by side as `name_1`, `name_2` and so on,
 | `cart_stone` | Riding the cart to market along the paved road: hooves and wheels knocking over the stones | Yes |
 | `tab` | Turning to a tab in a window or a bookmark in the journal (2 takes) | Yes |
 | `rustle` | Someone greeting the player when clicked, or a helper joining: their clothes as they wave or bow; the fox dashing off; the loom's shuttle passing (3 takes) | Yes |
-| `salve_woman` | A woman greeting the player when clicked, or a woman helper joining: a warm "Salve!" | No |
-| `salve_man` | A man greeting the player when clicked, or a man helper joining: a friendly "Salve!" | No |
 | `hammer` | Repairs and villa building | Yes |
 | `built` | Building work finished: a building repaired or improved, a villa stage, a farm improvement. Made from `hammer` and `made` by `tools/audio/compose_sounds.py` | Yes |
 | `flourish` | A deed bought, an achievement: one harp chord from the soundtrack, made by `tools/audio/compose_sounds.py` | Yes |

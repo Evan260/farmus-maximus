@@ -84,6 +84,6 @@ Pushing a version tag such as `v1.0.0` makes GitHub test the game, build it for 
 
 The art is pixel art, generated with PixelLab (`tools/art/pixellab.py`, every paid call logged in `tools/art/ledger.csv`) and drawn or finished with the Python scripts in `tools/art/`. Each script says at the top what it makes and how to run it again.
 
-Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; `Credits and licences.txt`, shipped beside the game, names them all, as listed in the [sound list](docs/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music. Only the "Salve!" greetings are still missing.
+Every sound is a real recording: from Freesound, cut to length by `tools/audio/cut_recordings.py`, and from Kenney's free sound packs. All are CC0 except the stork's, which needs a credit; `Credits and licences.txt`, shipped beside the game, names them all, as listed in the [sound list](docs/Sound-list.md). The music is the Bard's Tales harp pack by Mythago Music.
 
 The font is Silkscreen, under the SIL Open Font License (`game/assets/fonts/OFL.txt`).

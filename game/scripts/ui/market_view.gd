@@ -158,7 +158,7 @@ func _ready() -> void:
 		w.home_x = [120.0, 360.0][randi() % 2]
 		w.react_folder = "greet"
 		w.display_name = tr({"townsman": "A townsman", "townswoman": "A townswoman", "traveller": "A traveller", "shepherd": "A shepherd"}[who])
-		w.voice = "salve_woman" if who == "townswoman" else "salve_man"
+		w.woman = who == "townswoman"
 		w.sayings = who
 		_scene.add_child(w)
 		_folk.append(w)
