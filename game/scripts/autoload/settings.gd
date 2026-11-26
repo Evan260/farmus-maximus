@@ -9,6 +9,7 @@ const PLAY := ["offline_progress", "notifications", "large_text", "reduced_motio
 	"language", "day_minutes", "notify_cart", "notify_full", "notify_builders"]
 const DISPLAY := ["ui_scale_step", "fullscreen", "low_power"]
 const SOUND := ["background_sound"]
+const PHONE := ["reminders"]
 ## Every rebindable action with its default key, and the gamepad button that also does it.
 const ACTIONS := {
 	"pan_left": {"name": "Scroll left", "key": KEY_A, "pad": -1},
@@ -29,6 +30,8 @@ var notifications := true
 var notify_cart := true
 var notify_full := true
 var notify_builders := true
+## Whether the player has tapped Allow on a phone's Notifications tab; until then the phone is sent none.
+var reminders := false
 var large_text := false
 var reduced_motion := false
 ## The tips shown when the pointer rests on a button.
@@ -60,7 +63,7 @@ var _defaults := {}
 
 
 func _init() -> void:
-	for name in PLAY + DISPLAY + SOUND:
+	for name in PLAY + DISPLAY + SOUND + PHONE:
 		_defaults[name] = get(name)
 
 
@@ -160,9 +163,12 @@ func load_from(dir: String) -> void:
 	if cfg.load(dir.path_join(FILE)) != OK:
 		cfg = ConfigFile.new()
 		_bring_old_files()
-	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"]]:
+	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"], [PHONE, "phone"]]:
 		for name in list[0]:
 			set(name, cfg.get_value(list[1], name, _defaults[name]))
+	# Tapping Allow was once kept only as the phone having been asked, which is the same choice.
+	if not cfg.has_section_key("phone", "reminders"):
+		reminders = bool(cfg.get_value("phone", "asked", false))
 	keys = {}
 	if cfg.has_section("keys"):
 		for action in cfg.get_section_keys("keys"):
@@ -200,7 +206,7 @@ func _old_file(name: String) -> Dictionary:
 
 
 func save() -> void:
-	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"]]:
+	for list in [[PLAY, "play"], [DISPLAY, "display"], [SOUND, "sound"], [PHONE, "phone"]]:
 		for name in list[0]:
 			cfg.set_value(list[1], name, get(name))
 	for action in keys:

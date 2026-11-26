@@ -28,7 +28,7 @@ Building it:
 
 ## When the farm sends notifications
 
-`PhoneServices` works them out when the phone puts the game away (`NOTIFICATION_APPLICATION_PAUSED` or `NOTIFICATION_APPLICATION_FOCUS_OUT`, when `save_service.gd` also saves), and cancels them all when the game comes back or starts again. `game/scripts/game/phone_notices.gd` plans them:
+`PhoneServices` works them out when Android pauses the game (`NOTIFICATION_APPLICATION_PAUSED`), and cancels them all when the game comes back or starts again. A game that only loses the focus (`NOTIFICATION_APPLICATION_FOCUS_OUT`), under the notification shade or beside another app, is still on screen, so it plans nothing. None is sent until the player taps Allow on Settings > Notifications, on every Android version: Android 7 to 12 allow notifications from install, so the phone's own permission is not enough. `game/scripts/game/phone_notices.gd` plans them:
 
 | Id | Title | When |
 |---|---|---|
@@ -36,7 +36,7 @@ Building it:
 | `full` | The storehouse is full | The storehouse and the parked cart fill up, counted as full once fewer than 3 places are left (or a twentieth of all they hold, if that is more), since a plant or batch that does not fit whole waits. A copy of the farm is played the way the catch-up plays it for one in-game day (20 minutes of farm time at most), and a farm that fills later is reckoned from how fast it filled meanwhile. A farm already full when put away is not announced. |
 | `build_villa`, `build_<upgrade>`, `build_<building>` | The farmhouse stage, improvement or building | The builders finish a farmhouse stage, a farm improvement (storeroom, aqueduct channels, paved road) or a building's repair or upgrade. Builders rest at night, so the nights are counted in. |
 
-Nothing is scheduled past `offline.max_hours` (12 hours), after which the farm stops counting time away, and nothing at all while Progress while the game is closed is off. Settings > Notifications, shown only on phones (`--phone` shows it on a computer), turns each kind on or off and offers to ask the phone for permission, or opens the phone's settings once it has been asked. The numbers are under `notifications` in `game/data/balance.json`.
+Nothing is scheduled past `offline.max_hours` (12 hours), after which the farm stops counting time away, and nothing at all while Progress while the game is closed is off. Settings > Notifications, shown only on a phone the plugin reaches (`--phone` shows it on a computer; an iPhone, whose plugin only sells the full game, has none yet), offers Allow until the player taps it, which keeps the choice (`reminders` in the `[phone]` section of `settings.cfg`) and asks the phone for permission, opens the phone's settings when the phone has notifications off for the game, and turns each kind on or off. The numbers are under `notifications` in `game/data/balance.json`.
 
 ## Google Play Games
 

@@ -52,13 +52,13 @@ func signature() -> String:
 func _notices_signature() -> String:
 	if tab != "Notifications":
 		return ""
-	return "%s%s%s%s%s" % [Settings.notify_cart, Settings.notify_full, Settings.notify_builders, PhoneServices.notifications_allowed(), PhoneServices.asked()]
+	return "%s%s%s%s%s" % [Settings.notify_cart, Settings.notify_full, Settings.notify_builders, PhoneServices.notifications_allowed(), Settings.reminders]
 
 
 func build() -> void:
 	var tabs := Ui.tab_row(top)
-	# A phone has no keyboard to bind keys on, and only a phone is sent notifications while the game is put away.
-	for t in ["Sound", "Display", "Gameplay"] + (["Notifications"] if Windowing.phone else ["Keys"]):
+	# A phone has no keyboard to bind keys on, and one the plugin reaches is sent notifications while the game is put away.
+	for t in ["Sound", "Display", "Gameplay"] + ((["Notifications"] if PhoneServices.can_remind() else []) if Windowing.phone else ["Keys"]):
 		Ui.tab_button(tabs, tr(t), func(): tab = t; show_page()).button_pressed = t == tab
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 7)
@@ -141,13 +141,12 @@ func build() -> void:
 			if Windowing.phone:
 				Ui.setting(body, tr("Privacy policy"), tr("Open"), func(): open_url.call(String(Data.get_value("privacy_policy", ""))))
 		"Notifications":
-			if not PhoneServices.notifications_allowed():
-				var off := tr("Your phone has notifications turned off for this game")
+			# Older Android phones allow notifications from the start, so the game waits for the player's own Allow.
+			if not Settings.reminders:
+				Ui.setting(body, tr("Notifications are off"), tr("Allow"), func(): PhoneServices.allow(); refresh())
+			elif not PhoneServices.notifications_allowed():
 				# A phone that has said no once only changes its mind in its own settings.
-				if PhoneServices.asked():
-					Ui.setting(body, off, tr("Phone settings"), func(): PhoneServices.open_notification_settings())
-				else:
-					Ui.setting(body, off, tr("Allow"), func(): PhoneServices.request_notifications(); refresh())
+				Ui.setting(body, tr("Your phone has notifications turned off for this game"), tr("Phone settings"), func(): PhoneServices.open_notification_settings())
 			_toggle("The cart is home", Settings.notify_cart, func(v): Settings.set_value("notify_cart", v))
 			_toggle("The storehouse is full", Settings.notify_full, func(v): Settings.set_value("notify_full", v))
 			_toggle("The builders have finished", Settings.notify_builders, func(v): Settings.set_value("notify_builders", v))

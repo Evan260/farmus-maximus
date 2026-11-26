@@ -173,13 +173,12 @@ func test_the_phone_link_does_nothing_without_the_plugin() -> void:
 	check(not phone.notifications_allowed(), "so notifications count as not allowed")
 	phone.schedule("cart", 10.0, "The cart is home", "Back")
 	phone.cancel_all()
-	phone.request_notifications()
 	phone.open_notification_settings()
 	phone.unlock_achievement("CgkI")
 	phone.sign_in()
 	phone.put_away()
 	phone.came_back()
-	check(not phone.asked(), "and every call does nothing at all")
+	check(not phone._away, "and every call does nothing at all")
 
 
 func test_putting_the_game_away_schedules_what_the_farm_will_need() -> void:
@@ -189,24 +188,51 @@ func test_putting_the_game_away_schedules_what_the_farm_will_need() -> void:
 		return
 	var game := _farm()
 	game.cart = {"away": true, "time_left": 15.0, "items": 10, "value": 120, "load": ["lavender"]}
+	var settings: Node = root.get_node("Settings")
 	var fake := FakePhone.new()
 	phone._phone = fake
+	fake.allowed = true
+	settings.reminders = false
+	phone._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED)
+	check(fake.calls.filter(func(c): return c[0] == "schedule").is_empty(), "nothing is sent before the player taps Allow, even on a phone that allows notifications from the start")
+	phone._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED)
+	fake.calls.clear()
+	settings.reminders = true
 	phone._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(fake.calls.is_empty(), "a game that only loses the focus, under the notification shade or beside another app, plans nothing")
+	phone._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED)
 	var scheduled: Array = fake.calls.filter(func(c): return c[0] == "schedule")
 	check(not fake.calls.is_empty() and fake.calls[0] == ["cancel_all"], "putting the game away first clears what was planned before")
 	check(scheduled.size() == 1 and scheduled[0][1] == "cart" and scheduled[0][2] == 15 and scheduled[0][3] == tr("The cart is home"), "then plans the cart's return: %s" % str(scheduled))
 	phone._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED)
-	check(fake.calls.filter(func(c): return c[0] == "schedule").size() == 1, "losing the focus and then pausing plans only once")
+	check(fake.calls.filter(func(c): return c[0] == "schedule").size() == 1, "pausing twice plans only once")
 	fake.calls.clear()
 	phone._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED)
 	check(fake.calls == [["cancel_all"]], "coming back clears them")
-	fake.allowed = true
 	check(phone.notifications_allowed(), "the phone says whether notifications are allowed")
-	phone.request_notifications()
-	check(fake.calls.has(["request_notifications"]) and phone.asked(), "asking once is remembered, so next time the button opens the phone's settings")
-	root.get_node("Settings").cfg.erase_section("phone")
+	settings.reminders = false
+	phone.allow()
+	check(fake.calls.has(["request_notifications"]) and settings.reminders and settings.cfg.get_value("phone", "reminders", false), "Allow turns the notices on, asks the phone, and the choice is kept")
+	settings.reminders = false
+	settings.cfg.erase_section("phone")
 	phone._phone = null
 	game.new_game()
+
+
+func test_an_iphone_has_no_notifications_tab_until_it_has_a_plugin_for_them() -> void:
+	var phone := _phone()
+	var was := [Windowing.phone, Windowing.phone_preview]
+	Windowing.phone = true
+	Windowing.phone_preview = true
+	check(phone.can_remind() == (phone.available() or not OS.has_feature("mobile")), "a phone can be sent notifications only through the plugin, which an iPhone lacks")
+	var panel: Control = load("res://scripts/ui/settings_panel.gd").new()
+	root.add_child(panel)
+	panel.open()
+	await process_frame
+	check(_buttons(panel).any(func(b: Button) -> bool: return b.text == tr("Notifications")) == phone.can_remind(), "the tab shows only where notifications can be sent")
+	panel.free()
+	Windowing.phone = was[0]
+	Windowing.phone_preview = was[1]
 
 
 func test_every_achievement_has_a_google_play_entry() -> void:

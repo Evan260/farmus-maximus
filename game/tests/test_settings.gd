@@ -49,6 +49,29 @@ func test_old_settings_files_become_one() -> void:
 	check(not settings.large_text and settings.keys.is_empty(), "the tests go back to the game's own settings")
 
 
+func test_a_player_who_tapped_allow_before_keeps_their_notifications() -> void:
+	var settings: Node = root.get_node("Settings")
+	var persist: bool = settings.persist
+	settings.persist = false
+	_clear()
+	var cfg := ConfigFile.new()
+	cfg.set_value("phone", "asked", true)
+	cfg.save(DIR.path_join("settings.cfg"))
+	settings.load_from(DIR)
+	check(settings.reminders, "a phone whose player tapped Allow before the choice was kept goes on being sent notifications")
+	_clear()
+	cfg = ConfigFile.new()
+	cfg.set_value("play", "notify_cart", true)
+	cfg.save(DIR.path_join("settings.cfg"))
+	settings.load_from(DIR)
+	check(not settings.reminders, "one whose player never tapped it is sent none until they do")
+	_clear()
+	settings.load_from(DIR)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(DIR))
+	settings.folder = "user://"
+	settings.persist = persist
+
+
 func test_keys_are_named_as_this_keyboard_names_them() -> void:
 	var settings: Node = root.get_node("Settings")
 	var panel: Node = load("res://scripts/ui/settings_panel.gd").new()
