@@ -30,6 +30,7 @@ const CartRig := preload("res://scripts/estate/cart_rig.gd")
 const VillaView := preload("res://scripts/estate/villa_view.gd")
 const BootCover := preload("res://scripts/ui/boot_cover.gd")
 const SWAY := preload("res://assets/shaders/sway.gdshader")
+const SMOOTH_PIXELS := preload("res://assets/shaders/smooth_pixels.gdshader")
 const BG := "res://assets/backgrounds/estate/"
 const PEOPLE := "res://assets/sprites/people/"
 ## The home farm is the second zone, so everything on it sits one screen to the right.
@@ -407,13 +408,12 @@ func _ready() -> void:
 	if Game.cart["away"]:
 		_cart.position.x = estate_width + 60
 		_donkey.position.x = rig.harness_x(_cart.position.x, false)
-	_centre = HOME + 240.0
+	_centre = _zone_centre("home")
 	cam_x = _centre - _last_view_width / 2.0
 	_update_view()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--zone="):
-			var z := Game.zone_info(arg.trim_prefix("--zone="))
-			_centre = float(z.get("x", 0)) + 240.0
+			_centre = _zone_centre(arg.trim_prefix("--zone="))
 			cam_x = _centre - _last_view_width / 2.0
 			_update_view()
 		elif arg == "--town":
@@ -956,6 +956,9 @@ func _update_view() -> void:
 	# When the window changes size the view keeps its centre, so resizing never jumps to another part of the estate.
 	var resized := view.x != _last_view_width
 	if resized:
+		# A phone's view changes size only as the game starts or the phone unfolds, so it frames the zone it shows afresh.
+		if Windowing.phone:
+			_centre = _zone_centre(_zone_at(_centre))
 		cam_x = _centre - view.x / 2.0
 		_last_view_width = view.x
 	# The centre is noted before the edges of the estate hold the camera back, so it survives a passing window size.
@@ -964,7 +967,7 @@ func _update_view() -> void:
 	cam_x = clampf(cam_x, 0.0, maxf(0.0, estate_width - view.x))
 	_camera.position = Vector2(floorf(cam_x), BOTTOM - view.y)
 	var left := floorf(cam_x)
-	var s := float(Windowing.scale)
+	var s := Windowing.zoom
 	# The estate is drawn in whole pixels of its own, so the rest of the pan slides its picture by whole screen pixels
 	# and a slow pan glides instead of stepping a full estate pixel at a time.
 	_container.position.x = -roundf((cam_x - left) * s)
@@ -989,17 +992,28 @@ func _update_view() -> void:
 ## Sizes the estate's viewport to the window at the current pixel scale, so the picture always fills the window.
 func _apply_scale() -> void:
 	_container.stretch_shrink = Windowing.scale
+	# A phone draws the estate a little larger than a whole number of screen pixels to each of its own; the container's
+	# own scale makes up the rest, and a shader keeps every pixel the same size.
+	_container.scale = Vector2.ONE * (Windowing.zoom / Windowing.scale)
+	var smooth: ShaderMaterial = null
+	if Windowing.zoom != float(Windowing.scale):
+		smooth = ShaderMaterial.new()
+		smooth.shader = SMOOTH_PIXELS
+	var filter := CanvasItem.TEXTURE_FILTER_LINEAR if smooth else CanvasItem.TEXTURE_FILTER_PARENT_NODE
+	for item in [_container, _mountains, _land, _mountains_far, _land_far]:
+		item.material = smooth
+		item.texture_filter = filter
 	# The estate's picture is resized in the same frame as the window, rather than when the container next lays out,
 	# so dragging the window's edge never shows a stretched or lagging frame.
 	var window := get_viewport().get_visible_rect().size
 	# One estate pixel wider than the window, so the picture still fills it while slid part of a pixel to the left.
-	_container.size = ((window / Windowing.scale).ceil() + Vector2(1, 0)) * Windowing.scale
+	_container.size = ((window / Windowing.zoom - Vector2.ONE * 0.001).ceil() + Vector2(1, 0)) * Windowing.scale
 	_update_view()
 
 
 ## The estate's view in its own pixels: the window divided by the pixel scale, which the viewport takes on a moment later.
 func _view_size() -> Vector2:
-	return (get_viewport().get_visible_rect().size / Windowing.scale).floor()
+	return (get_viewport().get_visible_rect().size / Windowing.zoom + Vector2.ONE * 0.001).floor()
 
 
 func _pan_by(dx: float) -> void:
@@ -1009,9 +1023,18 @@ func _pan_by(dx: float) -> void:
 	_update_view()
 
 
+## The middle of the view of a zone: the zone's own middle, except on a phone, whose narrower view of the home farm
+## moves right as far as the farm's left edge allows, so the parked cart stays in sight.
+func _zone_centre(zone_id: String) -> float:
+	var x := float(Game.zone_info(zone_id).get("x", 0))
+	var view := _view_size().x
+	if Windowing.phone and zone_id == "home" and view >= 480.0:
+		return clampf(CART_HOME_X + 40.0 - view / 2.0, x + 240.0, x + view / 2.0)
+	return x + 240.0
+
+
 func pan_to_zone(zone_id: String) -> void:
-	var z := Game.zone_info(zone_id)
-	var target := clampf(float(z.get("x", 0)) + 240.0 - _view_size().x / 2.0, 0.0, estate_width - _view_size().x)
+	var target := clampf(_zone_centre(zone_id) - _view_size().x / 2.0, 0.0, estate_width - _view_size().x)
 	if _pan_tween:
 		_pan_tween.kill()
 	if Settings.reduced_motion:
@@ -1048,7 +1071,7 @@ func _click_area() -> PackedVector2Array:
 			tall.append(s.world_rect())
 	var rects := tall.map(func(r: Rect2) -> Rect2: return Rect2(r.position - _camera.position, r.size))
 	for bar in hud.strip_bar_rects():
-		rects.append(Rect2(bar.position * Windowing.ui_scale / Windowing.scale, bar.size * Windowing.ui_scale / Windowing.scale))
+		rects.append(Rect2(bar.position * Windowing.ui_scale / Windowing.zoom, bar.size * Windowing.ui_scale / Windowing.zoom))
 	# The skyline's height in each column of the view: the farm's top line, raised wherever something stands over it.
 	var width := int(ceilf(view.x))
 	var heights := PackedFloat32Array()
@@ -1130,7 +1153,7 @@ func _world_input(event: InputEvent) -> void:
 
 ## How far, in estate pixels, a press moves before it becomes a drag; a fingertip wanders further than a mouse.
 func _drag_slop() -> float:
-	return Windowing.touch_slop() / Windowing.scale if Windowing.phone else 4.0
+	return Windowing.touch_slop() / Windowing.zoom if Windowing.phone else 4.0
 
 
 ## A farm animal under the pointer that answers a click: a hen or goat in the pasture, the stork on its nest, or the

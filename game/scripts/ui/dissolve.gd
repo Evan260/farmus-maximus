@@ -20,7 +20,7 @@ static func play(host: Node, change: Callable, seconds := 0.6) -> void:
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var look := ShaderMaterial.new()
 	look.shader = SHADER
-	look.set_shader_parameter("cell", 2.0 * Windowing.scale)
+	look.set_shader_parameter("cell", 2.0 * Windowing.zoom)
 	picture.material = look
 	layer.add_child(picture)
 	change.call()

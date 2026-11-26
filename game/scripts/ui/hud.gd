@@ -543,14 +543,14 @@ func _show_toast(text: String) -> void:
 ## A speech bubble above someone on the estate, which stays over them; spot returns where it points, in estate pixels
 ## relative to the view's corner.
 func say(spot: Callable, text: String) -> void:
-	var on_screen := func() -> Vector2: return (spot.call() * Windowing.scale / Windowing.ui_scale).round()
+	var on_screen := func() -> Vector2: return (spot.call() * Windowing.zoom / Windowing.ui_scale).round()
 	Ui.speech(_root, on_screen.call(), text, on_screen)
 
 
 ## Text that floats up from a spot on screen; pos is in estate pixels relative to the view's corner.
 func float_text(pos: Vector2, text: String) -> void:
 	var l := Ui.label(_root, text, true)
-	pos = (pos * Windowing.scale / Windowing.ui_scale).round()
+	pos = (pos * Windowing.zoom / Windowing.ui_scale).round()
 	l.position = pos
 	var t := create_tween().set_parallel()
 	t.tween_property(l, "position:y", pos.y - 12, 0.9)

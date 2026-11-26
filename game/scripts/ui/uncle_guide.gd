@@ -108,7 +108,7 @@ func _process(delta: float) -> void:
 	var beside := HEAD_RIGHT * scale + 4
 	if beside + _box.size.x <= screen.x - 4:
 		# The scene and the interface can be drawn at different scales, so the fields' height is converted to interface pixels.
-		var clear := FIELDS_CLEAR * Windowing.scale / Windowing.ui_scale
+		var clear := FIELDS_CLEAR * Windowing.zoom / Windowing.ui_scale
 		_box.position = Vector2(beside, roundf(maxf(30.0, minf(head_top, screen.y - clear - _box.size.y))))
 	else:
 		_box.position = Vector2(maxf(4.0, screen.x - 4 - _box.size.x), roundf(maxf(4.0, head_top - _box.size.y - 4)))

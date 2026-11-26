@@ -259,6 +259,15 @@ func test_phones_draw_the_interface_as_large_as_it_fits() -> void:
 	check(w.phone_ui_scale(Vector2i(2424, 1080), -1) == 3, "Smaller still makes it smaller")
 
 
+func test_phones_draw_the_estate_a_little_larger() -> void:
+	var w: GDScript = load("res://scripts/autoload/windowing.gd")
+	var pixel: float = w.phone_zoom(Vector2i(2424, 1080))
+	check(1080.0 / pixel < 270.0 and is_equal_approx(1080.0 / pixel, w.PHONE_ROWS), "a Pixel 9a shows fewer rows of the scene than a computer's 270, so its fields are larger (%.2f)" % pixel)
+	check(2424.0 / pixel >= 480.0, "while still showing a whole zone across (%d)" % int(2424.0 / pixel))
+	var tablet: float = w.phone_zoom(Vector2i(2048, 1536))
+	check(is_equal_approx(2048.0 / tablet, w.PHONE_WIDTH), "a squarer tablet keeps its view wide enough to see most of a zone (%d)" % int(2048.0 / tablet))
+
+
 func test_phone_corner_panels_clear_the_camera_and_rounded_corners() -> void:
 	var w: GDScript = load("res://scripts/autoload/windowing.gd")
 	var insets: Array = w.phone_insets(Vector2i(2424, 1080), Rect2i(136, 0, 2288, 1080), 4)

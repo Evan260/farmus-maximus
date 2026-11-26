@@ -14,6 +14,11 @@ const STRIP_MIN_VIEW := 200
 const STRIP_MAX_VIEW := 1440
 ## The smallest the full window may be dragged, in screen pixels; narrower than about 560 the top bar runs into itself.
 const MIN_WINDOW := Vector2i(640, 400)
+## How many rows of the scene a phone shows: fewer than a computer's 270, so the fields and buildings are drawn larger
+## on its small screen and the sky and hills take less of it.
+const PHONE_ROWS := 240
+## The narrowest stretch of the estate a phone or tablet shows, so a screen nearer square still sees most of a zone.
+const PHONE_WIDTH := 420
 
 var strip := false
 var transparent := true
@@ -39,6 +44,9 @@ var strip_min_width := 0
 var strip_dragging := false
 ## Screen pixels per estate pixel: the largest whole number that still shows the full height of the scene.
 var scale := 1
+## Screen pixels per estate pixel as the estate is drawn: `scale` on a computer, and on a phone the scale that shows
+## PHONE_ROWS rows, which need not be a whole number.
+var zoom := 1.0
 ## Screen pixels per interface pixel, which the player can set larger or smaller than the estate's.
 var ui_scale := 1
 ## On a phone or tablet the game always fills the screen, with no strip, window or full-screen toggle.
@@ -101,14 +109,20 @@ func _rescale() -> void:
 	if strip:
 		var screen_tall := DisplayServer.screen_get_usable_rect(get_window().current_screen).size.y
 		ui_scale = clampi(screen_tall / 540 + Settings.ui_scale_step, 1, 4)
+		zoom = float(scale)
 		return
 	scale = maxi(1, mini(size.x / BASE.x, size.y / BASE.y))
 	# A tall narrow window crops a little off each side rather than shrinking the estate under a sea of sky.
 	scale = maxi(scale, mini(size.x / NARROWEST, size.y / BASE.y))
+	zoom = float(scale)
+	if phone:
+		zoom = phone_zoom(size)
+		scale = maxi(1, floori(zoom))
 	# Recordings for phones choose their own scale, so a portrait frame shows the estate close up.
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scale="):
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
+			zoom = float(scale)
 	ui_scale = ui_scale_for(size, Settings.ui_scale_step)
 	if phone:
 		ui_scale = phone_ui_scale(size, Settings.ui_scale_step)
@@ -127,6 +141,12 @@ static func ui_scale_for(size: Vector2i, step: int) -> int:
 	if size.y < BASE.y * 3:
 		fit += 1
 	return clampi(fit - 1 + step, 1, most)
+
+
+## The estate's scale on a phone or tablet of this size: PHONE_ROWS rows tall, unless that would show less than
+## PHONE_WIDTH across.
+static func phone_zoom(size: Vector2i) -> float:
+	return maxf(1.0, minf(size.y / float(PHONE_ROWS), size.x / float(PHONE_WIDTH)))
 
 
 ## A phone is held close but its screen is small, so the interface is drawn as large as its layout still fits; the
@@ -450,6 +470,7 @@ func _place_strip() -> void:
 			scale = maxi(1, int(arg.trim_prefix("--scale=")))
 		elif arg.begins_with("--strip-width="):
 			strip_width = int(arg.trim_prefix("--strip-width="))
+	zoom = float(scale)
 	# Until the player sets a width it is the main view's, with 16 pixels to spare at each side.
 	var width := strip_width if strip_width > 0 else (BASE.x + 32) * scale
 	width = clampi(width, maxi(STRIP_MIN_VIEW * scale, strip_min_width), mini(usable.size.x, STRIP_MAX_VIEW * scale))
