@@ -868,10 +868,11 @@ func _part(script: GDScript) -> Node:
 	return part
 
 
-## A helper picking in the back row is drawn behind the front row's plants, so they stand among the beds.
+## A helper picking behind the front row is drawn behind the plants of the rows in front, so they stand among the beds.
 func _into_field(w: Walker, inside: bool) -> void:
-	if inside and w.work_depth > (FRONT_ROW - BACK_ROW) / 2.0:
-		var front: Array = plot_views.filter(func(v): return v.position.y > (FRONT_ROW + BACK_ROW) / 2.0)
+	var row := w.position.y - w.work_depth - 3.0
+	var front: Array = plot_views.filter(func(v): return v.position.y > row + 5.0) if inside else []
+	if not front.is_empty():
 		w.set_meta("path_index", w.get_index())
 		world.move_child(w, front.map(func(v): return v.get_index()).min())
 	elif not inside and w.has_meta("path_index"):
@@ -912,6 +913,8 @@ func _build_plots() -> void:
 	for x in [112, 174]:
 		spots.append(Vector2(x, BACK_ROW))
 	spots.append(Vector2(794, BACK_ROW))
+	if Windowing.phone:
+		_phone_home_spots(spots)
 	# Each bed is nudged a few pixels by its own number, so the rows look planted by hand rather than ruled.
 	for i in spots.size():
 		var rng := RandomNumberGenerator.new()
@@ -926,6 +929,19 @@ func _build_plots() -> void:
 		v.position = spots[i]
 		world.add_child(v)
 		plot_views.append(v)
+
+
+## A phone draws the estate larger, so there the home farm's beds stand in three rows and take less of its width.
+func _phone_home_spots(spots: Array) -> void:
+	var rows := [FRONT_ROW, FRONT_ROW - 11, FRONT_ROW - 22]
+	# Six columns up to the walkway hold the first seventeen beds and the one by it, front row first.
+	var near: Array = range(17) + [40]
+	for k in near.size():
+		var row := int(k / 6.0)
+		spots[near[k]] = Vector2(606 + (k % 6) * 34 + (17 if row == 1 else 0), rows[row])
+	var far := [Vector2(866, rows[0]), Vector2(900, rows[0]), Vector2(883, rows[1]), Vector2(917, rows[1]), Vector2(900, rows[2])]
+	for k in far.size():
+		spots[29 + k] = far[k]
 
 
 func _build_buildings() -> void:
@@ -1023,14 +1039,39 @@ func _pan_by(dx: float) -> void:
 	_update_view()
 
 
-## The middle of the view of a zone: the zone's own middle, except on a phone, whose narrower view of the home farm
-## moves right as far as the farm's left edge allows, so the parked cart stays in sight.
+## The middle of the view of a zone: the zone's own middle, except on a phone, whose narrower view holds all of the
+## zone's beds and as much as fits of its buildings and, on the home farm, the parked cart, a phone's way to market.
 func _zone_centre(zone_id: String) -> float:
 	var x := float(Game.zone_info(zone_id).get("x", 0))
-	var view := _view_size().x
-	if Windowing.phone and zone_id == "home" and view >= 480.0:
-		return clampf(CART_HOME_X + 40.0 - view / 2.0, x + 240.0, x + view / 2.0)
-	return x + 240.0
+	if not Windowing.phone:
+		return x + 240.0
+	var beds := _beds_span(zone_id)
+	var all := beds
+	for v in building_views:
+		if String(Game.building_info(v.id).get("zone", "")) == zone_id:
+			all = Vector2(minf(all.x, v.world_rect().position.x), maxf(all.y, v.world_rect().end.x))
+	if zone_id == "home":
+		all.y = maxf(all.y, CART_HOME_X + 60.0)
+	if all.x > all.y:
+		return x + 240.0
+	var middle := (all.x + all.y) / 2.0
+	if beds.x > beds.y:
+		return middle
+	var half := _view_size().x / 2.0
+	return clampf(middle, beds.y - half, beds.x + half)
+
+
+## The stretch of the estate a zone's beds and the widest plant that grows in them take up; empty when it has none.
+func _beds_span(zone_id: String) -> Vector2:
+	var span := Vector2(INF, -INF)
+	for v in plot_views:
+		if Game.plots[v.index]["zone"] == zone_id:
+			span = Vector2(minf(span.x, v.position.x), maxf(span.y, v.position.x + 30.0))
+	var reach := 0.0
+	for crop in Data.get_value("crops", {}):
+		if zone_id in Game.crop_zones(crop):
+			reach = maxf(reach, (PlotView.texture_for(crop, "bloom").get_width() - 30.0) / 2.0)
+	return Vector2(span.x - reach, span.y + reach)
 
 
 func pan_to_zone(zone_id: String) -> void:

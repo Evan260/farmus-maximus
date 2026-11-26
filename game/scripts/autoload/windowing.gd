@@ -14,11 +14,11 @@ const STRIP_MIN_VIEW := 200
 const STRIP_MAX_VIEW := 1440
 ## The smallest the full window may be dragged, in screen pixels; narrower than about 560 the top bar runs into itself.
 const MIN_WINDOW := Vector2i(640, 400)
-## How many rows of the scene a phone shows: fewer than a computer's 270, so the fields and buildings are drawn larger
-## on its small screen and the sky and hills take less of it.
-const PHONE_ROWS := 240
-## The narrowest stretch of the estate a phone or tablet shows, so a screen nearer square still sees most of a zone.
-const PHONE_WIDTH := 420
+## How many rows of the scene a phone shows: fewer than a computer's 270, so its crops are drawn about 40% larger on
+## its small screen and the sky and hills take less of it.
+const PHONE_ROWS := 193
+## The narrowest stretch of the estate a phone or tablet shows: what a 20:9 phone shows, room for every bed of a zone.
+const PHONE_WIDTH := 432
 
 var strip := false
 var transparent := true

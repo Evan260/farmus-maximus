@@ -22,6 +22,35 @@ func test_building_and_resizing_write_no_warnings() -> void:
 	await process_frame
 
 
+func test_a_phone_shows_every_bed_of_a_zone_and_the_parked_cart_across_its_screen() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var windowing: Node = root.get_node("Windowing")
+	var was: bool = windowing.phone
+	windowing.phone = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	await process_frame
+	windowing.phone = was
+	var home: Vector2 = main._beds_span("home")
+	# The cart's body is its first 38 pixels; its shafts and the donkey reach on past it.
+	var reach: float = main.CART_HOME_X + 38.0 - home.x
+	check(reach <= windowing.PHONE_WIDTH, "the home farm's beds and the parked cart fit across a phone (%d)" % int(reach))
+	for z in game.zones():
+		var beds: Vector2 = main._beds_span(z["id"])
+		check(beds.y - beds.x <= windowing.PHONE_WIDTH, "and so do the beds of the %s (%d)" % [z["id"], int(beds.y - beds.x)])
+	var rows := {}
+	for v in main.plot_views:
+		if game.plots[v.index]["zone"] == "home":
+			rows[roundi(v.position.y / 11.0)] = true
+	check(rows.size() == 3, "the home farm's beds stand in three rows on a phone (%d)" % rows.size())
+	main.queue_free()
+	await process_frame
+
+
 func test_screen_changes_write_no_errors_when_headless() -> void:
 	var settings: Node = root.get_node("Settings")
 	var motion: bool = settings.reduced_motion

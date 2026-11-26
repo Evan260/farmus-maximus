@@ -259,13 +259,14 @@ func test_phones_draw_the_interface_as_large_as_it_fits() -> void:
 	check(w.phone_ui_scale(Vector2i(2424, 1080), -1) == 3, "Smaller still makes it smaller")
 
 
-func test_phones_draw_the_estate_a_little_larger() -> void:
+func test_phones_draw_the_crops_about_two_fifths_larger() -> void:
 	var w: GDScript = load("res://scripts/autoload/windowing.gd")
-	var pixel: float = w.phone_zoom(Vector2i(2424, 1080))
-	check(1080.0 / pixel < 270.0 and is_equal_approx(1080.0 / pixel, w.PHONE_ROWS), "a Pixel 9a shows fewer rows of the scene than a computer's 270, so its fields are larger (%.2f)" % pixel)
-	check(2424.0 / pixel >= 480.0, "while still showing a whole zone across (%d)" % int(2424.0 / pixel))
+	for size in [Vector2i(2424, 1080), Vector2i(3216, 1440)]:
+		var larger: float = w.phone_zoom(size) * 270.0 / size.y
+		check(absf(larger - 1.4) < 0.02, "a %dx%d phone draws the estate about 40%% larger than a computer does (%.2f)" % [size.x, size.y, larger])
+		check(size.x / w.phone_zoom(size) >= w.PHONE_WIDTH - 0.01, "while still showing PHONE_WIDTH across (%d)" % int(size.x / w.phone_zoom(size)))
 	var tablet: float = w.phone_zoom(Vector2i(2048, 1536))
-	check(is_equal_approx(2048.0 / tablet, w.PHONE_WIDTH), "a squarer tablet keeps its view wide enough to see most of a zone (%d)" % int(2048.0 / tablet))
+	check(is_equal_approx(2048.0 / tablet, w.PHONE_WIDTH), "a squarer tablet keeps its view as wide (%d)" % int(2048.0 / tablet))
 
 
 func test_phone_corner_panels_clear_the_camera_and_rounded_corners() -> void:
