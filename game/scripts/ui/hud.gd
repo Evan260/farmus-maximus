@@ -133,6 +133,14 @@ func _ready() -> void:
 	_toast = Ui.label(_root, "", true)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# A dark band behind the message keeps it readable over the bright sky and over a window's parchment alike.
+	var band := StyleBoxFlat.new()
+	band.bg_color = Color(0.2, 0.12, 0.12, 0.78)
+	band.content_margin_left = 6
+	band.content_margin_right = 6
+	band.content_margin_top = 3
+	band.content_margin_bottom = 4
+	_toast.add_theme_stylebox_override("normal", band)
 	# Drawn over the windows, so a message about one is never hidden behind it.
 	_toast.z_index = 1
 	_toast.modulate.a = 0.0
@@ -495,15 +503,28 @@ func _show_toast(text: String) -> void:
 		_toast_tween.kill()
 	_toast.modulate.a = 1.0
 	var view := _root.size
-	# A long message wraps within the screen, a little in from its edges.
-	_toast.position = Vector2(8, roundf(view.y * 0.2))
-	_toast.size = Vector2(view.x - 16, 0)
-	# Over an open window the message sits just above it, or below it when there is no room, never across its heading.
+	var left := Windowing.safe_top_left.x
+	var room := view.x - left - Windowing.safe_bottom_right.x - 16
+	# The band is as wide as the words, and a message wider than the screen wraps a little in from its edges.
+	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
+	var width := minf(_toast.get_minimum_size().x + 1, room)
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_toast.size = Vector2(width, 0)
+	var tall := _toast.get_minimum_size().y
+	_toast.size = Vector2(width, tall)
+	# Players watch the fields along the bottom, so the message stands out in the middle of the screen, not at its top.
+	_toast.position = Vector2(roundf(left + (view.x - left - Windowing.safe_bottom_right.x - width) / 2.0), roundf(view.y * 0.45 - tall / 2.0))
+	# Over an open window the message sits just above it, or below it, and over its middle only when neither has room.
 	for w in _windows:
 		if w.visible:
-			var above: float = w.position.y - _toast.get_minimum_size().y - 3
-			var clear := _zone_bar.position.y + _zone_bar.size.y + 2
-			_toast.position.y = roundf(above if above >= clear else w.position.y + w.size.y + 3)
+			var clear := (_zone_bar.position.y + _zone_bar.size.y if _zone_bar.visible else Windowing.safe_top_left.y) + 2
+			var bottom := view.y - Windowing.safe_bottom_right.y - 2
+			if w.position.y - tall - 3 >= clear:
+				_toast.position.y = w.position.y - tall - 3
+			elif w.position.y + w.size.y + 3 + tall <= bottom:
+				_toast.position.y = w.position.y + w.size.y + 3
+			else:
+				_toast.position.y = roundf(w.position.y + (w.size.y - tall) / 2.0)
 			break
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
@@ -549,8 +570,10 @@ func _add_window(w: WindowPanel) -> WindowPanel:
 
 
 func _apply_text_size() -> void:
-	for l in [_info, _toast, _tip]:
+	for l in [_info, _tip]:
 		l.add_theme_font_size_override("font_size", UiTheme.text_size() * (2 if Settings.large_text else 1))
+	# Messages are drawn at twice the size of the rest of the interface, so one is noticed wherever the player is looking.
+	_toast.add_theme_font_size_override("font_size", UiTheme.text_size() * (3 if Settings.large_text else 2))
 
 
 ## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
