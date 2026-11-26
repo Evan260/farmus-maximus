@@ -256,6 +256,10 @@ func test_the_title_offers_the_unlock_and_says_thank_you() -> void:
 	var thanks: Array = main.hud._open_cards().filter(func(c: Control) -> bool:
 		return c.find_children("*", "Label", true, false).any(func(l: Label) -> bool: return l.text == tr("Thank you for buying the full game!")))
 	check(thanks.size() == 1, "and a card thanks the player")
+	if thanks.size() == 1:
+		var cover: Control = thanks[0]
+		var opaque: bool = cover.find_children("*", "ColorRect", false, false).any(func(c: ColorRect) -> bool: return c.color.a == 1.0)
+		check(opaque and cover.size == main.hud._root.size, "on a screen of its own, so nothing behind it shows through")
 	main.hud._title.queue_free()
 	main.hud._title = null
 	main.queue_free()

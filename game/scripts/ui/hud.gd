@@ -85,6 +85,8 @@ var _bar_armed := false
 ## The title screen's button that opened a window over it, which takes the focus back when the window closes.
 var _title_focus := {}
 var _debug_layer: CanvasLayer
+## The thank-you for buying the full game, which covers the whole screen while it shows.
+var _thanks: CanvasLayer
 
 
 func _ready() -> void:
@@ -323,6 +325,9 @@ func _fit() -> void:
 		_zone_bar.offset_top = 4 + Windowing.safe_top_left.y
 	if _debug_layer:
 		_debug_layer.scale = scale
+	if is_instance_valid(_thanks):
+		_thanks.scale = scale
+		(_thanks.get_child(0) as Control).size = _root.size
 
 
 ## Everything of the interface showing over the strip: its bars, a message, a speech bubble or a window such as the
@@ -783,17 +788,45 @@ func _on_store_result(result: String) -> void:
 			toast(tr("No purchase of the full game was found for this account."), true)
 
 
-## A card over everything, the title too, since the purchase opens the whole estate at once with the farm as it was.
+## A card on a screen of its own, over the title, the market and the farmhouse alike, since the purchase opens the whole
+## estate at once with the farm as it was.
 func _thank_for_full_game() -> void:
+	if _thanks:
+		_thanks.queue_free()
+	var layer := CanvasLayer.new()
+	layer.layer = 25
+	_thanks = layer
+	add_child(layer)
+	var cover := Control.new()
+	cover.theme = _root.theme
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	cover.set_meta("over_title", true)
+	layer.add_child(cover)
+	var backdrop := ColorRect.new()
+	backdrop.color = UiTheme.INK
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.add_child(backdrop)
 	var p := PanelContainer.new()
-	p.set_meta("over_title", true)
-	_root.add_child(p)
+	cover.add_child(p)
 	var col := Ui.column(p)
+	var wreath := TextureRect.new()
+	wreath.texture = load("res://assets/sprites/icons32/laurel.png")
+	wreath.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	wreath.custom_minimum_size = Vector2(32, 32)
+	col.add_child(wreath)
 	Ui.label(col, tr("Thank you for buying the full game!")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	Ui.para(col, tr("The whole estate is open to you now, and your farm carries on just as you left it."), 200)
-	Ui.button(col, tr("Lovely"), p.queue_free)
+	Ui.button(col, tr("Lovely"), func():
+		cover.queue_free()
+		layer.queue_free())
 	Audio.play("flourish")
-	_centre_card(p)
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_cards.append(cover)
+	_fit()
+	Ui.fade_in(cover, 0.3)
 
 
 ## How long the player was away, naming the limit once it was reached so nobody wonders whether it was longer.
