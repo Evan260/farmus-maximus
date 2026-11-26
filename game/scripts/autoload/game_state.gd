@@ -506,11 +506,9 @@ func plot_visual(i: int) -> String:
 	return "stage2"
 
 
+## The price of digging one more bed; every bed on the estate counts, so the grove and vineyard share the farm's rising price.
 func unlock_cost() -> int:
-	var unlocked_count := 0
-	for p in plots:
-		if p["unlocked"] and p["zone"] == "home":
-			unlocked_count += 1
+	var unlocked_count := plots.filter(func(p): return p["unlocked"]).size()
 	var extra := unlocked_count - int(Data.get_value("start.unlocked_plots", 4))
 	var base := float(Data.get_value("plots.unlock_cost_base", 15))
 	return int(round(base * pow(float(Data.get_value("plots.unlock_cost_growth", 1.3)), maxi(extra, 0))))
@@ -1003,9 +1001,6 @@ func buy_zone(zone_id: String) -> bool:
 	if not pay({"coins": int(zone_info(zone_id).get("deed", 0))}):
 		return false
 	zones_owned[zone_id] = true
-	for p in plots:
-		if p["zone"] == zone_id:
-			p["unlocked"] = true
 	zone_bought.emit(zone_id)
 	return true
 
@@ -1925,10 +1920,6 @@ func from_dict(d: Dictionary) -> void:
 	for z in d.get("zones_owned", {}):
 		if zones_owned.has(z):
 			zones_owned[z] = bool(d["zones_owned"][z])
-	# Beds added to the estate since the save are ready to plant in land the family already owns.
-	for p in plots:
-		if p["zone"] != "home" and zones_owned.get(p["zone"], false):
-			p["unlocked"] = true
 	for id in d.get("buildings", {}):
 		if buildings.has(id):
 			var s: Dictionary = d["buildings"][id]

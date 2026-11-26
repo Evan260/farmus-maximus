@@ -119,7 +119,7 @@ func _act() -> void:
 		if game.upgrade_cost(u) >= 0 and game.coins - game.upgrade_cost(u) >= reserve:
 			game.buy_upgrade(u)
 	for i in game.plots.size():
-		if not game.plots[i]["unlocked"] and game.plots[i]["zone"] == "home" and game.coins - game.unlock_cost() >= reserve:
+		if not game.plots[i]["unlocked"] and game.zone_owned(String(game.plots[i]["zone"])) and game.coins - game.unlock_cost() >= reserve:
 			game.try_unlock(i)
 	for entry in game.market.catalog():
 		if entry.has("unlock_crop") and game.market.catalog_block(entry) == "" and game.coins - int(entry.get("price", 0)) >= reserve:

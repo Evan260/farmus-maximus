@@ -235,7 +235,11 @@ func test_rules() -> void:
 			break
 	_check(not game.buy_zone("grove"), "the grove deed waits for the restored farmhouse")
 	game.villa_stage = 2
-	_check(game.buy_zone("grove") and game.plots[grove_plot]["unlocked"], "buying the grove deed opens its plots")
+	_check(game.buy_zone("grove") and not game.plots[grove_plot]["unlocked"], "the grove's beds are dug one at a time after the deed")
+	var bed_price: int = game.unlock_cost()
+	var before_dig: int = game.coins
+	_check(game.try_unlock(grove_plot) and game.coins == before_dig - bed_price, "a grove bed costs as much as the next farm bed")
+	_check(game.unlock_cost() > bed_price, "and the next bed anywhere on the estate costs a little more")
 	game.selected_seed = "olives"
 	_check(game.try_plant(grove_plot) and game.plots[grove_plot]["crop"] == "olives", "grove plots grow olive trees")
 	game.selected_seed = "lavender"
