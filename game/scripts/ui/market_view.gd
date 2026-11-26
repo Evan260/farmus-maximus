@@ -54,6 +54,8 @@ var _props: Node2D
 var _list: VBoxContainer
 var _title: Label
 var _purse: Label
+## The farm's money in the head of a place's window, shown on a phone, where the window hides the bar along the top.
+var _panel_purse: Label
 var _top_row: HBoxContainer
 var _hover_label: Label
 var _hovered := ""
@@ -196,6 +198,9 @@ func _ready() -> void:
 	var head := Ui.row(col)
 	_title = Ui.label(head)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_panel_purse = Ui.label(head)
+	_panel_purse.add_theme_color_override("font_color", UiTheme.MUTED)
+	_panel_purse.visible = Windowing.phone
 	Ui.close_button(head, _close_panel)
 	_list = Ui.scroll(col, Vector2(300, 160))
 	# A gamepad cannot point at the painting, so it gets a row of the same places along the bottom.
@@ -358,8 +363,11 @@ func _process(delta: float) -> void:
 		at.position = _touch_from
 		_on_picture_input(at)
 	var pad := KeyNav.active()
+	# A place's window fills a phone's short screen, so the town's bars would only peek out from round its edges.
+	var covered := Windowing.phone and _panel.visible
+	_top_row.visible = not covered
 	# A window narrower than the town hides some places, so the row of them is offered to the mouse too.
-	_pad_bar.visible = pad or _places_cut_off
+	_pad_bar.visible = (pad or _places_cut_off) and not covered
 	if pad:
 		_keep_pad_focus()
 	_water_time += delta
@@ -657,6 +665,7 @@ func _refresh() -> void:
 	if not festival.is_empty():
 		day += "  -  " + tr(String(festival["name"]))
 	_purse.text = "%s   %s" % [day, tr("Sestertii %d   Aurei %d") % [Game.coins, Game.aureus]]
+	_panel_purse.text = tr("Sestertii %d   Aurei %d") % [Game.coins, Game.aureus]
 	if tab == "":
 		return
 	var sig := "%s|%s|%s|%d|%d|%s|%s|%s|%s" % [tab, JSON.stringify(Game.storage), JSON.stringify(Game.market.orders), Game.coins, Game.aureus,

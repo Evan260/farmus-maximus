@@ -266,15 +266,17 @@ func _process(delta: float) -> void:
 	var in_strip := Windowing.strip
 	# The title screen stands alone over the estate, without the farm's own panels.
 	var titled := _title != null
-	_stats_panel.visible = not in_strip and not titled
-	_buttons.visible = not in_strip and not titled
-	_zone_bar.visible = not in_strip and not titled
+	# A window fills a phone's short screen, so the panels round its edges would only peek out from behind it.
+	var covered := Windowing.phone and _any_window()
+	_stats_panel.visible = not in_strip and not titled and not covered
+	_buttons.visible = not in_strip and not titled and not covered
+	_zone_bar.visible = not in_strip and not titled and not covered
 	_compact.visible = in_strip
 	# The title screen waits behind the strip, which offers only the way back to it.
 	for card in _open_cards():
 		card.visible = not titled or card.has_meta("over_title")
 	if titled:
-		_title.visible = not in_strip
+		_title.visible = not in_strip and not covered
 		if not _any_window():
 			Ui.pad_focus(_title, _title_focus)
 	elif visible and not _any_window() and not _open_cards().is_empty():
