@@ -165,6 +165,7 @@ func _ready() -> void:
 	_root.add_child(_uncle)
 	_achievements = AchievementPopup.new()
 	_achievements.below = _buttons
+	_achievements.clear_of = [_zone_bar]
 	_achievements.window_open = func(): return _any_window() or not _open_cards().is_empty()
 	_root.add_child(_achievements)
 	_fit()

@@ -10,6 +10,8 @@ const HOLD := 5.0
 
 ## The interface element the card stands below; without one it sits at the top edge.
 var below: Control
+## Interface the card must not cover when there is no room below `below` and it stands beside it instead.
+var clear_of: Array = []
 ## Supplied by the HUD: true while a window is open, when no card slides in and one showing lets clicks through to it.
 var window_open: Callable
 ## While true, cards wait in the queue and a card on its way stops where it is, such as while the title screen is up.
@@ -84,13 +86,13 @@ func _next() -> void:
 	# A wrapped description only knows its height once laid out, so the card is measured a frame later, still out of sight.
 	await get_tree().process_frame
 	card.reset_size()
-	var w := card.size.x
-	card.position.y = _top()
+	var rest := _rest(card.size)
+	card.position.y = rest.y
 	card.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and card == _card:
 			_leave())
 	_tween = create_tween()
-	_tween.tween_method(func(x: float): card.position.x = roundf(x), size.x, size.x - w - MARGIN - Windowing.safe_bottom_right.x, 0.5) \
+	_tween.tween_method(func(x: float): card.position.x = roundf(x), size.x, rest.x, 0.5) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# The wreath springs open once the card has landed.
 	_tween.tween_property(wreath, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -125,7 +127,7 @@ func _leave() -> void:
 func _process(_delta: float) -> void:
 	# The buttons above can change size with the interface size setting, so the card keeps to just below them.
 	if _card:
-		_card.position.y = _top()
+		_card.position.y = _rest(_card.size).y
 		_card.mouse_filter = Control.MOUSE_FILTER_IGNORE if _window_up() else Control.MOUSE_FILTER_STOP
 	elif not _queue.is_empty() and not hold:
 		_next()
@@ -139,11 +141,22 @@ func _window_up() -> bool:
 func card_rect() -> Rect2:
 	if _card == null or not _card.is_visible_in_tree():
 		return Rect2()
-	var left := size.x - _card.size.x - MARGIN - Windowing.safe_bottom_right.x
+	var left := _rest(_card.size).x
 	return Rect2(global_position + Vector2(left, _card.position.y), Vector2(size.x - left, _card.size.y))
 
 
-func _top() -> float:
+## Where a card of this size comes to rest: just below the buttons in the top-right corner, or beside them where the
+## screen is too short for that, as on a phone, and always clear of the screen's edges and a phone's rounded corners.
+func _rest(card: Vector2) -> Vector2:
+	var right := size.x - MARGIN - Windowing.safe_bottom_right.x
+	var bottom := size.y - MARGIN - Windowing.safe_bottom_right.y
+	var spot := Rect2(Vector2(right - card.x, MARGIN + Windowing.safe_top_left.y), card)
 	if below and below.visible:
-		return roundf(below.position.y + below.size.y + MARGIN)
-	return MARGIN
+		spot.position.y = below.position.y + below.size.y + MARGIN
+		if spot.end.y > bottom:
+			spot.position = Vector2(below.position.x - MARGIN - card.x, below.position.y)
+			for c in clear_of:
+				if c and c.visible and c.get_rect().intersects(spot):
+					spot.position.y = c.get_rect().end.y + MARGIN
+	spot.position.y = minf(spot.position.y, bottom - card.y)
+	return spot.position.round()

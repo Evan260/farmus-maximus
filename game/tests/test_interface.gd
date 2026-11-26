@@ -18,6 +18,32 @@ func test_an_achievement_waits_for_an_open_window() -> void:
 	popup.free()
 
 
+func test_an_achievement_stays_on_a_short_screen() -> void:
+	var holder := Control.new()
+	holder.size = Vector2(606, 270)
+	root.add_child(holder)
+	var buttons := Control.new()
+	buttons.position = Vector2(570, 14)
+	buttons.size = Vector2(29, 194)
+	holder.add_child(buttons)
+	var bar := Control.new()
+	bar.position = Vector2(200, 14)
+	bar.size = Vector2(212, 29)
+	holder.add_child(bar)
+	var popup: Control = load("res://scripts/ui/achievement_popup.gd").new()
+	popup.below = buttons
+	popup.clear_of = [bar]
+	holder.add_child(popup)
+	var card := Vector2(170, 64)
+	var spot: Vector2 = popup._rest(card)
+	var screen := Rect2(Vector2.ZERO, holder.size).grow(-popup.MARGIN)
+	check(screen.encloses(Rect2(spot, card)), "on a phone's short screen the whole card stays on screen (%s)" % spot)
+	check(not Rect2(spot, card).intersects(buttons.get_rect()) and not Rect2(spot, card).intersects(bar.get_rect()), "beside the corner buttons and clear of the zone bar")
+	holder.size = Vector2(640, 360)
+	check(popup._rest(card).y == buttons.get_rect().end.y + popup.MARGIN, "a taller screen keeps it just below the buttons")
+	holder.free()
+
+
 func test_small_screens_get_a_bigger_default_interface() -> void:
 	var w: GDScript = load("res://scripts/autoload/windowing.gd")
 	check(w.ui_scale_for(Vector2i(1280, 720), 0) == 2, "a 1280x720 window shows the interface at twice its size")
