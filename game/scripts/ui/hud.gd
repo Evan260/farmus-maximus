@@ -45,6 +45,7 @@ var _tool_buttons := {}
 ## On a phone the tools fold into one button in the bottom-left corner, so the toolbar never covers the plots and the cart.
 var _tool_corner: Button
 var _tools_open := false
+var _seed_name: Label
 var _tool_signature := ""
 var _sleep_button: Button
 ## Seconds since the farmer went to sleep, or below zero while awake.
@@ -1051,6 +1052,8 @@ func _build_toolbar() -> void:
 	_root.add_child(_toolbar)
 	_tool_row = Ui.row(_toolbar)
 	_tool_row.add_theme_constant_override("separation", 1)
+	# The seed in hand is named beside its button, since its picture alone does not tell the lavenders apart.
+	_seed_name = Ui.label(_root, "", true)
 	if Windowing.phone:
 		_tool_corner = _top_button(_root, "Tools", null, func():
 			_tools_open = not _tools_open
@@ -1103,17 +1106,24 @@ func _update_toolbar() -> void:
 	for id in _tool_buttons:
 		_tool_buttons[id].button_pressed = id == current
 	var bottom := _root.size.y - 2 - Windowing.safe_bottom_right.y
+	_seed_name.text = tr(String(Game.crop_info(Game.selected_seed).get("name", Game.selected_seed)))
+	var beside: Control = _toolbar
 	if _tool_corner == null:
 		_toolbar.position = Vector2(roundf((_root.size.x - _toolbar.size.x) / 2.0), bottom - _toolbar.size.y)
-		return
-	_tool_corner.visible = shown
-	var held: Button = _tool_buttons.get(current)
-	if held != null:
-		var picture: TextureRect = _tool_corner.get_node("Picture")
-		picture.texture = held.icon
-		picture.modulate = held.get_theme_color("icon_normal_color")
-	_tool_corner.position = Vector2(4 + Windowing.safe_top_left.x, bottom - _tool_corner.size.y)
-	_toolbar.position = Vector2(_tool_corner.get_rect().end.x + 2, bottom - _toolbar.size.y)
+	else:
+		_tool_corner.visible = shown
+		var held: Button = _tool_buttons.get(current)
+		if held != null:
+			var picture: TextureRect = _tool_corner.get_node("Picture")
+			picture.texture = held.icon
+			picture.modulate = held.get_theme_color("icon_normal_color")
+		_tool_corner.position = Vector2(4 + Windowing.safe_top_left.x, bottom - _tool_corner.size.y)
+		_toolbar.position = Vector2(_tool_corner.get_rect().end.x + 2, bottom - _toolbar.size.y)
+		if not _toolbar.visible:
+			beside = _tool_corner
+	_seed_name.visible = shown and tool == "seed"
+	var name_size := _seed_name.get_minimum_size()
+	_seed_name.position = Vector2(beside.get_rect().end.x + 4, beside.get_rect().get_center().y - name_size.y / 2.0).round()
 
 
 func _tool_slot(id: String, icon: Texture2D, text: String, tint: Color) -> void:
