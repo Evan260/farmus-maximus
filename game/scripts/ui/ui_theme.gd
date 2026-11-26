@@ -7,7 +7,7 @@ const FUSION := "res://assets/fonts/"
 ## whole interface uses a 10-pixel font instead.
 const TEN_PIXEL := ["ru", "uk", "be", "bg", "pl", "tr"]
 const PANEL_TEX := preload("res://assets/ui/panel.png")
-## The interface fonts made so far, one per language, and the shared 10-pixel font.
+## The interface fonts made so far, one for each set of letters a language needs, and the shared 10-pixel font.
 static var _fonts := {}
 static var _ten_pixel: FontFile
 const BUTTON_TEX := preload("res://assets/ui/button.png")
@@ -75,37 +75,61 @@ static func build() -> Theme:
 
 ## The interface font for the current language: the Silkscreen pixel font, falling back to a pixel font with the
 ## accented letters and the Chinese, Japanese and Korean characters it lacks, in the forms the language uses.
-## Each language's font is made once and kept, because text drawn with a font that is then thrown away loses its
-## letters and shows as solid blocks.
+## Languages that need the same letters share one font, made once and kept, because text drawn with a font that is then
+## thrown away loses its letters and shows as solid blocks.
 static func ui_font(locale := "") -> Font:
 	if locale == "":
 		locale = TranslationServer.get_locale()
-	if not _fonts.has(locale):
-		_fonts[locale] = _make_ui_font(locale)
-	return _fonts[locale]
+	var han := _han_letters(locale)
+	if not _fonts.has(han):
+		_fonts[han] = _make_ui_font(han)
+	return _fonts[han]
 
 
-static func _make_ui_font(locale: String) -> Font:
-	var cyrillic := ten_pixel_font()
+## Which Chinese characters a language draws, in the forms it uses; languages written in the 10-pixel font say "".
+static func _han_letters(locale: String) -> String:
 	if locale.get_slice("_", 0) in TEN_PIXEL:
-		return cyrillic
-	var han := "zh_hans"
+		return ""
 	if locale.begins_with("zh_TW") or locale.begins_with("zh_HK") or locale.begins_with("zh_Hant"):
-		han = "zh_tw"
-	elif locale.begins_with("ja"):
-		han = "ja"
-	elif locale.begins_with("ko"):
-		han = "ko"
+		return "zh_tw"
+	if locale.begins_with("ja"):
+		return "ja"
+	if locale.begins_with("ko"):
+		return "ko"
+	return "zh_hans"
+
+
+static func _make_ui_font(han: String) -> Font:
+	var cyrillic := ten_pixel_font()
+	if han == "":
+		return cyrillic
 	var font := _crisp(FONT)
 	# Cyrillic comes last, so a language list can still name Russian in its own letters.
-	font.fallbacks = [_crisp(load(FUSION + "fusion-pixel-8px-proportional-%s.ttf.woff2" % han)), cyrillic]
+	var path := _han_path(han)
+	var letters: FontFile = ResourceLoader.load_threaded_get(path) if _loading_ahead(path) else load(path)
+	font.fallbacks = [_crisp_in_place(letters), cyrillic]
 	return font
+
+
+static func _han_path(han: String) -> String:
+	return FUSION + "fusion-pixel-8px-proportional-%s.ttf.woff2" % han
+
+
+## Starts reading every language's font from disk in the background, so the list of languages can open at once.
+static func load_fonts_ahead() -> void:
+	for han in ["zh_hans", "zh_tw", "ja", "ko"]:
+		if not _fonts.has(han) and not ResourceLoader.has_cached(_han_path(han)):
+			ResourceLoader.load_threaded_request(_han_path(han))
+
+
+static func _loading_ahead(path: String) -> bool:
+	return ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE
 
 
 ## The 10-pixel font with Cyrillic and every accented Latin letter, drawn at size 10.
 static func ten_pixel_font() -> FontFile:
 	if _ten_pixel == null:
-		_ten_pixel = _crisp(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
+		_ten_pixel = _crisp_in_place(load(FUSION + "fusion-pixel-10px-proportional-latin.ttf.woff2"))
 	return _ten_pixel
 
 
@@ -119,6 +143,15 @@ static func text_size(locale := "") -> int:
 ## A copy of a pixel font drawn without smoothing, so it stays crisp at the game's low resolution.
 static func _crisp(source: FontFile) -> FontFile:
 	var font: FontFile = source.duplicate()
+	font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+	font.hinting = TextServer.HINTING_NONE
+	font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	return font
+
+
+## Makes a font only the interface uses crisp without copying it, since copying one with every Chinese character takes
+## a noticeable moment.
+static func _crisp_in_place(font: FontFile) -> FontFile:
 	font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 	font.hinting = TextServer.HINTING_NONE
 	font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED

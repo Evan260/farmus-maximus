@@ -8,6 +8,8 @@ const NATIVE_NAMES := {"en": "English", "fr": "Français", "de": "Deutsch", "es"
 
 var tab := "Sound"
 var _waiting_for := ""
+## The languages whose fonts are still to be readied in the background.
+var _warm_queue: Array = []
 ## Opens a web page; the tests replace it so no browser starts.
 var open_url := func(url: String) -> void: OS.shell_open(url)
 
@@ -15,6 +17,23 @@ var open_url := func(url: String) -> void: OS.shell_open(url)
 func _init() -> void:
 	super("Settings")
 	fixed_size = Vector2(264, 190)
+
+
+func _ready() -> void:
+	super()
+	UiTheme.load_fonts_ahead()
+	_warm_queue = NATIVE_NAMES.keys()
+	get_tree().create_timer(1.0).timeout.connect(_warm_next_language)
+
+
+## Each language's font is made, and the letters of its name drawn, one frame at a time after the game starts, since
+## doing them all as the Gameplay tab opens holds the tab up for a moment.
+func _warm_next_language() -> void:
+	if _warm_queue.is_empty():
+		return
+	var loc: String = _warm_queue.pop_front()
+	UiTheme.ui_font(loc).get_string_size(NATIVE_NAMES[loc], HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.text_size(loc))
+	get_tree().create_timer(0.0).timeout.connect(_warm_next_language)
 
 
 ## A key left waiting when the window closed is not still waiting when it opens again.
@@ -95,13 +114,15 @@ func build() -> void:
 				body.add_child(grid)
 				# Each language is named in its own words and its own font, so a player can find theirs whatever is showing now.
 				for loc in NATIVE_NAMES.keys().filter(func(l: String) -> bool: return l in locales):
-					var b := Ui.button(grid, NATIVE_NAMES[loc], func(): Settings.set_value("language", loc))
+					var b := Ui.button(grid, "", func(): Settings.set_value("language", loc))
 					b.toggle_mode = true
 					b.button_pressed = TranslationServer.get_locale() == loc
 					b.custom_minimum_size = Vector2(76, 0)
 					b.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 					b.add_theme_font_override("font", UiTheme.ui_font(loc))
 					b.add_theme_font_size_override("font_size", UiTheme.text_size(loc))
+					# Named only once its own font is set, so the name is laid out once, in letters already prepared.
+					b.text = NATIVE_NAMES[loc]
 			_toggle("Uncle Marcus's advice", Settings.show_tutorial, func(v): Settings.set_value("show_tutorial", v))
 			_toggle("Tips when you hold a finger on a button" if Windowing.phone else "Tips when you point at a button", Settings.tooltips, func(v): Settings.set_value("tooltips", v))
 			_toggle("Larger text for messages", Settings.large_text, func(v): Settings.set_value("large_text", v))
