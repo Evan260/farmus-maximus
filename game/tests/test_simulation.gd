@@ -792,5 +792,22 @@ func test_a_catch_up_says_when_it_reached_its_limit() -> void:
 	check(hud.away_time(5400.0, false) == TranslationServer.translate("%.1f hours") % 1.5 and hud.away_time(600.0, false) == TranslationServer.translate("%d minutes") % 10, "and the time away otherwise")
 
 
+func test_a_short_purse_says_how_much_is_needed() -> void:
+	var game: Node = root.get_node("Game")
+	game.new_game()
+	game.coins = 45
+	var heard := []
+	var listen := func(text: String) -> void: heard.append(text)
+	game.message.connect(listen)
+	var told: String = game.missing({"coins": 120})
+	check(told == TranslationServer.translate("You need %s (you have %d)") % ["120 " + TranslationServer.translate("sestertii"), 45], "a price the purse cannot meet names what it costs and what the farm has (%s)" % told)
+	told = game.missing({"stone": 3})
+	check(told.contains("3") and told.contains("(") and told != "", "goods the storehouse lacks are counted the same way (%s)" % told)
+	game.coins = 1
+	game.try_plant(0)
+	check(heard.size() == 1 and String(heard[0]).contains("1)"), "planting without the price says how much a seed costs (%s)" % str(heard))
+	game.message.disconnect(listen)
+
+
 func _check(ok: bool, what: String) -> void:
 	check(ok, what)

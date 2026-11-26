@@ -332,16 +332,21 @@ func take_items(needs: Dictionary) -> float:
 ## Whether a price can be paid; returns what is missing, or "" when it can.
 func missing(cost: Dictionary) -> String:
 	if coins < int(cost.get("coins", 0)):
-		return tr("Not enough sestertii")
+		return need_text("coins", int(cost["coins"]))
 	if aureus < int(cost.get("aureus", 0)):
-		return tr("Not enough aurei")
+		return need_text("aureus", int(cost["aureus"]))
 	for key in cost:
 		if key in ["coins", "aureus"] or int(cost[key]) <= 0:
 			continue
-		var short := int(cost[key]) - count_item(String(key))
-		if short > 0:
-			return tr("Needs %d more %s") % [short, Ui.item_words(String(key), short)]
+		if int(cost[key]) > count_item(String(key)):
+			return need_text(String(key), int(cost[key]))
 	return ""
+
+
+## How much of something a price asks for and how much the farm has, such as "You need 120 sestertii (you have 45)".
+func need_text(key: String, amount: int) -> String:
+	var have := coins if key == "coins" else (aureus if key == "aureus" else count_item(key))
+	return tr("You need %s (you have %d)") % [Ui.cost_text({key: amount}), have]
 
 
 func pay(cost: Dictionary) -> bool:
@@ -543,7 +548,7 @@ func try_plant(i: int, crop_id := "") -> bool:
 		return false
 	var cost := int(crop_info(crop_id).get("plant_cost", 0))
 	if coins < cost:
-		message.emit("Not enough sestertii")
+		message.emit(need_text("coins", cost))
 		return false
 	coins -= cost
 	p["crop"] = crop_id
@@ -607,7 +612,7 @@ func try_unlock(i: int) -> bool:
 		return false
 	var cost := unlock_cost()
 	if coins < cost:
-		message.emit("Not enough sestertii")
+		message.emit(need_text("coins", cost))
 		return false
 	coins -= cost
 	p["unlocked"] = true
@@ -715,7 +720,7 @@ func buy_upgrade(id: String) -> bool:
 	if cost < 0:
 		return false
 	if coins < cost:
-		message.emit("Not enough sestertii")
+		message.emit(need_text("coins", cost))
 		return false
 	if projects.has(id):
 		message.emit("The builders are already at work on it")

@@ -355,7 +355,7 @@ func _build_workshop_view() -> void:
 			# The helper who keeps it loaded stands in for the load button.
 			WorkshopParts.face(feed, helper)
 		else:
-			_load = Ui.button(feed, tr("Load"), func(): if Game.load_building(id) == 0: Game.message.emit(tr("Not enough in the storehouse")))
+			_load = Ui.button(feed, tr("Load"), func(): if Game.load_building(id) == 0: Game.message.emit(_short_for_load(id)))
 		var boxes := Ui.row(feed)
 		boxes.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var first := String(ins.keys()[0])
@@ -422,6 +422,16 @@ func _build_workshop_view() -> void:
 		bottom.add_child(spacer)
 	Ui.button(bottom, ">" if b["paused"] else "||", func(): Game.set_building_paused(id, not b["paused"]))
 	_tick_workshop_view()
+
+
+## Why Load put nothing in: how much of a batch's goods the storehouse is short of.
+func _short_for_load(building: String) -> String:
+	var needs := {}
+	var ins: Dictionary = Game.current_recipe(building).get("in", {})
+	for item in ins:
+		needs[item] = int(ins[item]) * Game.building_batch(building)
+	var short := Game.missing(needs)
+	return short if short != "" else tr("Not enough in the storehouse")
 
 
 func _tick_workshop_view() -> void:
