@@ -145,8 +145,8 @@ func _ready() -> void:
 	band.bg_color = Color(0.2, 0.12, 0.12, 0.78)
 	band.content_margin_left = 6
 	band.content_margin_right = 6
-	band.content_margin_top = 3
-	band.content_margin_bottom = 4
+	band.content_margin_top = 2
+	band.content_margin_bottom = 2
 	_toast.add_theme_stylebox_override("normal", band)
 	# Drawn over the windows, so a message about one is never hidden behind it.
 	_toast.z_index = 1
@@ -554,8 +554,8 @@ func _show_toast(text: String) -> void:
 		right = minf(right, _buttons.get_rect().position.x - 4)
 	var tall := _fit_toast(right - left - 16, true)
 	# Players watch the fields along the bottom, so the message stands out in the middle of the screen, not at its top.
-	_toast.position = Vector2(roundf(left + (right - left - _toast.size.x) / 2.0), roundf(view.y * 0.45 - tall / 2.0))
-	if _stats_panel.visible and _toast.get_rect().intersects(_stats_panel.get_rect()):
+	_toast.position = Vector2(roundf(left + (right - left - _toast_size().x) / 2.0), roundf(view.y * 0.45 - tall / 2.0))
+	if _stats_panel.visible and Rect2(_toast.position, _toast_size()).intersects(_stats_panel.get_rect()):
 		_toast.position.y = _stats_panel.get_rect().end.y + 4
 	# Over an open window the message sits just above it or below it, and when neither has room, as on a phone, over its
 	# heading beside the close button, so it never hides the window's buttons.
@@ -572,7 +572,7 @@ func _show_toast(text: String) -> void:
 				var row: Rect2 = (w._title.get_parent() as Control).get_global_rect()
 				# Drawn smaller when it would not fit the heading on one line at its usual size.
 				tall = _fit_toast(heading.size.x, _toast_width(true) <= heading.size.x)
-				_toast.position = Vector2(roundf(heading.position.x + (heading.size.x - _toast.size.x) / 2.0), roundf(row.get_center().y - tall / 2.0))
+				_toast.position = Vector2(roundf(heading.position.x + (heading.size.x - _toast_size().x) / 2.0), roundf(row.get_center().y - tall / 2.0))
 			break
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
@@ -620,30 +620,40 @@ func _add_window(w: WindowPanel) -> WindowPanel:
 func _apply_text_size() -> void:
 	for l in [_info, _tip]:
 		l.add_theme_font_size_override("font_size", UiTheme.text_size() * (2 if Settings.large_text else 1))
-	_toast.add_theme_font_size_override("font_size", _toast_font(true))
+	_toast.add_theme_font_size_override("font_size", UiTheme.text_size())
 
 
-## Messages are drawn at twice the size of the rest of the interface, so one is noticed wherever the player is looking;
-## the smaller size is for a message squeezed into a window's heading.
-func _toast_font(big: bool) -> int:
-	return UiTheme.text_size() * ((3 if Settings.large_text else 2) if big else (2 if Settings.large_text else 1))
+## Messages are drawn about 1.4 times the size of the rest of the interface, so one is noticed wherever the player is
+## looking; the smaller size is for a message squeezed into a window's heading.
+func _toast_scale(big: bool) -> float:
+	var usual := Windowing.ui_scale * (2 if Settings.large_text else 1)
+	if not big:
+		return float(usual) / Windowing.ui_scale
+	# Each of the font's pixels covers a whole number of screen pixels, so the letters stay crisp.
+	return float(maxi(usual + 1, roundi(usual * 1.4))) / Windowing.ui_scale
+
+
+## The message's band as it is drawn, in interface pixels.
+func _toast_size() -> Vector2:
+	return _toast.size * _toast.scale
 
 
 ## The message's width on one line at the big or the small size.
 func _toast_width(big: bool) -> float:
-	_toast.add_theme_font_size_override("font_size", _toast_font(big))
+	_toast.scale = Vector2.ONE * _toast_scale(big)
 	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
-	return _toast.get_minimum_size().x + 1
+	# Two pixels to spare keep a centred line on whole pixels.
+	return (_toast.get_minimum_size().x + 2) * _toast.scale.x
 
 
 ## Sizes the message's band to its words at the big or small size, wrapping within `room`; returns its height.
 func _fit_toast(room: float, big: bool) -> float:
-	var width := minf(_toast_width(big), room)
+	var width := minf(_toast_width(big), room) / _toast.scale.x
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast.size = Vector2(width, 0)
 	var tall := _toast.get_minimum_size().y
 	_toast.size = Vector2(width, tall)
-	return tall
+	return tall * _toast.scale.y
 
 
 ## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
