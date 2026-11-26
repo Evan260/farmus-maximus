@@ -228,10 +228,27 @@ func test_news_waits_while_a_window_is_open_and_answers_keep_off_its_buttons() -
 		return b.is_visible_in_tree() and b.get_global_rect().intersects(hud._toast.get_global_rect()))
 	check(hud._toast.text == "An answer" and covered.is_empty(), "an answer to the player shows at once, clear of the window's buttons (%d covered)" % covered.size())
 	hud._toast_tween.kill()
+	# The farm may find its own news meanwhile, such as the cat strolling into view, which waits its turn like any other.
+	var waiting: Array = hud._toast_queue.duplicate()
 	hud.close_windows()
 	await process_frame
 	await process_frame
-	check(hud._toast.text == "Fresh news", "and the news shows once the window has closed (%s)" % hud._toast.text)
+	check(not waiting.is_empty() and hud._toast.text == waiting[0] and waiting.has("Fresh news"), "and once the window has closed the news shows, the longest waiting first (%s, waiting %s)" % [hud._toast.text, waiting])
+	hud._toast_tween.kill()
+	hud._toast_queue.clear()
+	hud._queued_news.clear()
+	hud._toast.text = ""
+	hud.open_window("journal")
+	await process_frame
+	main._on_weather_changed("rain", "sun")
+	main._on_cart_home(25)
+	var rain := tr("Rain is falling: the fields are watered")
+	var cart := tr("The cart is back: +%d sestertii") % 25
+	check(hud._toast.text == "" and hud._queued_news.has(rain) and hud._queued_news.has(cart), "the farm's own news, such as rain or the cart coming home, waits for the window too (%s)" % hud._toast.text)
+	hud.close_windows()
+	await process_frame
+	if hud._toast_tween:
+		hud._toast_tween.kill()
 	var locale := TranslationServer.get_locale()
 	for loc in ["en", "de", "ru"]:
 		TranslationServer.set_locale(loc)

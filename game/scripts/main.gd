@@ -1572,11 +1572,11 @@ func _on_building_changed(id: String) -> void:
 				if _building_states.get(id, "") == "upgrading":
 					Audio.play("built")
 					_dust(v.position, 24)
-					hud.toast(tr("The %s is now level %d") % [name, int(Game.buildings[id]["level"]) + 1])
+					hud.news(tr("The %s is now level %d") % [name, int(Game.buildings[id]["level"]) + 1])
 				elif int(Game.buildings[id]["level"]) == 0 and not Game.buildings[id]["busy"] and Game.buildings[id]["queue"].is_empty():
 					Audio.play("built")
 					_dust(v.position, 24)
-					hud.toast(tr("The %s is working again!") % name)
+					hud.news(tr("The %s is working again!") % name)
 
 
 ## Remembers each building's state, so a building coming back to work can tell an upgrade from a repair.
@@ -1594,7 +1594,7 @@ func _on_zone_bought(zone_id: String) -> void:
 func _on_weather_changed(weather: String, before: String) -> void:
 	if weather == "rain":
 		Audio.play("rain_start")
-		hud.toast(tr("Rain is falling: the fields are watered"))
+		hud.news(tr("Rain is falling: the fields are watered"))
 	elif weather == "mist" and Lighting.night_amount(Game.day_time) < 0.6:
 		Game.discover("sighting:mist")
 
@@ -1642,8 +1642,8 @@ func _on_cart_left(_items: int, value: int) -> void:
 	Audio.play("cart")
 	# A trader can send the cart off again while it is still driving home; it turns round, and is no longer returning.
 	if _cart_returning:
-		hud.toast(tr("The cart is back: +%d sestertii") % _coins_coming)
-	hud.toast(tr("The cart heads to market with %d sestertii of goods") % value)
+		hud.news(tr("The cart is back: +%d sestertii") % _coins_coming)
+	hud.news(tr("The cart heads to market with %d sestertii of goods") % value)
 	_cart_returning = false
 	rig.face_rig(false)
 	_donkey.position.x = rig.harness_x(_cart.position.x, false)
@@ -1673,7 +1673,7 @@ func _on_cart_home(coins: int) -> void:
 	Audio.play("coins")
 	hud.float_text(Vector2(CART_HOME_X + 24, RIG_BASE - 46) - _camera.position, "+%d" % coins)
 	_burst(Vector2(CART_HOME_X + 30, RIG_BASE - 20), [Color(1, 0.86, 0.35), Color(0.96, 0.72, 0.25)], 12)
-	hud.toast(tr("The cart is back: +%d sestertii") % coins)
+	hud.news(tr("The cart is back: +%d sestertii") % coins)
 
 
 ## Time caught up all at once moves the farm on without the signals the scene follows, so the scene is set from the state.
@@ -1738,7 +1738,7 @@ func _on_villa_finished() -> void:
 	else:
 		_villa_scaffold.sink().tween_callback(func(): _villa_scaffold.visible = Game.villa_build["active"])
 	Audio.play("built")
-	hud.toast(tr("The villa has been restored: %s!") % Ui.mid(tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"]))))
+	hud.news(tr("The villa has been restored: %s!") % Ui.mid(tr(String(Game.villa_stages()[Game.villa_stage - 1]["name"]))))
 	_dust(_villa.position + Vector2(_villa.region_rect.size.x / 2, _villa.region_rect.size.y - 4), 40)
 	_villa.modulate = Color(1.6, 1.5, 1.3)
 	create_tween().tween_property(_villa, "modulate", Color.WHITE, 0.9)
@@ -1816,7 +1816,7 @@ func _on_upgrade_bought(id: String) -> void:
 		_store_scaffold.sink().tween_callback(func(): _store_scaffold.visible = Game.projects.has("storage"))
 	if id in Game.BUILT_UPGRADES:
 		Audio.play("built")
-		hud.toast(tr("The work is finished"))
+		hud.news(tr("The work is finished"))
 	if id == "cart_speed":
 		road.pave_road()
 		_dust(Vector2(cam_x + _view_size().x / 2.0, 280), 24)
