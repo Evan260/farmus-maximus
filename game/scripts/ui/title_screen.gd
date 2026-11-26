@@ -5,7 +5,9 @@ extends Control
 signal closed
 
 const FarmsPanel := preload("res://scripts/ui/farms_panel.gd")
-const LOGO := Color(0.99, 0.95, 0.86)
+## The boot splash is the game's logo drawn three screen pixels to each of its own.
+const SPLASH := preload("res://assets/splash/boot_splash.png")
+const SPLASH_PIXEL := 3
 const LOGO_SHADOW := Color(0.29, 0.18, 0.14)
 ## The gold of the logo's laurel, for the word Demo under the name.
 const DEMO := Color(0.98, 0.83, 0.43)
@@ -17,8 +19,9 @@ const TESTER_COINS := 1000000
 var open_window: Callable
 var _menu: VBoxContainer
 var _card: PanelContainer
-## The game's name, its line under it and the menu, which the farm list stands in place of while it is open.
+## The game's logo and the menu, which the farm list stands in place of while it is open.
 var _column: VBoxContainer
+var _logo: Logo
 var _farms: Node
 ## True while the menu asks for a new farm's name.
 var _naming := false
@@ -40,18 +43,13 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 10)
 	add_child(col)
 	_column = col
-	var logo := Label.new()
-	logo.text = tr("Farmus Maximus").to_upper()
-	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	logo.add_theme_font_override("font", UiTheme.FONT)
-	logo.add_theme_font_size_override("font_size", 48)
-	logo.add_theme_color_override("font_color", LOGO)
-	logo.add_theme_color_override("font_shadow_color", LOGO_SHADOW)
-	logo.add_theme_constant_override("shadow_offset_x", 0)
-	logo.add_theme_constant_override("shadow_offset_y", 4)
-	logo.add_theme_constant_override("outline_size", 8)
-	logo.add_theme_color_override("font_outline_color", LOGO_SHADOW)
-	col.add_child(logo)
+	_logo = Logo.new()
+	_logo.name = "Logo"
+	_logo.source = Rect2(Hit.used_rect(SPLASH))
+	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(_logo)
+	_size_logo()
+	Windowing.view_changed.connect(_size_logo)
 	# A phone that buys the full game on the title stops being the demo there and then.
 	if Game.is_demo() or FullGame.sold_here():
 		var demo := Label.new()
@@ -62,16 +60,14 @@ func _ready() -> void:
 		demo.text = tr("Demo").to_upper()
 		demo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		demo.add_theme_font_override("font", UiTheme.FONT)
-		demo.add_theme_font_size_override("font_size", 24)
+		demo.add_theme_font_size_override("font_size", 16)
 		demo.add_theme_color_override("font_color", DEMO)
 		demo.add_theme_color_override("font_shadow_color", LOGO_SHADOW)
 		demo.add_theme_constant_override("shadow_offset_x", 0)
 		demo.add_theme_constant_override("shadow_offset_y", 2)
-		demo.add_theme_constant_override("outline_size", 6)
+		demo.add_theme_constant_override("outline_size", 4)
 		demo.add_theme_color_override("font_outline_color", LOGO_SHADOW)
 		col.add_child(demo)
-	var tagline := Ui.label(col, tr("A Roman farm, slowly brought back to life"), true)
-	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card = PanelContainer.new()
 	_card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(_card)
@@ -99,6 +95,16 @@ func _ready() -> void:
 	version.mouse_filter = Control.MOUSE_FILTER_STOP
 	version.gui_input.connect(_on_version_input)
 	Ui.fade_in(self, 0.8)
+
+
+## The logo is drawn small enough to leave the scene and the menu room: a whole number of screen pixels to each of its
+## own, about a sixth of the screen's height and never more than half its width.
+func _size_logo() -> void:
+	var screen := get_viewport().get_visible_rect().size
+	var art := _logo.source.size / SPLASH_PIXEL
+	_logo.pixel = maxi(1, mini(floori(screen.y * 0.18 / art.y), floori(screen.x * 0.5 / art.x)))
+	_logo.custom_minimum_size = art * _logo.pixel / Windowing.ui_scale
+	_logo.queue_redraw()
 
 
 func _process(_delta: float) -> void:
@@ -278,3 +284,24 @@ func go_back() -> bool:
 func _suggestion() -> String:
 	var names: Array = Data.get_value("farm_names", ["Villa Aurelia"])
 	return tr(String(names[randi() % names.size()]))
+
+
+## The game's logo, cut from the boot splash and drawn on whole screen pixels wherever the menu's layout puts it.
+class Logo extends Control:
+	var source: Rect2
+	## Screen pixels to each of the logo's own.
+	var pixel := 1
+
+	func _init() -> void:
+		mouse_filter = MOUSE_FILTER_IGNORE
+		texture_filter = TEXTURE_FILTER_NEAREST
+		set_notify_transform(true)
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_TRANSFORM_CHANGED:
+			queue_redraw()
+
+	func _draw() -> void:
+		var screen := get_global_transform_with_canvas()
+		var snap := (screen.origin.round() - screen.origin) / screen.get_scale()
+		draw_texture_rect_region(SPLASH, Rect2(snap, source.size / SPLASH_PIXEL * pixel / screen.get_scale()), source)
