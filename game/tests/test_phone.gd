@@ -342,3 +342,35 @@ class FakePhone:
 
 	func sign_in() -> void:
 		calls.append(["sign_in"])
+
+
+## The choice of pets opens a new farm, so on a phone it must show whole, with nothing to find by scrolling.
+func test_the_choice_of_pets_fits_a_phone_without_scrolling() -> void:
+	var was := [Windowing.phone, Windowing.phone_preview, Windowing.safe_top_left, Windowing.safe_bottom_right]
+	var locale := TranslationServer.get_locale()
+	Windowing.phone = true
+	Windowing.phone_preview = true
+	# A Pixel 9a held sideways at four screen pixels to the interface pixel, with its camera on the left.
+	Windowing.safe_top_left = Vector2(34, 10)
+	Windowing.safe_bottom_right = Vector2(10, 10)
+	root.get_node("Game").new_game()
+	for loc in ["en", "de", "ru", "ja"]:
+		TranslationServer.set_locale(loc)
+		var screen := Control.new()
+		screen.size = Vector2(606, 270)
+		screen.theme = UiTheme.build()
+		root.add_child(screen)
+		var panel: Control = load("res://scripts/ui/companions_panel.gd").new()
+		screen.add_child(panel)
+		panel.open()
+		for i in 3:
+			await process_frame
+		var scroll: ScrollContainer = panel._scroll
+		check(scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED and Rect2(Vector2.ZERO, screen.size).encloses(panel.get_rect()),
+			"in %s every pet and button shows at once (%s in %s)" % [loc, panel.get_rect(), screen.size])
+		screen.free()
+	TranslationServer.set_locale(locale)
+	Windowing.phone = was[0]
+	Windowing.phone_preview = was[1]
+	Windowing.safe_top_left = was[2]
+	Windowing.safe_bottom_right = was[3]
