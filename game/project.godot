@@ -38,6 +38,7 @@ PhoneServices="*res://scripts/autoload/phone_services.gd"
 Awards="*res://scripts/autoload/awards.gd"
 Tips="*res://scripts/autoload/tips.gd"
 KeyNav="*res://scripts/autoload/key_nav.gd"
+Landscape="*res://scripts/autoload/landscape.gd"
 
 [display]
 
