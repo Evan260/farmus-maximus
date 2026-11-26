@@ -171,6 +171,20 @@ func test_scene() -> void:
 	drag.position = middle - Vector2(0, 40)
 	finger._input(drag)
 	_check(area.scroll_vertical > 0, "a finger dragging up a list scrolls it")
+	finger._touching = false
+	finger._dragging = false
+	var slider := HSlider.new()
+	slider.custom_minimum_size = Vector2(100, 12)
+	list.add_child(slider)
+	list.move_child(slider, 0)
+	area.scroll_vertical = 0
+	await process_frame
+	var knob: Vector2 = slider.get_global_transform_with_canvas() * (slider.size / 2.0)
+	touch.position = knob
+	finger._input(touch)
+	drag.position = knob - Vector2(0, 40)
+	finger._input(drag)
+	_check(area.scroll_vertical == 0 and not finger._dragging, "a finger moving a slider moves only the slider, however far up or down it wanders")
 	holder.queue_free()
 	game.villa_stage = 3
 	main.go_inside()

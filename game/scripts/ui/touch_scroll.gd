@@ -18,7 +18,8 @@ func _input(event: InputEvent) -> void:
 	if scroll == null or not scroll.is_visible_in_tree():
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and _screen_rect().has_point(event.position):
+		# A finger on a slider is moving the slider, however much it wanders up or down while it does.
+		if event.pressed and _screen_rect().has_point(event.position) and not _on_slider(event.position):
 			_touching = true
 			_dragging = false
 			_swallow_release = false
@@ -54,6 +55,14 @@ func _let_go(at: Vector2) -> void:
 		if not b.disabled and Rect2(xform.origin, b.size * xform.get_scale()).has_point(at):
 			b.disabled = true
 			b.disabled = false
+
+
+func _on_slider(at: Vector2) -> bool:
+	for s in scroll.find_children("*", "Slider", true, false):
+		var xform: Transform2D = s.get_global_transform_with_canvas()
+		if s.is_visible_in_tree() and Rect2(xform.origin, s.size * xform.get_scale()).has_point(at):
+			return true
+	return false
 
 
 func _scale() -> float:
