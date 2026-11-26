@@ -9,6 +9,9 @@ const LOGO := Color(0.99, 0.95, 0.86)
 const LOGO_SHADOW := Color(0.29, 0.18, 0.14)
 ## The gold of the logo's laurel, for the word Demo under the name.
 const DEMO := Color(0.98, 0.83, 0.43)
+## What the tester's code adds to the farm each time it is entered: more than every deed, building, level, villa stage,
+## improvement, helper, decoration and furnishing costs together, so a phone can try everything without hours of play.
+const TESTER_COINS := 1000000
 
 ## Supplied by the HUD: opens one of its windows, such as the settings, over the title.
 var open_window: Callable
@@ -22,6 +25,8 @@ var _naming := false
 ## True while the menu asks for Google Play's reviewer code.
 var _reviewing := false
 var _demo: Label
+## When the version was lately tapped while the full game is already open, so a tester can still reach the code box.
+var _taps: Array = []
 
 
 func _ready() -> void:
@@ -199,11 +204,33 @@ func _name_farm(n: int) -> void:
 	Ui.button(_menu, tr("Back"), _show_menu)
 
 
-## Five quick taps on the version open the box for Google Play's reviewer code while the full game is locked.
+## Five quick taps on the version open the box for Google Play's reviewer code while the full game is locked, and on a
+## phone that already has the full game, for the tester's code.
 func _on_version_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if FullGame.review_tap(Time.get_ticks_msec() / 1000.0):
+		var now := Time.get_ticks_msec() / 1000.0
+		if FullGame.review_tap(now) or (Windowing.phone and not FullGame.locked() and _tester_tap(now)):
 			_review_code()
+
+
+func _tester_tap(now: float) -> bool:
+	_taps = _taps.filter(func(t: float) -> bool: return now - t <= FullGame.REVIEW_SECONDS)
+	_taps.append(now)
+	if _taps.size() < FullGame.REVIEW_TAPS:
+		return false
+	_taps.clear()
+	return true
+
+
+## The tester's code adds sestertii and does nothing else; like the reviewer's, only its SHA-256 is in the game.
+func _tester_code(code: String) -> bool:
+	var hash := str(ProjectSettings.get_setting("slowsunday/tester_code_sha256", ""))
+	if hash == "" or (FullGame.package_name + ":" + FullGame.normalize(code)).sha256_text() != hash:
+		return false
+	Game.coins += TESTER_COINS
+	Saves.save_game()
+	get_tree().call_group("hud", "toast", "%d sestertii added for testing" % TESTER_COINS, true)
+	return true
 
 
 ## The box for the code that opens the full game for Google Play's reviewers, in English since only they see it.
@@ -227,7 +254,7 @@ func _review_code() -> void:
 	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	r.add_child(field)
 	var enter := func():
-		if FullGame.redeem(field.text):
+		if _tester_code(field.text) or FullGame.redeem(field.text):
 			_show_menu()
 		else:
 			wrong.visible = true

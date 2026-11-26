@@ -23,8 +23,9 @@ ENGINE_LINE = re.compile(r"Audio\.|AudioServer|get_node|res://|user://|push_|pri
                          r"set_stylebox|set_color|set_constant|set_icon|set_font|set_type_variation|find_children|Engine\.|"
                          r"\.bus\b|path_join|InputMap|is_action|load\(|\.name = |Dev\.")
 # Names that stay as they are in every language: the default pet and farm names, the store, a locale code and buses,
-# and the words of the title's box for Google Play's reviewer code, which only the reviewers see.
-KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Dev", "Hant", "Master", "Reviewer code", "That code isn't right."}
+# and the words of the title's box for Google Play's reviewer code and the tester's code, which only they see.
+KEEP = {"Fidus", "Mica", "Villa Aurelia", "Steam", "Dev", "Hant", "Master", "Reviewer code", "That code isn't right.",
+        "%d sestertii added for testing"}
 # Scripts whose text only the developer sees.
 DEV_SCRIPTS = {"dev.gd"}
 

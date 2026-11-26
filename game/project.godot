@@ -73,4 +73,5 @@ textures/vram_compression/import_etc2_astc=true
 
 package_name="com.slowsunday.farmusmaximus"
 review_code_sha256="f5a96530bf6a0a4156f75f1de228ae8743ed0c037cd19d12140a1ad8db83db79"
+tester_code_sha256="df169f741ae8facdc59257591ad7e385a36e9139d2d434da3bf9c0821e5c4137"
 

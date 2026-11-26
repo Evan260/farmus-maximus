@@ -6,6 +6,8 @@ const CACHE := "user://test_store.cfg"
 const PRICE := "CA$4.99"
 ## A reviewer's code of the tests' own, since the game's real one is kept only as a hash.
 const REVIEW_CODE := "QX7P-29HD-MM4F"
+## A tester's code of the tests' own, for the same reason.
+const TESTER_CODE := "TEST-TEST-TEST"
 
 ## What each test listens to on FullGame, let go of when the test is done.
 var _listening: Array[Callable] = []
@@ -309,6 +311,28 @@ func test_a_wrong_reviewer_code_opens_nothing() -> void:
 	check(_full().locked() and not FileAccess.file_exists(CACHE), "the game stays locked with nothing written down")
 	_full().review_hash = ("com.slowsunday.othergame:" + REVIEW_CODE.replace("-", "")).sha256_text()
 	check(not _full().redeem(REVIEW_CODE), "and another game's code is not taken here")
+	_done()
+
+
+func test_the_testers_code_adds_sestertii_and_nothing_else() -> void:
+	_reviewer_shop()
+	var key := "slowsunday/tester_code_sha256"
+	var real := str(ProjectSettings.get_setting(key, ""))
+	check(real.length() == 64 and real.is_valid_hex_number() and real != _full().review_hash, "project.godot holds the SHA-256 of a tester's code of its own")
+	ProjectSettings.set_setting(key, (_full().package_name + ":" + TESTER_CODE.replace("-", "")).sha256_text())
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	var title: Control = load("res://scripts/ui/title_screen.gd").new()
+	root.add_child(title)
+	var coins: int = game.coins
+	check(title._tester_code(TESTER_CODE.to_lower()), "the tester's code is taken, typed in any case")
+	check(game.coins == coins + title.TESTER_COINS, "and adds its sestertii")
+	check(title._tester_code(TESTER_CODE) and game.coins == coins + 2 * title.TESTER_COINS, "again each time it is entered")
+	check(_full().locked(), "without opening the full game")
+	check(not title._tester_code(REVIEW_CODE) and not _full().redeem(TESTER_CODE), "and neither code does the other's work")
+	ProjectSettings.set_setting(key, real)
+	title.free()
 	_done()
 
 
