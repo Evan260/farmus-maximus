@@ -15,6 +15,8 @@ signal cart_returned(coins: int)
 signal villa_build_started(stage: int)
 signal villa_upgraded(stage: int)
 signal message(text: String)
+## News nobody asked for, which the interface keeps until no window is open.
+signal news(text: String)
 signal zone_bought(zone_id: String)
 signal building_changed(building_id: String)
 signal building_made(building_id: String, item: String, amount: int)
@@ -442,7 +444,7 @@ func baby_story() -> Dictionary:
 		if not stats.has("baby_born"):
 			stats["baby_born"] = 1
 			if not quiet:
-				message.emit(TranslationServer.translate("%s in the market town has had %s!") % [TranslationServer.translate(String(story.get("who", "Julia"))), TranslationServer.translate(String(story.get("child", "a baby girl")))])
+				news.emit(TranslationServer.translate("%s in the market town has had %s!") % [TranslationServer.translate(String(story.get("who", "Julia"))), TranslationServer.translate(String(story.get("child", "a baby girl")))])
 		return {"stage": "baby"}
 	return {"stage": "none"}
 

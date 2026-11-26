@@ -30,6 +30,8 @@ const SHORT_ZONES := {"grove": "Grove", "home": "Farm", "yard": "Yard", "vineyar
 
 var _root: Control
 var _coins: Label
+## Aurei on a row of their own, so the panel stays narrow enough to keep clear of the zone bar however rich the farm.
+var _aurei: Label
 var _storage: Label
 var _cart: Label
 var _calendar: Label
@@ -51,6 +53,8 @@ var _info: Label
 var _toast: Label
 var _toast_tween: Tween
 var _toast_queue: Array = []
+## The waiting messages that are news rather than an answer to the player, which wait while a window or card is open.
+var _queued_news := {}
 var _achievements: Control
 var _uncle: Control
 ## Something Uncle Marcus has to say outside the tutorial, such as the coins he gives a stranded farm, as an id and text.
@@ -106,6 +110,7 @@ func _ready() -> void:
 	_root.add_child(_stats_panel)
 	var col := Ui.column(_stats_panel)
 	_coins = Ui.label(col)
+	_aurei = Ui.label(col)
 	_storage = Ui.label(col)
 	_cart = Ui.label(col)
 	_calendar = Ui.label(col)
@@ -180,8 +185,9 @@ func _ready() -> void:
 	Game.achievement_unlocked.connect(_on_achievement)
 	Game.discovered.connect(_on_discovered)
 	Game.festival_started.connect(_on_festival)
-	Game.season_changed.connect(func(_s): toast(tr("%s has come to the estate") % tr(Game.calendar.season_name())))
-	Game.dog_found.connect(func(_id, text): toast(tr(text)))
+	Game.news.connect(func(text): news(tr(text)))
+	Game.season_changed.connect(func(_s): news(tr("%s has come to the estate") % tr(Game.calendar.season_name())))
+	Game.dog_found.connect(func(_id, text): news(tr(text)))
 	Game.rescued.connect(func(gift):
 		_notice = {"id": "rescue_%d" % Time.get_ticks_msec(), "text": tr("Here are %d sestertii to start again, my dear heir. Plant something, and mind the shovel!") % gift}
 		Audio.play("coins"))
@@ -189,7 +195,7 @@ func _ready() -> void:
 	Game.blessing_started.connect(func(god): Audio.play("shrine_bell"); toast(tr("%s blesses the estate") % tr(String(Game.gods()[god]["name"]))))
 	Game.helper_hired.connect(func(id): toast(tr("%s has joined the household") % tr(String(Game.helper_info(id).get("name", "")))))
 	Game.helper_trained.connect(func(id, level): toast(tr("%s is now level %d") % [tr(String(Game.helper_info(id).get("name", ""))), level]))
-	Game.order_added.connect(func(): toast(tr("A new request is pinned to the market's notice board")))
+	Game.order_added.connect(func(): news(tr("A new request is pinned to the market's notice board")))
 	FullGame.finished.connect(_on_store_result)
 	if _wants_title():
 		_show_title()
@@ -222,8 +228,7 @@ func _show_title() -> void:
 ## Achievement cards and messages wait while the interface is hidden, in the market or the farmhouse, then play in order.
 func _hold_news() -> void:
 	_achievements.hold = _title != null or not visible
-	if visible and not (_toast_tween and _toast_tween.is_running()) and not _toast_queue.is_empty():
-		_show_toast(_toast_queue.pop_front())
+	_next_toast()
 
 
 ## Saves the farm and lays the title screen over it again, where the farm list can switch to another farm.
@@ -293,7 +298,14 @@ func _process(delta: float) -> void:
 		for w in _windows:
 			w.visible = false
 	_compact_label.text = "%d   %d/%d" % [Game.coins, Game.stored_total(), Game.holding_capacity()]
-	_coins.text = tr("Sestertii  %d") % Game.coins + (("   " + tr("Aurei  %d") % Game.aureus) if Game.aureus > 0 else "")
+	_coins.text = tr("Sestertii  %d") % Game.coins
+	_aurei.text = tr("Aurei  %d") % Game.aureus
+	_aurei.visible = Game.aureus > 0
+	# The panel shrinks back as its numbers do, and the zone bar moves right only if the panel would reach it.
+	_stats_panel.reset_size()
+	var centred := roundf((_root.size.x - _zone_bar.size.x) / 2.0)
+	_zone_bar.position.x = maxf(centred, _stats_panel.get_rect().end.x + 4) if _stats_panel.visible else centred
+	_next_toast()
 	_storage.text = tr("Storehouse  %d / %d") % [Game.in_storehouse(), Game.storage_capacity()]
 	if Game.cart["away"]:
 		_cart.text = tr("Trader back in  %s") % Ui.duration(float(Game.cart["time_left"]))
@@ -491,18 +503,42 @@ func _place_info() -> void:
 	_info.position = (at + Vector2(8, -size.y - 6)).clamp(Vector2(2, 2), _root.size - size - Vector2(2, 2)).round()
 
 
-func toast(text: String, over_title := false) -> void:
+## A message that answers something the player just did, such as a price they cannot pay; it shows at once.
+func toast(text: String, over_title := false, is_news := false) -> void:
 	# Messages from the farm loading behind the title screen are not news to the player yet.
 	if _title != null and not over_title:
 		return
 	# Messages that arrive together wait their turn; a long wait keeps the newest four, a repeated one moving to the back.
-	if not visible or (_toast_tween and _toast_tween.is_running() and _toast.text != text):
+	if not visible or (_toast_tween and _toast_tween.is_running() and _toast.text != text) or (is_news and _covered()):
 		_toast_queue.erase(text)
 		_toast_queue.append(text)
+		if is_news:
+			_queued_news[text] = true
 		if _toast_queue.size() > 4:
-			_toast_queue.pop_front()
+			_queued_news.erase(_toast_queue.pop_front())
 		return
 	_show_toast(text)
+
+
+## News the player did not ask for, such as a new journal page, which waits until no window or card is open.
+func news(text: String) -> void:
+	toast(text, false, true)
+
+
+func _covered() -> bool:
+	return _any_window() or not _open_cards().is_empty()
+
+
+## Shows the next waiting message once the last has gone: an answer to the player at once, news once nothing is open.
+func _next_toast() -> void:
+	if not visible or (_toast_tween and _toast_tween.is_running()):
+		return
+	for text in _toast_queue:
+		if not (_queued_news.has(text) and _covered()):
+			_toast_queue.erase(text)
+			_queued_news.erase(text)
+			_show_toast(text)
+			return
 
 
 func _show_toast(text: String) -> void:
@@ -512,17 +548,17 @@ func _show_toast(text: String) -> void:
 	_toast.modulate.a = 1.0
 	var view := _root.size
 	var left := Windowing.safe_top_left.x
-	var room := view.x - left - Windowing.safe_bottom_right.x - 16
-	# The band is as wide as the words, and a message wider than the screen wraps a little in from its edges.
-	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
-	var width := minf(_toast.get_minimum_size().x + 1, room)
-	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast.size = Vector2(width, 0)
-	var tall := _toast.get_minimum_size().y
-	_toast.size = Vector2(width, tall)
+	# The message keeps clear of the buttons down the right-hand side, and below the farm's panel when that reaches down to it.
+	var right := view.x - Windowing.safe_bottom_right.x
+	if _buttons.visible:
+		right = minf(right, _buttons.get_rect().position.x - 4)
+	var tall := _fit_toast(right - left - 16, true)
 	# Players watch the fields along the bottom, so the message stands out in the middle of the screen, not at its top.
-	_toast.position = Vector2(roundf(left + (view.x - left - Windowing.safe_bottom_right.x - width) / 2.0), roundf(view.y * 0.45 - tall / 2.0))
-	# Over an open window the message sits just above it, or below it, and over its middle only when neither has room.
+	_toast.position = Vector2(roundf(left + (right - left - _toast.size.x) / 2.0), roundf(view.y * 0.45 - tall / 2.0))
+	if _stats_panel.visible and _toast.get_rect().intersects(_stats_panel.get_rect()):
+		_toast.position.y = _stats_panel.get_rect().end.y + 4
+	# Over an open window the message sits just above it or below it, and when neither has room, as on a phone, over its
+	# heading beside the close button, so it never hides the window's buttons.
 	for w in _windows:
 		if w.visible:
 			var clear := (_zone_bar.position.y + _zone_bar.size.y if _zone_bar.visible else Windowing.safe_top_left.y) + 2
@@ -532,12 +568,16 @@ func _show_toast(text: String) -> void:
 			elif w.position.y + w.size.y + 3 + tall <= bottom:
 				_toast.position.y = w.position.y + w.size.y + 3
 			else:
-				_toast.position.y = roundf(w.position.y + (w.size.y - tall) / 2.0)
+				var heading: Rect2 = w._title.get_global_rect()
+				var row: Rect2 = (w._title.get_parent() as Control).get_global_rect()
+				# Drawn smaller when it would not fit the heading on one line at its usual size.
+				tall = _fit_toast(heading.size.x, _toast_width(true) <= heading.size.x)
+				_toast.position = Vector2(roundf(heading.position.x + (heading.size.x - _toast.size.x) / 2.0), roundf(row.get_center().y - tall / 2.0))
 			break
 	_toast_tween = create_tween()
 	_toast_tween.tween_interval(1.8)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.6)
-	_toast_tween.tween_callback(func(): if visible and not _toast_queue.is_empty(): _show_toast(_toast_queue.pop_front()))
+	_toast_tween.tween_callback(_next_toast)
 
 
 ## A speech bubble above someone on the estate, which stays over them; spot returns where it points, in estate pixels
@@ -580,8 +620,30 @@ func _add_window(w: WindowPanel) -> WindowPanel:
 func _apply_text_size() -> void:
 	for l in [_info, _tip]:
 		l.add_theme_font_size_override("font_size", UiTheme.text_size() * (2 if Settings.large_text else 1))
-	# Messages are drawn at twice the size of the rest of the interface, so one is noticed wherever the player is looking.
-	_toast.add_theme_font_size_override("font_size", UiTheme.text_size() * (3 if Settings.large_text else 2))
+	_toast.add_theme_font_size_override("font_size", _toast_font(true))
+
+
+## Messages are drawn at twice the size of the rest of the interface, so one is noticed wherever the player is looking;
+## the smaller size is for a message squeezed into a window's heading.
+func _toast_font(big: bool) -> int:
+	return UiTheme.text_size() * ((3 if Settings.large_text else 2) if big else (2 if Settings.large_text else 1))
+
+
+## The message's width on one line at the big or the small size.
+func _toast_width(big: bool) -> float:
+	_toast.add_theme_font_size_override("font_size", _toast_font(big))
+	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
+	return _toast.get_minimum_size().x + 1
+
+
+## Sizes the message's band to its words at the big or small size, wrapping within `room`; returns its height.
+func _fit_toast(room: float, big: bool) -> float:
+	var width := minf(_toast_width(big), room)
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_toast.size = Vector2(width, 0)
+	var tall := _toast.get_minimum_size().y
+	_toast.size = Vector2(width, tall)
+	return tall
 
 
 ## Uncle Marcus gives the next piece of advice once the farm is settled in: after the choice of pets,
@@ -629,14 +691,14 @@ func _on_discovered(id: String) -> void:
 		return
 	for e in Game.journal.catalogue():
 		if e["id"] == id:
-			toast(tr("New in the journal: %s") % tr(String(e["name"])))
+			news(tr("New in the journal: %s") % tr(String(e["name"])))
 			return
 
 
 func _on_festival(id: String) -> void:
 	for f in Data.get_value("calendar.festivals", []):
 		if f["id"] == id:
-			toast(tr("%s! %s") % [tr(String(f["name"])), tr(String(f.get("about", "")))])
+			news(tr("%s! %s") % [tr(String(f["name"])), tr(String(f.get("about", "")))])
 
 
 func _build_zone_bar() -> void:

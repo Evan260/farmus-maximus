@@ -169,6 +169,53 @@ func test_hiring_a_helper_is_told_in_the_players_language() -> void:
 	await process_frame
 
 
+func test_news_waits_while_a_window_is_open_and_answers_keep_off_its_buttons() -> void:
+	var game: Node = root.get_node("Game")
+	root.get_node("Saves").enabled = false
+	game.new_game()
+	game.pets_chosen = true
+	game.intro_seen = true
+	var main: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(main)
+	for i in 3:
+		await process_frame
+	if main.hud.title_open():
+		main.hud._title._continue()
+		await create_timer(0.7).timeout
+	var hud: CanvasLayer = main.hud
+	if hud._toast_tween:
+		hud._toast_tween.kill()
+	hud._toast_queue.clear()
+	hud._queued_news.clear()
+	hud._toast.text = ""
+	hud.open_window("journal")
+	await process_frame
+	hud.news("Fresh news")
+	await process_frame
+	check(hud._toast.text == "" and "Fresh news" in hud._toast_queue, "news waits while a window is open")
+	hud.toast("An answer")
+	await process_frame
+	var covered: Array = hud._journal.find_children("*", "Button", true, false).filter(func(b: Button) -> bool:
+		return b.is_visible_in_tree() and b.get_global_rect().intersects(hud._toast.get_global_rect()))
+	check(hud._toast.text == "An answer" and covered.is_empty(), "an answer to the player shows at once, clear of the window's buttons (%d covered)" % covered.size())
+	hud._toast_tween.kill()
+	hud.close_windows()
+	await process_frame
+	await process_frame
+	check(hud._toast.text == "Fresh news", "and the news shows once the window has closed (%s)" % hud._toast.text)
+	var locale := TranslationServer.get_locale()
+	for loc in ["en", "de", "ru"]:
+		TranslationServer.set_locale(loc)
+		game.coins = 999999999
+		game.aureus = 999999999
+		await process_frame
+		await process_frame
+		check(not hud._stats_panel.get_rect().intersects(hud._zone_bar.get_rect()), "in %s the farm's panel keeps clear of the zone bar at the largest purse" % loc)
+	TranslationServer.set_locale(locale)
+	main.queue_free()
+	await process_frame
+
+
 func test_market_places_cut_off_by_the_window_get_buttons() -> void:
 	var game: Node = root.get_node("Game")
 	root.get_node("Saves").enabled = false
