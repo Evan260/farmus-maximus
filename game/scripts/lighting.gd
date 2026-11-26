@@ -13,13 +13,47 @@ const KEYS := [
 ]
 
 
+static var _hours: Array = []
+static var _colours: Array = []
+static var _slopes: Array = []
+
+
 static func color_at(hour: float) -> Color:
-	for k in range(KEYS.size() - 1):
-		var a: Array = KEYS[k]
-		var b: Array = KEYS[k + 1]
-		if hour >= a[0] and hour <= b[0]:
-			return (a[1] as Color).lerp(b[1], (hour - a[0]) / (b[0] - a[0]))
-	return KEYS[0][1]
+	if _slopes.is_empty():
+		_hours = KEYS.map(func(k): return float(k[0]))
+		_colours = KEYS.map(func(k): return k[1])
+		_slopes = key_slopes(_hours, _colours)
+	return eased(_hours, _colours, _slopes, hour)
+
+
+## Each colour channel's slope at each key hour, for easing between keys: flat where the colour levels off or turns
+## back, so dusk and dawn begin and end gently rather than all at once (a monotone cubic, after Fritsch and Carlson).
+static func key_slopes(hours: Array, colours: Array) -> Array:
+	var slopes := []
+	for k in hours.size():
+		var m := Color(0, 0, 0, 0)
+		if k > 0 and k < hours.size() - 1:
+			var before: float = hours[k] - hours[k - 1]
+			var after: float = hours[k + 1] - hours[k]
+			for c in 4:
+				var d0: float = (colours[k][c] - colours[k - 1][c]) / before
+				var d1: float = (colours[k + 1][c] - colours[k][c]) / after
+				m[c] = 0.0 if d0 * d1 <= 0.0 else 3.0 * (before + after) / ((2.0 * after + before) / d0 + (after + 2.0 * before) / d1)
+		slopes.append(m)
+	return slopes
+
+
+## The colour at `hour` between colour keys, eased through each key with the slopes from key_slopes.
+static func eased(hours: Array, colours: Array, slopes: Array, hour: float) -> Color:
+	for k in hours.size() - 1:
+		if hour >= hours[k] and hour <= hours[k + 1]:
+			var span: float = hours[k + 1] - hours[k]
+			var t: float = (hour - hours[k]) / span
+			var t2 := t * t
+			var t3 := t2 * t
+			var start := (colours[k] as Color) * (2.0 * t3 - 3.0 * t2 + 1.0) + (slopes[k] as Color) * (span * (t3 - 2.0 * t2 + t))
+			return start + (colours[k + 1] as Color) * (3.0 * t2 - 2.0 * t3) + (slopes[k + 1] as Color) * (span * (t3 - t2))
+	return colours[0]
 
 
 ## 0 in daylight, 1 in full night; used for fireflies, lamps and when the dog prefers to sleep.

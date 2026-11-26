@@ -18,18 +18,20 @@ const SUNRISE := 6.0
 const SUNSET := 19.8
 
 
+## Each colour's keys and its slopes there, so the sky eases into dusk and dawn just as the light does.
+static var _eased := {}
+
+
 static func at(hour: float, overcast: bool) -> Dictionary:
+	if _eased.is_empty():
+		var hours: Array = KEYS.map(func(k): return float(k[0]))
+		for key in KEYS[0][1]:
+			var colours: Array = KEYS.map(func(k): return k[1][key])
+			_eased[key] = [hours, colours, Lighting.key_slopes(hours, colours)]
 	var out := {}
-	for k in range(KEYS.size() - 1):
-		var a: Array = KEYS[k]
-		var b: Array = KEYS[k + 1]
-		if hour >= a[0] and hour <= b[0]:
-			var w: float = (hour - a[0]) / (b[0] - a[0])
-			for key in a[1]:
-				out[key] = (a[1][key] as Color).lerp(b[1][key], w)
-			break
-	if out.is_empty():
-		out = (KEYS[0][1] as Dictionary).duplicate()
+	for key in _eased:
+		var e: Array = _eased[key]
+		out[key] = Lighting.eased(e[0], e[1], e[2], hour)
 	if overcast:
 		# A grey day: the colours are drained towards a soft grey and the sun's glow fades.
 		for key in ["zenith", "middle", "low", "light"]:

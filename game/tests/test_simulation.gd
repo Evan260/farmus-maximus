@@ -811,3 +811,27 @@ func test_a_short_purse_says_how_much_is_needed() -> void:
 
 func _check(ok: bool, what: String) -> void:
 	check(ok, what)
+
+
+## The light and the sky ease into dusk and dawn: no minute changes them much more than the minutes either side of it.
+func test_dusk_and_dawn_ease_in_without_a_step() -> void:
+	var lighting: GDScript = load("res://scripts/lighting.gd")
+	var sky: GDScript = load("res://scripts/sky_palette.gd")
+	var worst := 0.0
+	var at := 0.0
+	var minute := 1.0 / 60.0
+	for i in 24 * 60 - 1:
+		var h := i * minute
+		var a: Color = lighting.color_at(h)
+		var b: Color = lighting.color_at(h + minute)
+		var s0: Color = sky.at(h, false)["middle"]
+		var s1: Color = sky.at(h + minute, false)["middle"]
+		var step := maxf(absf(b.g - a.g) + absf(b.b - a.b) + absf(b.r - a.r), absf(s1.r - s0.r) + absf(s1.g - s0.g) + absf(s1.b - s0.b))
+		if step > worst:
+			worst = step
+			at = h
+	check(worst < 0.03, "no minute of the day changes the light or the sky by much (%.3f at %.2f)" % [worst, at])
+	var first: float = 1.0 - lighting.color_at(16.5 + minute).g
+	var later: float = lighting.color_at(17.0).g - lighting.color_at(17.0 + minute).g
+	check(first < later * 0.2, "dusk begins gently rather than all at once (%.5f in its first minute, %.5f half an hour on)" % [first, later])
+	check(lighting.color_at(12.0).is_equal_approx(Color(1, 1, 1)) and is_equal_approx(lighting.night_amount(23.0), 1.0), "midday is untouched and the night is fully dark")
