@@ -1,8 +1,8 @@
 extends CanvasLayer
-## The game's first frames repeat the boot splash, the logo on its background colour where Godot drew them, then fade
-## into the title, so the start never jumps from the splash straight to the bright estate.
+## The game's first frames repeat the loading screen where Godot drew it, then fade into the title, so the start never
+## jumps from the loading screen straight to the live estate.
 
-const SPLASH := preload("res://assets/splash/boot_splash.png")
+const PICTURE := preload("res://assets/splash/loading_screen.png")
 const HOLD := 0.2
 const FADE := 0.6
 
@@ -14,13 +14,18 @@ func _ready() -> void:
 	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(cover)
-	var logo := TextureRect.new()
-	logo.texture = SPLASH
-	logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cover.add_child(logo)
-	# Godot centres the splash at its own size on whole pixels, so the logo here lands on the same pixels.
-	var place := func(): logo.position = ((cover.size - SPLASH.get_size()) / 2.0).floor()
+	var picture := TextureRect.new()
+	picture.texture = PICTURE
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_SCALE
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cover.add_child(picture)
+	# Godot's cover stretch scales the splash until it fills the window and centres it, so the picture lands on its pixels.
+	var place := func():
+		var zoom := maxf(cover.size.x / PICTURE.get_width(), cover.size.y / PICTURE.get_height())
+		picture.size = PICTURE.get_size() * zoom
+		picture.position = (cover.size - picture.size) / 2.0
 	cover.resized.connect(place)
 	place.call()
 	var fade := create_tween()

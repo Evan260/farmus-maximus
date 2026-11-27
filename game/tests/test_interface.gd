@@ -209,18 +209,23 @@ class FakeSteam:
 		return true
 
 
-## The boot splash is the logo at a whole-number scale, unfiltered at its own size, and the game's first frames repeat it.
-func test_the_boot_splash_is_the_crisp_logo() -> void:
-	var image: Texture2D = load(String(ProjectSettings.get_setting("application/boot_splash/image")))
-	var logo: Texture2D = load("res://tools/trailer/logo.png")
-	check(image != null and image.get_width() % logo.get_width() == 0 and image.get_height() / logo.get_height() == image.get_width() / logo.get_width(),
-		"the boot splash is the logo enlarged by a whole number")
+## The boot splash is the 640 by 270 loading screen at a whole-number scale, stretched unfiltered to cover the window,
+## and the game's first frames repeat it over the whole window.
+func test_the_boot_splash_is_the_crisp_loading_screen() -> void:
+	var path := String(ProjectSettings.get_setting("application/boot_splash/image"))
+	var image: Texture2D = load(path)
+	check(image != null and image.get_width() % 640 == 0 and image.get_height() * 640 == image.get_width() * 270,
+		"the boot splash is the loading screen enlarged by a whole number")
 	check(not ProjectSettings.get_setting("application/boot_splash/use_filter"), "and is drawn without smoothing")
-	check(int(ProjectSettings.get_setting("application/boot_splash/stretch_mode")) == 0, "at its own size")
+	check(int(ProjectSettings.get_setting("application/boot_splash/stretch_mode")) == RenderingServer.SPLASH_STRETCH_MODE_COVER,
+		"stretched to cover the window")
 	var cover: CanvasLayer = load("res://scripts/ui/boot_cover.gd").new()
 	root.add_child(cover)
 	var rect: ColorRect = cover.get_child(0)
 	check(rect.color == ProjectSettings.get_setting("application/boot_splash/bg_color"), "the first frame is the splash's colour")
+	var picture: TextureRect = rect.get_child(0)
+	check(picture.texture.resource_path == path, "with the loading screen on it")
+	check(picture.get_rect().grow(0.01).encloses(Rect2(Vector2.ZERO, rect.size)), "covering the whole window")
 	cover.free()
 
 

@@ -1,6 +1,6 @@
-"""Make the picture Godot shows while the game starts: the trailer's pixel logo, laurel and all, enlarged three times
-with whole pixels so it stays crisp. Godot draws it at its own size in the middle of the window, on the background
-colour set in project.godot, and the game's first frame shows the same picture before fading into the title.
+"""Make the logo the title screen draws: the trailer's pixel logo, laurel and all, enlarged three times with whole
+pixels so it stays crisp. The title cuts it from this picture and draws it on whole screen pixels. The picture Godot
+shows while the game starts is the separate loading screen, game/assets/splash/loading_screen.png.
 
 Usage: python tools/art/make_boot_splash.py (after tools/trailer/make_logo.py)
 Writes game/assets/splash/boot_splash.png.

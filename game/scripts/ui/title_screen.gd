@@ -5,7 +5,7 @@ extends Control
 signal closed
 
 const FarmsPanel := preload("res://scripts/ui/farms_panel.gd")
-## The boot splash is the game's logo drawn three screen pixels to each of its own.
+## The game's logo drawn three screen pixels to each of its own.
 const SPLASH := preload("res://assets/splash/boot_splash.png")
 const SPLASH_PIXEL := 3
 const LOGO_SHADOW := Color(0.29, 0.18, 0.14)
