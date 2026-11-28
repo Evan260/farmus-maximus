@@ -1,0 +1,130 @@
+FARMUS MAXIMUS: APP STORE LISTING TEXT
+
+For App Store Connect (appstoreconnect.apple.com) > Apps > Farmus Maximus. The name, subtitle, category and age rating
+are under App Information, the privacy answers under App Privacy, and the promotional text, description and keywords
+on the version being prepared. Each count is the number of characters Apple counts for that field, line breaks
+included, against the field's limit. The description is store/google_play/listing.txt's full description with only the
+changes listed under it, and none of the text names another platform or says "demo" or "trial" (App Review guidelines
+2.2 and 2.3.10).
+
+
+NAME (25 of 30 characters, already set)
+
+Farmus Maximus: Cozy Farm
+
+
+SUBTITLE (30 of 30 characters)
+
+Idle farming on a Roman estate
+
+
+PROMOTIONAL TEXT (165 of 170 characters)
+
+Your uncle has left you his farm. Grow lavender, hire helpers and restore a ruined farmhouse into the grandest villa in the valley. Free to start, with no ads, ever.
+
+
+DESCRIPTION (2,937 of 4,000 characters)
+
+Your uncle has left you his farm. It has seen better days.
+
+Farmus Maximus is a cozy, semi-idle farming game on a Roman country estate in the hills. Plant fields of lavender and wheat, bring ruined workshops back to life, and restore the old farmhouse stage by stage into the grandest villa in the valley. Play for a minute or for an evening: the farm keeps growing either way.
+
+Free to start, one purchase for the whole game
+Download Farmus Maximus for free and farm the home fields and the olive grove while you restore the farmhouse through its first three stages. When you are ready, one purchase unlocks the whole estate: the workshop yard, the vineyard slope, the pasture and the villa's last four stages. Your farm carries straight on. No ads, ever, and nothing else for sale.
+
+From ruin to grand estate
+The farmhouse starts as a crumbling ruin. Restore it through seven stages, from a simple farmhouse to a villa with a portico, a peristyle garden, a bathhouse wing and finally a grand estate. Every step changes what you see.
+
+Grow, make and sell
+• Grow four kinds of lavender, including a rare white one, along with wheat, olives, herbs and grapes.
+• Restore ten workshops and a household shrine: dry lavender, grind flour at the mill, bake bread, keep bees, press olive oil and wine, age wine in the cellar, make perfumed oils, and keep hens and goats for the dairy.
+• Goods come in three qualities, and the finest fetch the best prices.
+• Send your cart to the market town, fill orders from the regulars on the notice board, and time your sales around the festivals of Floralia, Vinalia, Cerealia and Saturnalia.
+
+Helpers keep it running
+Hire seven helpers, each with a name and something to say: a farmhand, a miller, a beekeeper, a presser, a perfumer, a stable hand and a trader. Watch them pick the harvest, carry flour to the bakery and load the cart, and walk home through their own front doors at nightfall. Put the game away and the estate carries on for up to twelve hours.
+
+Made for touch
+Tap to plant, build and send the cart, and drag through the journal and the market's lists with a finger. Every button is sized for a fingertip and kept clear of the camera and the screen's rounded corners, on iPhone and iPad alike.
+
+Little joys
+• A dog and a cat to choose, name and pet, in several breeds. The dog sometimes digs up old coins, truffles or a rare seed.
+• Furnish the farmhouse and spend evenings by the fire.
+• Make offerings at the household shrine for the blessings of Ceres, Bacchus, Minerva, Pomona, Mercury and the Lares.
+• Seasons, rain and mist, fireflies over the lavender at night, the stork on the roof, a rare hoopoe, a passing fox, and on a few lucky nights the northern lights.
+• A journal of everything you discover, 46 achievements, three farms to keep, and play in 14 languages.
+
+Nothing dies, nothing spoils and there are no timers to dread. Just a quiet corner of Rome to bring back to life.
+
+Changed from the Google Play text: the Play text's last sentence under Helpers keep it running, about reminders when
+the cart is home, the storehouse is full or the builders have finished, is left out: the iPhone build's plugin only
+sells the full game, so the Notifications tab never shows there. "Your phone's camera and rounded corners, on phones
+and tablets alike" reads "the camera and the screen's rounded corners, on iPhone and iPad alike".
+
+
+KEYWORDS (100 of 100 characters)
+
+lavender,villa,rome,ancient,harvest,crops,relaxing,offline,simulator,tycoon,pixel,homestead,vineyard
+
+Apple already searches the name and subtitle, so none of their words, or their plurals, are repeated here.
+
+
+CATEGORY
+
+Primary category: Games
+Subcategories: Simulation and Casual
+Why: An estate and farm management game played at a relaxed, semi-idle pace.
+
+
+AGE RATING (App Information > Age Rating; these answers give 13+)
+
+Apple's table puts any answer above None for alcohol at 13+, so the wine sets it; that matches the 13 and over
+audience chosen on Google Play.
+
+Content, each None, Infrequent or Mild, or Frequent or Intense:
+- Alcohol, Tobacco, or Drug Use or References (alcoholTobaccoOrDrugUseOrReferences): Infrequent or Mild. Wine is a
+  farm good (pressed, aged in the cellar and sold), with the Vinalia, Bacchus's blessing and one innkeeper's order
+  ("Travellers drink my inn dry"); nobody is shown drinking, and there is no tobacco or drugs.
+- Contests (contests): None. Single player with no leaderboards; nobody competes with other players.
+- Simulated Gambling (gamblingSimulated): None. Market prices, orders and festivals involve no betting or games of
+  chance.
+- Guns or Other Weapons (gunsOrOtherWeapons): None. No weapons anywhere in the game.
+- Horror/Fear Themes (horrorOrFearThemes): None. Calm farm life, weather and night skies; nothing scary.
+- Mature or Suggestive Themes (matureOrSuggestiveThemes): None. An estate to restore, with no mature or suggestive
+  themes.
+- Medical or Treatment Information (medicalOrTreatmentInformation): None. No medical content.
+- Profanity or Crude Humor (profanityOrCrudeHumor): None. No profanity or crude humour.
+- Graphic Sexual Content and Nudity (sexualContentGraphicAndNudity): None. No sexual content or nudity.
+- Sexual Content or Nudity (sexualContentOrNudity): None. No sexual content or nudity.
+- Cartoon or Fantasy Violence (violenceCartoonOrFantasy): None. Nothing is hurt or killed: animals wander, a fox
+  passes, the dog digs, and nobody fights.
+- Realistic Violence (violenceRealistic): None. No violence of any kind.
+- Prolonged Graphic or Sadistic Realistic Violence (violenceRealisticProlongedGraphicOrSadistic): None. No violence of
+  any kind.
+
+Features and controls, each Yes or No:
+- Advertising (advertising): No. No ads of any kind, and no ad library in the build.
+- Age Assurance (ageAssurance): No. The game never asks for, estimates or checks anyone's age.
+- Dating and Relationships (datingAndRelationships): No. Single player, with no dating, matching or romantic
+  companion.
+- Gambling (gambling): No. Nothing can be bet, with real money or otherwise; the one purchase buys the full game.
+- Health or Wellness Topics (healthOrWellnessTopics): No. No self-care, diet or exercise advice.
+- Loot Boxes (lootBox): No. The one purchase unlocks the full game; nothing random is sold.
+- Messaging and Chat (messagingAndChat): No. Single player, with no way to talk to other players.
+- Parental Controls (parentalControls): No. The game has no parental control settings of its own.
+- Shared Location (sharedLocation): No. The game never reads the player's location.
+- Social Media (socialMedia): No. No feeds, posting, likes or sharing.
+- Unrestricted Web Access (unrestrictedWebAccess): No. No browser inside the game; the Privacy policy button opens
+  that one page in the phone's own browser.
+- User-Generated Content (userGeneratedContent): No. Pets' names stay on the device, and nothing the player makes is
+  shown to anyone else.
+
+
+APP PRIVACY
+
+Data Not Collected is the true answer. The iPhone and iPad build's only native plugin is SlowSundayStore, which asks
+StoreKit for the full game's price, buys it and restores it; the purchase is handled by Apple, which does not count as
+collection by the developer. The game has no networking, analytics, crash reporting or ads in its code, on iPhone and
+iPad it has no Game Center and sends no notifications, its iOS export has tracking switched off, and saves, settings
+and the record of the purchase are files on the device that never leave it. Play Games, which changes the Google Play
+answers once its app id is set, does not exist in the iPhone and iPad build.
